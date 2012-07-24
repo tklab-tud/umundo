@@ -1,0 +1,13 @@
+contrib/samples/android/bin
+core/contrib/bindings/android/bin/
+core/contrib/bindings/android/gen/
+core/contrib/bindings/java/bin/
+build/
+build*/
+package/
+installer/umundo-*
+docs/html/
+.DS_Store*
+contrib/samples/csharp/umundo-pingpong/bin/
+contrib/samples/csharp/umundo-pingpong/obj/
+

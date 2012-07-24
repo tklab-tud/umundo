@@ -1,0 +1,62 @@
+#!/usr/bin/expect
+
+set timeout 150
+set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
+
+set local_prompt {sradomski$ }
+set initial_remote_prompt "C*>"
+# the default windows prompt is hard to recognize
+set remote_prompt "easy_to_recognize"
+
+eval spawn scp -4 -r ../../package sradomski@epikur-win7.local:umundo
+expect {
+	"100"              { exp_continue }
+	"The authenticity" { send "yes\n"; exp_continue; }
+	timeout            { puts "Timeout when uploading source code"; exit;  }
+	-re $local_prompt  { }
+}
+
+##############################
+# ssh into remote host
+
+eval spawn ssh -4 sradomski@${UMUNDO_BUILD_HOST}.local.
+expect {
+	timeout            { puts "Timeout when connecting to windows"; exit;  }
+	"The authenticity" { send "yes\n"; }
+	-re $local_prompt  { puts "Could not connect to remote host"; exit; }
+	-re $initial_remote_prompt { }
+}
+
+send "set prompt=easy_to_recognize \r"
+expect -re $remote_prompt
+
+send "cd build-umundo\r"
+expect -re $remote_prompt
+
+send "\"c:\\Program Files\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
+expect -re $remote_prompt
+
+##############################
+# package
+
+send "\"c:\\Program Files\\CMake 2.8\\bin\\cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+expect -re $remote_prompt
+
+send "nmake package\r"
+expect {
+	-re $remote_prompt {}
+	"Built target"  { exp_continue; }
+	"CPack"  { exp_continue; }
+}
+
+##############################
+# exit and copy packages
+
+send "exit\r"
+expect -re $local_prompt
+eval cd ~/Documents/TK/Code/
+
+eval spawn "scp -r epikur-win7.local:build-umundo\\\\umundo-windows* umundo/installer/"
+expect -re $local_prompt
+
+exit

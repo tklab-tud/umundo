@@ -1,0 +1,5 @@
+include(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
+if (NOT HAVE_STRNDUP)
+	add_definitions("-DNO_STRNDUP")
+endif()

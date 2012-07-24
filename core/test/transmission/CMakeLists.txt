@@ -1,0 +1,5 @@
+add_executable(test-core-message-transmission test-message-transmission.cpp)
+target_link_libraries(test-core-message-transmission ${UMUNDOCORE_LIBRARIES})
+target_link_libraries(test-core-message-transmission ${UMUNDOUTIL_LIBRARIES})
+add_test(test-core-message-transmission ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-message-transmission)
+set_target_properties(test-core-message-transmission PROPERTIES FOLDER "Tests")

@@ -1,0 +1,55 @@
+/**
+ * Auto generated - edit config.h.in instead!
+ *
+ * This file is instantiated by cmake as config.h in the binary tree of 
+ * the out-of-source build. See cmake docs on CONFIGURE_FILE.
+ *
+ * WARNING: This file may never be included by public headers as we cannot 
+ * ship prebuilt packages otherwise!
+ */
+
+#ifndef __CONFIG_H
+#define __CONFIG_H
+
+/** Platform macros */
+#cmakedefine UNIX
+// suppress warnings with eventual -DWIN32 on compiler invocation
+#ifndef WIN32
+#cmakedefine WIN32
+#endif
+#cmakedefine APPLE
+#cmakedefine CYGWIN
+#cmakedefine IOS
+#ifndef ANDROID
+#cmakedefine ANDROID
+#endif
+#cmakedefine PATH_SEPERATOR '@PATH_SEPERATOR@'
+
+/** Implementation macros */
+#cmakedefine NET_ZEROMQ
+#cmakedefine S11N_PROTOBUF
+#cmakedefine DISC_BONJOUR
+#cmakedefine DISC_BONJOUR_EMBED
+#cmakedefine DISC_AVAHI
+#ifndef THREAD_PTHREAD
+#cmakedefine THREAD_PTHREAD
+#endif
+#ifndef THREAD_WIN32
+#cmakedefine THREAD_WIN32
+#endif
+
+/** Loglevels */
+#cmakedefine LOGLEVEL_COMMON @LOGLEVEL_COMMON@
+#cmakedefine LOGLEVEL_DISC @LOGLEVEL_DISC@
+#cmakedefine LOGLEVEL_NET @LOGLEVEL_NET@
+#cmakedefine LOGLEVEL_S11N @LOGLEVEL_S11N@
+
+/** miscellaneous */
+#cmakedefine PROJECT_SOURCE_DIR "@PROJECT_SOURCE_DIR@"
+#cmakedefine DIST_PREPARE
+
+/** Implementation specific */
+#cmakedefine NET_ZEROMQ_SND_HWM @NET_ZEROMQ_SND_HWM@
+#cmakedefine NET_ZEROMQ_RCV_HWM @NET_ZEROMQ_RCV_HWM@
+
+#endif

@@ -1,0 +1,200 @@
+diff -rupN mDNSResponder-333.10/mDNSCore/mDNSEmbeddedAPI.h mDNSResponder-333.10.patched/mDNSCore/mDNSEmbeddedAPI.h
+--- mDNSResponder-333.10/mDNSCore/mDNSEmbeddedAPI.h	2011-06-30 22:56:04.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSCore/mDNSEmbeddedAPI.h	2012-04-15 15:10:42.000000000 +0200
+@@ -1051,6 +1051,10 @@ enum
+ 	McastResolver_FlagNew    = 2
+ 	};
+ 
++// everyone loves proprietary language extensions in the global namespace
++#ifdef _MSC_VER
++#undef interface
++#endif
+ typedef struct McastResolver
+ 	{
+ 	struct McastResolver *next;
+diff -rupN mDNSResponder-333.10/mDNSPosix/mDNSPosix.h mDNSResponder-333.10.patched/mDNSPosix/mDNSPosix.h
+--- mDNSResponder-333.10/mDNSPosix/mDNSPosix.h	2009-08-11 03:13:47.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSPosix/mDNSPosix.h	2012-04-15 15:10:42.000000000 +0200
+@@ -25,6 +25,10 @@
+     extern "C" {
+ #endif
+ 
++#ifdef TARGET_OS_ANDROID
++#include <fcntl.h>
++#endif
++
+ // PosixNetworkInterface is a record extension of the core NetworkInterfaceInfo
+ // type that supports extra fields needed by the Posix platform.
+ //
+diff -rupN mDNSResponder-333.10/mDNSShared/PlatformCommon.c mDNSResponder-333.10.patched/mDNSShared/PlatformCommon.c
+--- mDNSResponder-333.10/mDNSShared/PlatformCommon.c	2011-04-12 00:54:35.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSShared/PlatformCommon.c	2012-04-15 15:10:42.000000000 +0200
+@@ -27,6 +27,10 @@
+ #include "DNSCommon.h"
+ #include "PlatformCommon.h"
+ 
++#ifdef TARGET_OS_ANDROID
++#include <android/log.h>
++#endif
++
+ #ifdef NOT_HAVE_SOCKLEN_T
+     typedef unsigned int socklen_t;
+ #endif
+@@ -143,13 +147,20 @@ mDNSexport void ReadDDNSSettingsFromConf
+ #if MDNS_DEBUGMSGS
+ mDNSexport void mDNSPlatformWriteDebugMsg(const char *msg)
+ 	{
++#ifdef TARGET_OS_ANDROID
++	__android_log_print(ANDROID_LOG_DEBUG, "bonjour", "%s", msg);
++#else
+ 	fprintf(stderr,"%s\n", msg);
+ 	fflush(stderr);
++#endif
+ 	}
+ #endif
+ 
+ mDNSexport void mDNSPlatformWriteLogMsg(const char *ident, const char *buffer, mDNSLogLevel_t loglevel)
+ 	{
++#ifdef TARGET_OS_ANDROID
++	__android_log_print(ANDROID_LOG_DEBUG, "bonjour", "%s", buffer);
++#else
+ #if APPLE_OSX_mDNSResponder && LogTimeStamps
+ 	extern mDNS mDNSStorage;
+ 	extern mDNSu32 mDNSPlatformClockDivisor;
+@@ -193,4 +204,5 @@ mDNSexport void mDNSPlatformWriteLogMsg(
+ #endif
+ 			syslog(syslog_level, "%s", buffer);
+ 		}
++#endif
+ 	}
+diff -rupN mDNSResponder-333.10/mDNSShared/dns_sd.h mDNSResponder-333.10.patched/mDNSShared/dns_sd.h
+--- mDNSResponder-333.10/mDNSShared/dns_sd.h	2011-08-31 03:44:17.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSShared/dns_sd.h	2012-04-15 15:10:42.000000000 +0200
+@@ -93,7 +93,7 @@
+ /* standard calling convention under Win32 is __stdcall */
+ /* Note: When compiling Intel EFI (Extensible Firmware Interface) under MS Visual Studio, the */
+ /* _WIN32 symbol is defined by the compiler even though it's NOT compiling code for Windows32 */
+-#if defined(_WIN32) && !defined(EFI32) && !defined(EFI64)
++#if defined(_WIN32) && !defined(EFI32) && !defined(EFI64) && !defined(DISC_BONJOUR_EMBED)
+ #define DNSSD_API __stdcall
+ #else
+ #define DNSSD_API
+diff -rupN mDNSResponder-333.10/mDNSShared/dnssd_clientshim.c mDNSResponder-333.10.patched/mDNSShared/dnssd_clientshim.c
+--- mDNSResponder-333.10/mDNSShared/dnssd_clientshim.c	2011-06-02 00:44:37.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSShared/dnssd_clientshim.c	2012-04-15 15:10:42.000000000 +0200
+@@ -25,6 +25,13 @@
+ 
+ #include "dns_sd.h"				// Defines the interface to the client layer above
+ #include "mDNSEmbeddedAPI.h"		// The interface we're building on top of
++#ifndef _MSC_VER
++#include <sys/socket.h>
++#include <netinet/in.h>
++#else
++#include <winsock2.h>
++#endif
++
+ extern mDNS mDNSStorage;		// We need to pass the address of this storage to the lower-layer functions
+ 
+ #if MDNS_BUILDINGSHAREDLIBRARY || MDNS_BUILDINGSTUBLIBRARY
+@@ -71,6 +78,14 @@ typedef struct
+ typedef struct
+ 	{
+ 	mDNS_DirectOP_Dispose  *disposefn;
++	DNSServiceRef                aQuery;
++	DNSServiceGetAddrInfoReply   callback;
++	void                         *context;
++	} mDNS_DirectOP_GetAddrInfo;
++
++typedef struct
++	{
++	mDNS_DirectOP_Dispose  *disposefn;
+ 	DNSServiceResolveReply  callback;
+ 	void                   *context;
+ 	const ResourceRecord   *SRV;
+@@ -659,7 +674,7 @@ DNSServiceErrorType DNSServiceQueryRecor
+ 	x->q.ExpectUnique        = mDNSfalse;
+ 	x->q.ForceMCast          = (flags & kDNSServiceFlagsForceMulticast) != 0;
+ 	x->q.ReturnIntermed      = (flags & kDNSServiceFlagsReturnIntermediates) != 0;
+-	x->q.SuppressUnsable     = (flags & kDNSServiceFlagsSuppressUnusable) != 0;
++	x->q.SuppressUnusable    = (flags & kDNSServiceFlagsSuppressUnusable) != 0;
+ 	x->q.SearchListIndex     = 0;
+ 	x->q.AppendSearchDomains = 0;
+ 	x->q.RetryWithSearchDomains = mDNSfalse;
+diff -rupN mDNSResponder-333.10/mDNSShared/dnssd_ipc.h mDNSResponder-333.10.patched/mDNSShared/dnssd_ipc.h
+--- mDNSResponder-333.10/mDNSShared/dnssd_ipc.h	2011-06-30 22:56:04.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSShared/dnssd_ipc.h	2012-04-15 15:10:42.000000000 +0200
+@@ -29,6 +29,11 @@
+ #ifndef DNSSD_IPC_H
+ #define DNSSD_IPC_H
+ 
++#ifdef TARGET_OS_ANDROID
++#include <sys/socket.h>
++#include <sys/un.h>
++#endif
++
+ #include "dns_sd.h"
+ 
+ //
+diff -rupN mDNSResponder-333.10/mDNSShared/uds_daemon.h mDNSResponder-333.10.patched/mDNSShared/uds_daemon.h
+--- mDNSResponder-333.10/mDNSShared/uds_daemon.h	2011-05-18 00:18:08.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSShared/uds_daemon.h	2012-04-15 15:10:42.000000000 +0200
+@@ -22,6 +22,11 @@
+ 
+  */
+ 
++#ifdef TARGET_OS_ANDROID
++#include <sys/socket.h>
++#include <sys/un.h>
++#endif
++
+ #include "mDNSEmbeddedAPI.h"
+ #include "dnssd_ipc.h"
+ 
+diff -rupN mDNSResponder-333.10/mDNSWindows/mDNSWin32.c mDNSResponder-333.10.patched/mDNSWindows/mDNSWin32.c
+--- mDNSResponder-333.10/mDNSWindows/mDNSWin32.c	2011-08-31 03:42:48.000000000 +0200
++++ mDNSResponder-333.10.patched/mDNSWindows/mDNSWin32.c	2012-04-15 15:17:34.000000000 +0200
+@@ -2843,10 +2843,7 @@ mDNSlocal mStatus	SetupSocket( mDNS * co
+ 		sa4.sin_family 		= AF_INET;
+ 		sa4.sin_port 		= port.NotAnInteger;
+ 		sa4.sin_addr.s_addr	= ipv4.NotAnInteger;
+-		
+-		err = bind( sock, (struct sockaddr *) &sa4, sizeof( sa4 ) );
+-		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
+-		
++				
+ 		// Turn on option to receive destination addresses and receiving interface.
+ 		
+ 		option = 1;
+@@ -2887,6 +2884,9 @@ mDNSlocal mStatus	SetupSocket( mDNS * co
+ 		err = setsockopt( sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *) &option, sizeof( option ) );
+ 		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+ 
++		err = bind( sock, (struct sockaddr *) &sa4, sizeof( sa4 ) );
++		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
++
+ 	}
+ 	else if( inAddr->sa_family == AF_INET6 )
+ 	{
+@@ -2904,10 +2904,7 @@ mDNSlocal mStatus	SetupSocket( mDNS * co
+ 		sa6.sin6_flowinfo	= 0;
+ 		sa6.sin6_addr		= sa6p->sin6_addr;
+ 		sa6.sin6_scope_id	= sa6p->sin6_scope_id;
+-		
+-		err = bind( sock, (struct sockaddr *) &sa6, sizeof( sa6 ) );
+-		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
+-		
++				
+ 		// Turn on option to receive destination addresses and receiving interface.
+ 		
+ 		option = 1;
+@@ -2957,6 +2954,10 @@ mDNSlocal mStatus	SetupSocket( mDNS * co
+ 		option = 255;
+ 		err = setsockopt( sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (char *) &option, sizeof( option ) );
+ 		check_translated_errno( err == 0, errno_compat(), kOptionErr );
++		
++		err = bind( sock, (struct sockaddr *) &sa6, sizeof( sa6 ) );
++		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
++
+ 	}
+ 	else
+ 	{

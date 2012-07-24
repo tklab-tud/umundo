@@ -1,0 +1,197 @@
+#!/usr/bin/expect
+
+set local_prompt {sradomski$ }
+set timeout 3;
+
+set reqFilesAndroid {
+	"/share/umundo/android-.*/armv.*/libumundocoreSwig\.so"
+	"/share/umundo/android-.*/armv.*/libumundocoreSwig_d\.so"
+	"/share/umundo/android-.*/armv.*/umundocore\.jar"
+}
+
+set reqFilesIOS {
+	"/usr/local/share/umundo/ios-.*/libumundocore\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundocore_d\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundoserial\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundoserial_d\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundorpc\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundorpc_d\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundoutil\.ios\.a"
+	"/usr/local/share/umundo/ios-.*/libumundoutil_d\.ios\.a"
+	
+	"/usr/local/share/umundo/prebuilt/ios/.*/libprotobuf-lite\.a"
+	"/usr/local/share/umundo/prebuilt/ios/.*/libprotobuf\.a"
+	"/usr/local/share/umundo/prebuilt/ios/.*/libprotoc\.a"
+	"/usr/local/share/umundo/prebuilt/ios/.*/libzmq\.a"
+}
+
+eval spawn /bin/bash
+
+#############################
+# Validate Mac installers
+#############################
+log_user 0
+set reqFilesMac {
+	"/usr/local/bin/protoc-umundo-cpp-rpc"
+	"/usr/local/bin/umundo-pingpong"
+	"/usr/local/bin/umundo-monitor"
+	
+	"/usr/local/include/umundo/s11n.h"
+	"/usr/local/include/umundo/core.h"
+	"/usr/local/include/umundo/rpc.h"
+	"/usr/local/include/umundo/util.h"
+	
+	"/usr/local/lib/libumundocore64.a"
+	"/usr/local/lib/libumundocore64_d.a"
+	"/usr/local/lib/libumundoserial64.a"
+	"/usr/local/lib/libumundoserial64_d.a"
+	"/usr/local/lib/libumundorpc64.a"
+	"/usr/local/lib/libumundorpc64_d.a"
+	"/usr/local/lib/libumundoutil64.a"
+	"/usr/local/lib/libumundoutil64_d.a"
+	"/usr/local/lib/libumundocoreSwig64.jnilib"
+	"/usr/local/lib/libumundocoreSwig64_d.jnilib"
+	
+	"/usr/local/share/umundo/lib/umundocore.jar"
+}
+set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS]
+
+puts "Validating Mac installer"
+foreach {file} $reqFilesMac {
+	send "tar tzf ../../installer/umundo-darwin-*.tar.gz |sort\n"
+	puts -nonewline "Expecting $file"
+	expect { 
+		-re $file { puts " - found" } 
+		timeout { puts " - missing $file in darwin installer"; exit; } 
+	}
+}
+puts "Archive OK"
+expect -re $local_prompt
+
+#############################
+# Validate Linux32 installers
+#############################
+
+log_user 0
+set reqFilesLinux32 {
+	"/usr/local/bin/protoc-umundo-cpp-rpc"
+	"/usr/local/bin/umundo-pingpong"
+	"/usr/local/bin/umundo-monitor"
+	
+	"/usr/local/include/umundo/s11n.h"
+	"/usr/local/include/umundo/core.h"
+	"/usr/local/include/umundo/rpc.h"
+	"/usr/local/include/umundo/util.h"
+	
+	"/usr/local/lib/libumundocore.a"
+	"/usr/local/lib/libumundocore_d.a"
+	"/usr/local/lib/libumundoserial.a"
+	"/usr/local/lib/libumundoserial_d.a"
+	"/usr/local/lib/libumundorpc.a"
+	"/usr/local/lib/libumundorpc_d.a"
+	"/usr/local/lib/libumundoutil.a"
+	"/usr/local/lib/libumundoutil_d.a"
+	"/usr/local/lib/libumundocoreSwig.so"
+	"/usr/local/lib/libumundocoreSwig_d.so"
+	
+	"/usr/local/share/umundo/lib/umundocore.jar"
+}
+set reqFilesLinux32 [concat $reqFilesLinux32 $reqFilesAndroid]
+
+puts "Validating Linux32 installer"
+foreach {file} $reqFilesLinux32 {
+	send "tar tzf ../../installer/umundo-linux-i686-*.tar.gz\n"
+	puts -nonewline "Expecting $file"
+	expect { 
+		-re $file { puts " - found" } 
+		timeout { puts " - missing $file in linux32 installer"; exit; } 
+	}
+}
+puts "Archive OK"
+expect -re $local_prompt
+
+#############################
+# Validate Linux64 installers
+#############################
+
+log_user 0
+set reqFilesLinux64 {
+	"/usr/local/bin/protoc-umundo-cpp-rpc"
+	"/usr/local/bin/umundo-pingpong"
+	"/usr/local/bin/umundo-monitor"
+	
+	"/usr/local/include/umundo/s11n.h"
+	"/usr/local/include/umundo/core.h"
+	"/usr/local/include/umundo/rpc.h"
+	"/usr/local/include/umundo/util.h"
+	
+	"/usr/local/lib/libumundocore64.a"
+	"/usr/local/lib/libumundocore64_d.a"
+	"/usr/local/lib/libumundoserial64.a"
+	"/usr/local/lib/libumundoserial64_d.a"
+	"/usr/local/lib/libumundorpc64.a"
+	"/usr/local/lib/libumundorpc64_d.a"
+	"/usr/local/lib/libumundoutil64.a"
+	"/usr/local/lib/libumundoutil64_d.a"
+	"/usr/local/lib/libumundocoreSwig64.so"
+	"/usr/local/lib/libumundocoreSwig64_d.so"
+	
+	"/usr/local/share/umundo/lib/umundocore.jar"
+}
+set reqFilesLinux64 [concat $reqFilesLinux64 $reqFilesAndroid]
+
+puts "Validating Linux64 installer"
+foreach {file} $reqFilesLinux64 {
+	send "tar tzf ../../installer/umundo-linux-x86_64-*.tar.gz\n"
+	puts -nonewline "Expecting $file"
+	expect { 
+		-re $file { puts " - found" } 
+		timeout { puts " - missing $file in linux64 installer"; exit; } 
+	}
+}
+puts "Archive OK"
+expect -re $local_prompt
+
+#############################
+# Validate Win32 installers
+#############################
+
+log_user 0
+set reqFilesWin32 {
+	"/bin/protoc-umundo-cpp-rpc.exe"
+	"/bin/umundo-pingpong.exe"
+	"/bin/umundo-monitor.exe"
+	
+	"/include/umundo/s11n.h"
+	"/include/umundo/core.h"
+	"/include/umundo/rpc.h"
+	"/include/umundo/util.h"
+	
+	"/lib/umundocore.lib"
+	"/lib/umundocore_d.lib"
+	"/lib/umundoserial.lib"
+	"/lib/umundoserial_d.lib"
+	"/lib/umundorpc.lib"
+	"/lib/umundorpc_d.lib"
+	"/lib/umundoutil.lib"
+	"/lib/umundoutil_d.lib"
+	"/lib/umundocoreSwig.dll"
+	"/lib/umundocoreSwig_d.dll"
+}
+set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid]
+
+puts "Validating Win32 installer"
+foreach {file} $reqFilesWin32 {
+	send "unzip -l ../../installer/umundo-windows-x86-*.zip |sort\n"
+	puts -nonewline "Expecting $file"
+	expect { 
+		-re $file { puts " - found" } 
+		timeout { puts " - missing $file in windows32 installer"; exit; } 
+	}
+}
+puts "Archive OK"
+expect -re $local_prompt
+
+expect $local_prompt
+send "logout\n"
+exit

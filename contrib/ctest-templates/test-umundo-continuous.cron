@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Periodically check github and rebuild for all configurations if somethang was changes
+# It is safe to call this script from cron as we won't proceed if there is another
+# instance already running.
+#
+# This script can be called from cron as, eg.:
+# 20       *   *   *   *       UMUNDO_SOURCE_DIR=<SOURCE_DIR> <FILE_NAME>
+#
+
+export CTEST_SUBMIT_TYPE="Continuous"
+
+# where is the source?
+if [ ! -n "${UMUNDO_SOURCE_DIR:+x}" ]; then
+	export UMUNDO_SOURCE_DIR="/var/builds/umundo"
+fi
+
+# try to find ctest
+CTEST=/usr/local/bin/ctest
+
+# where are we and where are the scripts?
+ME=`basename $0`
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+LOCK_DIR=/tmp/umundo-build.lock
+
+RUNNING=`ps ax | grep "test-umundo-continuous.cron" | grep -v "grep" |wc -l`
+if [ $RUNNING -gt "2" ]; then
+#	echo "ALREADY RUNNING"
+	exit
+fi
+
+while true
+do
+	cd $UMUNDO_SOURCE_DIR
+	git clean -f -d
+	GIT_SYNC=`git pull`
+	echo $GIT_SYNC
+	if [ ! "$GIT_SYNC" = "Already up-to-date." ]; then
+		# we really would like to run ..
+ 		if mkdir "$LOCK_DIR"; then
+			# we have the directory mutex!
+			cd $SCRIPT_DIR
+			TESTS=`ls umundo*.ctest`
+			for TEST in ${TESTS}; do
+				nice $CTEST -VV --timeout 60 -S ${TEST}
+			done
+			rm -rf "$LOCK_DIR"
+		else
+			# we could not get the mutex, sleep and retry
+			echo "Could not get build lock- waiting"
+			sleep 10
+		fi
+	else
+		echo "Nothing to do ..."
+		sleep 120
+	fi
+done

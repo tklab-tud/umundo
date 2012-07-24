@@ -1,0 +1,7 @@
+add_executable(test-rpc-api services/test-api.cpp)
+target_link_libraries(test-rpc-api ${UMUNDOCORE_LIBRARIES})
+target_link_libraries(test-rpc-api ${UMUNDORPC_LIBRARIES})
+target_link_libraries(test-rpc-api ${UMUNDOS11N_LIBRARIES})
+target_link_libraries(test-rpc-api ${UMUNDOUTIL_LIBRARIES})
+set_target_properties(test-rpc-api PROPERTIES FOLDER "Tests")
+add_test(test-rpc-api ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-rpc-api)

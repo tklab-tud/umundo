@@ -1,0 +1,139 @@
+#!/usr/bin/expect
+
+set timeout 150
+set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
+
+set local_prompt {sradomski$ }
+set initial_remote_prompt "C*>"
+# the default windows prompt is hard to recognize
+set remote_prompt "easy_to_recognize"
+eval cd ~/Documents/TK/Code/
+
+##############################
+# prepare and deploy archive
+
+# check age of archive against modification date
+eval spawn find ./umundo -newer umundo-win.tar
+set redeploy 1;
+expect {
+	"find:*No such file"     { set redeploy 1; }
+	-re ".cpp\r\n"           { set redeploy 1; }
+	-re ".h\r\n"             { set redeploy 1; }
+	-re "CMakeLists.txt\r\n" { set redeploy 1; }
+	-re $local_prompt        { }
+}
+
+if {$redeploy} {
+ eval spawn rm umundo-win.tar
+ eval spawn tar --exclude=*\/\.* --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
+	expect {
+		"a umundo/"        { exp_continue }
+		timeout            { puts "Timeout when packaging source code"; exit; }
+		-re $local_prompt  { }
+	}
+
+	eval spawn scp -4 umundo-win.tar sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.tar
+	expect {
+		"ETA"              { exp_continue }
+		"The authenticity" { send "yes\n"; exp_continue; }
+		timeout            { puts "Timeout when uploading source code"; exit;  }
+		-re $local_prompt  { }
+	}
+}
+
+##############################
+# ssh into remote host
+
+eval spawn ssh -4 sradomski@${UMUNDO_BUILD_HOST}.local.
+expect {
+	timeout            { puts "Timeout when connecting to windows"; exit;  }
+	"The authenticity" { send "yes\n"; }
+	-re $local_prompt  { puts "Could not connect to remote host"; exit; }
+	-re $initial_remote_prompt { }
+}
+
+send "set prompt=easy_to_recognize \r"
+expect -re $remote_prompt
+
+# unpack archive if required
+if {$redeploy} {
+	send "rmdir \/S \/Q umundo\r"
+	expect -re $remote_prompt
+
+	send "tar xf umundo-win.tar\r"
+	expect "umundo/"          { exp_continue } \
+	       -re $remote_prompt { }
+
+}
+
+# setup directories
+send "rmdir \/S \/Q build-umundo\r"
+expect -re $remote_prompt
+send "mkdir build-umundo\r"
+expect -re $remote_prompt
+send "cd build-umundo\r"
+expect -re $remote_prompt
+
+##############################
+# start cmd.exe and prepare for compiling
+# send "cmd\n"
+# expect -re $cmd_prompt
+
+# "c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
+# send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat x86_amd64\"\n"
+send "\"c:\\Program Files\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
+expect -re $remote_prompt
+
+##############################
+# compile in debug configuration
+
+# "c:\Program Files\CMake 2.8\bin\cmake.exe" -G "NMake Makefiles" -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/radomski/Desktop/protobuf-2.4.1 ..\umundo"
+send "\"c:\\Program Files\\CMake 2.8\\bin\\cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+expect -re $remote_prompt
+
+send "nmake\r"
+expect {
+	"Building" { exp_continue; }
+	"Linking" { exp_continue; }
+	"fatal error"      { exit }
+  -re $remote_prompt      { }
+}
+
+##############################
+# compile in release configuration
+
+send "\"c:\\Program Files\\CMake 2.8\\bin\\cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+expect -re $remote_prompt
+
+send "nmake\n\r"
+expect {
+	timeout            { puts "Timeout when building"; exit;  }
+	"Building" { puts "Building"; exp_continue; }
+	"Scanning" { puts "Scanning"; exp_continue; }
+	"Linking" { puts "Linking"; exp_continue; }
+	"fatal error"      { puts "Dying"; exit; }
+  -re $remote_prompt { puts "Continuing";  }
+}
+
+send "exit\r"
+expect -re $local_prompt
+eval cd ~/Documents/TK/Code/
+
+eval spawn "scp -r epikur-win7.local:umundo\\\\package\\\\windows-x86 umundo/package/"
+expect -re $local_prompt
+eval spawn "mv umundo/package/umundo\\\\package\\\\windows-x86/ umundo/package/windows-x86/"
+expect -re $local_prompt
+
+exit
+
+# send "ctest -D Experimental\n"
+# expect -re $cmd_prompt
+
+#set timeout 150
+
+send "nmake package\n\r"
+expect {
+	-re $remote_prompt {}
+	"Built target"  { exp_continue; }
+	"CPack"  { exp_continue; }
+}

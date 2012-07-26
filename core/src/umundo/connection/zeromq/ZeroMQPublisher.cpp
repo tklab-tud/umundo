@@ -236,8 +236,8 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// mandatory meta fields
-	msg->setMeta("publisher", _uuid);
-	msg->setMeta("proc", procUUID);
+	msg->putMeta("publisher", _uuid);
+	msg->putMeta("proc", procUUID);
 
 	// all our meta information
 	map<string, string>::const_iterator metaIter;

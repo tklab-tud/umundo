@@ -29,15 +29,6 @@ string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CMAKE_CXX_COMPILER_ID_LC)
 # Search paths for cross compiling and prebuilds
 ############################################################
 
-#
-# Setting the CMAKE_FIND_ROOT_PATH to a list of directories will cause all CMake modules
-# to look in these directories in addition to the system search paths:
-# http://www.vtk.org/Wiki/CMake_Cross_Compiling#Searching_and_finding_external_software
-#
-
-# make sure includes are found
-LIST(APPEND CMAKE_FIND_ROOT_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
-
 # this happens when we ssh into windows to build there, see also:
 # http://publib.boulder.ibm.com/infocenter/wxdinfo/v6r1/index.jsp?topic=/com.ibm.websphere.ops.doc/info/odoe_task/tcimgr_sshwin.html
 if (NOT CMAKE_SYSTEM_PROCESSOR)
@@ -56,6 +47,12 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	endif()
 endif()
 
+#
+# Setting the CMAKE_FIND_ROOT_PATH to a list of directories will cause all CMake modules
+# to look in these directories in addition to the system search paths:
+# http://www.vtk.org/Wiki/CMake_Cross_Compiling#Searching_and_finding_external_software
+#
+
 SET(UMUNDO_PREBUILT_LIBRARY_PATH)
 # search roots for libraries
 if(CMAKE_CROSSCOMPILING)
@@ -64,7 +61,7 @@ if(CMAKE_CROSSCOMPILING)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY")
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/ios/${CMAKE_SYSTEM_VERSION}")
 	elseif (ANDROID)
-		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni
+		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni - we don't?
 		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/android/${ANDROID_NDK_ABI_EXT}")
@@ -72,6 +69,9 @@ if(CMAKE_CROSSCOMPILING)
 		LIST(APPEND CMAKE_FIND_ROOT_PATH "/opt/local/bin") # this is needed to find protoc
 	endif ()
 else ()
+	# SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
+	# SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
+	# SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH")
 	if (WIN32 AND 64BIT_HOST)
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC}")
 	else()
@@ -79,20 +79,44 @@ else ()
 	endif()
 endif()
 
+LIST(APPEND UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
+
+#
+# BUILD_PREFER_PREBUILT_LIBS:
+# Do we want to search system path or contrib/prebuilt first?
+#
+if (CMAKE_CROSSCOMPILING)
+	# always prefer prebuilt libraries for cross-compiling
+	SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${CMAKE_FIND_ROOT_PATH}")
+else()
+	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)
+	if (BUILD_PREFER_PREBUILT_LIBS)
+		# for everything, we start our search in contrib/prebuilt
+		SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${CMAKE_FIND_ROOT_PATH}")
+	else()
+		# using this trick, we search paths from find_* before CMAKE_FIND_ROOT_PATH as '/' is prepended first
+		SET(CMAKE_FIND_ROOT_PATH "/;${CMAKE_FIND_ROOT_PATH};${UMUNDO_PREBUILT_LIBRARY_PATH}")
+	endif()
+endif()
+
+#message("CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
+
 if (WIN32)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/snippets)
 endif()
 
-# prepend prebuilt library path
-SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${CMAKE_FIND_ROOT_PATH}")
-LIST(APPEND CMAKE_FIND_ROOT_PATH ${UMUNDO_PREBUILT_LIBRARY_PATH})
-# message("CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
 ############################################################
 # General setup
 ############################################################
 
 # enable testing and actual output with tests
-if (NOT CMAKE_CROSSCOMPILING)
+if (CMAKE_CROSSCOMPILING)
+	OPTION(BUILD_TESTS "Build umundo tests" OFF) 
+else()
+	OPTION(BUILD_TESTS "Build umundo tests" OFF) 
+endif()
+
+if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)
 endif()
@@ -107,13 +131,31 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 # some compiler flags
 if(CMAKE_COMPILER_IS_GNUCXX)
 	# best practices from scott meyers
-#	add_definitions(-Weffc++)
-	# all warnings and as errors
-	add_definitions(-Werror)
+	#	add_definitions(-Weffc++)
+	
+	# all warnings
 	add_definitions(-Wall)
+
+	# when compiling as C++11, narrowing is a warning but older compilers complain about the option
+	# add_definitions(-Wno-narrowing)
+
+	# we cannot tread warning as error with the "narrowing problem"
+	# add_definitions(-Werror)
+
 	# swig will throw a warning with optimization otherwise
 	add_definitions(-fno-strict-aliasing)
 	add_definitions("-Wno-unused-value -Wno-unused-function -Wno-sign-compare")
+
+	if (NOT CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+    set(CMAKE_CXX_FLAGS "-s")  ## Strip binary for everything but debug builds
+    # set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
+		# add_definitions("-mpreferred-stack-boundary=4")
+		# add_definitions("-fmerge-constants")
+		# add_definitions("-fno-rtti -DBOOST_NO_TYPEID")
+		# add_definitions("-fno-exceptions")
+		# add_definitions("-fno-inline")
+		# add_definitions("-ffunction-sections -fdata-sections")
+	endif()
 elseif (MSVC)
 	add_definitions("-DZMQ_STATIC")	
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
@@ -138,11 +180,11 @@ endif()
 if (CMAKE_CROSSCOMPILING)
 	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF) 
 else()
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" ON) 
+	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF) 
 endif()
 
-OPTION(BUILD_SHARED_LIBS "Build static libraries" OFF) 
-if (CMAKE_CROSSCOMPILING)
+OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF) 
+if (CMAKE_CROSSCOMPILING OR DIST_PREPARE)
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
 else()
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
@@ -216,6 +258,10 @@ if (DISC_BONJOUR AND DISC_AVAHI)
 endif()
 if (NOT DISC_AVAHI AND NOT DISC_BONJOUR)
 	message(FATAL_ERROR "No discovery implementation choosen - enable either DISC_BONJOUR or DISC_AVAHI!")
+endif()
+if (BUILD_PREFER_PREBUILT_LIBS AND NOT BUILD_PREFER_STATIC_LIBRARIES)
+	# this is ok as long as we do not ship dynamic libraries in contrib/prebuilt
+#	message(STATUS "Potentially problematic dynamic linking into contrib/prebuilt!")
 endif()
 
 if(WIN32)
@@ -346,22 +392,6 @@ if (BUILD_UMUNDO_APPS)
 	add_subdirectory(apps)
 endif()
 
-# build one big convinience library from all the files at the end
-# add_library(umundo
-# 	${UMUNDOCORE_FILES}
-# 	${UMUNDOS11N_FILES}
-# 	${UMUNDORPC_FILES}
-# 	${UMUNDOUTIL_FILES}
-# )
-# target_link_libraries(umundo
-# 	${UMUNDOCORE_LIBRARIES}
-# 	${UMUNDOS11N_LIBRARIES}
-# 	${UMUNDORPC_LIBRARIES}
-# 	${UMUNDOUTIL_LIBRARIES}
-# )
-# INSTALL_LIBRARY(TARGETS umundo COMPONENT libraryCore)
-# set_target_properties(umundo PROPERTIES FOLDER "Libraries")
-
 if (NOT CMAKE_CROSSCOMPILING)
 	add_subdirectory(docs)
 endif()
@@ -374,31 +404,74 @@ endif()
 # Some concluding remarks
 ############################################################
 
-message(STATUS "umundo.core libraries:")
-foreach(file ${UMUNDOCORE_LIBRARIES})
-	message(STATUS "  ${file}")
-endforeach()
+message(STATUS "Targets:")
+message(STATUS "  Building umundo.core")
 
-message(STATUS "umundo.s11n libraries: ")
-foreach(file ${UMUNDOS11N_LIBRARIES})
-	message(STATUS "  ${file}")
-endforeach()
-
-message(STATUS "umundo.rpc libraries:")
-foreach(file ${UMUNDORPC_LIBRARIES})
-	message(STATUS "  ${file}")
-endforeach()
-
-message(STATUS "umundo.util libraries:")
-foreach(file ${UMUNDOUTIL_LIBRARIES})
-	message(STATUS "  ${file}")
-endforeach()
-
-if (BUILD_SHARED_LIBS)
-	message(STATUS "Building shared libraries")
+if (BUILD_UMUNDO_S11N)
+	message(STATUS "  Building umundo.s11n")
 else()
-	message(STATUS "Building static libraries")
+	message(STATUS "  Not building umundo.s11n")
 endif()
+
+if (BUILD_UMUNDO_RPC)
+	message(STATUS "  Building umundo.rpc")
+else()
+	message(STATUS "  Not building umundo.rpc")
+endif()
+
+if (BUILD_UMUNDO_UTIL)
+	message(STATUS "  Building umundo.util")
+else()
+	message(STATUS "  Not building umundo.util")
+endif()
+
+if (BUILD_TESTS)
+	message(STATUS "  Building umundo tests")
+else()
+	message(STATUS "  Not building umundo tests")
+endif()
+
+if (BUILD_UMUNDO_APPS)
+	message(STATUS "  Building umundo applications")
+else()
+	message(STATUS "  Not building umundo applications")
+endif()
+
+message(STATUS "General information:")
+message(STATUS "  Build type ${CMAKE_BUILD_TYPE}")
+if (BUILD_SHARED_LIBS)
+	message(STATUS "  Building as shared libraries")
+else()
+	message(STATUS "  Building as static libraries")
+endif()
+
+if (BUILD_PREFER_STATIC_LIBRARIES)
+	message(STATUS "  Preferred static libraries when available")
+else()
+	message(STATUS "  Preferred shared libraries when available")
+endif()
+
+if (BUILD_PREFER_PREBUILT_LIBS)
+	message(STATUS "  Preferred prebuilt libraries in contrib/prebuilt")
+else()
+	message(STATUS "  Preferred system installed libraries")
+endif()
+
+message(STATUS "Language bindings:")
+GET_TARGET_PROPERTY(UMUNDOCOREJAVA_LOCATION umundocoreJava LOCATION)
+if (UMUNDOCOREJAVA_LOCATION)
+	message(STATUS "  Building Java bindings")	
+else()
+	message(STATUS "  Not building Java bindings")	
+endif()
+
+GET_TARGET_PROPERTY(UMUNDOCORECSHARP_LOCATION umundocoreCSharp LOCATION)
+if (UMUNDOCORECSHARP_LOCATION)
+	message(STATUS "  Building CSharp bindings")	
+else()
+	message(STATUS "  Not building CSharp bindings")	
+endif()
+
 message(STATUS "Libraries will end up in: " ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 ############################################################
@@ -408,6 +481,9 @@ message(STATUS "Libraries will end up in: " ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 if (NOT CMAKE_CROSSCOMPILING)
 	# tools moved down here as some depend on s11n (move to apps?)
 	add_subdirectory(core/tools)
+endif()
+
+if(BUILD_TESTS)
 	add_subdirectory(core/test)
 	if (BUILD_UMUNDO_S11N)
 		add_subdirectory(s11n/test)

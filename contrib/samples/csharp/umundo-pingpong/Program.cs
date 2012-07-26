@@ -50,7 +50,7 @@ namespace umundo_pingpong
                 Message msg = new Message();
                 String data = "data";
                 msg.setData(data, (uint)data.Length);
-                msg.setMeta("foo", "bar");
+                msg.putMeta("foo", "bar");
                 Console.Write("o");
                 pub.send(msg);
                 System.Threading.Thread.Sleep(1000);

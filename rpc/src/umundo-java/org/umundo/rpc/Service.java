@@ -50,7 +50,7 @@ public abstract class Service extends ServiceStub implements ITypedReceiver {
 				e.printStackTrace();
 			}
 			Message rpcReplMsg = _rpcPub.prepareMessage(outType, (MessageLite) out);
-			rpcReplMsg.setMeta("respId", msg.getMeta("reqId"));
+			rpcReplMsg.putMeta("respId", msg.getMeta("reqId"));
 			_rpcPub.send(rpcReplMsg);
 		}
 

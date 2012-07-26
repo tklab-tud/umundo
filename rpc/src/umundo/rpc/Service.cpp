@@ -51,18 +51,18 @@ ServiceFilter::ServiceFilter(Message* msg) {
 
 Message* ServiceFilter::toMessage() {
 	Message* msg = new Message();
-	msg->setMeta("serviceName", _svcName);
-	msg->setMeta("uuid", _uuid);
+	msg->putMeta("serviceName", _svcName);
+	msg->putMeta("uuid", _uuid);
 
   map<string, string>::iterator valIter = _value.begin();
 	while(valIter != _value.end()) {
-		msg->setMeta("value:" + valIter->first, valIter->second);
+		msg->putMeta("value:" + valIter->first, valIter->second);
 		valIter++;
 	}
 
   map<string, string>::iterator patternIter = _pattern.begin();
 	while(patternIter != _pattern.end()) {
-		msg->setMeta("pattern:" + patternIter->first, patternIter->second);
+		msg->putMeta("pattern:" + patternIter->first, patternIter->second);
 		patternIter++;
 	}
 
@@ -70,7 +70,7 @@ Message* ServiceFilter::toMessage() {
 	while(predIter != _predicate.end()) {
 		std::stringstream ss;
 		ss << predIter->second;
-		msg->setMeta("pred:" + predIter->first, ss.str());
+		msg->putMeta("pred:" + predIter->first, ss.str());
 		predIter++;
 	}
 	return msg;
@@ -264,11 +264,11 @@ Message* ServiceDescription::toMessage() {
 	Message* msg = new Message();
 	map<string, string>::const_iterator propIter = _properties.begin();
 	while(propIter != _properties.end()) {
-		msg->setMeta("desc:" + propIter->first, propIter->second);
+		msg->putMeta("desc:" + propIter->first, propIter->second);
 		propIter++;
 	}
-	msg->setMeta("desc:name", _svcName);
-	msg->setMeta("desc:channel", _channelName);
+	msg->putMeta("desc:name", _svcName);
+	msg->putMeta("desc:channel", _channelName);
 	return msg;
 }
 
@@ -341,9 +341,9 @@ const string& ServiceStub::getName() {
 void ServiceStub::callStubMethod(const string& name, void* in, const string& inType, void* &out, const string& outType) {
 	Message* rpcReqMsg = _rpcPub->prepareMsg(inType, in);
 	string reqId = UUID::getUUID();
-	rpcReqMsg->setMeta("reqId", reqId);
-	rpcReqMsg->setMeta("methodName", name);
-	rpcReqMsg->setMeta("outType", outType);
+	rpcReqMsg->putMeta("reqId", reqId);
+	rpcReqMsg->putMeta("methodName", name);
+	rpcReqMsg->putMeta("outType", outType);
 	assert(_requests.find(reqId) == _requests.end());
 	_requests[reqId] = Monitor();
 	_rpcPub->send(rpcReqMsg);
@@ -388,7 +388,7 @@ void Service::receive(void* obj, Message* msg) {
 		callMethod(methodName, obj, inType, out, outType);
 		if (out != NULL) {
 			Message* rpcReplMsg = _rpcPub->prepareMsg(outType, out);
-			rpcReplMsg->setMeta("respId", msg->getMeta("reqId"));
+			rpcReplMsg->putMeta("respId", msg->getMeta("reqId"));
 			_rpcPub->send(rpcReplMsg);
 			delete rpcReplMsg;
 		}

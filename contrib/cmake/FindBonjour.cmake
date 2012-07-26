@@ -1,7 +1,7 @@
 FIND_PATH(Bonjour_INCLUDE_DIR dns_sd.h
   HINTS
   $ENV{BonjourDIR}
-  PATH_SUFFIXES bonjour
+  PATH_SUFFIXES include bonjour
   PATHS
   /usr/local
   /usr

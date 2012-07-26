@@ -24,13 +24,16 @@ list(APPEND UMUNDORPC_FILES  ${RPC_FILES})
 # Protocol Buffers
 ###########################################
 
-if (RPC_PROTOBUF)
+if (RPC_PROTOBUF)	
 	find_package(Protobuf REQUIRED)
 	LIST(APPEND UMUNDORPC_LIBRARIES optimized ${PROTOBUF_LIBRARY})
 	LIST(APPEND UMUNDORPC_LIBRARIES debug ${PROTOBUF_LIBRARY_DEBUG})
 	include_directories(${PROTOBUF_INCLUDE_DIRS})
 
  	if (NOT CMAKE_CROSSCOMPILING)
+		# we need the private protobuf headers for the generators
+		include_directories(${PROJECT_SOURCE_DIR}/contrib/prebuilt/include)
+
 		add_executable(protoc-umundo-cpp-rpc src/umundo/protoc-rpc/ServiceGeneratorCPP.cpp)
 		target_link_libraries(protoc-umundo-cpp-rpc ${PROTOBUF_PROTOC_LIBRARIES} ${PROTOBUF_LIBRARIES})
 		# this is weird - on debian 64bit we need to link against pthread for 'pthread_once'

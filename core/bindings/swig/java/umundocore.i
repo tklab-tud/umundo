@@ -153,7 +153,7 @@ import java.util.HashMap;
 		HashMap<String, String> meta = other.getMeta();
 		if (meta != null)
 			for (String k : meta.keySet()) {
-				setMeta(k, meta.get(k));
+				putMeta(k, meta.get(k));
 			}
 	}
 #endif

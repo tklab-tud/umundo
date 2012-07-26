@@ -44,7 +44,7 @@ public class TypedPublisher extends Publisher {
 		Message msg = new Message();
 		byte[] buffer = o.toByteArray();
 		msg.setData(buffer);
-		msg.setMeta("type", type);		
+		msg.putMeta("type", type);		
 		return msg;
 	}
 	

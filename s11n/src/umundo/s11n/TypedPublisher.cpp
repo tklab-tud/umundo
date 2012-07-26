@@ -45,7 +45,7 @@ Message* TypedPublisher::prepareMsg(const string& type, void* obj) {
 	Message* msg = new Message();
 	string buffer(_impl->serialize(type, obj));
 	msg->setData(buffer);
-	msg->setMeta("type", type);
+	msg->putMeta("type", type);
 	return msg;
 }
 

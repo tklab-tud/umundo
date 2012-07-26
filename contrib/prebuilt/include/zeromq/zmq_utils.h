@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 /*  Handle DSO symbol visibility                                             */
+#ifndef ZMQ_STATIC
 #if defined _WIN32
 #   if defined DLL_EXPORT
 #       define ZMQ_EXPORT __declspec(dllexport)
@@ -40,6 +41,9 @@ extern "C" {
 #   else
 #       define ZMQ_EXPORT
 #   endif
+#endif
+#else
+#define ZMQ_EXPORT
 #endif
 
 /*  Helper functions are used by perf tests so that they don't have to care   */

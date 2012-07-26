@@ -268,17 +268,19 @@ This ought to yield version 2.0.5 or higher.
 This should say <tt>cmake version 2.8.8</tt>. If you get the bash complaining 
 about not finding cmake, logout and login again.
 
-## Windows 7 - Complete Walkthrough
+## Windows
 
 * [<b>Build Reports</b>](http://umundo.tk.informatik.tu-darmstadt.de/cdash/index.php?project=umundo)
 * [<b>Precompiled dependencies (32Bit)</b>](https://github.com/tklab-tud/umundo/tree/master/contrib/prebuilt/windows-x86/msvc/lib)
 / [<b>Precompiled dependencies (64Bit)</b>](https://github.com/tklab-tud/umundo/tree/master/contrib/prebuilt/windows-x86_64/msvc/lib)
 
-Building from source on windows is somewhat more involved and instructions are necessarily in prose form.
+Building from source on windows is somewhat more involved and instructions are necessarily in prose form. These instructions were
+created using Windows 7 and MS Visual Studio 2010.
 
-<b>64 bit Note:</b> The 64Bit version of Windows has not received the proper 
-care it needs in the past. I will try to keep it up-to-date if demand 
-increases.
+<b>64 bit Note:</b> There has been some changes with regard to accessing registry
+Keys, e.g. <tt>RegCreateKey(HKEY_LOCAL_MACHINE ...)</tt> will return a permission
+denied error code 5. The embedded Bonjour does so and will have to be patched. 
+Until I get around to do it, just turn-off UAC.
 
 ### Details on required build-time dependencies
 

@@ -216,7 +216,7 @@ void ArucoPosePublisher::run() {
 			smoothPose->set_timestamp(now);
 
 			Message* msg = _typedPub->prepareMsg("Pose", smoothPose);
-			msg->setMeta("markerId", markerId);
+			msg->putMeta("markerId", markerId);
 
 			LOG_DEBUG("Publishing pose of marker %d", k);
 			_typedPub->send(msg);

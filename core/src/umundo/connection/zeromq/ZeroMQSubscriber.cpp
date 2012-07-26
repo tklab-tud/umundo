@@ -159,7 +159,7 @@ void ZeroMQSubscriber::run() {
 				// is this the first message with the channelname?
 				if (strlen(key) + 1 == msgSize &&
 				        msg->getMeta().find(key) == msg->getMeta().end()) {
-					msg->setMeta("channel", key);
+					msg->putMeta("channel", key);
 				} else {
 					assert(strlen(key) + strlen(value) + 2 == msgSize);
 					if (strlen(key) + strlen(value) + 2 != msgSize) {
@@ -167,7 +167,7 @@ void ZeroMQSubscriber::run() {
 						zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 						break;
 					} else {
-						msg->setMeta(key, value);
+						msg->putMeta(key, value);
 					}
 				}
 				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));

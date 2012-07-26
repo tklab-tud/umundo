@@ -47,10 +47,10 @@ public class ServiceDescription {
 		Message msg = new Message();
 		for (String key : _properties.keySet()) {
 			String value = _properties.get(key);
-			msg.setMeta("desc:" + key, value);
+			msg.putMeta("desc:" + key, value);
 		}
-		msg.setMeta("desc:name", _svcName);
-		msg.setMeta("desc:channel", _channelName);
+		msg.putMeta("desc:name", _svcName);
+		msg.putMeta("desc:channel", _channelName);
 		return msg;
 	}
 

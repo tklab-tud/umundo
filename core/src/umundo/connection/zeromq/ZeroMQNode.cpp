@@ -888,7 +888,9 @@ char* ZeroMQNode::readSubInfo(char* buffer, char*& uuid) {
 	return buffer;
 }
 
+
 bool ZeroMQNode::validateState() {
+#ifndef NDEBUG
 	UMUNDO_LOCK(_mutex);
 
 	// make sure there is a connection to every node
@@ -940,7 +942,7 @@ bool ZeroMQNode::validateState() {
 		}
 	}
 	UMUNDO_UNLOCK(_mutex);
+#endif
 	return true;
 }
-
 }

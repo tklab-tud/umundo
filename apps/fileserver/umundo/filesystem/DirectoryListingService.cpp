@@ -104,7 +104,7 @@ void DirectoryListingService::notifyNewFile(const string& fileName, struct stat 
   LOG_DEBUG("New file %s found", fileName.c_str());
   DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
   Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
-  msg->setMeta("operation", "added");
+  msg->putMeta("operation", "added");
   
   _notifyPub->send(msg);
   
@@ -116,7 +116,7 @@ void DirectoryListingService::notifyModifiedFile(const string& fileName, struct 
   LOG_DEBUG("New file %s found", fileName.c_str());
   DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
   Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
-  msg->setMeta("operation", "modified");
+  msg->putMeta("operation", "modified");
   
   _notifyPub->send(msg);
   
@@ -129,7 +129,7 @@ void DirectoryListingService::notifyRemovedFile(const string& fileName, struct s
   
   DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
   Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
-  msg->setMeta("operation", "removed");
+  msg->putMeta("operation", "removed");
 
   _notifyPub->send(msg);
   

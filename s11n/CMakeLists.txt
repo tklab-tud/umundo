@@ -12,10 +12,11 @@ include(UseUMundo)
 
 LIST(APPEND UMUNDOS11N_LIBRARIES umundocore)
 
-if (APPLE)
-	find_library(FOUNDATION NAMES Foundation REQUIRED)
-	LIST(APPEND UMUNDOS11N_LIBRARIES ${FOUNDATION})
-endif()
+# umundocore already links against Foundation.framework
+# if (APPLE)
+# 	find_library(FOUNDATION NAMES Foundation REQUIRED)
+# 	LIST(APPEND UMUNDOS11N_LIBRARIES ${FOUNDATION})
+# endif()
 
 ###########################################
 # gather implementation agnostic files

@@ -24,7 +24,7 @@ if [ -f Makefile ]; then
 	make clean
 fi
 
-./configure \
+CXXFLAGS="-s" ./configure \
 --enable-static \
 --enable-shared \
 --prefix=${DEST_DIR} \

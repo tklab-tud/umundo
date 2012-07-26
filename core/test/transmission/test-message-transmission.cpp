@@ -43,7 +43,7 @@ int main(int argc, char** argv, char** envp) {
 
 		for (int i = 0; i < 100; i++) {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
-			msg->setMeta("md5", md5(buffer, BUFFER_SIZE));
+			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
 			pub->send(msg);
 			delete msg;
 		}

@@ -51,12 +51,12 @@ public class ServiceFilter {
 
 	public Message toMessage() {
 		Message msg = new Message();
-		msg.setMeta("serviceName", _svcName);
+		msg.putMeta("serviceName", _svcName);
 		for (String key : _condition.keySet()) {
-			msg.setMeta("cond:" + key, _condition.get(key));
+			msg.putMeta("cond:" + key, _condition.get(key));
 		}
 		for (String key : _predicate.keySet()) {
-			msg.setMeta("pred:" + key, Integer.toString(_predicate.get(key)));
+			msg.putMeta("pred:" + key, Integer.toString(_predicate.get(key)));
 		}
 		return msg;
 	}

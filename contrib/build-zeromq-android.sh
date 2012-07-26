@@ -53,12 +53,12 @@ if [ -f Makefile ]; then
 fi
 
 
-if [ -f ispatched ]; then
-	rm ./ispatched
-else
-	patch -p1 < ../zeromq-3.1.0.android.patch
-fi
-touch ispatched
+# if [ -f ispatched ]; then
+# 	rm ./ispatched
+# else
+# 	patch -p1 < ../zeromq-3.1.0.android.patch
+# fi
+# touch ispatched
 
 
 # select and verify toolchain
@@ -86,8 +86,8 @@ CXXCPP="cpp" \
 CC="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-gcc" \
 CXX="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-g++" \
 LD="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-ld" \
-CXXFLAGS="-O3 ${COMMON_FLAGS}" \
-CFLAGS="-O3 ${COMMON_FLAGS}" \
+CXXFLAGS="-Wno-sign-compare -Os -s ${COMMON_FLAGS}" \
+CFLAGS="-Wno-sign-compare -Os -s ${COMMON_FLAGS}" \
 LIBZMQ_EXTRA_LDFLAGS="-llog" \
 LDFLAGS="-L${ANDROID_SYS_ROOT}/lib -static -Wl,--fix-cortex-a8" \
 CPPFLAGS="-I${ANDROID_SYS_ROOT}/include -static" \
@@ -99,6 +99,8 @@ RANLIB="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-ranlib" \
 --disable-dependency-tracking \
 --target=arm-linux-androideabi \
 --host=arm-linux-androideabi \
+--enable-static \
+--disable-shared \
 --prefix=${BUILD_DIR}
 
 make -j2 install
@@ -114,8 +116,8 @@ CXXCPP="cpp" \
 CC="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-gcc" \
 CXX="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-g++" \
 LD="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-ld" \
-CXXFLAGS="-g ${COMMON_FLAGS}" \
-CFLAGS="-g ${COMMON_FLAGS}" \
+CXXFLAGS="-Wno-sign-compare -g ${COMMON_FLAGS}" \
+CFLAGS="-Wno-sign-compare -g ${COMMON_FLAGS}" \
 LIBZMQ_EXTRA_LDFLAGS="-llog" \
 LDFLAGS="-L${ANDROID_SYS_ROOT}/lib -static -Wl,--fix-cortex-a8" \
 CPPFLAGS="-I${ANDROID_SYS_ROOT}/include -static" \
@@ -127,6 +129,8 @@ RANLIB="${ANDROID_SYS_ROOT}/bin/${TARGET_DEVICE}-ranlib" \
 --disable-dependency-tracking \
 --target=arm-linux-androideabi \
 --host=arm-linux-androideabi \
+--enable-static \
+--disable-shared \
 --prefix=${BUILD_DIR}
 
 make -j2 install

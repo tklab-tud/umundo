@@ -51,8 +51,8 @@ void ServiceManager::welcome(Publisher*, const string nodeId, const string subId
   map<ServiceFilter*, ResultSet<ServiceDescription>*, filterCmp>::iterator queryIter = _localQueries.begin();
   while (queryIter != _localQueries.end()) {
     Message* queryMsg = queryIter->first->toMessage();
-    queryMsg->setMeta("type", "serviceDiscStart");
-    queryMsg->setMeta("subscriber", subId);
+    queryMsg->putMeta("type", "serviceDiscStart");
+    queryMsg->putMeta("subscriber", subId);
 
     _svcPub->send(queryMsg);
     delete queryMsg;
@@ -100,7 +100,7 @@ void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescript
 	ScopeLock lock(&_mutex);
 	_localQueries[filter] = listener;
 	Message* queryMsg = filter->toMessage();
-	queryMsg->setMeta("type", "serviceDiscStart");
+	queryMsg->putMeta("type", "serviceDiscStart");
 
 	_svcPub->send(queryMsg);
   LOG_INFO("Sending new query to %d ServiceManagers", _svcPub->waitForSubscribers(0));
@@ -111,7 +111,7 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 	ScopeLock lock(&_mutex);
 	if (_localQueries.find(filter) != _localQueries.end()) {
     Message* unqueryMsg = filter->toMessage();
-    unqueryMsg->setMeta("type", "serviceDiscStop");
+    unqueryMsg->putMeta("type", "serviceDiscStop");
     _svcPub->send(unqueryMsg);
     delete unqueryMsg;
 
@@ -122,8 +122,8 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 	Message* findMsg = svcFilter->toMessage();
 	string reqId = UUID::getUUID();
-	findMsg->setMeta("type", "serviceDisc");
-	findMsg->setMeta("reqId", reqId.c_str());
+	findMsg->putMeta("type", "serviceDisc");
+	findMsg->putMeta("reqId", reqId.c_str());
 	_svcPub->waitForSubscribers(1);
 	Thread::sleepMs(1000);
 	_findRequests[reqId] = Monitor();
@@ -183,8 +183,8 @@ void ServiceManager::receive(Message* msg) {
     if (foundSvcs.size() > 0) {
       ServiceDescription* svcDesc = (*(foundSvcs.begin()));
       Message* foundMsg = svcDesc->toMessage();
-      foundMsg->setMeta("respId", msg->getMeta("reqId"));
-      foundMsg->setMeta("desc:channel", svcDesc->getChannelName());
+      foundMsg->putMeta("respId", msg->getMeta("reqId"));
+      foundMsg->putMeta("desc:channel", svcDesc->getChannelName());
       _svcPub->send(foundMsg);
       delete foundMsg;
 		}
@@ -202,9 +202,9 @@ void ServiceManager::receive(Message* msg) {
 		while(svcDescIter != foundSvcs.end()) {
 			if (filter->matches(*svcDescIter)) {
 				Message* foundMsg = (*svcDescIter)->toMessage();
-				foundMsg->setMeta("filterId", filter->_uuid);
-				foundMsg->setMeta("type", "serviceDiscFound");
-				foundMsg->setMeta("desc:channel", (*svcDescIter)->getChannelName());
+				foundMsg->putMeta("filterId", filter->_uuid);
+				foundMsg->putMeta("type", "serviceDiscFound");
+				foundMsg->putMeta("desc:channel", (*svcDescIter)->getChannelName());
 				_svcPub->send(foundMsg);
 				delete foundMsg;
 			}
@@ -280,9 +280,9 @@ void ServiceManager::addService(Service* service, ServiceDescription* desc) {
   while(filterIter != _remoteQueries.end()) {
     if (filterIter->second->matches(desc)) {
       Message* foundMsg = desc->toMessage();
-      foundMsg->setMeta("filterId", filterIter->second->_uuid);
-      foundMsg->setMeta("type", "serviceDiscFound");
-      foundMsg->setMeta("desc:channel", desc->getChannelName());
+      foundMsg->putMeta("filterId", filterIter->second->_uuid);
+      foundMsg->putMeta("type", "serviceDiscFound");
+      foundMsg->putMeta("desc:channel", desc->getChannelName());
       _svcPub->send(foundMsg);
       delete foundMsg;
     }
@@ -313,9 +313,9 @@ void ServiceManager::removeService(Service* service) {
   while(filterIter != _remoteQueries.end()) {
     if (filterIter->second->matches(desc)) {
       Message* removeMsg = desc->toMessage();
-      removeMsg->setMeta("filterId", filterIter->second->_uuid);
-      removeMsg->setMeta("type", "serviceDiscRemoved");
-      removeMsg->setMeta("desc:channel", desc->getChannelName());
+      removeMsg->putMeta("filterId", filterIter->second->_uuid);
+      removeMsg->putMeta("type", "serviceDiscRemoved");
+      removeMsg->putMeta("desc:channel", desc->getChannelName());
       _svcPub->send(removeMsg);
       delete removeMsg;
     }

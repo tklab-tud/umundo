@@ -49,8 +49,8 @@ CXXCPP="cpp" \
 CXX=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ \
 CC=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc \
 LD=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
-CXXFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
+CFLAGS="-Os -isysroot ${SYSROOT} -arch armv7 -arch armv6 -marm" \
+CXXFLAGS="-Os -isysroot ${SYSROOT} -arch armv7 -arch armv6 -marm" \
 --disable-dependency-tracking \
 --host=arm-apple-darwin10 \
 LDFLAGS="-isysroot ${SYSROOT} -arch armv7 -arch armv6" \
@@ -81,8 +81,8 @@ make clean
 CXX=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/g++ \
 CC=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc \
 LD=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
-CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
+CFLAGS="-Os -isysroot ${SYSROOT} -arch i386" \
+CXXFLAGS="-Os -isysroot ${SYSROOT} -arch i386" \
 --disable-dependency-tracking \
 LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
 AR=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ar \

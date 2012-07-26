@@ -30,7 +30,7 @@
 - (void)sendObj:(google::protobuf::MessageLite*)data asType:(NSString*)type {
   std::string buffer = data->SerializeAsString();
   umundo::Message* msg = new umundo::Message(buffer.data(), buffer.size());
-  msg->setMeta("type", std::string([type cStringUsingEncoding: NSASCIIStringEncoding]));
+  msg->putMeta("type", std::string([type cStringUsingEncoding: NSASCIIStringEncoding]));
   _cppPub->send(msg);
 }
 

@@ -1,8 +1,10 @@
 # if you build swig from sources on windows, this is where it will end up
 # see also: http://www.swig.org/Doc2.0/Windows.html#Windows_mingw_msys
 if (WIN32)
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/MinGW/msys/1.0/src/swig") # swig.exe
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # csc.exe
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0") # csc.exe
 endif()
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
 
@@ -31,6 +33,13 @@ endif()
 # only run ant if we actually build the java bindings
 GET_TARGET_PROPERTY(UMUNDOCOREJAVA_LOCATION umundocoreJava LOCATION)
 if (UMUNDOCOREJAVA_LOCATION)
+
+	#
+	# TODO: We could move the protoc targets into s11n/CMakeLists.txt to
+	# get rid of find_package(Protobuf REQUIRED) here
+	#
+	find_package(Protobuf REQUIRED)
+
 	# Find UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE
 	include("${CMAKE_MODULE_PATH}/UseUMundo.cmake")
 
@@ -52,7 +61,7 @@ if (UMUNDOCOREJAVA_LOCATION)
 		endif()
 	endif()
 	
-	FIND_PROGRAM(ANT_EXECUTABLE ant PATHS $ENV{ANT_HOME} ENV PATH )
+	FIND_PROGRAM(ANT_EXECUTABLE ant PATHS $ENV{ANT_HOME}/bin ENV PATH )
 	if (ANT_EXECUTABLE)
 		# run protoc for java
 		ADD_CUSTOM_TARGET(java_protoc_s11n ALL
@@ -138,7 +147,7 @@ if (UMUNDOCORECSHARP_LOCATION)
 			COMMENT "Creating the dll for C# ...")
 		# make sure ant runs after we built the wrappers
 		add_dependencies(csharp_build_dll umundocoreCSharp)
-		set_target_properties(java_build_jar PROPERTIES FOLDER "Bindings")
+		set_target_properties(csharp_build_dll PROPERTIES FOLDER "Bindings")
 	else()
 		message(STATUS "Could not find csc binary - will not build CSharp dll")
 	endif()

@@ -55,8 +55,8 @@ public class ServiceManager extends Connectable {
 					ServiceDescription svcDesc = _svc.get(svc);
 					if (filter.matches(svcDesc)) {
 						Message foundMsg = svcDesc.toMessage();
-						foundMsg.setMeta("respId", msg.getMeta("reqId"));
-						foundMsg.setMeta("desc:channel", svc.getChannelName());
+						foundMsg.putMeta("respId", msg.getMeta("reqId"));
+						foundMsg.putMeta("desc:channel", svc.getChannelName());
 						_svcPub.send(foundMsg);
 					}
 				}
@@ -99,8 +99,8 @@ public class ServiceManager extends Connectable {
 	public synchronized ServiceDescription find(ServiceFilter filter) throws InterruptedException {
 		Message findMsg = filter.toMessage();
 		String reqId = UUID.randomUUID().toString();
-		findMsg.setMeta("type", "serviceDisc");
-		findMsg.setMeta("reqId", reqId);
+		findMsg.putMeta("type", "serviceDisc");
+		findMsg.putMeta("reqId", reqId);
 		_svcPub.waitForSubscribers(1);
 		_svcPub.send(findMsg);
 

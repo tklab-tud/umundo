@@ -41,8 +41,13 @@ endif()
 ###########################################
 
 if (WIN32)
-	set(PC_PCRE_LIBDIR "C:/Program Files/GnuWin32/lib")
-	set(PC_PCRE_INCLUDEDIR "C:/Program Files/GnuWin32/include")
+	if(EXISTS "C:/Program Files/GnuWin32/")
+		set(PC_PCRE_LIBDIR "C:/Program Files/GnuWin32/lib")
+		set(PC_PCRE_INCLUDEDIR "C:/Program Files/GnuWin32/include")
+	elseif(EXISTS "C:/Program Files (x86)/GnuWin32/")
+		set(PC_PCRE_LIBDIR "C:/Program Files (x86)/GnuWin32/lib")
+		set(PC_PCRE_INCLUDEDIR "C:/Program Files (x86)/GnuWin32/include")
+	endif()
 endif()
 
 find_package(PCRE REQUIRED)

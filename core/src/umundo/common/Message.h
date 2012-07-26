@@ -89,7 +89,7 @@ public:
 		_data = (char*)malloc(_size);
 		memcpy(_data, data, _size);
 	}
-	virtual const void setMeta(const string& key, const string& value)  {
+	virtual const void putMeta(const string& key, const string& value)  {
 		_meta[key] = value;
 	}
 	virtual const map<string, string>& getMeta()                        {
@@ -112,7 +112,7 @@ public:
 
 	static Message* toSubscriber(const string& uuid) {
 		Message* msg = new Message();
-		msg->setMeta("subscriber", uuid);
+		msg->putMeta("subscriber", uuid);
 		return msg;
 	}
 

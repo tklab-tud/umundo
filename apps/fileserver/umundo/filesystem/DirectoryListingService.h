@@ -27,33 +27,33 @@ namespace umundo {
 
 class DLLEXPORT DirectoryListingService : public DirectoryListingServiceBase, public Thread {
 public:
-  DirectoryListingService(const string& directory);
-  virtual ~DirectoryListingService();
-  
+	DirectoryListingService(const string& directory);
+	virtual ~DirectoryListingService();
+
 	// Connectable interface
 	std::set<umundo::Publisher*> getPublishers();
 
 	DirectoryListingReply* list(DirectoryListingRequest*);
-  DirectoryEntryContent* get(DirectoryEntry*);
+	DirectoryEntryContent* get(DirectoryEntry*);
 
-  void run();
-  virtual bool filter(const string& filename) {
+	void run();
+	virtual bool filter(const string& filename) {
 		return true;
 	}
 
 protected:
-  void updateEntries();
-  char* readFileIntoBuffer(const string&, int);
-  DirectoryEntry* statToEntry(const string&, struct stat);
-  
-  void notifyNewFile(const string&, struct stat);
+	void updateEntries();
+	char* readFileIntoBuffer(const string&, int);
+	DirectoryEntry* statToEntry(const string&, struct stat);
+
+	void notifyNewFile(const string&, struct stat);
 	void notifyModifiedFile(const string&, struct stat);
 	void notifyRemovedFile(const string&, struct stat);
 
-  TypedPublisher* _notifyPub;
+	TypedPublisher* _notifyPub;
 
-  string _dir;
-  time_t _lastChecked;
+	string _dir;
+	time_t _lastChecked;
 	Mutex _mutex;
 	map<string, struct stat> _knownEntries;
 

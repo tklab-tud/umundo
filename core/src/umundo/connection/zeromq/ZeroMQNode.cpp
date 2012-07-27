@@ -236,9 +236,9 @@ void ZeroMQNode::run() {
 			zmq_msg_t message;
 			zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
-      while (zmq_recvmsg(_responder, &message, 0) < 0)
-        if (errno != EINTR)
-          LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+			while (zmq_recvmsg(_responder, &message, 0) < 0)
+				if (errno != EINTR)
+					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 
 			// we will stop the thread by sending an empty packet to unblock in our destructor
 			if (!isStarted()) {

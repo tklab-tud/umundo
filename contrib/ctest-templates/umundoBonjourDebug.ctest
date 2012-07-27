@@ -1,5 +1,0 @@
-set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour-embed")
-set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-set(CTEST_BUILD_CONFIGURATION "Debug")
-set(CTEST_BUILD_OPTIONS "-DDISC_BONJOUR:BOOL=ON -DDISC_BONJOUR_EMBED:BOOL=ON -DDISC_AVAHI:BOOL=OFF")
-include("umundoCommon.ctest.inc")

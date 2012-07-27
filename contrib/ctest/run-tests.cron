@@ -61,7 +61,6 @@ if [ "$CTEST_SUBMIT_TYPE" = "Continuous" ]; then
 	cd $UMUNDO_SOURCE_DIR
 	#git clean -f -d # careful - destructive!
 	GIT_SYNC=`git pull`
-	GIT_SYNC="Already up-to-date."
 	echo $GIT_SYNC
 	if [ "$GIT_SYNC" = "Already up-to-date." ]; then
 		echo "Not running continuous tests, already up-to-date"

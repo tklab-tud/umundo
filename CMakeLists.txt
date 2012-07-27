@@ -147,7 +147,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	add_definitions("-Wno-unused-value -Wno-unused-function -Wno-sign-compare")
 
 	if (NOT CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
-    set(CMAKE_CXX_FLAGS "-s")  ## Strip binary for everything but debug builds
+		add_definitions("-s")
+    #set(CMAKE_CXX_FLAGS "-s")  ## Strip binary for everything but debug builds
     # set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
 		# add_definitions("-mpreferred-stack-boundary=4")
 		# add_definitions("-fmerge-constants")

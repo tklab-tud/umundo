@@ -1,0 +1,19 @@
+set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+set(CTEST_SITE "centos6x64-vii")
+set(CTEST_BUILD_CONFIGURATION "Debug")
+
+# test with avahi
+set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
+include("tests/bonjourSystem.ctest")
+include("common.ctest.inc")
+
+# test for embedded bonjour
+set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour embedded")
+include("tests/bonjourEmbedded.ctest")
+include("common.ctest.inc")
+
+# test android cross-compile with embedded bonjour
+set(CTEST_BUILD_OPTIONS "-DCMAKE_TOOLCHAIN_FILE=../CrossCompile-Android.cmake")
+set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
+include("tests/avahi.ctest")
+include("common.ctest.inc")

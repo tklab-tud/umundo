@@ -72,7 +72,7 @@ set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} \"${CTEST_SOURCE_DIRECTO
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
-#ctest_update()                    # synchronize with git head
+ctest_update()                    # synchronize with git head
 ctest_configure()                 # run cmake
 ctest_build()                     # run build-system
 ctest_test()                      # run tests

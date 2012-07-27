@@ -10,7 +10,6 @@ iOS devices and Android.
 <dd>- <a href="https://github.com/tklab-tud/umundo/tree/master/docs/GETTING_STARTED.md">Getting started</a></dd>
 <dd>- <a href="https://github.com/tklab-tud/umundo/tree/master/docs/BUILDING.md">Building from source</a></dd>
 <dd>- <a href="https://github.com/tklab-tud/umundo/tree/master/contrib/ctest/README.md">Setting up a test-slave</a></dd>
-<dd>- <a href="https://github.com/tklab-tud/umundo/tree/master/core">Detailed documentation on umundo.core</a></dd>
 
 <dt><b>External Resources</b></dt>
 <dd>- <a href="http://umundo.tk.informatik.tu-darmstadt.de/cdash/index.php?project=umundo">Build Reports</a></dd>

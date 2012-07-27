@@ -4,7 +4,7 @@ set(CTEST_BUILD_CONFIGURATION "Debug")
 
 # test with avahi
 set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
-include("tests/bonjourSystem.ctest")
+include("tests/avahi.ctest")
 include("common.ctest.inc")
 
 # test for embedded bonjour

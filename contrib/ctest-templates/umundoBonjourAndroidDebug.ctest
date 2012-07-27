@@ -1,6 +1,0 @@
-set(CTEST_BUILD_NAME "linux-x86_64 gcc-android-r7b bonjour-embed")
-set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-set(CTEST_BUILD_CONFIGURATION "Debug")
-set(ENV{ANDROID_NDK} "/opt/android-ndk-r7b")
-set(CTEST_BUILD_OPTIONS "-DCMAKE_TOOLCHAIN_FILE=/var/builds/umundo/umundo/contrib/cmake/CrossCompile-Android.cmake")
-include("umundoCommon.ctest.inc")

@@ -35,28 +35,36 @@ using std::string;
 class DLLEXPORT Regex {
 public:
 	Regex(const string&);
-	
-  bool hasError();
+
+	bool hasError();
 	bool matches(const string&);
 	void setPattern(const string&);
-  
-  const string getPattern()                         { return _pattern; }
-  bool hasSubMatches()                              { return _subMatchIndex.size() > 0; }
-  std::pair<int, int> getMatch()                    { return _matchIndex; }
-  std::vector<std::pair<int, int> > getSubMatches() { return _subMatchIndex; }
-  
+
+	const string getPattern()                         {
+		return _pattern;
+	}
+	bool hasSubMatches()                              {
+		return _subMatchIndex.size() > 0;
+	}
+	std::pair<int, int> getMatch()                    {
+		return _matchIndex;
+	}
+	std::vector<std::pair<int, int> > getSubMatches() {
+		return _subMatchIndex;
+	}
+
 protected:
-  int _nrMatches;
-  pcre* _re;
+	int _nrMatches;
+	pcre* _re;
 	string _pattern;
-  int _ovector[OVECCOUNT];
-  std::pair<int, int> _matchIndex;
-  std::vector<std::pair<int, int> > _subMatchIndex;
-  
-  string _error;
-  int _errorOffset;
+	int _ovector[OVECCOUNT];
+	std::pair<int, int> _matchIndex;
+	std::vector<std::pair<int, int> > _subMatchIndex;
+
+	string _error;
+	int _errorOffset;
 };
-	
+
 }
 
 #endif /* end of include guard: REGEX_H_HUE92M */

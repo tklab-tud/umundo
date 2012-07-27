@@ -41,7 +41,9 @@ public:
 	SCachePointer() {}
 	virtual ~SCachePointer() {}
 
-	virtual SCacheItem* getItem() { return _item; };
+	virtual SCacheItem* getItem() {
+		return _item;
+	};
 
 	SCacheItem* _item;
 	SCache* _cache;
@@ -52,23 +54,25 @@ public:
  * A node in the structure of the cache with the actual data.
  *
  * Subclasses of this class are expected to alleviate the pressure put on them by
- * paging out their contents. If the pressure drops or their relevance increases, 
+ * paging out their contents. If the pressure drops or their relevance increases,
  * they are to reload their content.
  */
 class DLLEXPORT SCacheItem {
 public:
 	virtual ~SCacheItem();
 
-  /**
-   * Assign relevance. 
-   */
-  virtual set<SCacheItem*> relevanceFromParent(float parentRelevance);
-  float getRelevance() { return _relevance; }
+	/**
+	 * Assign relevance.
+	 */
+	virtual set<SCacheItem*> relevanceFromParent(float parentRelevance);
+	float getRelevance() {
+		return _relevance;
+	}
 
 	virtual set<SCacheItem*> getNext() = 0;
 
-  virtual uint64_t assumePressure(float pressure) = 0;
-  virtual void applyPressure(float pressure) = 0;
+	virtual uint64_t assumePressure(float pressure) = 0;
+	virtual void applyPressure(float pressure) = 0;
 
 protected:
 	float _relevance;
@@ -91,42 +95,60 @@ public:
 	virtual bool isEmpty();
 
 	void run();
-  void dirty() { _monitor.signal(); }
+	void dirty() {
+		_monitor.signal();
+	}
 	void update();
 
 	void setMaxSize(uint64_t size);
-  uint64_t getMaxSize()                                { return _maxSize; }
-  uint64_t getCurrSize()                               { return _currSize; }
-  float getPressure()                                  { return _pressure; }
-  void setRelevanceThreshold(float relevanceThreshold) { _relevanceThreshold = relevanceThreshold; }
-  float getRelevanceThreshold()                        { return  _relevanceThreshold; }
-  void setProfiler(CacheProfiler* profiler)            { _profiler = profiler; }
-  set<SCacheItem*> getAllItems()                       { return _cacheItems; }
-  set<weak_ptr<SCachePointer> > getAllPointers()       { return _cachePointers; }
-  
-  Mutex _mutex;
+	uint64_t getMaxSize()                                {
+		return _maxSize;
+	}
+	uint64_t getCurrSize()                               {
+		return _currSize;
+	}
+	float getPressure()                                  {
+		return _pressure;
+	}
+	void setRelevanceThreshold(float relevanceThreshold) {
+		_relevanceThreshold = relevanceThreshold;
+	}
+	float getRelevanceThreshold()                        {
+		return  _relevanceThreshold;
+	}
+	void setProfiler(CacheProfiler* profiler)            {
+		_profiler = profiler;
+	}
+	set<SCacheItem*> getAllItems()                       {
+		return _cacheItems;
+	}
+	set<weak_ptr<SCachePointer> > getAllPointers()       {
+		return _cachePointers;
+	}
+
+	Mutex _mutex;
 
 protected:
-  void resetRelevance();
-  uint64_t assumePressure(float, bool breakEarly = false);
-  
+	void resetRelevance();
+	uint64_t assumePressure(float, bool breakEarly = false);
+
 	virtual shared_ptr<SCachePointer> getPointer(SCacheItem*);
 
-  uint64_t _maxSize; ///< the maximum size this cache is allowed to grow to
-  uint64_t _currSize; ///< the current size the items in th cache have
+	uint64_t _maxSize; ///< the maximum size this cache is allowed to grow to
+	uint64_t _currSize; ///< the current size the items in th cache have
 	float _pressure; ///< the current pressure
-  float _relevanceThreshold; ///< the threshold to stop propagating relevance
-  float _convergenceThreshold; ///< the maximum bound distance when searching for optimal pressure
-  
+	float _relevanceThreshold; ///< the threshold to stop propagating relevance
+	float _convergenceThreshold; ///< the maximum bound distance when searching for optimal pressure
+
 	Monitor _monitor;
 	CacheProfiler* _profiler;
-  set<SCacheItem*> _cacheItems; ///< All the items in the cache
+	set<SCacheItem*> _cacheItems; ///< All the items in the cache
 	set<weak_ptr<SCachePointer> > _cachePointers; ///< The items pointed to with relevance = 1
 
 	friend class SCachePointer;
 	friend class SCacheItem;
-  friend class CacheToDot;
-  friend class CacheProfiler;
+	friend class CacheToDot;
+	friend class CacheProfiler;
 };
 
 }

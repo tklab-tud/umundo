@@ -20,22 +20,22 @@
 #include <vector>
 
 namespace umundo {
-  
+
 struct Interface {
 public:
-  set<string> ipv4;
-  set<string> ipv6;
-  string mac;
-  string name;
+	set<string> ipv4;
+	set<string> ipv6;
+	string mac;
+	string name;
 };
-  
+
 class Host {
 public:
 	static const string& getHostname();  ///< hostname
 	static const vector<Interface> getInterfaces();  ///< get a list of all the hosts network interfaces
 	static const string& getHostId();    ///< 36 byte string unique to the host
 };
-	
+
 }
 
 #endif /* end of include guard: HOST_H_BIUV9UT4 */

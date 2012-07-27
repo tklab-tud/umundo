@@ -24,15 +24,15 @@ NBandProxyCacheItem::NBandProxyCacheItem() {
 
 set<SCacheItem*> NBandProxyCacheItem::getNext() {
 	set<SCacheItem*> next;
-  if (_otherBand != NULL)
-    next.insert((SCacheItem*)_otherBand->_currentItem);
+	if (_otherBand != NULL)
+		next.insert((SCacheItem*)_otherBand->_currentItem);
 	next.insert((SCacheItem*)_currentItem);
 	return next;
 }
 
 set<SCacheItem*> NBandProxyCacheItem::relevanceFromParent(float parentRelevance) {
 	_relevance = parentRelevance;
-  return getNext();
+	return getNext();
 }
 
 NBandCacheItem::NBandCacheItem(string name, string band) : _name(name), _band(band), _isPrepared(false) {
@@ -43,20 +43,20 @@ NBandCacheItem::NBandCacheItem(string name, string band) : _name(name), _band(ba
 }
 
 set<SCacheItem*> NBandCacheItem::relevanceFromParent(float parentRelevance) {
-  
-  return getNext();
+
+	return getNext();
 }
 
 set<SCacheItem*> NBandCacheItem::getNext() {
 	set<SCacheItem*> next;
-  if (_left != NULL)
-    next.insert(_left);
-  if (_right != NULL)
-    next.insert(_right);
-  if (_up != NULL)
-    next.insert(_up);
-  if (_down != NULL)
-    next.insert(_down);
+	if (_left != NULL)
+		next.insert(_left);
+	if (_right != NULL)
+		next.insert(_right);
+	if (_up != NULL)
+		next.insert(_up);
+	if (_down != NULL)
+		next.insert(_down);
 	return next;
 }
 
@@ -90,7 +90,7 @@ const int NBandCachePtr::getElementId() {
 
 NBandCacheItem* NBandCachePtr::left(bool moveBand) {
 	ScopeLock lock(&_cache->_mutex);
-  ((NBandCache*)_cache)->_model->remember("left", true);
+	((NBandCache*)_cache)->_model->remember("left", true);
 	if (((NBandCacheItem*)_item)->_left == NULL) {
 		return NULL;
 	}
@@ -100,13 +100,13 @@ NBandCacheItem* NBandCachePtr::left(bool moveBand) {
 	}
 	_item = ((NBandCacheItem*)_item)->_left;
 	assert(_item != NULL);
-  _cache->dirty();
+	_cache->dirty();
 	return ((NBandCacheItem*)_item);
 }
 
 NBandCacheItem* NBandCachePtr::right(bool moveBand) {
 	ScopeLock lock(&_cache->_mutex);
-  ((NBandCache*)_cache)->_model->remember("right", true);
+	((NBandCache*)_cache)->_model->remember("right", true);
 	if (((NBandCacheItem*)_item)->_right == NULL) {
 		return NULL;
 	}
@@ -116,36 +116,36 @@ NBandCacheItem* NBandCachePtr::right(bool moveBand) {
 	}
 	_item = ((NBandCacheItem*)_item)->_right;
 	assert(_item != NULL);
-  _cache->dirty();
+	_cache->dirty();
 	return ((NBandCacheItem*)_item);
 }
 
 NBandCacheItem* NBandCachePtr::up() {
 	ScopeLock lock(&_cache->_mutex);
-  ((NBandCache*)_cache)->_model->remember("up", true);
+	((NBandCache*)_cache)->_model->remember("up", true);
 	if (((NBandCacheItem*)_item)->_up->_otherBand == NULL) {
 		return NULL;
 	}
 	_item = ((NBandCacheItem*)_item)->_up->_otherBand->_currentItem;
 	assert(_item != NULL);
-  _cache->dirty();
+	_cache->dirty();
 	return ((NBandCacheItem*)_item);
 }
 
 NBandCacheItem* NBandCachePtr::down() {
 	ScopeLock lock(&_cache->_mutex);
-  ((NBandCache*)_cache)->_model->remember("down", true);
+	((NBandCache*)_cache)->_model->remember("down", true);
 	if (((NBandCacheItem*)_item)->_down->_otherBand == NULL) {
 		return NULL;
 	}
 	_item = ((NBandCacheItem*)_item)->_down->_otherBand->_currentItem;
 	assert(_item != NULL);
-  _cache->dirty();
+	_cache->dirty();
 	return ((NBandCacheItem*)_item);
 }
 
 NBandCache::NBandCache(uint64_t size) : SCache(size) {
-  _model = new NGramModel(5);
+	_model = new NGramModel(5);
 }
 
 shared_ptr<NBandCachePtr> NBandCache::getPointer() {
@@ -180,7 +180,7 @@ shared_ptr<NBandCachePtr> NBandCache::getPointer(const string& band, int elemId)
 	assert(ptr->_item != NULL);
 	ptr->_cache = this;
 	_cachePointers.insert(ptr);
-  dirty();
+	dirty();
 	return ptr;
 }
 
@@ -235,7 +235,7 @@ void NBandCache::insert(NBandCacheItem* item) {
 			itemIter->second->_left = item;
 		}
 	}
-  SCache::insert((SCacheItem*)item);
+	SCache::insert((SCacheItem*)item);
 
 }
 

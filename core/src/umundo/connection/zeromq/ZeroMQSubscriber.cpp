@@ -139,8 +139,8 @@ void ZeroMQSubscriber::run() {
 			zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
 			while (zmq_recvmsg(_socket, &message, 0) < 0)
-        if (errno != EINTR)
-          LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+				if (errno != EINTR)
+					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 
 			size_t msgSize = zmq_msg_size(&message);
 

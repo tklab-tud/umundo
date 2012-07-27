@@ -39,8 +39,8 @@ Thread::~Thread() {
 	}
 
 #ifdef THREAD_PTHREAD
-  if (_thread)
-    pthread_detach(_thread);
+	if (_thread)
+		pthread_detach(_thread);
 #endif
 #ifdef THREAD_WIN32
 	if (_thread != NULL)
@@ -104,19 +104,19 @@ void Thread::start() {
 #ifdef THREAD_PTHREAD
 	if (_thread)
 		join();
-		
+
 	int err = pthread_create(&_thread, NULL, &runWrapper, (void*)this);
 	if (err != 0) {
 		switch (err) {
-			case EAGAIN:
+		case EAGAIN:
 			LOG_WARN("pthread_create failed: Insufficient resources to create another thread.");
-				break;
-			case EINVAL:
+			break;
+		case EINVAL:
 			LOG_WARN("pthread_create failed: Invalid settings in attr.");
-				break;
-			case EPERM:
+			break;
+		case EPERM:
 			LOG_WARN("pthread_create failed: No permissions to set scheduling policy.");
-				break;
+			break;
 		}
 	}
 #endif
@@ -162,10 +162,10 @@ void Thread::sleepMs(uint32_t ms) {
 #ifdef THREAD_PTHREAD
 // System Calls may return early when debugging with gdb!
 // http://sourceware.org/gdb/onlinedocs/gdb/Interrupted-System-Calls.html
-  int rv;
-  do {
-    rv = usleep(1000 * ms);
-  } while(rv == -1 && errno == EINTR);
+	int rv;
+	do {
+		rv = usleep(1000 * ms);
+	} while(rv == -1 && errno == EINTR);
 #endif
 #ifdef THREAD_WIN32
 	Sleep(ms);
@@ -218,8 +218,8 @@ Mutex::~Mutex() {
 void Mutex::lock() {
 #ifdef THREAD_PTHREAD
 	int err = pthread_mutex_lock(&_mutex);
-  assert(!err);
-  (void)err;
+	assert(!err);
+	(void)err;
 #endif
 #ifdef THREAD_WIN32
 	WaitForSingleObject(_mutex, INFINITE);
@@ -274,7 +274,7 @@ Monitor::Monitor() {
 }
 
 Monitor::~Monitor() {
-  broadcast();
+	broadcast();
 #ifdef THREAD_PTHREAD
 	int err;
 	while((err = pthread_cond_destroy(&_cond))) {
@@ -359,8 +359,8 @@ bool Monitor::wait(uint32_t ms) {
 	if (ms == 0) {
 		while(!_signaled) // are there enough signals for this thread to pass?
 			rv = pthread_cond_wait(&_cond, &_mutex);
-    assert(_signaled > 0);
-    assert(_waiters > 0);
+		assert(_signaled > 0);
+		assert(_waiters > 0);
 		_signaled--;
 		_waiters--;
 		pthread_mutex_unlock(&_mutex);
@@ -380,11 +380,11 @@ bool Monitor::wait(uint32_t ms) {
 		while(!_signaled && rv != ETIMEDOUT)
 			rv = pthread_cond_timedwait(&_cond, &_mutex, &ts);
 		// decrease number of signals if we awoke due to signal
-    if (rv != ETIMEDOUT) {
-      assert(_signaled > 0);
-      _signaled--;
-    }
-    assert(_waiters > 0);
+		if (rv != ETIMEDOUT) {
+			assert(_signaled > 0);
+			_signaled--;
+		}
+		assert(_waiters > 0);
 		_waiters--;
 		pthread_mutex_unlock(&_mutex);
 		return rv == 0;

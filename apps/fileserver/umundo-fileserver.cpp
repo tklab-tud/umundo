@@ -15,18 +15,18 @@ static const char* progName = "umundo-fileserver";
 
 class PatternMatchingDirectoryListingService : public DirectoryListingService {
 public:
-  PatternMatchingDirectoryListingService(const string& dir, Regex re) : DirectoryListingService(dir), _re(re) {}
-  bool filter(const string& filename) {
-    if(_re.matches(filename)) {
-      cout << "Serving " << filename << endl;
-      return true;
-    } else {
-      cout << "Not serving " << filename << endl;
-      return false;
-    }
-  }
-  
-  Regex _re;
+	PatternMatchingDirectoryListingService(const string& dir, Regex re) : DirectoryListingService(dir), _re(re) {}
+	bool filter(const string& filename) {
+		if(_re.matches(filename)) {
+			cout << "Serving " << filename << endl;
+			return true;
+		} else {
+			cout << "Not serving " << filename << endl;
+			return false;
+		}
+	}
+
+	Regex _re;
 };
 
 void printUsageAndExit() {
@@ -45,47 +45,47 @@ string dir;
 Regex re(".*");
 
 int main(int argc, char** argv, char** envp) {
-  int option;
+	int option;
 	while ((option = getopt(argc, argv, "d:p:f:")) != -1) {
 		switch(option) {
-      case 'f':
-        dir = optarg;
-        break;
-      case 'p':
-        re.setPattern(optarg);
-        if (re.hasError()) {
-          std::cerr << "Can not parse pattern '" << optarg << "' into regular expression" << std::endl;
-          exit(EXIT_FAILURE);
-        }
-        break;
-      default:
-        printUsageAndExit();
-        break;
+		case 'f':
+			dir = optarg;
+			break;
+		case 'p':
+			re.setPattern(optarg);
+			if (re.hasError()) {
+				std::cerr << "Can not parse pattern '" << optarg << "' into regular expression" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			break;
+		default:
+			printUsageAndExit();
+			break;
 		}
 	}
 
-  if (!(dir.length() > 0))
-    printUsageAndExit();
+	if (!(dir.length() > 0))
+		printUsageAndExit();
 
-  std::cout << "Serving files matching " << re.getPattern() << "' in " << dir << std::endl;
+	std::cout << "Serving files matching " << re.getPattern() << "' in " << dir << std::endl;
 
-  // create instances
-  Node* node = new Node();
-  ServiceManager* svcMgr = new ServiceManager();
-  PatternMatchingDirectoryListingService* dirListSvc = new PatternMatchingDirectoryListingService(dir, re);
-  ServiceDescription* svcDesc = new ServiceDescription("DirectoryListingService");
-  svcDesc->setProperty("dir", dir);
-  svcDesc->setProperty("pattern", re.getPattern());
-  svcDesc->setProperty("hostId", Host::getHostId());
-  
-  // assemble object model
-  svcMgr->addService(dirListSvc, svcDesc);
-  node->connect(svcMgr);
-  
-  std::cout << "Press CTRL+C to end" << std::endl;
+	// create instances
+	Node* node = new Node();
+	ServiceManager* svcMgr = new ServiceManager();
+	PatternMatchingDirectoryListingService* dirListSvc = new PatternMatchingDirectoryListingService(dir, re);
+	ServiceDescription* svcDesc = new ServiceDescription("DirectoryListingService");
+	svcDesc->setProperty("dir", dir);
+	svcDesc->setProperty("pattern", re.getPattern());
+	svcDesc->setProperty("hostId", Host::getHostId());
 
-  while(true)
-    Thread::sleepMs(1000);
-  
-  return EXIT_SUCCESS;
+	// assemble object model
+	svcMgr->addService(dirListSvc, svcDesc);
+	node->connect(svcMgr);
+
+	std::cout << "Press CTRL+C to end" << std::endl;
+
+	while(true)
+		Thread::sleepMs(1000);
+
+	return EXIT_SUCCESS;
 }

@@ -67,7 +67,7 @@ const string& Host::getHostname() {
 
 #ifdef WIN32
 	WSADATA wsaData;
-  WSAStartup(MAKEWORD(2, 2), &wsaData);
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
 	err = gethostname(name, MAX_HOST_NAME_LENGTH);
@@ -76,41 +76,41 @@ const string& Host::getHostname() {
 #if defined(UNIX)
 		LOG_ERR("gethostname: %s", strerror(errno));
 #elif defined(WIN32)
-    switch(err) {
-      case WSAEFAULT:
-        LOG_ERR("gethostname: The name parameter is a NULL pointer");
-        break;
-      case WSANOTINITIALISED:
-        LOG_ERR("gethostname: No prior successful WSAStartup call");
-        break;
-      case WSAENETDOWN:
-        LOG_ERR("gethostname: The network subsystem has failed");
-        break;
-      case WSAEINPROGRESS:
-        LOG_ERR("gethostname: A blocking Windows Sockets 1.1 call is in progress");
-        break;
-      default:
-        LOG_ERR("gethostname: returned unknown error?!");
-        break;
-    }
-	// TODO: is this needed?
-	//WSACleanup();
+		switch(err) {
+		case WSAEFAULT:
+			LOG_ERR("gethostname: The name parameter is a NULL pointer");
+			break;
+		case WSANOTINITIALISED:
+			LOG_ERR("gethostname: No prior successful WSAStartup call");
+			break;
+		case WSAENETDOWN:
+			LOG_ERR("gethostname: The network subsystem has failed");
+			break;
+		case WSAEINPROGRESS:
+			LOG_ERR("gethostname: A blocking Windows Sockets 1.1 call is in progress");
+			break;
+		default:
+			LOG_ERR("gethostname: returned unknown error?!");
+			break;
+		}
+		// TODO: is this needed?
+		//WSACleanup();
 #else
 #error "Don't know how to get the hostname on this platform"
 #endif
-    hostName = "";
+		hostName = "";
 	} else {
-    hostName = name;
-  }
-  
-  return hostName;
+		hostName = name;
+	}
+
+	return hostName;
 }
 
 const vector<Interface> Host::getInterfaces() {
-  vector<Interface> ifcs;
-  int err = 0;
+	vector<Interface> ifcs;
+	int err = 0;
 	(void)err;
-  
+
 #if defined(UNIX) && !defined(ANDROID)
 	struct ifaddrs *ifaddr;
 	err = getifaddrs(&ifaddr);
@@ -118,153 +118,153 @@ const vector<Interface> Host::getInterfaces() {
 		LOG_ERR("getifaddrs: %s", strerror(errno));
 		return ifcs;
 	}
-  
+
 # ifdef SIOCGIFHWADDR
-  struct ifreq ifinfo;
-  int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-  if (sock == -1) { 
+	struct ifreq ifinfo;
+	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (sock == -1) {
 		LOG_ERR("socket: %s", strerror(errno));
-    return ifcs;
-  };
+		return ifcs;
+	};
 # endif
-  
-  struct ifaddrs *ifa = ifaddr;
-  
-  // Search for the first device with an ip and a mac
+
+	struct ifaddrs *ifa = ifaddr;
+
+	// Search for the first device with an ip and a mac
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-    Interface currIfc;
-    currIfc.name = ifa->ifa_name;
-    
+		Interface currIfc;
+		currIfc.name = ifa->ifa_name;
+
 # ifdef SIOCGIFHWADDR
-    strcpy(ifinfo.ifr_name, ifa->ifa_name);
-    err = ioctl(sock, SIOCGIFHWADDR, &ifinfo);
-    if (err == 0) {
-      if (ifinfo.ifr_hwaddr.sa_family == 1) {
-        currIfc.mac = string(ifinfo.ifr_hwaddr.sa_data, IFHWADDRLEN);
-      }
-    } else {
-      LOG_ERR("ioctl: %s", strerror(errno));
-    }
+		strcpy(ifinfo.ifr_name, ifa->ifa_name);
+		err = ioctl(sock, SIOCGIFHWADDR, &ifinfo);
+		if (err == 0) {
+			if (ifinfo.ifr_hwaddr.sa_family == 1) {
+				currIfc.mac = string(ifinfo.ifr_hwaddr.sa_data, IFHWADDRLEN);
+			}
+		} else {
+			LOG_ERR("ioctl: %s", strerror(errno));
+		}
 # endif
-    
+
 		int family = ifa->ifa_addr->sa_family;
 		switch (family) {
-			case AF_INET:
-        currIfc.ipv4.insert(string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
-        break;
-			case AF_INET6:
-				currIfc.ipv4.insert(string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
-        break;
+		case AF_INET:
+			currIfc.ipv4.insert(string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
+			break;
+		case AF_INET6:
+			currIfc.ipv4.insert(string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
+			break;
 # ifdef LLADDR
-			case AF_LINK:
-				struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
-				if (sdl->sdl_alen == 6) {
-          currIfc.mac = string(LLADDR(sdl), sdl->sdl_alen);
-				}
-        break;
+		case AF_LINK:
+			struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+			if (sdl->sdl_alen == 6) {
+				currIfc.mac = string(LLADDR(sdl), sdl->sdl_alen);
+			}
+			break;
 # endif
 		}
-    ifcs.push_back(currIfc);
+		ifcs.push_back(currIfc);
 	}
 	freeifaddrs(ifaddr);
 #endif
 
 #ifdef WIN32
-  // from http://www.codeguru.com/cpp/i-n/network/networkinformation/article.php/c5451/Three-ways-to-get-your-MAC-address.htm
-  IP_ADAPTER_INFO AdapterInfo[256];
-  DWORD dwBufLen = sizeof(AdapterInfo);
-  DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
-  if (dwStatus != ERROR_SUCCESS) {
-    LOG_ERR("GetAdaptersInfo returned with error");
-    return ifcs;
-  }
-  
-  PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo;
-  do {
-    Interface currIfc;
+	// from http://www.codeguru.com/cpp/i-n/network/networkinformation/article.php/c5451/Three-ways-to-get-your-MAC-address.htm
+	IP_ADAPTER_INFO AdapterInfo[256];
+	DWORD dwBufLen = sizeof(AdapterInfo);
+	DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+	if (dwStatus != ERROR_SUCCESS) {
+		LOG_ERR("GetAdaptersInfo returned with error");
+		return ifcs;
+	}
 
-    if (pAdapterInfo->AddressLength == 6)
-      currIfc.mac = string((const char*)pAdapterInfo->Address, 6);
-    
-    currIfc.name = string(pAdapterInfo->AdapterName);
-    pAdapterInfo = pAdapterInfo->Next;
-    ifcs.push_back(currIfc);
-  } while(pAdapterInfo);
+	PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo;
+	do {
+		Interface currIfc;
+
+		if (pAdapterInfo->AddressLength == 6)
+			currIfc.mac = string((const char*)pAdapterInfo->Address, 6);
+
+		currIfc.name = string(pAdapterInfo->AdapterName);
+		pAdapterInfo = pAdapterInfo->Next;
+		ifcs.push_back(currIfc);
+	} while(pAdapterInfo);
 #endif
 
 #ifdef ANDROID
-  // TODO: Update when there actually is a way to get the MAC
+	// TODO: Update when there actually is a way to get the MAC
 #endif
 
-  return ifcs;
+	return ifcs;
 }
 
-  
+
 const string& Host::getHostId() {
 
 	if (hostId.size() > 0)
 		return hostId;
 
-  string hostname = getHostname();
-  vector<Interface> interfaces = getInterfaces();
-  
-  std::ostringstream ss;
-  ss << std::hex << std::uppercase << std::setfill( '0' );
+	string hostname = getHostname();
+	vector<Interface> interfaces = getInterfaces();
 
-  // first all the mac adresses
-  vector<Interface>::iterator ifIter = interfaces.begin();
-  while(ifIter != interfaces.end()) {
-    if (ifIter->mac.length() > 0)
-      for (int i = 0; i < ifIter->mac.length(); i++)
-        ss << std::setw( 2 ) << (int)ifIter->mac[i];
-    ifIter++;
-  }
+	std::ostringstream ss;
+	ss << std::hex << std::uppercase << std::setfill( '0' );
 
-  // next the hostname
-  if (ss.str().length() < 36 && hostname.length() > 0) {
-    for (unsigned int i = 0; i < hostname.length(); i++)
-      ss << std::setw( 2 ) << (int)hostname[i];
-  }
+	// first all the mac adresses
+	vector<Interface>::iterator ifIter = interfaces.begin();
+	while(ifIter != interfaces.end()) {
+		if (ifIter->mac.length() > 0)
+			for (int i = 0; i < ifIter->mac.length(); i++)
+				ss << std::setw( 2 ) << (int)ifIter->mac[i];
+		ifIter++;
+	}
 
-  // append ipv4 addresses as well
-  if (ss.str().length() < 36) {
-    ifIter = interfaces.begin();
-    while(ifIter != interfaces.end()) {
-      set<string>::iterator ipIter = ifIter->ipv4.begin();
-      while(ipIter != ifIter->ipv4.end()) {
-        if (ipIter->length() > 0)
-          for (int i = 0; i < ipIter->length(); i++)
-            ss << std::setw( 2 ) << (int)(*ipIter)[i];
-        ipIter++;
-      }
-      ifIter++;
-    }
-  }
+	// next the hostname
+	if (ss.str().length() < 36 && hostname.length() > 0) {
+		for (unsigned int i = 0; i < hostname.length(); i++)
+			ss << std::setw( 2 ) << (int)hostname[i];
+	}
 
-  // and ipv6 addresses
-  if (ss.str().length() < 36) {
-    ifIter = interfaces.begin();
-    while(ifIter != interfaces.end()) {
-      set<string>::iterator ipIter = ifIter->ipv6.begin();
-      while(ipIter != ifIter->ipv6.end()) {
-        if (ipIter->length() > 0)
-          for (int i = 0; i < ipIter->length(); i++)
-            ss << std::setw( 2 ) << (int)(*ipIter)[i];
-        ipIter++;
-      }
-      ifIter++;
-    }
-  }
+	// append ipv4 addresses as well
+	if (ss.str().length() < 36) {
+		ifIter = interfaces.begin();
+		while(ifIter != interfaces.end()) {
+			set<string>::iterator ipIter = ifIter->ipv4.begin();
+			while(ipIter != ifIter->ipv4.end()) {
+				if (ipIter->length() > 0)
+					for (int i = 0; i < ipIter->length(); i++)
+						ss << std::setw( 2 ) << (int)(*ipIter)[i];
+				ipIter++;
+			}
+			ifIter++;
+		}
+	}
 
-  
-  // padding
-  if (ss.str().length() < 36)
-    for (int i = 0; i < 36 - ss.str().length(); i++)
-      ss << std::setw( 2 ) << 0;
-  
-  
-  hostId = ss.str().substr(0, 36);
-  return hostId;
+	// and ipv6 addresses
+	if (ss.str().length() < 36) {
+		ifIter = interfaces.begin();
+		while(ifIter != interfaces.end()) {
+			set<string>::iterator ipIter = ifIter->ipv6.begin();
+			while(ipIter != ifIter->ipv6.end()) {
+				if (ipIter->length() > 0)
+					for (int i = 0; i < ipIter->length(); i++)
+						ss << std::setw( 2 ) << (int)(*ipIter)[i];
+				ipIter++;
+			}
+			ifIter++;
+		}
+	}
+
+
+	// padding
+	if (ss.str().length() < 36)
+		for (int i = 0; i < 36 - ss.str().length(); i++)
+			ss << std::setw( 2 ) << 0;
+
+
+	hostId = ss.str().substr(0, 36);
+	return hostId;
 }
 
 }

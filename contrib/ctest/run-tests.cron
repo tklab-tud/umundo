@@ -9,10 +9,20 @@ HOSTNAME="$( hostname )"
 LOCK_DIR=/tmp/umundo-build.lock
 TESTFILE=$HOSTS/$HOSTNAME.ctest
 
-# path to ctest
+# cron has its own path, try to find ctest
 if [ ! -n "${CTEST:+x}" ]; then
-	CTEST=/usr/local/bin/ctest
-	export CTEST
+	for PATH in "/usr/bin" "/usr/local/bin" "/opt/local/bin"
+	do
+		if [ -e $PATH/ctest ]; then
+			CTEST=$PATH/ctest
+			export CTEST
+			break
+		fi
+	done
+fi
+if [ ! -e $CTEST ]; then
+	echo "Error: Could not find CTEST, set the CTEST environment variable."
+	exit;	
 fi
 
 if [ ! -n "${CTEST_SUBMIT_TYPE:+x}" ]; then
@@ -28,10 +38,6 @@ if [ ! -n "${UMUNDO_SOURCE_DIR:+x}" ]; then
 	export UMUNDO_SOURCE_DIR
 fi
 
-if [ ! -e $CTEST ]; then
-	echo "Error: Could not find CTEST, set the CTEST environment variable."
-	exit;	
-fi
 
 # is there a CMakeLists.txt file within?
 if [ ! -e ${UMUNDO_SOURCE_DIR}/CMakeLists.txt ]; then

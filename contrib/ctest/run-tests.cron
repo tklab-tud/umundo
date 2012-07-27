@@ -45,7 +45,7 @@ if [ ! -e $TESTFILE ]; then
 fi
 
 #
-# Try to acquire build lock
+# Try to acquire the build lock
 #
 while true; do
 	if mkdir "$LOCK_DIR"; then
@@ -59,8 +59,8 @@ done
 
 if [ "$CTEST_SUBMIT_TYPE" = "Continuous" ]; then
 	cd $UMUNDO_SOURCE_DIR
-	#git clean -f -d
-	#GIT_SYNC=`git pull`
+	#git clean -f -d # careful - destructive!
+	GIT_SYNC=`git pull`
 	GIT_SYNC="Already up-to-date."
 	echo $GIT_SYNC
 	if [ "$GIT_SYNC" = "Already up-to-date." ]; then

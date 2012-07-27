@@ -9,7 +9,7 @@ essentially the same on every platform:
 	<tt>git clone git://github.com/tklab-tud/umundo.git</tt>
 
 3. Create a new directory for an *out-of-source* build. I usually create sub-directories 
-in <tt><UMUNDO_SRC>/build/</tt>.
+in <tt>&lt;UMUNDO_SRC&gt;/build/</tt>.
 4. Run cmake (or ccmake / CMake-GUI) to create the files required by your actual build-system.
 5. Use your actual build-system or development environment to build umundo.
 6. Have a look at the <b>[Getting Started](https://github.com/tklab-tud/umundo/blob/master/docs/GETTING_STARTED.md)</b>

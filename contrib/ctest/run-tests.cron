@@ -11,16 +11,16 @@ TESTFILE=$HOSTS/$HOSTNAME.ctest
 
 # cron has its own path, try to find ctest
 if [ ! -n "${CTEST:+x}" ]; then
-	for PATH in "/usr/bin" "/usr/local/bin" "/opt/local/bin"
+	for SEARCH_PATH in "/usr/bin" "/usr/local/bin" "/opt/local/bin"
 	do
-		if [ -e $PATH/ctest ]; then
-			CTEST=$PATH/ctest
+		if [ -e $SEARCH_PATH/ctest ]; then
+			CTEST=$SEARCH_PATH/ctest
 			export CTEST
 			break
 		fi
 	done
 fi
-if [ ! -e $CTEST ]; then
+if [ ! -e "${CTEST}" ]; then
 	echo "Error: Could not find CTEST, set the CTEST environment variable."
 	exit;	
 fi
@@ -58,7 +58,7 @@ while true; do
 		trap 'rm -rf "$LOCK_DIR"' 0    # remove directory when script finishes
 		break
 	else
-		echo "Could not get build lock- waiting"
+		echo "Could not get build lock - waiting"
 		sleep 10
 	fi
 done
@@ -67,10 +67,11 @@ if [ "$CTEST_SUBMIT_TYPE" = "Continuous" ]; then
 	cd $UMUNDO_SOURCE_DIR
 	#git clean -f -d # careful - destructive!
 	GIT_SYNC=`git pull`
-	echo $GIT_SYNC
 	if [ "$GIT_SYNC" = "Already up-to-date." ]; then
-		echo "Not running continuous tests, already up-to-date"
+#		echo "Not running continuous tests, already up-to-date"
 		exit
+	else
+		echo $GIT_SYNC
 	fi
 fi
 

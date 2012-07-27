@@ -3,7 +3,7 @@
 The source code is built using CMake, the process of building umundo is 
 essentially the same on every platform:
 
-1. Read the [Platform Notes](#platform-notes) below to prepare your system.
+1. Read the <b>[Platform Notes](#platform-notes)</b> below to prepare your system.
 2. Checkout umundo into a convenient directory:
 
 	<tt>git clone git://github.com/tklab-tud/umundo.git</tt>
@@ -12,6 +12,8 @@ essentially the same on every platform:
 in <tt><UMUNDO_SRC>/build/</tt>.
 4. Run cmake (or ccmake / CMake-GUI) to create the files required by your actual build-system.
 5. Use your actual build-system or development environment to build umundo.
+6. Have a look at the <b>[Getting Started](https://github.com/tklab-tud/umundo/blob/master/docs/GETTING_STARTED.md)</b>
+document to start using umundo.
 
 If you want to build for another IDE or build-system, just create a new 
 *out-of-source* build directory and start over with cmake. To get an idea of 

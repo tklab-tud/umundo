@@ -1,8 +1,8 @@
-# uMundo CTest scripts
+# Setting up CTest Slaves
 
-If you want to contribute a build-slave, just create a file called 
-<tt>hosts/&lt;HOSTNAME>.ctest</tt> - have a look at the existing host
-files. Then setup your crontab as follows:
+If you want to contribute a test-slave, just create a file called 
+<tt>hosts/&lt;HOSTNAME>.ctest</tt> - have a look at the existing host files. 
+Then setup your crontab as follows:
 
     50       */4   *   *   *       CTEST_SUBMIT_TYPE="Experimental"	/var/builds/umundo/contrib/ctest/run-tests.cron
     0        2     *   *   *       CTEST_SUBMIT_TYPE="Nightly"      /var/builds/umundo/contrib/ctest/run-tests.cron
@@ -15,7 +15,7 @@ ctest directory someplace safe if you are concerned and make sure to specify
 <tt>UMUNDO_SOURCE_DIR=/umundo/checkout/here</tt> in the crontab line.
 
 <b>Warning:</b> <tt>run-tests.cron</tt> will pull the current GIT head. Use a 
-dedicated test checkout if this is a problem.
+dedicated source checkout for testing if this is a problem.
 
 # How it works
 
@@ -28,18 +28,19 @@ When your host-specific test file is called, you can assume the following facts:
 
 * You are the only running ctest instance invoked by <tt>run-tests.cron</tt>
 * There is a path to the ctest executable in <tt>$ENV{CTEST}</tt>
+* The current working directory is the ctest directory.
 * The chosen submit type is available as <tt>$ENV{CTEST_SUBMIT_TYPE}</tt>
 * The path to the umundo sources is available as <tt>$ENV{UMUNDO_SOURCE_DIR}</tt>
 
-As a host-specific test file, you are expected prepare test builds by setting 
+As a host-specific test file, you are expected to prepare test-builds by setting 
 the following variables and call <tt>include("common.ctest.inc")</tt> for every 
-test you prepared.
+build you prepared.
 
 <table>
 	<tr><th>Variable</th><th>Comment</th></tr>
 	<tr>
 		<td><tt>CTEST_SITE</tt></td>
-		<td>The name of this build-slave for reporting in the dashboard</td>
+		<td>The name of this build-slave for reporting in the dashboard. Should be the same for all submitted test-builds</td>
 	</tr>
 	<tr>
 		<td><tt>CTEST_CMAKE_GENERATOR</tt></td>

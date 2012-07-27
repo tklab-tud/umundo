@@ -38,14 +38,16 @@ public:
 	const string getProperty(const string&);
 	void setProperty(const string&, const string&);
 
-  ///< We need the ServiceManagers nodes in several Services
-  ServiceManager* getServiceManager() { return _svcManager; }
+	///< We need the ServiceManagers nodes in several Services
+	ServiceManager* getServiceManager() {
+		return _svcManager;
+	}
 
 protected:
 	ServiceDescription(Message*);
 
 	Message* toMessage();
-  
+
 	string _svcName;
 	string _channelName;
 	std::map<string, string> _properties;
@@ -77,20 +79,20 @@ public:
 
 	Message* toMessage();
 
-  void addRule(const string& key, const string& value, int pred = OP_EQUALS);
+	void addRule(const string& key, const string& value, int pred = OP_EQUALS);
 	void addRule(const string& key, const string& pattern, const string& value, int pred = OP_EQUALS);
-  void clearRules();
+	void clearRules();
 	bool matches(ServiceDescription*);
 
-  string _uuid;
+	string _uuid;
 	string _svcName;
 	map<string, string> _pattern;
 	map<string, string> _value;
 	map<string, int> _predicate;
 
 private:
-  bool isNumeric(const string& test);
-  double toNumber(const string& numberString);
+	bool isNumeric(const string& test);
+	double toNumber(const string& numberString);
 
 };
 

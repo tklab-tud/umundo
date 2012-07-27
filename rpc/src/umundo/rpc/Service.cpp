@@ -24,7 +24,7 @@ namespace umundo {
 
 ServiceFilter::ServiceFilter(const string& svcName) {
 	_svcName = svcName;
-  _uuid = UUID::getUUID();
+	_uuid = UUID::getUUID();
 }
 
 ServiceFilter::ServiceFilter(Message* msg) {
@@ -38,12 +38,12 @@ ServiceFilter::ServiceFilter(Message* msg) {
 
 		if (key.compare(0, 6, "value:") == 0) {
 			key = key.substr(6, key.length());
-      assert(meta.find("pattern:" + key) != meta.end());
-      assert(meta.find("pred:" + key) != meta.end());
+			assert(meta.find("pattern:" + key) != meta.end());
+			assert(meta.find("pred:" + key) != meta.end());
 
-      _value[key] = value;      
-      _pattern[key] = meta["pattern:" + key];
-      _predicate[key] = (Predicate)atoi(meta["pred:" + key].c_str());
+			_value[key] = value;
+			_pattern[key] = meta["pattern:" + key];
+			_predicate[key] = (Predicate)atoi(meta["pred:" + key].c_str());
 		}
 		metaIter++;
 	}
@@ -54,13 +54,13 @@ Message* ServiceFilter::toMessage() {
 	msg->putMeta("serviceName", _svcName);
 	msg->putMeta("uuid", _uuid);
 
-  map<string, string>::iterator valIter = _value.begin();
+	map<string, string>::iterator valIter = _value.begin();
 	while(valIter != _value.end()) {
 		msg->putMeta("value:" + valIter->first, valIter->second);
 		valIter++;
 	}
 
-  map<string, string>::iterator patternIter = _pattern.begin();
+	map<string, string>::iterator patternIter = _pattern.begin();
 	while(patternIter != _pattern.end()) {
 		msg->putMeta("pattern:" + patternIter->first, patternIter->second);
 		patternIter++;
@@ -77,19 +77,19 @@ Message* ServiceFilter::toMessage() {
 }
 
 void ServiceFilter::addRule(const string& key, const string& value, int pred) {
-  addRule(key, ".*", value, pred);
+	addRule(key, ".*", value, pred);
 }
 
 void ServiceFilter::addRule(const string& key, const string& pattern, const string& value, int pred) {
 	_pattern[key] = pattern;
-  _value[key] = value;
+	_value[key] = value;
 	_predicate[key] = pred;
 }
 
 void ServiceFilter::clearRules() {
-  _pattern.clear();
-  _value.clear();
-  _predicate.clear();
+	_pattern.clear();
+	_value.clear();
+	_predicate.clear();
 }
 
 bool ServiceFilter::matches(ServiceDescription* svcDesc) {
@@ -100,114 +100,114 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 	// check filter
 	map<string, string>::iterator condIter = _value.begin();
 	while(condIter != _value.end()) {
-    
-    /* A condition is true, if the matched substring from the value for key of 
-     * the service description is in the relation given by the predicate to the 
-     * filter value.
-     */
-    
+
+		/* A condition is true, if the matched substring from the value for key of
+		 * the service description is in the relation given by the predicate to the
+		 * filter value.
+		 */
+
 		string key = condIter->first;               // the key for the values
 		string actual = svcDesc->getProperty(key);  // the actual string as it is present in the description
-    string target = _value[key];                // the substring from the filter
-    string pattern = _pattern[key];             // the pattern that will transform the actual string into a substring
-    int pred = _predicate[key];                 // the relation between filter and description sting
-    Regex regex(pattern);
-    
-    bool numericMode = false;
-    double numTarget = 0;
-    double numSubstring = 0;
-    
-    if (regex.hasError()) {
-      LOG_ERR("Pattern '%s' does not compile as regular expression", pattern.c_str());
-      return false;      
-    }
-    
-    if (!regex.matches(actual))
-      return false;
-    
-    // if we matched a substring with (regex) notation, use it
-    string substring;
-    if (regex.hasSubMatches()) {
-      substring = actual.substr(regex.getSubMatches()[0].first, regex.getSubMatches()[0].second);
-    } else {
-      substring = actual.substr(regex.getMatch().first, regex.getMatch().second);
-    }
-    
-    // use numeric mode with OP_EQUALS, OP_LESS and OP_GREATER?
-    if (isNumeric(target) && isNumeric(substring)) {
-      numericMode = true;
-      numTarget = toNumber(target);
-      numSubstring = toNumber(substring);
-    }
+		string target = _value[key];                // the substring from the filter
+		string pattern = _pattern[key];             // the pattern that will transform the actual string into a substring
+		int pred = _predicate[key];                 // the relation between filter and description sting
+		Regex regex(pattern);
 
-    int mod = pred & MASK_MOD;
-    int op = pred & MASK_OP;
+		bool numericMode = false;
+		double numTarget = 0;
+		double numSubstring = 0;
+
+		if (regex.hasError()) {
+			LOG_ERR("Pattern '%s' does not compile as regular expression", pattern.c_str());
+			return false;
+		}
+
+		if (!regex.matches(actual))
+			return false;
+
+		// if we matched a substring with (regex) notation, use it
+		string substring;
+		if (regex.hasSubMatches()) {
+			substring = actual.substr(regex.getSubMatches()[0].first, regex.getSubMatches()[0].second);
+		} else {
+			substring = actual.substr(regex.getMatch().first, regex.getMatch().second);
+		}
+
+		// use numeric mode with OP_EQUALS, OP_LESS and OP_GREATER?
+		if (isNumeric(target) && isNumeric(substring)) {
+			numericMode = true;
+			numTarget = toNumber(target);
+			numSubstring = toNumber(substring);
+		}
+
+		int mod = pred & MASK_MOD;
+		int op = pred & MASK_OP;
 
 #if 0
-    // we used this to debug the boolean expressions in the switch
-    if (substring.find(target) == substring.length() - target.length()) {
-      printf("EQUALS: 1\n");
-    } else {
-      printf("EQUALS: 0\n");
-    }
-    if (mod & MOD_NOT) {
-      printf("NOT: 1\n");
-    } else {
-      printf("NOT: 0\n");
-    }
+		// we used this to debug the boolean expressions in the switch
+		if (substring.find(target) == substring.length() - target.length()) {
+			printf("EQUALS: 1\n");
+		} else {
+			printf("EQUALS: 0\n");
+		}
+		if (mod & MOD_NOT) {
+			printf("NOT: 1\n");
+		} else {
+			printf("NOT: 0\n");
+		}
 
-    if (true ^ true)
-      printf("true, true\n");
-    if (false ^ true)
-      printf("false, true\n");
-    if (true ^ false)
-      printf("true, false\n");
-    if (false ^ false)
-      printf("false, false\n");
+		if (true ^ true)
+			printf("true, true\n");
+		if (false ^ true)
+			printf("false, true\n");
+		if (true ^ false)
+			printf("true, false\n");
+		if (false ^ false)
+			printf("false, false\n");
 #endif
-    
+
 		switch (op) {
-      case OP_EQUALS:
-        if (numericMode) {
-          if (!(numSubstring == numTarget) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        } else {
-          if (!(substring.compare(target) == 0) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        }
-        break;
-      case OP_LESS:
-        if (numericMode) {
-          if (!(numSubstring < numTarget) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        } else {
-          if (!(substring.compare(target) < 0) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        }
-        break;
-      case OP_GREATER:
-        if (numericMode) {
-          if (!(numSubstring > numTarget) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        } else {
-          if (!(substring.compare(target) > 0) ^ ((mod & MOD_NOT) > 0))
-            return false;
-        }
-        break;
-      case OP_STARTS_WITH:
-        if (!(substring.find(target) == 0) ^ ((mod & MOD_NOT) > 0))
-          return false;
-        break;
-      case OP_ENDS_WITH:
-        if (!(substring.find(target) == substring.length() - target.length()) ^ ((mod & MOD_NOT) > 0))
-          return false;
-        break;
-      case OP_CONTAINS:
-        if (!(substring.find(target) != std::string::npos) ^ ((mod & MOD_NOT) > 0))
-          return false;
-        break;
-      default:
-        break;
+		case OP_EQUALS:
+			if (numericMode) {
+				if (!(numSubstring == numTarget) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			} else {
+				if (!(substring.compare(target) == 0) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			}
+			break;
+		case OP_LESS:
+			if (numericMode) {
+				if (!(numSubstring < numTarget) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			} else {
+				if (!(substring.compare(target) < 0) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			}
+			break;
+		case OP_GREATER:
+			if (numericMode) {
+				if (!(numSubstring > numTarget) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			} else {
+				if (!(substring.compare(target) > 0) ^ ((mod & MOD_NOT) > 0))
+					return false;
+			}
+			break;
+		case OP_STARTS_WITH:
+			if (!(substring.find(target) == 0) ^ ((mod & MOD_NOT) > 0))
+				return false;
+			break;
+		case OP_ENDS_WITH:
+			if (!(substring.find(target) == substring.length() - target.length()) ^ ((mod & MOD_NOT) > 0))
+				return false;
+			break;
+		case OP_CONTAINS:
+			if (!(substring.find(target) != std::string::npos) ^ ((mod & MOD_NOT) > 0))
+				return false;
+			break;
+		default:
+			break;
 		}
 
 		condIter++;
@@ -216,26 +216,26 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 }
 
 bool ServiceFilter::isNumeric(const string& test) {
-  string::const_iterator sIter = test.begin();
-  for(;sIter != test.end(); sIter++) {
-    if (isdigit(*sIter))
-      continue;
-    if ((*sIter) == '.')
-      continue;
-    if ((*sIter) == 'e')
-      continue;
-    return false;
-  }
-  return true;
+	string::const_iterator sIter = test.begin();
+	for(; sIter != test.end(); sIter++) {
+		if (isdigit(*sIter))
+			continue;
+		if ((*sIter) == '.')
+			continue;
+		if ((*sIter) == 'e')
+			continue;
+		return false;
+	}
+	return true;
 }
-  
+
 double ServiceFilter::toNumber(const string& numberString) {
-  std::istringstream os(numberString);
-  double d;
-  os >> d;
-  return d;
+	std::istringstream os(numberString);
+	double d;
+	os >> d;
+	return d;
 }
-  
+
 ServiceDescription::ServiceDescription(const string& svcName) {
 	_svcName = svcName;
 }
@@ -297,7 +297,7 @@ ServiceStub::ServiceStub(ServiceDescription* svcDesc) {
 	_rpcPub = new TypedPublisher(_channelName);
 	_rpcSub = new TypedSubscriber(_channelName, this);
 
-  set<Node*> nodes = svcDesc->getServiceManager()->getNodes();
+	set<Node*> nodes = svcDesc->getServiceManager()->getNodes();
 	set<Node*>::iterator nodeIter = nodes.begin();
 	while(nodeIter != nodes.end()) {
 		(*nodeIter)->connect(this);
@@ -348,7 +348,7 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 	_requests[reqId] = Monitor();
 	_rpcPub->send(rpcReqMsg);
 	UMUNDO_WAIT(_requests[reqId]);
-  ScopeLock lock(&_mutex);
+	ScopeLock lock(&_mutex);
 	_requests.erase(reqId);
 	out = _responses[reqId];
 	_responses.erase(reqId);
@@ -359,7 +359,7 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 void ServiceStub::receive(void* obj, Message* msg) {
 	if (msg->getMeta().find("respId") != msg->getMeta().end()) {
 		string respId = msg->getMeta("respId");
-    ScopeLock lock(&_mutex);
+		ScopeLock lock(&_mutex);
 		if (_requests.find(respId) != _requests.end()) {
 			_responses[respId] = obj;
 			UMUNDO_SIGNAL(_requests[respId]);

@@ -34,8 +34,8 @@ public:
 int main(int argc, char** argv, char** envp) {
 	setenv("UMUNDO_LOGLEVEL", "4", 1);
 
-  std::cout << "HostId:" << Host::getHostId() << std::endl;
-  
+	std::cout << "HostId:" << Host::getHostId() << std::endl;
+
 	TestDiscoverer* testDiscoverer = new TestDiscoverer();
 	shared_ptr<NodeQuery> query = shared_ptr<NodeQuery>(new NodeQuery("fooDomain", testDiscoverer));
 	Discovery::browse(query);

@@ -22,11 +22,10 @@
 
 namespace umundo {
 
-struct filterCmp
-{
-  bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
-    return a->_uuid.compare(b->_uuid) < 0;
-  }
+struct filterCmp {
+	bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
+		return a->_uuid.compare(b->_uuid) < 0;
+	}
 };
 
 class DLLEXPORT ServiceManager : public Receiver, public Connectable, public Greeter {
@@ -43,16 +42,18 @@ public:
 	std::set<umundo::Subscriber*> getSubscribers();
 	void addedToNode(Node* node);
 	void removedFromNode(Node* node);
-  std::set<Node*> getNodes() { return _nodes; }
-  
-  // Greeter Interface
-  void welcome(Publisher*, const string nodeId, const string subId);
+	std::set<Node*> getNodes() {
+		return _nodes;
+	}
+
+	// Greeter Interface
+	void welcome(Publisher*, const string nodeId, const string subId);
 	void farewell(Publisher*, const string nodeId, const string subId);
-  
+
 	void receive(Message* msg);
 
 	ServiceDescription* find(ServiceFilter*);
-  std::set<ServiceDescription*> findLocal(ServiceFilter*);
+	std::set<ServiceDescription*> findLocal(ServiceFilter*);
 	void startQuery(ServiceFilter*, ResultSet<ServiceDescription>*);
 	void stopQuery(ServiceFilter*);
 
@@ -64,7 +65,7 @@ public:
 	map<ServiceFilter*, ResultSet<ServiceDescription>*, filterCmp> _localQueries; ///< filters for local continuous service queries
 
 	std::set<Node*> _nodes;
-  std::map<string, ServiceFilter*> _remoteQueries; ///< UUID to remote continuous query
+	std::map<string, ServiceFilter*> _remoteQueries; ///< UUID to remote continuous query
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
 	Mutex _mutex;

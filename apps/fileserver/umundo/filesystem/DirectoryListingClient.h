@@ -26,21 +26,21 @@ namespace umundo {
 class DLLEXPORT DirectoryListingClient : public DirectoryListingServiceStub {
 public:
 	DirectoryListingClient(ServiceDescription*, ResultSet<DirectoryEntry>*);
-  ~DirectoryListingClient();
-  
-  void receive(void* object, Message* msg);
+	~DirectoryListingClient();
 
-  // Connectable interface
+	void receive(void* object, Message* msg);
+
+	// Connectable interface
 	std::set<umundo::Subscriber*> getSubscribers();
 
-  /// Convenience API
-  virtual std::vector<shared_ptr<DirectoryEntry> > list(const string& pattern);
-  
+	/// Convenience API
+	virtual std::vector<shared_ptr<DirectoryEntry> > list(const string& pattern);
+
 protected:
-  TypedSubscriber* _notifySub;
-  ResultSet<DirectoryEntry>* _listener;
-  map<string, shared_ptr<DirectoryEntry> > _knownEntries;
-  Mutex _mutex;
+	TypedSubscriber* _notifySub;
+	ResultSet<DirectoryEntry>* _listener;
+	map<string, shared_ptr<DirectoryEntry> > _knownEntries;
+	Mutex _mutex;
 };
 
 }

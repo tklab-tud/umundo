@@ -100,7 +100,7 @@ class PlainDumpingReceiver : public Receiver {
 	void receive(Message* msg) {
 		map<string, string>::const_iterator metaIter = msg->getMeta().begin();
 		while(metaIter != msg->getMeta().end()) {
-			std::cout << metaIter->first << ": " << metaIter->second << std::endl;			
+			std::cout << metaIter->first << ": " << metaIter->second << std::endl;
 			metaIter++;
 		}
 		std::cout << string(msg->data(), msg->size()) << std::flush;

@@ -27,10 +27,12 @@ class DLLEXPORT NBandProxyCacheItem : public SCacheItem {
 public:
 	NBandProxyCacheItem();
 	set<SCacheItem*> getNext();
-  virtual uint64_t assumePressure(float pressure) { return 0; };
-  virtual void applyPressure(float pressure) {}
+	virtual uint64_t assumePressure(float pressure) {
+		return 0;
+	};
+	virtual void applyPressure(float pressure) {}
 
-  set<SCacheItem*> relevanceFromParent(float parentRelevance);
+	set<SCacheItem*> relevanceFromParent(float parentRelevance);
 
 	NBandProxyCacheItem* _otherBand;
 	NBandCacheItem* _currentItem;
@@ -42,10 +44,10 @@ public:
 	NBandCacheItem(string name, string band);
 
 	set<SCacheItem*> getNext();
-  virtual uint64_t assumePressure(float pressure) = 0;
-  virtual void applyPressure(float pressure) = 0;
+	virtual uint64_t assumePressure(float pressure) = 0;
+	virtual void applyPressure(float pressure) = 0;
 
-  set<SCacheItem*> relevanceFromParent(float parentRelevance);
+	set<SCacheItem*> relevanceFromParent(float parentRelevance);
 
 	NBandCacheItem* _left;
 	NBandCacheItem* _right;
@@ -80,23 +82,23 @@ class DLLEXPORT NBandCache : public SCache {
 public:
 	NBandCache(uint64_t size);
 
-  using SCache::getPointer;
+	using SCache::getPointer;
 	virtual shared_ptr<NBandCachePtr> getPointer();
 	virtual shared_ptr<NBandCachePtr> getPointer(const string& band, int elemId = -1);
 	virtual void insert(NBandCacheItem* item);
 	virtual void remove(NBandCacheItem* item);
 
 protected:
-  NGramModel* _model;
-  
+	NGramModel* _model;
+
 	typedef map<string, map<string, NBandCacheItem*> >::iterator BandIter;
 	typedef map<string, std::pair<NBandProxyCacheItem*, NBandProxyCacheItem*> >::iterator ProxyIter;
 	typedef std::pair<NBandProxyCacheItem*, NBandProxyCacheItem*> Proxies;
 
 	map<string, map<string, NBandCacheItem*> > _bands; // band to names to items
 	map<string, std::pair<NBandProxyCacheItem*, NBandProxyCacheItem*> > _proxies;  // band to its proxy (up, down)
-  
-  friend class NBandCachePtr;
+
+	friend class NBandCachePtr;
 };
 
 }

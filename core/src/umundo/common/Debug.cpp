@@ -175,7 +175,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	if (lvl == 3) severity = "DEBUG";
 
 	char* padding = (char*)malloc((longestFilename - (strlen(filename) + lineNumberLength)) + 1);
-  assert(padding != NULL);
+	assert(padding != NULL);
 	padding[(longestFilename - (strlen(filename) + lineNumberLength))] = 0;
 	memset(padding, ' ', longestFilename - (strlen(filename) + lineNumberLength));
 

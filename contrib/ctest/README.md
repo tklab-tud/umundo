@@ -14,6 +14,49 @@ might get updated from git with potentially surprising content. Copy the whole
 ctest directory someplace safe if you are concerned and make sure to specify 
 <tt>UMUNDO_SOURCE_DIR=/umundo/checkout/here</tt> in the crontab line.
 
-<b>Warning:</b> Do not use the source directory you are developing in with
-<tt>run-tests.cron</tt>. It will force sync the local repository with the
-current GIT head. Use a dedicated test checkout.
+<b>Warning:</b> <tt>run-tests.cron</tt> will pull the current GIT head. Use a 
+dedicated test checkout if this is a problem.
+
+# How it works
+
+<tt>run-tests.cron</tt> will setup the environment to call your host-specific
+test file with <tt>ctest</tt>. If you do not provide a value for 
+<tt>UMUNDO_SOURCE_DIR</tt> it will assume that you want to work with the source 
+containing the script itself.
+
+When your host-specific test file is called, you can assume the following facts:
+
+* You are the only running ctest instance invoked by <tt>run-tests.cron</tt>
+* There is a path to the ctest executable in <tt>$ENV{CTEST}</tt>
+* The chosen submit type is available as <tt>$ENV{CTEST_SUBMIT_TYPE}</tt>
+* The path to the umundo sources is available as <tt>$ENV{UMUNDO_SOURCE_DIR}</tt>
+
+As a host-specific test file, you are expected prepare test builds by setting 
+the following variables and call <tt>include("common.ctest.inc")</tt> for every 
+test you prepared.
+
+<table>
+	<tr><th>Variable</th><th>Comment</th></tr>
+	<tr>
+		<td><tt>CTEST_SITE</tt></td>
+		<td>The name of this build-slave for reporting in the dashboard</td>
+	</tr>
+	<tr>
+		<td><tt>CTEST_CMAKE_GENERATOR</tt></td>
+		<td>The generator to use with cmake (e.g. "Unix Makefiles")</td>
+	</tr>
+	<tr>
+		<td><tt>CTEST_BUILD_CONFIGURATION</tt></td>
+		<td>"Debug", "Release" ..</td>
+	</tr>
+	<tr>
+		<td><tt>CTEST_BUILD_NAME</tt></td>
+		<td>Name of the particular build you are about to submit (e.g. "darwin-x86_64 llvm bonjour").</td>
+	</tr>
+	<tr>
+		<td><tt>CTEST_BUILD_OPTIONS</tt></td>
+		<td>Parameters to be passed to cmake when preparing the build. These will most likely come from one of the tests/*.ctest files</td>
+	</tr>
+</table>
+
+When unsure have a look at the existing host test files.

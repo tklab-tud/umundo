@@ -1,17 +1,29 @@
-# Getting started
+# Getting started with uMundo
 
-uMundo tries to make usage for a developer as convenient as is reasonable. All the libraries we rely upon are available
-as precompiled, static libraries and are directly included in the uMundo libraries. 
+There are three ways to get uMundo up and running on your system:
 
-To get started, download an [installer](http://umundo.tk.informatik.tu-darmstadt.de/installer/) for your platform and run two 
-instances of <tt>umundo-pingpong</tt> from the console or from within your installation directory. If you see some *io* on both 
-ends, your system is setup correctly to run umundo programs.
+* A local repository to build uMundo from source 
+[[more](https://github.com/tklab-tud/umundo/blob/master/docs/BUILDING.md)]
+* An installer package with the prebuilt uMundo SDK
+[[more](https://github.com/tklab-tud/umundo/blob/master/installer/README.md)]
+* A maven snippet in your pom.xml
+[[more](https://github.com/tklab-tud/umundo/blob/master/docs/GETTING_STARTED.md#maven-repository)]
 
-You can export <tt>UMUNDO_LOGLEVEL=[0..4]</tt> to increase the global log-level, with 4 being the most verbose. You can also
-increase/descrease log-levels per component by exporting <tt>UMUNDO_LOGLEVEL_[COMMON|NET|DISC|S11N]=[0..4]</tt>. With some terminals,
-colored output is available via <tt>UMUNDO_LOGCOLORS=[ON|OFF]</tt>. Have a look at the 
-<a href="https://github.com/tklab-tud/umundo/blob/master/core/src/umundo/common/Debug.cpp">Debug.cpp</a> file to see how
-the various options are used.
+To get started, download an [installer](http://umundo.tk.informatik.tu-darmstadt.de/installer/) 
+for your platform and run two instances of <tt>umundo-pingpong</tt> from the 
+console or from within your installation directory. If you see some *io* on both 
+ends, your system is setup correctly to run umundo programs. If not see the
+[troubleshooting](TroubleShooting) section below.
+
+You can export <tt>UMUNDO_LOGLEVEL=[0..4]</tt> to increase the global log-level, 
+with 4 being the most verbose. You can also increase/descrease log-levels per 
+component by exporting <tt>UMUNDO_LOGLEVEL_[COMMON|NET|DISC|S11N]=[0..4]</tt>. 
+With some terminals, colored output is available via <tt>UMUNDO_LOGCOLORS=[ON|OFF]</tt>. 
+Have a look at the <a href="https://github.com/tklab-tud/umundo/blob/master/core/src/umundo/common/Debug.cpp">Debug.cpp</a> 
+file to see how the various options are used.
+
+I encourage everyone to [build umundo from sources](https://github.com/tklab-tud/umundo/blob/master/docs/BUILDING.md) 
+to get the latest features and (more importantly) bug fixes.
 
 ## Dependencies
 
@@ -106,3 +118,28 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
         <version>0.0.4</version>
       </dependency>
     </dependencies>
+
+## Trouble Shooting
+
+<table>
+  <tr><th>Symptom</th><th>Platform</th><th>Comment</th></tr>
+	<tr>
+		<td>umundo-pingpong only prints "o"</td>
+		<td>**Every**</td>
+		<td>This is most likely caused by your firewall settings. uMundo uses tcp/4242
+			upwards and might use udp/4242 upwards in the future. For iptables with 
+			Linux you can check with:
+<pre>
+	# show all rules for the INPUT chain
+	$ sudo iptables -L INPUT
+	Chain INPUT (policy ACCEPT)
+	REJECT   all -- anywhere anywhere	
+	# count the rules and remove e.g. first rule from INPUT chain
+	$ sudo iptables -D INPUT 1
+</pre>
+			The prebuilt binaries from the SDK installers are built against the Avahi
+			daemon for Linux, make sure it is running and available (you will have to
+			recompile with <tt>DISC_BONJOUR_EMBED</tt> if this is a problem).
+		</td>
+	</tr>
+<table>

@@ -1,0 +1,11 @@
+set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+set(CTEST_SITE "epikur.local")
+set(CTEST_BUILD_CONFIGURATION "Debug")
+
+set(CTEST_BUILD_NAME "darwin-x86_64 llvm bonjour")
+include("tests/bonjourSystem.ctest")
+include("common.ctest.inc")
+
+set(CTEST_BUILD_NAME "darwin-x86_64 llvm bonjour embed")
+include("tests/bonjourEmbedded.ctest")
+include("common.ctest.inc")

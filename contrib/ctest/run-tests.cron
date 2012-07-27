@@ -1,0 +1,73 @@
+#!/bin/bash
+
+set -e
+ME=`basename $0`
+TEST_DIR="$( cd "$( dirname "$0" )" && pwd )"
+TESTS="$( cd $TEST_DIR/tests && pwd)"
+HOSTS="$( cd $TEST_DIR/hosts && pwd)"
+HOSTNAME="$( hostname )"
+LOCK_DIR=/tmp/umundo-build.lock
+TESTFILE=$HOSTS/$HOSTNAME.ctest
+
+# path to ctest
+if [ ! -n "${CTEST:+x}" ]; then
+	CTEST=/usr/local/bin/ctest
+	export CTEST
+fi
+
+if [ ! -n "${CTEST_SUBMIT_TYPE:+x}" ]; then
+	CTEST_SUBMIT_TYPE="Experimental"
+	export CTEST_SUBMIT_TYPE
+fi
+
+# Try to find umundo source if not given in UMUNDO_SOURCE_DIR
+if [ ! -n "${UMUNDO_SOURCE_DIR:+x}" ]; then
+	# assume that this file is in ${UMUNDO_SOURCE_DIR}/contrib/ctest 
+	# and use the directory two levels above.
+	UMUNDO_SOURCE_DIR="$( cd $TEST_DIR/../.. && pwd)"
+	export UMUNDO_SOURCE_DIR
+fi
+
+if [ ! -e $CTEST ]; then
+	echo "Error: Could not find CTEST, set the CTEST environment variable."
+	exit;	
+fi
+
+# is there a CMakeLists.txt file within?
+if [ ! -e ${UMUNDO_SOURCE_DIR}/CMakeLists.txt ]; then
+	echo "Error: Could not find umundo in ${UMUNDO_SOURCE_DIR}, set the UMUNDO_SOURCE_DIR environment variable."
+	exit;
+fi
+
+if [ ! -e $TESTFILE ]; then
+	echo "Error: No tests for $HOSTNAME in $TESTFILE."
+	exit;	
+fi
+
+#
+# Try to acquire build lock
+#
+while true; do
+	if mkdir "$LOCK_DIR"; then
+		trap 'rm -rf "$LOCK_DIR"' 0    # remove directory when script finishes
+		break
+	else
+		echo "Could not get build lock- waiting"
+		sleep 10
+	fi
+done
+
+if [ "$CTEST_SUBMIT_TYPE" = "Continuous" ]; then
+	cd $UMUNDO_SOURCE_DIR
+	#git clean -f -d
+	#GIT_SYNC=`git pull`
+	GIT_SYNC="Already up-to-date."
+	echo $GIT_SYNC
+	if [ "$GIT_SYNC" = "Already up-to-date." ]; then
+		echo "Not running continuous tests, already up-to-date"
+		exit
+	fi
+fi
+
+cd $TEST_DIR
+nice $CTEST -VV --timeout 100 -S $TESTFILE

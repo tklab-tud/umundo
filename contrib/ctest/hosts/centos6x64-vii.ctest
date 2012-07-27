@@ -13,7 +13,7 @@ set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour embedded")
 include("common.ctest.inc")
 
 # test android cross-compile with embedded bonjour
-include("tests/avahi.ctest")
-set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
-set(CTEST_BUILD_OPTIONS "-DCMAKE_TOOLCHAIN_FILE=../CrossCompile-Android.cmake ${CTEST_BUILD_OPTIONS}")
+include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64-android gcc bonjour embedded")
+set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
 include("common.ctest.inc")

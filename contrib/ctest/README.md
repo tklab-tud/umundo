@@ -50,13 +50,39 @@ test you prepared.
 		<td>"Debug", "Release" ..</td>
 	</tr>
 	<tr>
+		<td><tt>CTEST_TOOLCHAIN</tt></td>
+		<td>Path to a cmake toolchain file for cross compiling.</td>
+	</tr>
+	<tr>
 		<td><tt>CTEST_BUILD_NAME</tt></td>
 		<td>Name of the particular build you are about to submit (e.g. "darwin-x86_64 llvm bonjour").</td>
 	</tr>
 	<tr>
 		<td><tt>CTEST_BUILD_OPTIONS</tt></td>
-		<td>Parameters to be passed to cmake when preparing the build. These will most likely come from one of the tests/*.ctest files</td>
+		<td>Parameters to be passed to cmake when preparing the build. These will 
+			most likely come from one of the tests/*.ctest files.</td>
 	</tr>
 </table>
 
-When unsure have a look at the existing host test files.
+## Example from the centos6x64-vii build-slave:
+
+    set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+    set(CTEST_SITE "centos6x64-vii")
+    set(CTEST_BUILD_CONFIGURATION "Debug")
+
+    # test with avahi
+    include("tests/avahi.ctest")
+    set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
+    include("common.ctest.inc")
+
+    # test for embedded bonjour
+    include("tests/bonjourEmbedded.ctest")
+    set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour embedded")
+    include("common.ctest.inc")
+
+    # test android cross-compile with embedded bonjour
+    include("tests/bonjourEmbedded.ctest")
+    set(CTEST_BUILD_NAME "linux-x86_64-android gcc bonjour embedded")
+    set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
+    include("common.ctest.inc")
+

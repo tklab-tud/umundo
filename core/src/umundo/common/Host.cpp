@@ -109,6 +109,7 @@ const string& Host::getHostname() {
 const vector<Interface> Host::getInterfaces() {
   vector<Interface> ifcs;
   int err = 0;
+	(void)err;
   
 #if defined(UNIX) && !defined(ANDROID)
 	struct ifaddrs *ifaddr;

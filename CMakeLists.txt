@@ -482,7 +482,7 @@ endif()
 message(STATUS "Libraries will end up in: " ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 ############################################################
-# Tests and reports
+# Tests
 ############################################################
 
 if (NOT CMAKE_CROSSCOMPILING)

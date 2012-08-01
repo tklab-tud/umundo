@@ -78,7 +78,7 @@ ctest_configure()                 # run cmake
 # We cannot add dependencies to target "test" e.g. for the java bindings, we
 # work around it by having an explicit "check" target as well
 #
-set(CTEST_BUILD_TARGET "check")
+set(CTEST_BUILD_TARGET "ctest")
 ctest_build()                     # build custom target to depend upon
 ctest_test()                      # run tests
 

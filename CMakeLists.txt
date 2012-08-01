@@ -116,12 +116,12 @@ else()
 	OPTION(BUILD_TESTS "Build umundo tests" OFF)
 endif()
 
+# a dummy target to depend on the targets needed for tests, see:
+# http://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
+add_custom_target(ctest COMMAND ${CMAKE_CTEST_COMMAND})
 if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)
-	# a dummy target to depend on the targets needed for tests, see:
-	# http://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
-	add_custom_target(ctest COMMAND ${CMAKE_CTEST_COMMAND})
 endif()
 
 OPTION(DIST_PREPARE "Put libraries into the lib folder of the source tree" OFF)

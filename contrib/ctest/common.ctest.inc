@@ -27,8 +27,8 @@ if ("$ENV{UMUNDO_SOURCE_DIR}" STREQUAL "")
 endif()
 
 set(CTEST_SOURCE_DIRECTORY $ENV{UMUNDO_SOURCE_DIR})
-set(CTEST_BINARY_DIRECTORY "/tmp/build-${CTEST_SUBMIT_TYPE}-${CTEST_SCRIPT_NAME}")
 set(CTEST_SUBMIT_TYPE $ENV{CTEST_SUBMIT_TYPE})
+set(CTEST_BINARY_DIRECTORY "/tmp/build-${CTEST_SUBMIT_TYPE}-${CTEST_SCRIPT_NAME}")
 
 set(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 1048576)
 set(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 1048576)
@@ -74,7 +74,12 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
 ctest_update()                    # synchronize with git head
 ctest_configure()                 # run cmake
-ctest_build()                     # run build-system
+#
+# We cannot add dependencies to target "test" e.g. for the java bindings, we
+# work around it by having an explicit "check" target as well
+#
+set(CTEST_BUILD_TARGET "ctest")
+ctest_build()                     # build custom target to depend upon 
 ctest_test()                      # run tests
 
 if (WITH_MEMCHECK AND CTEST_COVERAGE_COMMAND)

@@ -345,10 +345,11 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 	rpcReqMsg->putMeta("methodName", name);
 	rpcReqMsg->putMeta("outType", outType);
 	assert(_requests.find(reqId) == _requests.end());
-	_requests[reqId] = Monitor();
+	_requests[reqId] = new Monitor();
 	_rpcPub->send(rpcReqMsg);
-	UMUNDO_WAIT(_requests[reqId]);
+	_requests[reqId]->wait();
 	ScopeLock lock(&_mutex);
+	delete _requests[reqId];
 	_requests.erase(reqId);
 	out = _responses[reqId];
 	_responses.erase(reqId);
@@ -362,7 +363,7 @@ void ServiceStub::receive(void* obj, Message* msg) {
 		ScopeLock lock(&_mutex);
 		if (_requests.find(respId) != _requests.end()) {
 			_responses[respId] = obj;
-			UMUNDO_SIGNAL(_requests[respId]);
+			_requests[respId]->signal();
 		}
 	}
 }

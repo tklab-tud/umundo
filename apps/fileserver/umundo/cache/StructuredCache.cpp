@@ -27,7 +27,7 @@
 namespace umundo {
 
 SCache::SCache(uint64_t size) : _maxSize(size) {
-	_relevanceThreshold = (float)0.001;
+	_distanceThreshold = 10;
 	_convergenceThreshold = (float)0.01;
 	_profiler = NULL;
 	start();
@@ -52,11 +52,11 @@ void SCache::setMaxSize(uint64_t maxSize) {
 /**
  * Get the size this cache would have with the given pressure.
  */
-uint64_t SCache::assumePressure(float pressure, bool breakEarly) {
+uint64_t SCache::getSizeAtPressure(float pressure, bool breakEarly) {
 	uint64_t proposedSize = 0;
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();
 	while(itemIter != _cacheItems.end()) {
-		proposedSize += (*itemIter)->assumePressure(pressure);
+		proposedSize += (*itemIter)->getSizeAtPressure(pressure);
 		if (proposedSize > _maxSize && breakEarly)
 			break;
 		itemIter++;
@@ -67,12 +67,12 @@ uint64_t SCache::assumePressure(float pressure, bool breakEarly) {
 void SCache::update() {
 	ScopeLock lock(&_mutex);
 
-	resetRelevance();
+	resetDistance();
 
 	float newPressure = _pressure;
 
 	// cache size if we would apply the new pressure
-	uint64_t pSize = assumePressure(newPressure, _profiler == NULL);
+	uint64_t pSize = getSizeAtPressure(newPressure, _profiler == NULL);
 	if (_profiler != NULL)
 		_profiler->startedPressureBalancing(newPressure);
 
@@ -95,7 +95,7 @@ void SCache::update() {
 	// use binary search to arrive at optimal pressure
 	while(pSize > _maxSize || growing) {
 		newPressure = (float)((upperPressure + lowerPressure) / 2.0);
-		pSize = assumePressure(newPressure, _profiler == NULL);
+		pSize = getSizeAtPressure(newPressure, _profiler == NULL);
 		growing = pSize < _maxSize;
 		std::cout << "[" << lowerPressure << "," << upperPressure << "]: " << newPressure << " => " << pSize << " of " << _maxSize << " ";
 
@@ -150,13 +150,13 @@ void SCache::run() {
 	}
 }
 
-void SCache::resetRelevance() {
+void SCache::resetDistance() {
 	ScopeLock lock(&_mutex);
 
 	// set distance to infinity
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();
 	while(itemIter != _cacheItems.end()) {
-		(*itemIter)->_relevance = 0;
+		(*itemIter)->_distance = std::numeric_limits<int>::max();
 		itemIter++;
 	}
 
@@ -166,7 +166,7 @@ void SCache::resetRelevance() {
 	while(ptrIter != _cachePointers.end()) {
 		shared_ptr<SCachePointer> ptr = ptrIter->lock();
 		if (ptr.get() != NULL) {
-			itemQueue.push_back(std::make_pair(1, ptr->_item));
+			itemQueue.push_back(std::make_pair(0, ptr->_item));
 		} else {
 			// weak pointer points to deleted object
 			_cachePointers.erase(ptrIter);
@@ -176,13 +176,16 @@ void SCache::resetRelevance() {
 
 	// breadth first propagation of relevance
 	while(!itemQueue.empty()) {
-		float relevance = itemQueue.front().first;
-		SCacheItem* item =itemQueue.front().second;
+		int distance = itemQueue.front().first;
+		SCacheItem* item = itemQueue.front().second;
+    item->_distance = distance;
 
-		set<SCacheItem*> next = item->relevanceFromParent(relevance);
+		set<SCacheItem*> next = item->getNext();
 		set<SCacheItem*>::iterator nextIter = next.begin();
 		while(nextIter != next.end()) {
-			itemQueue.push_back(std::make_pair(item->_relevance, (*nextIter)));
+      if ((*nextIter)->_distance > distance + 1) {
+        itemQueue.push_back(std::make_pair(distance + 1, (*nextIter)));
+      }
 			nextIter++;
 		}
 		itemQueue.pop_front();
@@ -220,29 +223,6 @@ bool SCache::isEmpty() {
 }
 
 SCacheItem::~SCacheItem() {
-}
-
-/**
- * Items in the cache pointed to by tha application receive
- * relevance 1 and have to propagate relevance to their
- * neighbors.
- */
-set<SCacheItem*> SCacheItem::relevanceFromParent(float parentRelevance) {
-	set<SCacheItem*> empty;
-
-	// calculate our relevance from the relevance of our parent- use a SPA here
-	float relevance = (float)(parentRelevance * 0.8);
-
-	// we are not relevant enough, do not return other nodes
-	if (relevance < _cache->_relevanceThreshold)
-		return empty;
-
-	// we might have received a higher relevance from another neighbor already
-	if (_relevance >= relevance)
-		return empty;
-
-	_relevance = relevance;
-	return getNext();
 }
 
 }

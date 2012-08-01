@@ -36,8 +36,8 @@ if (RPC_PROTOBUF)
 
 		add_executable(protoc-umundo-cpp-rpc src/umundo/protoc-rpc/ServiceGeneratorCPP.cpp)
 		target_link_libraries(protoc-umundo-cpp-rpc ${PROTOBUF_PROTOC_LIBRARIES} ${PROTOBUF_LIBRARIES})
-		# this is weird - on debian 64bit we need to link against pthread for 'pthread_once'
-		if (THREAD_PTHREAD AND 64BIT_HOST) 
+		# this is weird - on debian we need to link against pthread for 'pthread_once'
+		if (THREAD_PTHREAD) 
 			target_link_libraries(protoc-umundo-cpp-rpc pthread)
 		endif()
 		set_target_properties(protoc-umundo-cpp-rpc PROPERTIES FOLDER "Tools")
@@ -51,8 +51,8 @@ if (RPC_PROTOBUF)
 
 		add_executable(protoc-umundo-java-rpc src/umundo/protoc-rpc/ServiceGeneratorJava.cpp)
 		target_link_libraries(protoc-umundo-java-rpc ${PROTOBUF_PROTOC_LIBRARIES} ${PROTOBUF_LIBRARIES})
-		if (THREAD_PTHREAD AND 64BIT_HOST) 
-			target_link_libraries(protoc-umundo-cpp-rpc pthread)
+		if (THREAD_PTHREAD) 
+			target_link_libraries(protoc-umundo-java-rpc pthread)
 		endif()
 		set_target_properties(protoc-umundo-java-rpc PROPERTIES FOLDER "Tools")
 
@@ -90,7 +90,7 @@ LIST(APPEND UMUNDORPC_LIBRARIES umundorpc)
 
 LIST(SORT UMUNDORPC_HEADER_FILES)
 
-add_library(umundorpc ${UMUNDORPC_FILES})
+add_library(umundorpc ${UMUNDORPC_FILES} ${UMUNDORPC_HEADER_FILES})
 target_link_libraries(umundorpc ${UMUNDORPC_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDORPC_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundorpc COMPONENT libraryRPC)

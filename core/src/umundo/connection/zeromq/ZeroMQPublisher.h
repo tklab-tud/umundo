@@ -40,7 +40,7 @@ public:
 	void resume();
 
 	void send(Message* msg);
-	int waitForSubscribers(int count);
+	int waitForSubscribers(int count, int timeoutMs);
 
 protected:
 	/**

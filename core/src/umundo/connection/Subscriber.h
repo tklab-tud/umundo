@@ -93,6 +93,11 @@ public:
 	virtual const string& getChannelName()           {
 		return _impl->getChannelName();
 	}
+
+	virtual const string& getUUID()           {
+		return _impl->getUUID();
+	}
+
 	virtual void setChannelName(string channelName)  {
 		_impl->setChannelName(channelName);
 	}

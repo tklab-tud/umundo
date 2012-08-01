@@ -505,7 +505,6 @@ void ZeroMQNode::added(shared_ptr<NodeStub> node) {
 
 		std::stringstream ss;
 		ss << node->getTransport() << "://" << node->getIP() << ":" << node->getPort();
-		LOG_DEBUG("ZeroMQNode::added connecting to %s", ss.str().c_str());
 
 		// connect a socket to the remote node port
 		void* client;
@@ -579,14 +578,14 @@ void ZeroMQNode::removed(shared_ptr<NodeStub> node) {
 						subIter++;
 					}
 				} else {
-					LOG_DEBUG("Removed node was subscribed to non-existent publisher");
+					LOG_DEBUG("removed: node was subscribed to non-existent publisher");
 				}
 				localPubIter++;
 			}
 		}
 
 		if (_sockets.find(node->getUUID()) == _sockets.end()) {
-			LOG_WARN("Removed client that was never added: %s", SHORT_UUID(node->getUUID()).c_str());
+			LOG_WARN("removed: client was never added: %s", SHORT_UUID(node->getUUID()).c_str());
 			assert(validateState());
 			UMUNDO_UNLOCK(_mutex);
 			return;

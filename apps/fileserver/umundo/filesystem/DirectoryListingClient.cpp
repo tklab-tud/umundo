@@ -51,10 +51,14 @@ std::vector<shared_ptr<DirectoryEntry> > DirectoryListingClient::list(const stri
 	for (int i = 0; i < reply->entries_size(); i++) {
 		string key = reply->entries(i).path() + ":" + reply->entries(i).name();
 		if (_knownEntries.find(key) == _knownEntries.end())
-			_knownEntries[key] = shared_ptr<DirectoryEntry>(reply->mutable_entries(i));
+			_knownEntries[key] = shared_ptr<DirectoryEntry>(new DirectoryEntry(reply->entries(i)));
 
 		entries.push_back(_knownEntries[key]);
 	}
+  
+  delete req;
+  delete reply;
+  
 	return entries;
 }
 
@@ -64,7 +68,7 @@ void DirectoryListingClient::receive(void* object, Message* msg) {
 	if (msg->getMeta().find("operation") != msg->getMeta().end()) {
 		ScopeLock lock(&_mutex);
 		string op = msg->getMeta("operation");
-		DirectoryEntry* dirEntry = (DirectoryEntry*)object;
+		DirectoryEntry* dirEntry = new DirectoryEntry(*(DirectoryEntry*)object);
 		string key = dirEntry->path() + ":" + dirEntry->name();
 		if (op.compare("added") == 0) {
 			if (_knownEntries.find(key) == _knownEntries.end())

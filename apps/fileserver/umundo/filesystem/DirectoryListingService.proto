@@ -23,6 +23,9 @@ message DirectoryEntry {
 	optional int64 ctime_ms = 12;
 	optional int64 mtime_ms = 13;
 	optional int64 btime_ms = 14;
+	
+	required string hostId = 15;
+
 }
 
 message DirectoryListingRequest {

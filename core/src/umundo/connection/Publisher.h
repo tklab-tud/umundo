@@ -104,7 +104,7 @@ public:
 
 	/** @name Optional subscriber awareness */
 	//@{
-	virtual int waitForSubscribers(int count)        {
+	virtual int waitForSubscribers(int count, int timeoutMs)        {
 		return -1;
 	}
 	virtual void setGreeter(Greeter* greeter)        {
@@ -143,8 +143,8 @@ public:
 		_impl->send(msg);
 	}
 	void send(const char* data, size_t length);
-	int waitForSubscribers(int count)              {
-		return _impl->waitForSubscribers(count);
+	int waitForSubscribers(int count, int timeoutMs = 0)              {
+		return _impl->waitForSubscribers(count, timeoutMs);
 	}
 	void setGreeter(Greeter* greeter)    {
 		return _impl->setGreeter(greeter);

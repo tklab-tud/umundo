@@ -14,6 +14,7 @@
  */
 
 #include "umundo/common/Regex.h"
+#include <pcre.h>
 
 namespace umundo {
 
@@ -26,7 +27,7 @@ void Regex::setPattern(const string& pattern) {
 	_error.clear();
 
 	const char *error;
-	_re = pcre_compile(_pattern.c_str(),    // the pattern
+	_re = (void*)pcre_compile(_pattern.c_str(),    // the pattern
 	                   0,              // default options
 	                   &error,         // error message
 	                   &_errorOffset,  // error offset
@@ -49,7 +50,7 @@ bool Regex::matches(const string& text) {
 	if (_re == NULL)
 		return false;
 
-	int rc = pcre_exec(_re,           // the compiled pattern
+	int rc = pcre_exec((pcre*)_re,    // the compiled pattern
 	                   NULL,          // no extra data from study
 	                   text.c_str(),  // subject string
 	                   text.length(), // length of subject

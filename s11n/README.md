@@ -41,7 +41,7 @@ will have to invoke protoc as part of their build process.
 
 For C++ and cmake, the UseUMUNDO.cmake module provides the <tt>UMUNDO_PROTOBUF_GENERATE_CPP_S11N</tt>
 macro. For Java there is an example in the [build-java.xml](https://github.com/tklab-tud/umundo/blob/master/contrib/java/build-java.xml)
-file used to build the <tt>umundocore.jar</tt>.
+file used to build the <tt>umundo.jar</tt>.
 
 It is also possible to provide just the .desc files that can be created with the protoc 
 compiler to get generic object representations in any target language. I am 

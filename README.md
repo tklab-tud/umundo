@@ -16,7 +16,9 @@ iOS devices and Android.
 <dd>- <a href="http://umundo.tk.informatik.tu-darmstadt.de/docs">Doxygen Documentation</a></dd>
 
 ## License
-uMundo is distributed under the Simplified BSD license.
+uMundo itself is distributed under the Simplified BSD license.
+
+Please have a look at the licenses of the [libraries we depend upon](https://github.com/tklab-tud/umundo/blob/master/docs/BUILDING.md#build-dependencies) as well.
 
 ## Download
 The fastest way to get started is to grab the [uMundo SDK](http://umundo.tk.informatik.tu-darmstadt.de/installer)
@@ -100,12 +102,6 @@ various stages of maturity:
 	</table>
 	</dd>
 </dl>
-
-## Contributors
-
-- Stefan Radomski <radomski@tk.informatik.tu-darmstadt.de>
-- Daniel Schreiber <schreiber@tk.informatik.tu-darmstadt.de>
-- Felix Heinrichs <felix.heinrichs@cs.tu-darmstadt.de>
 
 ## Status
 

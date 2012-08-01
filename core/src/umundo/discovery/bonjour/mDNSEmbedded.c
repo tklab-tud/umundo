@@ -1,6 +1,10 @@
 /**
- *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @file
+ *  @brief      Wrapper for mDNSEmbeddedAPI with Bonjour.
+ *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @copyright  Simplified BSD
  *
+ *  @cond
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
  *  project.
@@ -11,12 +15,13 @@
  *
  *  You should have received a copy of the FreeBSD license along with this
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
+ *  @endcond
  */
 
 #include <stdlib.h>
 #include <assert.h>
 
-// include order matters 
+// include order matters
 #include "mDNSEmbeddedAPI.h"
 #ifdef WIN32
 #include "mDNSWin32.h"    // Defines the specific types needed to run mDNS on windows platforms
@@ -55,12 +60,12 @@ mDNSexport int embedded_mDNSInit() {
 	mDNSPlatformMemZero( &platformSupport, sizeof(platformSupport));
 
 	err = mDNS_Init(
-		&mDNSStorage, 
-		&platformSupport, 
-		rrcachestorage, 
-		RR_CACHE_SIZE, 
-		mDNS_Init_AdvertiseLocalAddresses, 
-		mDNS_Init_NoInitCallback, 
+		&mDNSStorage,
+		&platformSupport,
+		rrcachestorage,
+		RR_CACHE_SIZE,
+		mDNS_Init_AdvertiseLocalAddresses,
+		mDNS_Init_NoInitCallback,
 		mDNS_Init_NoInitCallbackContext
 	);
 	if (err)

@@ -287,7 +287,7 @@ Until I get around to do it, just turn-off UAC.
 
 <table>
     <tr><th>Dependency</th><th>Search Path</th><th>CMake Variables</th><th>Comment</th></tr>
-	<tr><td bgcolor="#ffd">Protocol Buffers<br>[<a href="http://protobuf.googlecode.com/files/protobuf-2.4.1.zip">download</a>]</td>
+	<tr><td bgcolor="#ffffdd">Protocol Buffers<br>[<a href="http://protobuf.googlecode.com/files/protobuf-2.4.1.zip">download</a>]</td>
 		<td>
 			<tt>&lt;UMUNDO_BUILD_DIR>/..</tt><br>
 			<tt>&lt;UMUNDO_BUILD_DIR>/../..</tt><br>

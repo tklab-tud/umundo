@@ -236,10 +236,11 @@ endif()
 if (WIN32)
 	set(CPACK_GENERATOR "NSIS;ZIP")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "uMundo")
-	set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-		CopyFiles \\\"$INSTDIR\\\\lib\\\\umundo.lib\\\" \\\"$SYSDIR\\\"
-	")
-
+	# pairs of executables and labels for start menu
+	set(CPACK_NSIS_MENU_LINKS
+		" ;uMundo SDK"
+		"bin\\\\umundo-pingpong.exe;uMundo Ping-Pong"
+		"bin\\\\umundo-monitor.exe;uMundo Monitor")
 
 endif()
 
@@ -313,9 +314,9 @@ endif()
 
 list(FIND UMUNDO_CPACK_COMPONENTS "samples" FOUND_ITEM)
 if (FOUND_ITEM GREATER -1)
-	set(CPACK_COMPONENT_SAMPLES_DISPLAY_NAME "Sample Applications with IDE templates")
+	set(CPACK_COMPONENT_SAMPLES_DISPLAY_NAME "IDE Templates and sample programs")
 	set(CPACK_COMPONENT_SAMPLES_DESCRIPTION
-  		"Sample applications with source-code, illustrating the API and usage of the library.")
+  		"Templates for Xcode, Visual Studio and Eclipse with a sample program.")
 endif()
 
 list(FIND UMUNDO_CPACK_COMPONENTS "docs" FOUND_ITEM)

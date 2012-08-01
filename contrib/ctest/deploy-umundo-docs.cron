@@ -10,6 +10,7 @@ fi
 
 if [ -d ${UMUNDO_SOURCE_DIR} ]; then
 
+rm -rf /tmp/build-docs
 mkdir -p /tmp/build-docs
 cd /tmp/build-docs
 $CMAKE ${UMUNDO_SOURCE_DIR}

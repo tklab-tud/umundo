@@ -88,7 +88,7 @@ BRIEF_MEMBER_DESC      = YES
 # Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the
 # brief descriptions will be completely suppressed.
 
-REPEAT_BRIEF           = YES
+REPEAT_BRIEF           = NO
 
 # This tag implements a quasi-intelligent brief description abbreviator
 # that is used to form the text in various listings. Each string
@@ -630,6 +630,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = ../core/src \
+                         ../core/bindings \
                          ../rpc/src \
                          ../s11n/src
 
@@ -693,7 +694,7 @@ EXCLUDE_PATTERNS       =
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # AClass::ANamespace, ANamespace::*Test
 
-EXCLUDE_SYMBOLS        = 
+EXCLUDE_SYMBOLS        =
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or
 # directories that contain example code fragments that are included (see

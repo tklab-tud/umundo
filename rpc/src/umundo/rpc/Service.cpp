@@ -1,6 +1,9 @@
 /**
- *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @file
+ *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @copyright  Simplified BSD
  *
+ *  @cond
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
  *  project.
@@ -11,6 +14,7 @@
  *
  *  You should have received a copy of the FreeBSD license along with this
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
+ *  @endcond
  */
 
 #include "umundo/rpc/Service.h"
@@ -270,26 +274,6 @@ Message* ServiceDescription::toMessage() {
 	msg->putMeta("desc:name", _svcName);
 	msg->putMeta("desc:channel", _channelName);
 	return msg;
-}
-
-const string ServiceDescription::getName() {
-	return _svcName;
-}
-
-const string ServiceDescription::getChannelName() {
-	return _channelName;
-}
-
-const map<string, string>& ServiceDescription::getProperties() {
-	return _properties;
-}
-
-const string ServiceDescription::getProperty(const string& key) {
-	return _properties[key];
-}
-
-void ServiceDescription::setProperty(const string& key, const string& value) {
-	_properties[key] = value;
 }
 
 ServiceStub::ServiceStub(ServiceDescription* svcDesc) {

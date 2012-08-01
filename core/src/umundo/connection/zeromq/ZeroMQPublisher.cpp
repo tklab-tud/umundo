@@ -53,6 +53,7 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	_uuid = (_uuid.length() > 0 ? _uuid : UUID::getUUID());
 	_config = boost::static_pointer_cast<PublisherConfig>(config);
 	_transport = "tcp";
+	/// @todo: We might want all publishers to share only a few sockets
 	(_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	(_closer = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	zmq_setsockopt(_closer, ZMQ_SUBSCRIBE, _uuid.c_str(), _uuid.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));

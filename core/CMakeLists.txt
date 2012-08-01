@@ -2,12 +2,30 @@
 # Gather libraries and header files
 ############################################################
 
+# gather all header files
+file(GLOB_RECURSE UMUNDOCORE_HEADER_FILES src/umundo/*.h)
+
 # include directories for our header files
 include_directories(src)
 include_directories(bindings)
 
-# gather all header files
-file(GLOB_RECURSE UMUNDOCORE_HEADER_FILES src/umundo/*.h)
+# add objective-c bindings on mac and ios
+if (APPLE OR IOS)
+	file(GLOB_RECURSE UMUNDOCORE_OBJC_FILES bindings/umundo-objc/core/*.mm)
+	file(GLOB_RECURSE UMUNDOCORE_OBJC_HEADER_FILES bindings/umundo-objc/core/*.h)
+	list(APPEND UMUNDOCORE_HEADER_FILES ${UMUNDOCORE_OBJC_HEADER_FILES})
+	list(APPEND UMUNDOCORE_FILES ${UMUNDOCORE_OBJC_FILES})
+	if (IOSSIM)
+		foreach(UMUNDOCORE_OBJC_FILE ${UMUNDOCORE_OBJC_FILES})
+#
+# set_source_files_properties is local to the directory -> we cannot move this to bindings/:
+# http://www.cmake.org/pipermail/cmake/2010-March/036012.html
+#
+			set_source_files_properties(${UMUNDOCORE_OBJC_FILE} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
+		endforeach()
+	endif()
+	include_directories(.)
+endif()
 
 ###########################################
 # gather implementation agnostic files
@@ -17,7 +35,7 @@ file(GLOB CONN_FILES src/umundo/connection/*.cpp)
 file(GLOB DISC_FILES src/umundo/discovery/*.cpp)
 file(GLOB TREAD_FILES src/umundo/thread/*.cpp)
 
-list(APPEND UMUNDOCORE_FILES 
+list(APPEND UMUNDOCORE_FILES
 	${COMMON_FILES}
 	${CONN_FILES}
 	${DISC_FILES}
@@ -40,20 +58,9 @@ endif()
 # PCRE
 ###########################################
 
-if (WIN32)
-	if(EXISTS "C:/Program Files/GnuWin32/")
-		set(PC_PCRE_LIBDIR "C:/Program Files/GnuWin32/lib")
-		set(PC_PCRE_INCLUDEDIR "C:/Program Files/GnuWin32/include")
-	elseif(EXISTS "C:/Program Files (x86)/GnuWin32/")
-		set(PC_PCRE_LIBDIR "C:/Program Files (x86)/GnuWin32/lib")
-		set(PC_PCRE_INCLUDEDIR "C:/Program Files (x86)/GnuWin32/include")
-	endif()
-endif()
-
 find_package(PCRE REQUIRED)
 include_directories(${PCRE_INCLUDE_DIR})
 LIST(APPEND UMUNDOCORE_LIBRARIES ${PCRE_LIBRARIES})
-
 
 ###########################################
 # Bonjour
@@ -72,7 +79,7 @@ if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
 
 			file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES src/umundo/discovery/bonjour/mDNSEmbedded.c)
 			list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_EMBED_FILES})
-			
+
 			if (WIN32)
 				LIST(APPEND UMUNDOCORE_LIBRARIES "Iphlpapi")
 				LIST(APPEND UMUNDOCORE_LIBRARIES "Netapi32")
@@ -135,7 +142,7 @@ LIST(APPEND UMUNDOCORE_LIBRARIES umundocore)
 # process other directories
 ############################################################
 
-add_subdirectory(bindings)    
+add_subdirectory(bindings)
 
 ############################################################
 # setup umundocore library
@@ -143,7 +150,7 @@ add_subdirectory(bindings)
 
 LIST(SORT UMUNDOCORE_HEADER_FILES)
 
-add_library(umundocore ${UMUNDOCORE_FILES})
+add_library(umundocore ${UMUNDOCORE_FILES} ${UMUNDOCORE_HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
 target_link_libraries(umundocore ${UMUNDOCORE_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOCORE_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundocore COMPONENT libraryCore)

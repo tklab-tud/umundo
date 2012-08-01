@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "0")
-SET(UMUNDO_VERSION_PATCH "5")
+SET(UMUNDO_VERSION_PATCH "6")
 
 # build type has to be set before the project definition
 SET(BUILD_TYPE_HELP "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug, Release, RelWithDebInfo, MinSizeRel.")
@@ -40,8 +40,9 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(64BIT_HOST ON)
 	set(64BIT_LIB_POSTFIX 64)
 	# additional library paths to be searched
-	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
-	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
+	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
+# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
+# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
 	if(CMAKE_COMPILER_IS_GNUCXX)
 		add_definitions("-fPIC") # only required with 64Bit builds?
 	endif()
@@ -54,6 +55,7 @@ endif()
 #
 
 SET(UMUNDO_PREBUILT_LIBRARY_PATH)
+SET(UMUNDO_PREBUILT_HEADER_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
 # search roots for libraries
 if(CMAKE_CROSSCOMPILING)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "ONLY")
@@ -79,23 +81,21 @@ else ()
 	endif()
 endif()
 
-LIST(APPEND UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
-
 #
 # BUILD_PREFER_PREBUILT_LIBS:
 # Do we want to search system path or contrib/prebuilt first?
 #
 if (CMAKE_CROSSCOMPILING)
 	# always prefer prebuilt libraries for cross-compiling
-	SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${CMAKE_FIND_ROOT_PATH}")
+	SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_FIND_ROOT_PATH}")
 else()
 	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)
 	if (BUILD_PREFER_PREBUILT_LIBS)
 		# for everything, we start our search in contrib/prebuilt
-		SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${CMAKE_FIND_ROOT_PATH}")
+		SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_FIND_ROOT_PATH}")
 	else()
 		# using this trick, we search paths from find_* before CMAKE_FIND_ROOT_PATH as '/' is prepended first
-		SET(CMAKE_FIND_ROOT_PATH "/;${CMAKE_FIND_ROOT_PATH};${UMUNDO_PREBUILT_LIBRARY_PATH}")
+		SET(CMAKE_FIND_ROOT_PATH "/;${CMAKE_FIND_ROOT_PATH};${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH}")
 	endif()
 endif()
 
@@ -111,14 +111,17 @@ endif()
 
 # enable testing and actual output with tests
 if (CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_TESTS "Build umundo tests" OFF) 
+	OPTION(BUILD_TESTS "Build umundo tests" OFF)
 else()
-	OPTION(BUILD_TESTS "Build umundo tests" OFF) 
+	OPTION(BUILD_TESTS "Build umundo tests" OFF)
 endif()
 
 if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)
+	# a dummy target to depend on the targets needed for tests, see:
+	# http://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
+	add_custom_target(ctest COMMAND ${CMAKE_CTEST_COMMAND})
 endif()
 
 OPTION(DIST_PREPARE "Put libraries into the lib folder of the source tree" OFF)
@@ -132,7 +135,7 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 if(CMAKE_COMPILER_IS_GNUCXX)
 	# best practices from scott meyers
 	#	add_definitions(-Weffc++)
-	
+
 	# all warnings
 	add_definitions(-Wall)
 
@@ -158,7 +161,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 		# add_definitions("-ffunction-sections -fdata-sections")
 	endif()
 elseif (MSVC)
-	add_definitions("-DZMQ_STATIC")	
+	add_definitions("-DZMQ_STATIC")
+	add_definitions("-DPCRE_STATIC")
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	# SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB")
@@ -170,27 +174,34 @@ string(TOUPPER BUILD_${CMAKE_BUILD_TYPE} BUILD_TYPE)
 add_definitions("-D${BUILD_TYPE}")
 
 if (CMAKE_CROSSCOMPILING AND ANDROID)
-	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" OFF) 
-	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" OFF) 
-	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" OFF) 
+	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" OFF)
+	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" OFF)
+	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" OFF)
 else()
-	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" ON) 
-	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" ON) 
-	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" ON) 
+	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" ON)
+	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" ON)
+	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" ON)
 endif()
 if (CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF) 
+	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
 else()
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF) 
+	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
 endif()
 
-OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF) 
-if (CMAKE_CROSSCOMPILING OR DIST_PREPARE)
+if (WIN32 OR IOS)
+	OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+else()
+	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
+endif()
+
+# Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
+# http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
+if (NOT 64BIT_HOST AND CMAKE_CROSSCOMPILING OR WIN32)
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
 else()
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
 endif()
-OPTION(DEBUG_THREADS "Print log messages on mutex and monitor access" OFF) 
+OPTION(DEBUG_THREADS "Print log messages on mutex and monitor access" OFF)
 if (DEBUG_THREADS)
 	add_definitions("-DDEBUG_THREADS")
 endif()
@@ -204,10 +215,10 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
 	SET(LOGLEVEL_DISC "1" CACHE STRING "Log-level for discovery - higher is more verbose" FORCE)
 	SET(LOGLEVEL_NET "1" CACHE STRING "Log-level for networking - higher is more verbose" FORCE)
 else()
-	SET(LOGLEVEL_S11N "4" CACHE STRING "Log-level for serialization - higher is more verbose" FORCE)
-	SET(LOGLEVEL_COMMON "4" CACHE STRING "Log-level for common - higher is more verbose" FORCE)
-	SET(LOGLEVEL_DISC "4" CACHE STRING "Log-level for discovery - higher is more verbose" FORCE)
-	SET(LOGLEVEL_NET "4" CACHE STRING "Log-level for networking - higher is more verbose" FORCE)
+	SET(LOGLEVEL_S11N "2" CACHE STRING "Log-level for serialization - higher is more verbose" FORCE)
+	SET(LOGLEVEL_COMMON "2" CACHE STRING "Log-level for common - higher is more verbose" FORCE)
+	SET(LOGLEVEL_DISC "2" CACHE STRING "Log-level for discovery - higher is more verbose" FORCE)
+	SET(LOGLEVEL_NET "2" CACHE STRING "Log-level for networking - higher is more verbose" FORCE)
 endif()
 
 SET_PROPERTY(CACHE LOGLEVEL_COMMON PROPERTY STRINGS 0 1 2 3)
@@ -232,12 +243,12 @@ SET(CMAKE_MINSIZEREL_POSTFIX "${64BIT_LIB_POSTFIX}_s")
 if(UNIX AND NOT APPLE AND NOT IOS AND NOT ANDROID)
 	# build with avahi on all unices but macosx
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" OFF)
-	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF) 
-	OPTION(DISC_AVAHI "Use avahi for discovery" ON) 
+	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF)
+	OPTION(DISC_AVAHI "Use avahi for discovery" ON)
 else()
 	# build with bonjour everywhere else
-	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON) 
-	OPTION(DISC_AVAHI "Use avahi for discovery" OFF) 	
+	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
+	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
 	if(CMAKE_CROSSCOMPILING AND ANDROID)
 		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 		# required in patched bonjour headers
@@ -272,8 +283,8 @@ else()
 endif()
 
 OPTION(NET_ZEROMQ "Use 0MQ for networking" ON)
-OPTION(S11N_PROTOBUF "Use protobuf object serialization" ON) 
-OPTION(RPC_PROTOBUF "Use protobuf remote procedure calls" ON) 
+OPTION(S11N_PROTOBUF "Use protobuf object serialization" ON)
+OPTION(RPC_PROTOBUF "Use protobuf remote procedure calls" ON)
 
 if (S11N_PROTOBUF AND WIN32)
 	# take a guess at PROTOBUF_SRC_ROOT_FOLDER
@@ -309,11 +320,16 @@ endif()
 if (DIST_PREPARE)
 	if (CMAKE_CROSSCOMPILING)
 		string(TOLOWER ${CMAKE_CROSSCOMPILING_TARGET} CMAKE_CROSSCOMPILING_TARGET_LC)
-		set(OUTPUT_DIR 
+		set(OUTPUT_DIR
 			${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}-${CMAKE_SYSTEM_VERSION}/${CMAKE_SYSTEM_PROCESSOR})
 	else()
-		set(OUTPUT_DIR 
-			${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC})
+		if (WIN32 AND 64BIT_HOST)
+			set(OUTPUT_DIR
+				${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC})
+		else()
+			set(OUTPUT_DIR
+				${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC})
+		endif()
 	endif()
 else()
 	set(OUTPUT_DIR ${PROJECT_BINARY_DIR})
@@ -405,72 +421,62 @@ endif()
 # Some concluding remarks
 ############################################################
 
+set(ALL_LIBRARIES "")
+list(APPEND ALL_LIBRARIES ${UMUNDOCORE_LIBRARIES})
+list(APPEND ALL_LIBRARIES ${UMUNDOS11N_LIBRARIES})
+list(APPEND ALL_LIBRARIES ${UMUNDORPC_LIBRARIES})
+list(APPEND ALL_LIBRARIES ${UMUNDOUTIL_LIBRARIES})
+list(SORT ALL_LIBRARIES)
+list(REMOVE_DUPLICATES ALL_LIBRARIES)
+
+message(STATUS "Linking against:")
+foreach(LIBRARY ${ALL_LIBRARIES})
+	if (LIBRARY MATCHES "debug")
+	elseif (LIBRARY MATCHES "optimized")
+	elseif (LIBRARY MATCHES "umundo.*")
+	else()
+		message(STATUS "  ${LIBRARY}")
+	endif()
+endforeach()
+
+set(AVAILABLE_LANGUAGE_BINDINGS "")
+GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
+if (UMUNDONATIVEJAVA_LOCATION)
+	set(AVAILABLE_LANGUAGE_BINDINGS "java ${AVAILABLE_LANGUAGE_BINDINGS}")
+endif()
+
+GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
+if (UMUNDONATIVECSHARP_LOCATION)
+	set(AVAILABLE_LANGUAGE_BINDINGS "csharp ${AVAILABLE_LANGUAGE_BINDINGS}")
+endif()
+
 message(STATUS "Targets:")
-message(STATUS "  Building umundo.core")
-
-if (BUILD_UMUNDO_S11N)
-	message(STATUS "  Building umundo.s11n")
-else()
-	message(STATUS "  Not building umundo.s11n")
-endif()
-
-if (BUILD_UMUNDO_RPC)
-	message(STATUS "  Building umundo.rpc")
-else()
-	message(STATUS "  Not building umundo.rpc")
-endif()
-
-if (BUILD_UMUNDO_UTIL)
-	message(STATUS "  Building umundo.util")
-else()
-	message(STATUS "  Not building umundo.util")
-endif()
-
-if (BUILD_TESTS)
-	message(STATUS "  Building umundo tests")
-else()
-	message(STATUS "  Not building umundo tests")
-endif()
-
-if (BUILD_UMUNDO_APPS)
-	message(STATUS "  Building umundo applications")
-else()
-	message(STATUS "  Not building umundo applications")
-endif()
+message(STATUS "  Building umundo.core ........... : ON")
+message(STATUS "  Building umundo.s11n ........... : ${BUILD_UMUNDO_S11N}")
+message(STATUS "  Building umundo.rpc ............ : ${BUILD_UMUNDO_RPC}")
+message(STATUS "  Building umundo.util ........... : ${BUILD_UMUNDO_UTIL}")
+message(STATUS "  Building umundo tests .......... : ${BUILD_TESTS}")
+message(STATUS "  Building umundo applications ... : ${BUILD_UMUNDO_APPS}")
+message(STATUS "  Available language bindings .... : ${AVAILABLE_LANGUAGE_BINDINGS}")
 
 message(STATUS "General information:")
-message(STATUS "  Build type ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Build type ..................... : ${CMAKE_BUILD_TYPE}")
 if (BUILD_SHARED_LIBS)
-	message(STATUS "  Building as shared libraries")
+	message(STATUS "  Building library as ............ : SHARED")
 else()
-	message(STATUS "  Building as static libraries")
+	message(STATUS "  Building library as ............ : STATIC")
 endif()
 
 if (BUILD_PREFER_STATIC_LIBRARIES)
-	message(STATUS "  Preferred static libraries when available")
+	message(STATUS "  Preferring dependent libraries . : STATIC ")
 else()
-	message(STATUS "  Preferred shared libraries when available")
+	message(STATUS "  Preferring dependent libraries . : SHARED")
 endif()
 
 if (BUILD_PREFER_PREBUILT_LIBS)
-	message(STATUS "  Preferred prebuilt libraries in contrib/prebuilt")
+	message(STATUS "  Preferring dependent libraries . : from contrib/prebuilt")
 else()
-	message(STATUS "  Preferred system installed libraries")
-endif()
-
-message(STATUS "Language bindings:")
-GET_TARGET_PROPERTY(UMUNDOCOREJAVA_LOCATION umundocoreJava LOCATION)
-if (UMUNDOCOREJAVA_LOCATION)
-	message(STATUS "  Building Java bindings")	
-else()
-	message(STATUS "  Not building Java bindings")	
-endif()
-
-GET_TARGET_PROPERTY(UMUNDOCORECSHARP_LOCATION umundocoreCSharp LOCATION)
-if (UMUNDOCORECSHARP_LOCATION)
-	message(STATUS "  Building CSharp bindings")	
-else()
-	message(STATUS "  Not building CSharp bindings")	
+	message(STATUS "  Preferring dependent libraries . : installed on system")
 endif()
 
 message(STATUS "Libraries will end up in: " ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -499,8 +505,8 @@ endif()
 # Installation / Provide package target
 ############################################################
 
-# see contrib/cmake/CPackUMundoPlatform.cmake
-include(contrib/cmake/CPackUMundoPlatform.cmake)
+# see contrib/cmake/CPackUMundo.cmake
+include(contrib/cmake/CPackUMundo.cmake)
 
 # This must always be last!
 include(CPack)

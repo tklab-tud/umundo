@@ -43,7 +43,7 @@ Overview of the umundo dependencies. See the [Platform Notes](#platform-notes) f
 		<tr>
 			<td bgcolor="#ffd"><a href="http://www.pcre.org/">PCRE</a><br />required core</td>
 			<td>7.0 works</td>
-			<td>Regular expressions implementation for service queries. At the moment in core as Regex.cpp</tr>
+			<td>Regular expressions implementation for service queries. At the moment in core as Regex.cpp. Prebuilt binaries for Windows and the mobile platforms are included.</tr>
 		<tr>
 			<td bgcolor="#ffd"><a href="http://code.google.com/p/protobuf/">ZeroMQ</a><br />required core</td>
 			<td>3.2</td>
@@ -79,7 +79,8 @@ Overview of the umundo dependencies. See the [Platform Notes](#platform-notes) f
 			<td>Build system for a wide selection of open-source packages.</td></tr>
 	</tr>
 
-	<td rowspan="1"><b>Linux</b></td>
+	<tr>
+		<td rowspan="1"><b>Linux</b></td>
 		<td bgcolor="#ffd">Avahi<br />required</td>
 		<td>3.x works</td>
 		<td>For Debian:<br /><tt>$ sudo apt-get install avahi-daemon libavahi-client-dev</tt></td></tr>
@@ -104,8 +105,6 @@ Overview of the umundo dependencies. See the [Platform Notes](#platform-notes) f
 		<td>If you plan to use the system wide Bonjour service, you will need a mDNSResponder daemon contained in both these 
 			distributions. The uMundo libraries from the installers contain an embedded mDNS implementation.</td></tr>
 	</tr>
-	<tr>
-
 </table>
 
 # Platform Notes
@@ -288,23 +287,10 @@ Until I get around to do it, just turn-off UAC.
 
 <table>
     <tr><th>Dependency</th><th>Search Path</th><th>CMake Variables</th><th>Comment</th></tr>
-	<tr><td bgcolor="#ffd">PCRE<br>[<a href="http://sourceforge.net/projects/gnuwin32/files/pcre/7.0/pcre-7.0.exe/download">download</a>]</td>
-		<td>
-			<tt>C:/Program Files/GnuWin32/</tt><br>
-			<tt>C:/Program Files (x86)/GnuWin32/</tt><br>
-		</td><td>
-			<tt>PCRE_INCLUDE_DIR</tt> with a full path to the pcre headers<br/>
-			<tt>PCRE_PCRE_LIBRARY</tt> with the pcre library<br/>
-		</td>
-		<td>
-			Just download the installer and use the standard installation location or 
-			specify the path in the <tt>PCRE_*</tt> variables by hand.
-		</td>
-	</tr>
 	<tr><td bgcolor="#ffd">Protocol Buffers<br>[<a href="http://protobuf.googlecode.com/files/protobuf-2.4.1.zip">download</a>]</td>
 		<td>
-			<tt>C:/Program Files/GnuWin32/</tt><br>
-			<tt>C:/Program Files (x86)/GnuWin32/</tt><br>
+			<tt>&lt;UMUNDO_BUILD_DIR>/..</tt><br>
+			<tt>&lt;UMUNDO_BUILD_DIR>/../..</tt><br>
 		</td><td>
 			<tt>PROTOBUF_SRC_ROOT_FOLDER</tt> path to compiled protocol buffers<br/>
 		</td><td>
@@ -322,11 +308,7 @@ Until I get around to do it, just turn-off UAC.
 	plan to use until you compiled protobuf. If you did and are having trouble with 
 	finding protobuf, just delete the CMake cache and empty the directory to start over.
 
-2. For **PCRE**, you can simply use the prebuilt binary distribution from gnuwin32 
-	as linked above. Just download the installer and have him install PCRE into
-	the default directory (here <tt>C:\Program Files\GnuWin32</tt>).
-
-3. For **ProtoBuf**, we *need* to build from source for the libraries. Just 
+2. For **ProtoBuf**, we *need* to build from source for the libraries. Just 
 	download and unpack the sources linked from the table above into the same 
 	folder as the build directory or one directory above. You can still place them 
 	anywhere but then you will have to set <tt>PROTOBUF_SRC_ROOT_FOLDER</tt> for 
@@ -346,11 +328,11 @@ build> dir ..
 	2. You most likely **have to build ProtoBuf twice** for both configurations until you 
 		get 5 projects to succeed for both Release and Debug builds.
 	
-4. Start the **CMake-GUI** and enter the checkout directory in the "Where is the source 
+3. Start the **CMake-GUI** and enter the checkout directory in the "Where is the source 
 	code" text field. Choose any convenient directory to build the binaries in, but
 	try to put it next to the directory with the ProtoBuf build or one level deeper.
 	
-5. Hit "**Configure**" and choose your toolchain and compiler - I only tested with 
+4. Hit "**Configure**" and choose your toolchain and compiler - I only tested with 
 	Visual Studio 10. Hit "Configure" again until there are no more red items in 
 	the list. If these instructions are still correct and you did as described 
 	above, you should be able to "Generate" the Visual Project Solution.
@@ -401,8 +383,9 @@ packages:
 			<tt>JAVA_*</tt>
 		</td><td>
 			The linked FindJNI.cmake is the actual module used by CMake to find a
-			Java installation with for JNI headers on the system. I it fails, just 
-			set the <tt>%JAVA_HOME</tt> environment variable to the root of your JDK.
+			Java installation with for JNI headers on the system. If you run into
+			any troubles with your Java installation, make sure to set the <tt>%JAVA_HOME</tt> 
+			environment variable to the root of your JDK.
 		</td>
 	</tr>
 	<tr><td bgcolor="#dfd">Ant<br>[<a href="http://ant.apache.org/bindownload.cgi">download</a>]</td>
@@ -435,19 +418,19 @@ packages:
 
 You will need SWIG in any case. If you only want Java, you would not need to 
 install the .NET Framework and the other way around. If you installed the 
-packages as outlined in the table above, CMake will create the following
-libraries:
+packages as outlined in the table above, CMake will offer two more targets
+called <tt>java</tt> and <tt>csharp</tt> - they are not build per default.
 
 #### Java
 There are only two files of interest built for Java:
 <pre>
 build\umundo>ls lib
-umundocore.jar        # The Java archive
-umundocoreJava.dll    # The JNI library for System.load()
+umundo.jar             # The Java archive
+umundoNativeJava.dll   # The JNI library for System.load()
 </pre>
 
 The Java archive contains generated wrappers for the umundo.core C++ code in 
-umundocoreJava.dll and hand-written implementations of the layers on top. See the 
+umundoNativeJava.dll and hand-written implementations of the layers on top. See the 
 [Eclipse sample project](https://github.com/tklab-tud/umundo/tree/master/contrib/samples/java)
 to get an idea on how to use the API.
 
@@ -455,8 +438,8 @@ to get an idea on how to use the API.
 There are again, only two files of interest for C# development
 <pre>
 build\umundo>ls lib
-umundoCSharp.dll     # The managed code part
-umundocoreCSharp.dll # The native C++ code used via DLLInvoke
+umundoCSharp.dll       # The managed code part
+umundoNativeCSharp.dll # The native C++ code used via DLLInvoke
 </pre>
 
 Here again, the umundoCSharp.dll contains all generated wrappers for the umundo.core
@@ -484,60 +467,64 @@ to set some variables related to the build:
 
 ### What to build
 
-<dt><b>CMAKE_BUILD_TYPE</b></dt>
-<dd>Only <tt>Debug</tt> and <tt>Release</tt> are actually supported. In debug builds, all asserts are stripped and the default
-	log-level is decreased.</dd>
+<dl>
+	<dt><b>CMAKE_BUILD_TYPE</b></dt>
+	<dd>Only <tt>Debug</tt> and <tt>Release</tt> are actually supported. In debug builds, all asserts are stripped and the default
+		log-level is decreased.</dd>
 
-<dt><b>BUILD_PREFER_STATIC_LIBRARIES</b></dt>
-<dd>Prefer static libraries in <tt>contrib/prebuilt/</tt> or system supplied libraries as found by CMake.</dd>
+	<dt><b>BUILD_PREFER_STATIC_LIBRARIES</b></dt>
+	<dd>Prefer static libraries in <tt>contrib/prebuilt/</tt> or system supplied libraries as found by CMake.</dd>
 
-<dt><b>BUILD_STATIC_LIBRARIES</b></dt>
-<dd>Create the uMundo libraries as static libraries. This does not apply to the JNI library which needs to be a shared library for
-	Java.</dd>
+	<dt><b>BUILD_STATIC_LIBRARIES</b></dt>
+	<dd>Create the uMundo libraries as static libraries. This does not apply to the JNI library which needs to be a shared library for
+		Java.</dd>
 
-<dt><b>BUILD_TESTING</b></dt>
-<dd>Build the test executables.</dd>
+	<dt><b>BUILD_TESTS</b></dt>
+	<dd>Build the test executables.</dd>
 
-<dt><b>BUILD_UMUNDO_APPS</b></dt>
-<dd>Include the <tt>apps/</tt> directory when building.</dd>
+	<dt><b>BUILD_UMUNDO_APPS</b></dt>
+	<dd>Include the <tt>apps/</tt> directory when building.</dd>
 
-<dt><b>BUILD_UMUNDO_RPC</b></dt>
-<dd>Build the <tt>umundorpc</tt> library for remote procedure calls via uMundo.</dd>
+	<dt><b>BUILD_UMUNDO_RPC</b></dt>
+	<dd>Build the <tt>umundorpc</tt> library for remote procedure calls via uMundo.</dd>
 
-<dt><b>BUILD_UMUNDO_S11N</b></dt>
-<dd>Build the <tt>umundos11n</tt> library for object serialization. Only Googles ProtoBuf is supported as o now.</dd>
+	<dt><b>BUILD_UMUNDO_S11N</b></dt>
+	<dd>Build the <tt>umundos11n</tt> library for object serialization. Only Googles ProtoBuf is supported as o now.</dd>
 
-<dt><b>BUILD_UMUNDO_UTIL</b></dt>
-<dd>Build <tt>umundoutil</tt> with some growing set of convenience services.</dd>
+	<dt><b>BUILD_UMUNDO_UTIL</b></dt>
+	<dd>Build <tt>umundoutil</tt> with some growing set of convenience services.</dd>
 
-<dt><b>DIST_PREPARE</b></dt>
-<dd>Put all libraries and binaries into SOURCE_DIR/package/ to prepare a release. We need access to all artifacts from other 
-	platforms to create the installers with platform independent JARs and cross-compiled mobile platforms.</dd>
-
+	<dt><b>DIST_PREPARE</b></dt>
+	<dd>Put all libraries and binaries into SOURCE_DIR/package/ to prepare a release. We need access to all artifacts from other 
+		platforms to create the installers with platform independent JARs and cross-compiled mobile platforms.</dd>
+</dl>
+	
 ### Implementations
 
-<dt><b>DISC_AVAHI</b></dt>
-<dd>Use the Avahi ZeroConf implementation with umundocore found on modern Linux distributions.</dd>
+<dl>
+	<dt><b>DISC_AVAHI</b></dt>
+	<dd>Use the Avahi ZeroConf implementation with umundocore found on modern Linux distributions.</dd>
 
-<dt><b>DISC_BONJOUR</b></dt>
-<dd>Use the Bonjour ZeroConf implementation found on every MacOSX installation and every iOS device.</dd>
+	<dt><b>DISC_BONJOUR</b></dt>
+	<dd>Use the Bonjour ZeroConf implementation found on every MacOSX installation and every iOS device.</dd>
 
-<dt><b>DISC_BONJOUR_EMBED</b></dt>
-<dd>Embed the Bonjour ZeroConf implementation into umundocore. This is the default for Android and Windows.</dd>
+	<dt><b>DISC_BONJOUR_EMBED</b></dt>
+	<dd>Embed the Bonjour ZeroConf implementation into umundocore. This is the default for Android and Windows.</dd>
 
-<dt><b>NET_ZEROMQ</b></dt>
-<dd>Use ZeroMQ to connect nodes to each other and publishers to subscribers.</dd>
+	<dt><b>NET_ZEROMQ</b></dt>
+	<dd>Use ZeroMQ to connect nodes to each other and publishers to subscribers.</dd>
 
-<dt><b>NET_ZEROMQ_RCV_HWM, NET_ZEROMQ_SND_HWM</b></dt>
-<dd>High water mark for ZeroMQ queues in messages. One uMundo message represents multiple ZeroMQ messages, one per meta field and 
-	one for the actual data.</dd>
+	<dt><b>NET_ZEROMQ_RCV_HWM, NET_ZEROMQ_SND_HWM</b></dt>
+	<dd>High water mark for ZeroMQ queues in messages. One uMundo message represents multiple ZeroMQ messages, one per meta field and 
+		one for the actual data.</dd>
 
-<dt><b>S11N_PROTOBUF</b></dt>
-<dd>Use Google's ProtoBuf to serialize objects.</dd>
+	<dt><b>S11N_PROTOBUF</b></dt>
+	<dd>Use Google's ProtoBuf to serialize objects.</dd>
 
-<dt><b>RPC_PROTOBUF</b></dt>
-<dd>Use Google's ProtoBuf to call remote methods.</dd>
-
+	<dt><b>RPC_PROTOBUF</b></dt>
+	<dd>Use Google's ProtoBuf to call remote methods.</dd>
+</dl>
+	
 ### CMake files
 
 Throughout the source, there are <tt>CMakeLists.txt</tt> build files for CMake. The topmost build file will call the build files

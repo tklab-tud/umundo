@@ -64,18 +64,17 @@ public:
 	/**
 	 * Assign relevance.
 	 */
-	virtual set<SCacheItem*> relevanceFromParent(float parentRelevance);
-	float getRelevance() {
-		return _relevance;
+	float getDistance() {
+		return _distance;
 	}
 
 	virtual set<SCacheItem*> getNext() = 0;
 
-	virtual uint64_t assumePressure(float pressure) = 0;
+	virtual uint64_t getSizeAtPressure(float pressure) = 0;
 	virtual void applyPressure(float pressure) = 0;
 
 protected:
-	float _relevance;
+	uint32_t _distance;
 	SCache* _cache;
 
 	friend class SCache;
@@ -110,11 +109,11 @@ public:
 	float getPressure()                                  {
 		return _pressure;
 	}
-	void setRelevanceThreshold(float relevanceThreshold) {
-		_relevanceThreshold = relevanceThreshold;
+	void setDistanceThreshold(float distanceThreshold) {
+		_distanceThreshold = distanceThreshold;
 	}
-	float getRelevanceThreshold()                        {
-		return  _relevanceThreshold;
+	float getDistanceThreshold()                        {
+		return  _distanceThreshold;
 	}
 	void setProfiler(CacheProfiler* profiler)            {
 		_profiler = profiler;
@@ -129,15 +128,15 @@ public:
 	Mutex _mutex;
 
 protected:
-	void resetRelevance();
-	uint64_t assumePressure(float, bool breakEarly = false);
+	void resetDistance();
+	uint64_t getSizeAtPressure(float, bool breakEarly = false);
 
 	virtual shared_ptr<SCachePointer> getPointer(SCacheItem*);
 
-	uint64_t _maxSize; ///< the maximum size this cache is allowed to grow to
-	uint64_t _currSize; ///< the current size the items in th cache have
+	int _maxSize; ///< the maximum size this cache is allowed to grow to
+	int _currSize; ///< the current size the items in th cache have
+	int _distanceThreshold; ///< the threshold to stop propagating the distance
 	float _pressure; ///< the current pressure
-	float _relevanceThreshold; ///< the threshold to stop propagating relevance
 	float _convergenceThreshold; ///< the maximum bound distance when searching for optimal pressure
 
 	Monitor _monitor;

@@ -9,7 +9,7 @@ using namespace umundo;
 
 #define BUFFER_SIZE 1024 * 1024
 
-class EchoServiceImpl : public EchoServiceBase {
+class EchoService : public EchoServiceBase {
 public:
 	EchoReply* echo(EchoRequest* req) {
 		EchoReply* reply = new EchoReply();
@@ -19,7 +19,7 @@ public:
 	}
 };
 
-class PingServiceImpl : public PingServiceBase {
+class PingService : public PingServiceBase {
 public:
 	PingReply* ping(PingRequest* req) {
 		PingReply* reply = new PingReply();
@@ -33,23 +33,31 @@ bool findServices() {
 	for (int i = 0; i < BUFFER_SIZE; i++)
 		buffer[i] = (char)i + 1;
 
-	Node* node1 = new Node();
-	Node* node2 = new Node();
-
 	for (int i = 0; i < 2; i++) {
-		EchoServiceImpl* localEchoService = new EchoServiceImpl();
-		PingServiceImpl* localPingService = new PingServiceImpl();
+    LOG_INFO("Instantiating nodes");
+    Node* node1 = new Node();
+    Node* node2 = new Node();
 
+    LOG_INFO("Instantiating local services");
+		EchoService* localEchoService = new EchoService();
+		PingService* localPingService = new PingService();
+
+    LOG_INFO("Connecting ServiceManagers");
 		ServiceManager* svcMgr1 = new ServiceManager();
 		node1->connect(svcMgr1);
-		svcMgr1->addService(localEchoService);
-		svcMgr1->addService(localPingService);
 
 		ServiceManager* svcMgr2 = new ServiceManager();
 		node2->connect(svcMgr2);
 
+    LOG_INFO("Adding Services to ServiceManager1");
+    svcMgr1->addService(localEchoService);
+		svcMgr1->addService(localPingService);
+
+    LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter* pingSvcFilter = new ServiceFilter("PingService");
-		PingServiceStub* pingSvc = new PingServiceStub(svcMgr2->find(pingSvcFilter));
+    ServiceDescription* pingSvcDesc = svcMgr2->find(pingSvcFilter);
+    assert(pingSvcDesc);
+		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
 		delete pingSvcFilter;
 
 		PingRequest* pingReq = new PingRequest();
@@ -100,7 +108,11 @@ bool findServices() {
 		node2->disconnect(svcMgr2);
 		delete svcMgr1;
 		delete svcMgr2;
-	}
+
+    delete node1;
+		delete node2;
+
+  }
 	return true;
 }
 
@@ -322,8 +334,8 @@ bool continuousQueries() {
 	while (iterations) {
 		std::cout << "Starting continuous query test" << std::endl;
 
-		PingServiceImpl* localPingService1 = new PingServiceImpl();
-		PingServiceImpl* localPingService2 = new PingServiceImpl();
+		PingService* localPingService1 = new PingService();
+		PingService* localPingService2 = new PingService();
 
 		ServiceManager* hostMgr = new ServiceManager();
 		hostNode->connect(hostMgr);
@@ -407,9 +419,9 @@ bool continuousQueries() {
 int main(int argc, char** argv) {
 	if (!findServices())
 		return EXIT_FAILURE;
-	if (!queryTests())
-		return EXIT_FAILURE;
-	if (!continuousQueries())
-		return EXIT_FAILURE;
+//	if (!queryTests())
+//		return EXIT_FAILURE;
+//	if (!continuousQueries())
+//		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

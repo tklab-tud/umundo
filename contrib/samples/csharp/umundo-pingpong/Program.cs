@@ -10,7 +10,7 @@ using System.Text;
  * 1. Add the umundo .net module:
  *    Right-click "References" in the "Solution Explorer" and select "Add Reference"
  *    Navigate to your umundo build folder and in lib/ choose umundoCSharp.dll
- * 2. Make sure the actual umundocoreCSharp.dll is found via DllImport
+ * 2. Make sure the actual umundoNativeCSharp.dll is found via DllImport
  *    There are a couple of possibilities to make the dll known to the runtime:
  *    http://msdn.microsoft.com/en-us/library/ms682586.aspx
  *

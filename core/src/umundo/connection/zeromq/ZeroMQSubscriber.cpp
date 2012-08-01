@@ -42,6 +42,7 @@ ZeroMQSubscriber::ZeroMQSubscriber() {
 }
 
 ZeroMQSubscriber::~ZeroMQSubscriber() {
+	LOG_INFO("deleting subscriber for %s", _channelName.c_str());
 	join();
 	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
@@ -77,6 +78,7 @@ void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
 	zmq_bind(_closer, ss.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
 	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s",zmq_strerror(errno));
 
+	LOG_INFO("creating subscriber for %s", _channelName.c_str());
 	start();
 }
 
@@ -193,9 +195,9 @@ void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
 		ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
 	}
 	if (_connections.find(ss.str()) != _connections.end()) {
-		LOG_INFO("ZeroMQSubscriber relying on auto-reconnect for %s", ss.str().c_str());
+		LOG_INFO("relying on 0MQ auto-reconnect for %s", ss.str().c_str());
 	} else {
-		LOG_INFO("ZeroMQSubscriber connecting to %s", ss.str().c_str());
+		LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
 		zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
 		_connections.insert(ss.str());
 	}
@@ -207,7 +209,7 @@ void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
 	std::stringstream ss;
 	ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
 	//_connections.erase(ss.str());
-	LOG_DEBUG("ZeroMQSubscriber disconnecting from %s", ss.str().c_str());
+	LOG_DEBUG("unsubscribing from %s", ss.str().c_str());
 	UMUNDO_UNLOCK(_mutex);
 }
 

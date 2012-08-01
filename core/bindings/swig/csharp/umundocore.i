@@ -1,4 +1,4 @@
-%module(directors="1", allprotected="1") umundocoreCSharp_d
+%module(directors="1", allprotected="1") umundoNativeCSharp
 // import swig typemaps
 %include <stl.i>
 %include <inttypes.i>

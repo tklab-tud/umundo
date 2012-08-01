@@ -78,22 +78,19 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 		}
 	}
 	_port = port;
-
-#ifndef WIN32
 	start();
-#endif
-	LOG_DEBUG("ZeroMQPublisher bound to %s", ssNet.str().c_str());
-	LOG_DEBUG("ZeroMQPublisher bound to %s", ssInProc.str().c_str());
+
+	LOG_INFO("creating publisher for %s on %s", _channelName.c_str(), ssNet.str().c_str());
+	LOG_DEBUG("creating publisher on %s", ssInProc.str().c_str());
 }
 
 ZeroMQPublisher::ZeroMQPublisher() {
 }
 
 ZeroMQPublisher::~ZeroMQPublisher() {
-#ifndef WIN32
+	LOG_INFO("deleting publisher for %s", _channelName.c_str());
 	stop();
 	join();
-#endif
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
@@ -115,10 +112,9 @@ void ZeroMQPublisher::suspend() {
 		return;
 	_isSuspended = true;
 
-#ifndef WIN32
 	stop();
 	join();
-#endif
+
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
@@ -135,44 +131,57 @@ void ZeroMQPublisher::run() {
 	while(isStarted()) {
 		zmq_msg_t message;
 		zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
-
-		while (zmq_recvmsg(_socket, &message, 0) < 0)
-			if (errno != EINTR)
-				LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
-
-		if (!isStarted()) {
-			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
-			return;
-		}
-
-		size_t msgSize = zmq_msg_size(&message);
-		// every subscriber will sent its uuid as a subscription as well
-		if (msgSize == 37) {
+		int rv;
+		{
 			ScopeLock lock(&_mutex);
-
-			char* data = (char*)zmq_msg_data(&message);
-			bool subscription = (data[0] == 0x1);
-			char* subId = data+1;
-			subId[msgSize - 1] = 0;
-
-			if (subscription) {
-				_pendingZMQSubscriptions.insert(subId);
-				addedSubscriber("", subId);
+			while ((rv = zmq_recvmsg(_socket, &message, ZMQ_DONTWAIT)) < 0) {
+				if (errno == EAGAIN) // no messages available at the moment
+					break;
+				if (errno != EINTR)
+					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 			}
 		}
-		zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+		// zmq_recvmsg is blocking and we use an ipc socket _closer to unblock in join() - not needed as we use ZMQ_DONTWAIT
+		//if (!isStarted()) {
+		//	zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+		//	return;
+		//}
+
+		if (rv > 0) {
+			size_t msgSize = zmq_msg_size(&message);
+			// every subscriber will sent its uuid as a subscription as well
+			if (msgSize == 37) {
+				//ScopeLock lock(&_mutex);
+
+				char* data = (char*)zmq_msg_data(&message);
+				bool subscription = (data[0] == 0x1);
+				char* subId = data+1;
+				subId[msgSize - 1] = 0;
+
+				if (subscription) {
+					LOG_INFO("%s received ZMQ subscription from %s", _channelName.c_str(), subId);
+					_pendingZMQSubscriptions.insert(subId);
+					addedSubscriber("", subId);
+				} else {
+					LOG_INFO("%s received ZMQ unsubscription from %s", _channelName.c_str(), subId);
+				}
+			}
+//			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+		} else {
+			Thread::sleepMs(50);
+		}
 	}
 }
 
 /**
  * Block until we have a given number of subscribers.
  */
-int ZeroMQPublisher::waitForSubscribers(int count) {
+int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 	while (_subscriptions.size() < (unsigned int)count) {
 		UMUNDO_WAIT(_pubLock);
 #ifdef WIN32
-		// give the connection a moment to establish
-		Thread::sleepMs(300);
+		// even after waiting for the signal from ZMQ subscriptions Windows needs a moment
+		//Thread::sleepMs(300);
 #endif
 	}
 	return _subscriptions.size();
@@ -189,13 +198,12 @@ void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId)
 		_pendingSubscriptions[subId] = remoteId;
 	}
 
-#ifndef WIN32
 	// if we received a subscription from xpub and the node socket
 	if (_pendingSubscriptions.find(subId) == _pendingSubscriptions.end() ||
 	        _pendingZMQSubscriptions.find(subId) == _pendingZMQSubscriptions.end()) {
 		return;
 	}
-#endif
+
 	_subscriptions[subId] = _pendingSubscriptions[subId];
 	_pendingSubscriptions.erase(subId);
 	_pendingZMQSubscriptions.erase(subId);

@@ -62,6 +62,12 @@ protected:
  */
 class DLLEXPORT ServiceFilter {
 public:
+  struct filterCmp {
+    bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
+      return a->_uuid.compare(b->_uuid) < 0;
+    }
+  };
+
 	enum Predicate {
 	    OP_EQUALS       = 0x0001,
 	    OP_GREATER      = 0x0002,
@@ -84,16 +90,21 @@ public:
 	void clearRules();
 	bool matches(ServiceDescription*);
 
-	string _uuid;
-	string _svcName;
+  const string& getServiceName() { return _svcName; }
+  const string& getUUID() { return _uuid; }
+  
 	map<string, string> _pattern;
 	map<string, string> _value;
 	map<string, int> _predicate;
 
 private:
+  string _uuid;
+	string _svcName;
+
 	bool isNumeric(const string& test);
 	double toNumber(const string& numberString);
 
+  friend class ServiceManager;
 };
 
 class DLLEXPORT ServiceStub : public TypedReceiver, public Connectable {
@@ -120,7 +131,7 @@ protected:
 	TypedPublisher* _rpcPub;
 	TypedSubscriber* _rpcSub;
 
-	map<string, Monitor> _requests;
+	map<string, Monitor*> _requests;
 	map<string, void*> _responses;
 
 	Mutex _mutex;

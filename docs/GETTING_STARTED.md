@@ -15,7 +15,7 @@ console or from within your installation directory. If you see some *io* on both
 ends, your system is setup correctly to run umundo programs. If not see the
 [troubleshooting](TroubleShooting) section below.
 
-You can export <tt>UMUNDO_LOGLEVEL=[0..4]</tt> to increase the global log-level, 
+You can export <tt>UMUNDO_LOGLEVEL=[0..3]</tt> to increase the global log-level, 
 with 4 being the most verbose. You can also increase/descrease log-levels per 
 component by exporting <tt>UMUNDO_LOGLEVEL_[COMMON|NET|DISC|S11N]=[0..4]</tt>. 
 With some terminals, colored output is available via <tt>UMUNDO_LOGCOLORS=[ON|OFF]</tt>. 
@@ -137,9 +137,17 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
 	# count the rules and remove e.g. first rule from INPUT chain
 	$ sudo iptables -D INPUT 1
 </pre>
+
 			The prebuilt binaries from the SDK installers are built against the Avahi
 			daemon for Linux, make sure it is running and available (you will have to
 			recompile with <tt>DISC_BONJOUR_EMBED</tt> if this is a problem).
+			
+			I will not ask whether you actually started <b>two</b> instances.
 		</td>
+	</tr>
+	<tr>
+		<td>libumundocore64.so: cannot open shared object file ...</td>
+		<td>GNU/Linux</td>
+		<td>After installing the libraries the first time, you might need to run <tt>sudo ldconfig</tt> to make them known.</td>
 	</tr>
 <table>

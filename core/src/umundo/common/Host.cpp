@@ -73,7 +73,7 @@ const string& Host::getHostname() {
 	err = gethostname(name, MAX_HOST_NAME_LENGTH);
 	if (err != 0) {
 
-#if defined(UNIX)
+#if defined(UNIX) || defined(IOS)
 		LOG_ERR("gethostname: %s", strerror(errno));
 #elif defined(WIN32)
 		switch(err) {

@@ -16,13 +16,13 @@
 		95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */; };
 		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
 		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
-		95017B9E1503A9C5002BCAAA /* libumundocore_d.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017B9C1503A9C5002BCAAA /* libumundocore_d.a */; };
-		95017B9F1503A9C5002BCAAA /* libumundoserial_d.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017B9D1503A9C5002BCAAA /* libumundoserial_d.a */; };
 		95017BAD1503AAA2002BCAAA /* libzmq.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017BAC1503AAA2002BCAAA /* libzmq.a */; };
+		955BA7C015C9502000949F02 /* libumundocore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 955BA7BF15C9502000949F02 /* libumundocore.a */; };
+		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		95017B62150391D5002BCAAA /* umundo-pingpong.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = umundo-pingpong.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		95017B62150391D5002BCAAA /* umundo-pingpong.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "umundo-pingpong.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		95017B66150391D5002BCAAA /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		95017B68150391D5002BCAAA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		95017B6A150391D5002BCAAA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -36,9 +36,9 @@
 		95017B7C150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPad.storyboard; sourceTree = "<group>"; };
 		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		95017B9C1503A9C5002BCAAA /* libumundocore_d.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundocore_d.a; path = "../../../lib/ios-5.0/i386/gnu/Debug/libumundocore_d.a"; sourceTree = "<group>"; };
-		95017B9D1503A9C5002BCAAA /* libumundoserial_d.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundoserial_d.a; path = "../../../lib/ios-5.0/i386/gnu/Debug/libumundoserial_d.a"; sourceTree = "<group>"; };
 		95017BAC1503AAA2002BCAAA /* libzmq.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzmq.a; path = ../../prebuilt/ios/5.0/lib/libzmq.a; sourceTree = "<group>"; };
+		955BA7BF15C9502000949F02 /* libumundocore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundocore.a; path = "../../../package/cross-compiled/ios-5.1/i386/lib/libumundocore.a"; sourceTree = "<group>"; };
+		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,9 +46,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				955BA7C015C9502000949F02 /* libumundocore.a in Frameworks */,
 				95017BAD1503AAA2002BCAAA /* libzmq.a in Frameworks */,
-				95017B9E1503A9C5002BCAAA /* libumundocore_d.a in Frameworks */,
-				95017B9F1503A9C5002BCAAA /* libumundoserial_d.a in Frameworks */,
 				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
 				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
 				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
@@ -78,9 +77,8 @@
 		95017B65150391D5002BCAAA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				955BA7BF15C9502000949F02 /* libumundocore.a */,
 				95017BAC1503AAA2002BCAAA /* libzmq.a */,
-				95017B9C1503A9C5002BCAAA /* libumundocore_d.a */,
-				95017B9D1503A9C5002BCAAA /* libumundoserial_d.a */,
 				95017B66150391D5002BCAAA /* UIKit.framework */,
 				95017B68150391D5002BCAAA /* Foundation.framework */,
 				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
@@ -98,8 +96,9 @@
 				95017B7E150391D5002BCAAA /* ViewController.h */,
 				95017B7F150391D5002BCAAA /* ViewController.m */,
 				95017B6D150391D5002BCAAA /* Supporting Files */,
+				955BA7C115C958C000949F02 /* ReadMe.txt */,
 			);
-			path = umundo-pingpong;
+			path = "umundo-pingpong";
 			sourceTree = "<group>";
 		};
 		95017B6D150391D5002BCAAA /* Supporting Files */ = {
@@ -128,8 +127,8 @@
 			);
 			dependencies = (
 			);
-			name = umundo-pingpong;
-			productName = umundo-pingpong;
+			name = "umundo-pingpong";
+			productName = "umundo-pingpong";
 			productReference = 95017B62150391D5002BCAAA /* umundo-pingpong.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -166,6 +165,7 @@
 				95017B71150391D5002BCAAA /* InfoPlist.strings in Resources */,
 				95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */,
 				95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */,
+				955BA7C215C958C000949F02 /* ReadMe.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,9 +278,9 @@
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../../../lib/ios-5.0\"",
-					"\"$(SRCROOT)/../../prebuilt/ios/5.0/lib\"",
-					"\"$(SRCROOT)/../../../lib/ios-5.0/i386/gnu/Debug\"",
+					"../../../package/cross-compiled/ios-5.1",
+					../../../contrib/prebuilt/ios/5.1/lib,
+					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -302,9 +302,9 @@
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../../../lib/ios-5.0\"",
-					"\"$(SRCROOT)/../../prebuilt/ios/5.0/lib\"",
-					"\"$(SRCROOT)/../../../lib/ios-5.0/i386/gnu/Debug\"",
+					"../../../package/cross-compiled/ios-5.1",
+					../../../contrib/prebuilt/ios/5.1/lib,
+					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -330,6 +330,7 @@
 				95017B85150391D5002BCAAA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

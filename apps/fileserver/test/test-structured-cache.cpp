@@ -106,7 +106,7 @@ public:
 		_hasAllLoaded = false;
 		_hasPreviewLoaded = false;
 	}
-	uint64_t assumePressure(float pressure) {
+	uint64_t getSizeAtPressure(float pressure) {
 //    std::cout << "\t" << _name << ":" << _band << " assuming pressure: " << pressure << " at " << getRelevance() << " -> ";
 		if (getRelevance() > pressure) {
 			_currSize = _fullSize;

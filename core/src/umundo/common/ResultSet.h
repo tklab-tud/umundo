@@ -23,7 +23,7 @@ namespace umundo {
 template<class T>
 
 /**
- * Interface to be notified about addition, removal or changes of entities.
+ * Templated interface to be notified about addition, removal or changes of objects.
  */
 class DLLEXPORT ResultSet {
 public:

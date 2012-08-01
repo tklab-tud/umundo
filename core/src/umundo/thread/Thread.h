@@ -87,6 +87,7 @@ monitor.broadcast();
 #define UMUNDO_TRYLOCK(mutex) mutex.tryLock();
 #define UMUNDO_UNLOCK(mutex) mutex.unlock();
 #define UMUNDO_WAIT(monitor) monitor.wait();
+#define UMUNDO_WAIT2(monitor, timeout) monitor.wait(timeout);
 #define UMUNDO_SIGNAL(monitor) monitor.signal();
 #define UMUNDO_BROADCAST(monitor) monitor.broadcast();
 #endif
@@ -167,6 +168,7 @@ public:
 class DLLEXPORT Monitor {
 public:
 	Monitor();
+//	Monitor::Monitor(const Monitor& other);
 	virtual ~Monitor();
 
 	void signal();

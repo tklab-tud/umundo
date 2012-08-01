@@ -1,4 +1,4 @@
-%module(directors="1", allprotected="1") umundocoreJava
+%module(directors="1", allprotected="1") umundoNativeJava
 // import swig typemaps
 %include <arrays_java.i>
 %include <stl.i>
@@ -114,13 +114,13 @@ using namespace umundo;
 #   private Receiver _receiver;
 # 
 #   public Subscriber(String channelName, Receiver receiver) {
-#     this(umundocoreJavaJNI.new_Subscriber(channelName), true);
+#     this(umundoNativeJavaJNI.new_Subscriber(channelName), true);
 # 		setReceiver(receiver);
 #   }
 # 
 #   protected void setReceiver(Receiver receiver) {
 # 		_receiver = receiver;
-#     umundocoreJavaJNI.Subscriber_setReceiver(swigCPtr, this, Receiver.getCPtr(receiver), receiver);
+#     umundoNativeJavaJNI.Subscriber_setReceiver(swigCPtr, this, Receiver.getCPtr(receiver), receiver);
 #   }
 # %}
 # //%typemap(javain, pre="    _receiver = $javainput;") umundo::Receiver* "$javainput"

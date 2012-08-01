@@ -60,9 +60,9 @@
 
 	<!-- flatten all JNI libraries for inclusion into the fat JAR -->
 	<fileset id="all.jni" dir="${lib.dir}">
-		<include name="**/*Native*.jnilib"/>
-		<include name="**/*Native*.so"/>
-		<include name="**/*Native*.dll"/>
+		<include name="**/*NativeJava*.jnilib"/>
+		<include name="**/*NativeJava*.so"/>
+		<include name="**/*NativeJava*.dll"/>
 		<exclude name="cross-compiled/**"/>
 		<!-- do not include debug builds in release -->
 		<!--exclude name="**/*undocoreSwigSwig_d*" if="${exclude.debug.jar}"/ -->

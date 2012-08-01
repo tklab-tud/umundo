@@ -1,6 +1,9 @@
 /**
- *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @file
+ *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @copyright  Simplified BSD
  *
+ *  @cond
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
  *  project.
@@ -11,6 +14,7 @@
  *
  *  You should have received a copy of the FreeBSD license along with this
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
+ *  @endcond
  */
 
 #include "UMTypedSubscriber.h"
@@ -44,14 +48,14 @@
 
 @end
 
-void umundoTypedReceiverWrapper::receive(umundo::Message* msg) {    
+void umundoTypedReceiverWrapper::receive(umundo::Message* msg) {
 		// use an @autorelease {} here?
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     google::protobuf::MessageLite* pbObj = _deserializers[msg->getMeta("type")]->New();
     pbObj->ParseFromString(std::string(msg->data(), msg->size()));
     assert(pbObj->SerializeAsString().compare(std::string(msg->data(), msg->size())) == 0);
     NSMutableDictionary* meta = [[NSMutableDictionary alloc] init];
-    
+
     std::map<std::string, std::string>::const_iterator metaIter;
     for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
       NSString* key = [NSString stringWithCString:metaIter->first.c_str() encoding:NSASCIIStringEncoding];

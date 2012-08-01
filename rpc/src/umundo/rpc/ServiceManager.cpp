@@ -1,6 +1,9 @@
 /**
- *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @file
+ *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @copyright  Simplified BSD
  *
+ *  @cond
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
  *  project.
@@ -11,6 +14,7 @@
  *
  *  You should have received a copy of the FreeBSD license along with this
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
+ *  @endcond
  */
 
 #include "umundo/rpc/ServiceManager.h"
@@ -151,9 +155,9 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
     LOG_INFO("Failed to find %s", svcFilter->getServiceName().c_str());
     return NULL;
   }
-  
+
   // TODO: Remove other replies as they come in!
-  
+
   Message* foundMsg = _findResponses[reqId];
   assert(foundMsg != NULL);
   ServiceDescription* svcDesc = new ServiceDescription(foundMsg);

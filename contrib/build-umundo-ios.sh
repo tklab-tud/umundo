@@ -13,7 +13,7 @@ SDK_VER="5.1"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 
-mkdir -p ${BUILD_DIR} &> /dev/null
+rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 
 if [[ -z $1 || $1 = "Debug" ]] ; then
 mkdir -p ${BUILD_DIR}/iossim-debug &> /dev/null

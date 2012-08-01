@@ -336,7 +336,7 @@ void BonjourNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
  * we will resolve its ip address.
  */
 void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
-	LOG_INFO("Adding query %p for nodes in %s", query.get(), query->getDomain().c_str());
+	LOG_INFO("Adding query %p for nodes in domain '%s'", query.get(), query->getDomain().c_str());
 	DNSServiceErrorType err;
 	DNSServiceRef queryClient = NULL;
 

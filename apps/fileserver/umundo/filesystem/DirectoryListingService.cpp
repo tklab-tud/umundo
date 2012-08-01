@@ -13,7 +13,7 @@
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
  */
 
-#include "umundo/config.h"
+//#include "umundo/config.h"
 
 #include "umundo/filesystem/DirectoryListingService.h"
 #include "umundo/util/crypto/MD5.h"
@@ -88,8 +88,14 @@ DirectoryListingReply* DirectoryListingService::list(DirectoryListingRequest* re
 
 DirectoryEntryContent* DirectoryListingService::get(DirectoryEntry* req) {
 	DirectoryEntryContent* rep = new DirectoryEntryContent();
+
+  if (_knownEntries.find(req->name()) == _knownEntries.end()) {
+		LOG_ERR("Request for unkown file '%s'", req->name().c_str());
+		return rep;
+  }
+  
 	struct stat fileStat;
-	if (stat(req->name().c_str(), &fileStat) != 0) {
+	if (stat((_dir + '/' +  req->name()).c_str(), &fileStat) != 0) {
 		LOG_ERR("Error with stat on '%s': %s", req->name().c_str(), strerror(errno));
 		return rep;
 	}
@@ -177,7 +183,7 @@ void DirectoryListingService::updateEntries() {
 			// see if the file was changed
 			char* filename;
 			asprintf(&filename, "%s/%s", _dir.c_str(), dname.c_str());
-
+      
 			struct stat fileStat;
 			if (stat(filename, &fileStat) != 0) {
 				LOG_ERR("Error with stat on directory entry '%s': %s", filename, strerror(errno));
@@ -242,6 +248,7 @@ void DirectoryListingService::updateEntries() {
 DirectoryEntry* DirectoryListingService::statToEntry(const string& fileName, struct stat fileStat) {
 	DirectoryEntry* dEntry = new DirectoryEntry();
 	dEntry->set_name(fileName);
+	dEntry->set_hostid(Host::getHostId());
 	dEntry->set_path(_dir);
 	dEntry->set_size(fileStat.st_size);
 

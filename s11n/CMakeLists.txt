@@ -45,11 +45,11 @@ if (S11N_PROTOBUF)
 	# process .proto files
 	file(GLOB_RECURSE PROTOBUF_INTERFACES interfaces/protobuf/*.proto)
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
-	
+
 	UMUNDO_PROTOBUF_GENERATE_CPP_S11N(PROTO_SRCS PROTO_HDRS ${PROTOBUF_INTERFACES})
-	# list(APPEND UMUNDOS11N_HEADER_FILES ${PROTO_HDRS})	
-	# list(APPEND UMUNDOS11N_FILES ${PROTO_SRCS})	
-	
+	# list(APPEND UMUNDOS11N_HEADER_FILES ${PROTO_HDRS})
+	# list(APPEND UMUNDOS11N_FILES ${PROTO_SRCS})
+
 endif(S11N_PROTOBUF)
 
 ############################################################
@@ -62,9 +62,7 @@ if (APPLE OR IOS)
 	list(APPEND UMUNDOS11N_HEADER_FILES ${UMUNDOS11N_OBJC_HEADER_FILES})
 	list(APPEND UMUNDOS11N_FILES ${UMUNDOS11N_OBJC_FILES})
 	if (IOSSIM)
-		foreach(UMUNDOS11N_OBJC_FILE ${UMUNDOS11N_OBJC_FILES})
-			set_source_files_properties(${UMUNDOS11N_OBJC_FILE} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
-		endforeach()
+		set_source_files_properties(${UMUNDOS11N_OBJC_FILES} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
 	endif()
 	include_directories(${PROJECT_SOURCE_DIR}/core/bindings/)
 endif()
@@ -77,7 +75,7 @@ LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
 
 LIST(SORT UMUNDOS11N_HEADER_FILES)
 
-add_library(umundoserial ${UMUNDOS11N_FILES})
+add_library(umundoserial ${UMUNDOS11N_FILES} ${UMUNDOS11N_HEADER_FILES})
 target_link_libraries(umundoserial ${UMUNDOS11N_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOS11N_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundoserial COMPONENT libraryS11N)

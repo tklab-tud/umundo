@@ -30,21 +30,11 @@ set<SCacheItem*> NBandProxyCacheItem::getNext() {
 	return next;
 }
 
-set<SCacheItem*> NBandProxyCacheItem::relevanceFromParent(float parentRelevance) {
-	_relevance = parentRelevance;
-	return getNext();
-}
-
 NBandCacheItem::NBandCacheItem(string name, string band) : _name(name), _band(band), _isPrepared(false) {
 	_left = NULL;
 	_right = NULL;
 	_up = NULL;
 	_down = NULL;
-}
-
-set<SCacheItem*> NBandCacheItem::relevanceFromParent(float parentRelevance) {
-
-	return getNext();
 }
 
 set<SCacheItem*> NBandCacheItem::getNext() {

@@ -47,12 +47,13 @@ std::set<umundo::Subscriber*> ServiceManager::getSubscribers() {
  */
 void ServiceManager::welcome(Publisher*, const string nodeId, const string subId) {
 	ScopeLock lock(&_mutex);
-	LOG_INFO("Found new remote ServiceManager - sending %d queries", _localQueries.size());
-	map<ServiceFilter*, ResultSet<ServiceDescription>*, filterCmp>::iterator queryIter = _localQueries.begin();
+	LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
+	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp>::iterator queryIter = _localQueries.begin();
 	while (queryIter != _localQueries.end()) {
 		Message* queryMsg = queryIter->first->toMessage();
 		queryMsg->putMeta("type", "serviceDiscStart");
 		queryMsg->putMeta("subscriber", subId);
+		queryMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 
 		_svcPub->send(queryMsg);
 		delete queryMsg;
@@ -101,6 +102,7 @@ void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescript
 	_localQueries[filter] = listener;
 	Message* queryMsg = filter->toMessage();
 	queryMsg->putMeta("type", "serviceDiscStart");
+	queryMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 
 	_svcPub->send(queryMsg);
 	LOG_INFO("Sending new query to %d ServiceManagers", _svcPub->waitForSubscribers(0));
@@ -112,6 +114,7 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 	if (_localQueries.find(filter) != _localQueries.end()) {
 		Message* unqueryMsg = filter->toMessage();
 		unqueryMsg->putMeta("type", "serviceDiscStop");
+		unqueryMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 		_svcPub->send(unqueryMsg);
 		delete unqueryMsg;
 
@@ -120,31 +123,45 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 }
 
 ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
+	if(_svcPub->waitForSubscribers(1, 3000) < 1) {
+    // there is no other ServiceManager yet
+    LOG_INFO("Failed to find other ServiceManager");
+    return NULL;
+  }
+
 	Message* findMsg = svcFilter->toMessage();
 	string reqId = UUID::getUUID();
 	findMsg->putMeta("type", "serviceDisc");
 	findMsg->putMeta("reqId", reqId.c_str());
-	_svcPub->waitForSubscribers(1);
-	Thread::sleepMs(1000);
-	_findRequests[reqId] = Monitor();
+	findMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
+//	Thread::sleepMs(1000);
+	if(_findRequests.find(reqId) != _findRequests.end())
+		LOG_WARN("Find request %s already received", reqId.c_str());
+	_findRequests[reqId] = new Monitor();
 
 	_svcPub->send(findMsg);
 	delete findMsg;
 
-	_findRequests[reqId].wait();
+	_findRequests[reqId]->wait(3000);
 	ScopeLock lock(&_mutex);
+	delete _findRequests[reqId];
 	_findRequests.erase(reqId);
 
-	if (_findResponses.find(reqId) != _findResponses.end()) {
-		Message* foundMsg = _findResponses[reqId];
-		assert(foundMsg != NULL);
-		ServiceDescription* svcDesc = new ServiceDescription(foundMsg);
-		svcDesc->_svcManager = this;
-		_findResponses.erase(reqId);
-		delete foundMsg;
-		return svcDesc;
-	}
-	return NULL;
+	if (_findResponses.find(reqId) == _findResponses.end()) {
+    LOG_INFO("Failed to find %s", svcFilter->getServiceName().c_str());
+    return NULL;
+  }
+  
+  // TODO: Remove other replies as they come in!
+  
+  Message* foundMsg = _findResponses[reqId];
+  assert(foundMsg != NULL);
+  ServiceDescription* svcDesc = new ServiceDescription(foundMsg);
+  svcDesc->_svcManager = this;
+  _findResponses.erase(reqId);
+  delete foundMsg;
+  return svcDesc;
+
 }
 
 /**
@@ -156,6 +173,7 @@ std::set<ServiceDescription*> ServiceManager::findLocal(ServiceFilter* svcFilter
 	while(svcDescIter != _localSvcDesc.end()) {
 		if (svcFilter->matches(svcDescIter->second)) {
 			foundSvcs.insert(svcDescIter->second);
+			LOG_INFO("we have a match for %s", svcFilter->getServiceName().c_str());
 		}
 		svcDescIter++;
 	}
@@ -169,7 +187,7 @@ void ServiceManager::receive(Message* msg) {
 		string respId = msg->getMeta("respId");
 		if (_findRequests.find(respId) != _findRequests.end()) {
 			_findResponses[respId] = new Message(*msg);
-			_findRequests[respId].signal();
+			_findRequests[respId]->signal();
 		}
 	}
 
@@ -185,6 +203,7 @@ void ServiceManager::receive(Message* msg) {
 			Message* foundMsg = svcDesc->toMessage();
 			foundMsg->putMeta("respId", msg->getMeta("reqId"));
 			foundMsg->putMeta("desc:channel", svcDesc->getChannelName());
+			foundMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 			_svcPub->send(foundMsg);
 			delete foundMsg;
 		}
@@ -196,6 +215,8 @@ void ServiceManager::receive(Message* msg) {
 		ServiceFilter* filter = new ServiceFilter(msg);
 		_remoteQueries[filter->_uuid] = filter;
 
+		LOG_INFO("Received query for '%s'", filter->_svcName.c_str());
+
 		// do we have such a service?
 		std::set<ServiceDescription*> foundSvcs = findLocal(filter);
 		std::set<ServiceDescription*>::iterator svcDescIter = foundSvcs.begin();
@@ -205,6 +226,7 @@ void ServiceManager::receive(Message* msg) {
 				foundMsg->putMeta("filterId", filter->_uuid);
 				foundMsg->putMeta("type", "serviceDiscFound");
 				foundMsg->putMeta("desc:channel", (*svcDescIter)->getChannelName());
+				foundMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 				_svcPub->send(foundMsg);
 				delete foundMsg;
 			}
@@ -236,6 +258,7 @@ void ServiceManager::receive(Message* msg) {
 			if (_remoteSvcDesc.find(msg->getMeta("desc:channel")) == _remoteSvcDesc.end()) {
 				_remoteSvcDesc[msg->getMeta("desc:channel")] = shared_ptr<ServiceDescription>(new ServiceDescription(msg));
 				_remoteSvcDesc[msg->getMeta("desc:channel")]->_svcManager = this;
+//				_remoteNodeServices[msg->getMeta("um.pubI")]
 			}
 			if (msg->getMeta("type").compare("serviceDiscFound") == 0) {
 				listener->added(_remoteSvcDesc[msg->getMeta("desc:channel")]);
@@ -283,6 +306,7 @@ void ServiceManager::addService(Service* service, ServiceDescription* desc) {
 			foundMsg->putMeta("filterId", filterIter->second->_uuid);
 			foundMsg->putMeta("type", "serviceDiscFound");
 			foundMsg->putMeta("desc:channel", desc->getChannelName());
+			foundMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 			_svcPub->send(foundMsg);
 			delete foundMsg;
 		}
@@ -316,6 +340,7 @@ void ServiceManager::removeService(Service* service) {
 			removeMsg->putMeta("filterId", filterIter->second->_uuid);
 			removeMsg->putMeta("type", "serviceDiscRemoved");
 			removeMsg->putMeta("desc:channel", desc->getChannelName());
+			removeMsg->putMeta("um.svc.mgrId", _svcSub->getUUID());
 			_svcPub->send(removeMsg);
 			delete removeMsg;
 		}

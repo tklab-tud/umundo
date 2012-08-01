@@ -14,7 +14,11 @@ include_directories(src)
 LIST(APPEND UMUNDOUTIL_LIBRARIES umundoutil)
 LIST(SORT UMUNDOUTIL_HEADER_FILES)
 
-add_library(umundoutil ${UMUNDOUTIL_FILES})
+add_library(umundoutil 
+	${UMUNDOUTIL_FILES} 
+	${UMUNDOUTIL_HEADER_FILES} 
+	${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h
+)
 target_link_libraries(umundoutil ${UMUNDOUTIL_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOUTIL_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundoutil COMPONENT libraryUtil)

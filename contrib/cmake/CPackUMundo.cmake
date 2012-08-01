@@ -1,10 +1,11 @@
 # see: http://www.vtk.org/Wiki/CMake:CPackConfiguration
 
-########################################
-# gather libraries for package
-########################################
+########################################################################################
+# gather host-native libraries
+################################################################################
 
-file(GLOB_RECURSE PLATFORM_LIBS 
+# these are all the host-native libraries plus
+file(GLOB_RECURSE PLATFORM_LIBS
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.a
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.so
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.lib
@@ -12,35 +13,32 @@ file(GLOB_RECURSE PLATFORM_LIBS
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.jnilib
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.dll
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.pdb
-	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.exp
-	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.ilk
+#	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.exp
 )
 
-# platform dependant libraries
+# sort host-native libraries into installation components
 foreach(PLATFORM_LIB ${PLATFORM_LIBS})
 #	message("PLATFORM_LIB: ${PLATFORM_LIB}")
-	if (PLATFORM_LIB MATCHES ".*Swig.*")
+	if (PLATFORM_LIB MATCHES ".*Native.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT librarySwig)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-#		message(STATUS "PACKAGE RELEASE SERIAL ${PLATFORM_LIB}")
+	elseif (PLATFORM_LIB MATCHES ".*umundoCSharp.*")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
+		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
 	elseif (PLATFORM_LIB MATCHES ".*umundoserial.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-#		message(STATUS "PACKAGE RELEASE SERIAL ${PLATFORM_LIB}")
 	elseif (PLATFORM_LIB MATCHES ".*umundocore.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-#		message(STATUS "PACKAGE RELEASE CORE ${PLATFORM_LIB}")
 	elseif (PLATFORM_LIB MATCHES ".*umundorpc.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-#		message(STATUS "PACKAGE RELEASE RPC ${PLATFORM_LIB}")
 	elseif (PLATFORM_LIB MATCHES ".*umundoutil.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-#		message(STATUS "PACKAGE RELEASE UTIL ${PLATFORM_LIB}")
 	else()
-#		message(STATUS "PACKAGE RELEASE UNK ${PLATFORM_LIB} - not packaging")	
+		message(STATUS "PACKAGE RELEASE UNK ${PLATFORM_LIB} - not packaging")
 	endif()
 endforeach()
 
@@ -48,7 +46,10 @@ endforeach()
 # Pre-built libraries for host platform
 ########################################
 
-file(GLOB_RECURSE PREBUILT_LIBS 
+# do follow symlinks with GLOB_RECURSE
+#cmake_policy(SET CMP0009 OLD)
+
+file(GLOB_RECURSE PREBUILT_LIBS FOLLOW_SYMLINKS
 	${UMUNDO_PREBUILT_LIBRARY_PATH}/lib/*.a
 	${UMUNDO_PREBUILT_LIBRARY_PATH}/lib/*.so
 	${UMUNDO_PREBUILT_LIBRARY_PATH}/lib/*.dylib
@@ -56,8 +57,11 @@ file(GLOB_RECURSE PREBUILT_LIBS
 	${UMUNDO_PREBUILT_LIBRARY_PATH}/lib/*.dll
 	${UMUNDO_PREBUILT_LIBRARY_PATH}/lib/*.pdb
 )
+
+#message("UMUNDO_PREBUILT_LIBRARY_PATH: ${UMUNDO_PREBUILT_LIBRARY_PATH}")
+
 foreach(PREBUILT_LIB ${PREBUILT_LIBS})
-	# message("PREBUILT_LIB: ${PREBUILT_LIB}")
+#	message("PREBUILT_LIB: ${PREBUILT_LIB}")
 	# string(REGEX MATCH "prebuilt/[^//]+/[^//]+" CURR_PLATFORM ${PREBUILT_LIB})
 	# message("CURR_PLATFORM: ${CURR_PLATFORM}")
 	# install(FILES ${PREBUILT_LIB} DESTINATION share/umundo/${CURR_PLATFORM} COMPONENT libraryPrebuilt)
@@ -70,31 +74,45 @@ endforeach()
 # Include documentation
 ########################################
 
-file(GLOB_RECURSE HTML_DOCS ${PROJECT_SOURCE_DIR}/docs/html/*)
-foreach(HTML_DOC ${HTML_DOCS})
-	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/" "" HTML_PATH ${HTML_DOC})
-	STRING(REGEX MATCH "(.*)[/\\]" HTML_PATH ${HTML_PATH})
-	install(FILES ${HTML_DOC} DESTINATION share/umundo/${HTML_PATH} COMPONENT docs)
-	list (APPEND UMUNDO_CPACK_COMPONENTS "docs")
-#	message(STATUS ${HTML_PATH})
-endforeach()
+# file(GLOB_RECURSE HTML_DOCS ${PROJECT_SOURCE_DIR}/docs/html/*)
+# foreach(HTML_DOC ${HTML_DOCS})
+# 	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/" "" HTML_PATH ${HTML_DOC})
+# 	STRING(REGEX MATCH "(.*)[/\\]" HTML_PATH ${HTML_PATH})
+# 	install(FILES ${HTML_DOC} DESTINATION share/umundo/${HTML_PATH} COMPONENT docs)
+# 	list (APPEND UMUNDO_CPACK_COMPONENTS "docs")
+# #	message(STATUS ${HTML_PATH})
+# endforeach()
 
 ########################################
-# The umundo.core Jar
+# Target languages
 ########################################
 
-if (UMUNDOCORESWIG_LOCATION)
-	install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundocore.jar DESTINATION share/umundo/lib COMPONENT librarySwig)
+GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
+if (UMUNDONATIVEJAVA_LOCATION)
+	if (DIST_PREPARE)
+		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/lib COMPONENT librarySwig)
+	else()
+		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/lib COMPONENT librarySwig)
+	endif()
 	list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
 endif()
 
+# The CSharp bindings are already picked up as a host-native dll above
+GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
+# if (UMUNDONATIVECSHARP_LOCATION)
+# 	install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll DESTINATION share/umundo/lib COMPONENT librarySwig)
+# 	list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+# endif()
+
+
+################################################################################
+# Cross Compiled binaries
+################################################################################
+
 ########################################
-# Support for cross compiling
+# Android
 ########################################
 
-####################
-# Android
-####################
 file(GLOB_RECURSE ANDROID_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/android*/*)
 foreach(ANDROID_LIB ${ANDROID_LIBS})
 	# do not pack static libraries
@@ -104,7 +122,7 @@ foreach(ANDROID_LIB ${ANDROID_LIBS})
 		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" ANDROID_PATH ${ANDROID_LIB})
 		STRING(REGEX MATCH "[^/]*/[^/]*" ANDROID_PATH ${ANDROID_PATH})
 		# message(STATUS "ANDROID_LIB:  ${ANDROID_LIB}")
-		# message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")	
+		# message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
 		install(FILES ${ANDROID_LIB} DESTINATION share/umundo/${ANDROID_PATH} COMPONENT libraryAndroid)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "libraryAndroid")
 	endif()
@@ -121,9 +139,9 @@ if (FOUND_ITEM GREATER -1)
 	endforeach()
 endif()
 
-####################
+########################################
 # iOS
-####################
+########################################
 if (APPLE)
 	file(GLOB_RECURSE IOS_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/ios*/*.ios*)
 	foreach(IOS_LIB ${IOS_LIBS})
@@ -132,7 +150,7 @@ if (APPLE)
 		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" IOS_PATH ${IOS_LIB})
 		STRING(REGEX MATCH "[^/]*" IOS_PATH ${IOS_PATH})
 		# message(STATUS "IOS_LIB:  ${IOS_LIB}")
-		# message(STATUS "IOS_PATH: ${IOS_PATH}")	
+		# message(STATUS "IOS_PATH: ${IOS_PATH}")
 		install(FILES ${IOS_LIB} DESTINATION share/umundo/${IOS_PATH} COMPONENT libraryIOS)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "libraryIOS")
 	endforeach()
@@ -152,8 +170,47 @@ if (APPLE)
 	endif()
 endif()
 
+################################################################################
+# Sample projects
+################################################################################
+
+# umundo-pingpong: XCode for iOS
+if (APPLE)
+	file(GLOB_RECURSE IOS_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/contrib/samples/ios/umundo-pingpong*/*)
+	foreach(IOS_PINGPONG_SAMPLE_FILE ${IOS_PINGPONG_SAMPLE})
+		# strip root
+		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${IOS_PINGPONG_SAMPLE_FILE})
+		get_filename_component(REL_PATH ${REL_PATH} PATH)
+#		message("Installing ${IOS_PINGPONG_SAMPLE_FILE} in share/templates/${REL_PATH}")
+		install(FILES ${IOS_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+	endforeach()
+	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+endif()
+
+# umundo-pingpong: Eclipse for Android
+file(GLOB_RECURSE ANDROID_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/contrib/samples/android/*)
+foreach(ANDROID_PINGPONG_SAMPLE_FILE ${ANDROID_PINGPONG_SAMPLE})
+#	message("ANDROID_PINGPONG_SAMPLE_FILE: ${ANDROID_PINGPONG_SAMPLE_FILE}")
+	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
+	get_filename_component(REL_PATH ${REL_PATH} PATH)
+	install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+endforeach()
+list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+
+# umundo-pingpong: Visual Studio for CSharp
+if (WIN32)
+	file(GLOB_RECURSE CSHARP_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/contrib/samples/csharp/*)
+	foreach(CSHARP_PINGPONG_SAMPLE_FILE ${CSHARP_PINGPONG_SAMPLE})
+#		message("CSHARP_PINGPONG_SAMPLE_FILE: ${CSHARP_PINGPONG_SAMPLE_FILE}")
+		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${CSHARP_PINGPONG_SAMPLE_FILE})
+		get_filename_component(REL_PATH ${REL_PATH} PATH)
+		install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+	endforeach()
+	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+endif()
+
 ########################################
-# House keeping and headers
+# House keeping
 ########################################
 
 list (APPEND UMUNDO_CPACK_COMPONENTS "headers")
@@ -240,12 +297,12 @@ set(CPACK_RPM_PACKAGE_LICENSE "CDDL")
 # Describe layout of package
 ########################################
 
-set(CPACK_COMPONENTS_ALL 
+set(CPACK_COMPONENTS_ALL
 	${UMUNDO_CPACK_COMPONENTS}
 )
 
 ###
-# Description of components 
+# Description of components
 #
 
 list(FIND UMUNDO_CPACK_COMPONENTS "tools" FOUND_ITEM)
@@ -257,7 +314,7 @@ endif()
 list(FIND UMUNDO_CPACK_COMPONENTS "samples" FOUND_ITEM)
 if (FOUND_ITEM GREATER -1)
 	set(CPACK_COMPONENT_SAMPLES_DISPLAY_NAME "Sample Applications with IDE templates")
-	set(CPACK_COMPONENT_SAMPLES_DESCRIPTION 
+	set(CPACK_COMPONENT_SAMPLES_DESCRIPTION
   		"Sample applications with source-code, illustrating the API and usage of the library.")
 endif()
 

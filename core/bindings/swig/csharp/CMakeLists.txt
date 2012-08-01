@@ -17,10 +17,10 @@ SET_SOURCE_FILES_PROPERTIES(umundocore.i PROPERTIES SWIG_FLAGS "-namespace;${UMU
 SET_SOURCE_FILES_PROPERTIES(umundocore.i PROPERTIES CPLUSPLUS ON)
 SET(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/${UMUNDO_CSHARP_DIR}")
 
-SWIG_ADD_MODULE(umundocoreCSharp csharp umundocore.i)
-set_target_properties(umundocoreCSharp PROPERTIES FOLDER "Bindings")
+SWIG_ADD_MODULE(umundoNativeCSharp csharp umundocore.i)
+set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 
 # I am not sure why we need it twice, but we do at least on android
-SWIG_LINK_LIBRARIES(umundocoreCSharp ${UMUNDOCORE_LIBRARIES})
+SWIG_LINK_LIBRARIES(umundoNativeCSharp ${UMUNDOCORE_LIBRARIES})
 
-INSTALL_LIBRARY(TARGETS umundocoreCSharp COMPONENT librarySwig)
+INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig)

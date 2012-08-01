@@ -88,6 +88,7 @@ int Thread::getThreadId() {
 	static std::map<DWORD, int> ids;
 	DWORD pt = GetCurrentThreadId();
 #endif
+  // locking breaks sometimes at pthread_mutex_lock
 	_threadIdMutex.lock();
 	if (ids.find(pt) == ids.end()) {
 		ids[pt] = _nextThreadId++;
@@ -202,6 +203,10 @@ Mutex::Mutex() {
 #endif
 #ifdef THREAD_WIN32
 	_mutex = CreateMutex(NULL, FALSE, NULL);
+	if (_mutex == NULL) {
+		LOG_ERR("CreateMutex: %s", GetLastError());
+	}
+	assert(_mutex != NULL);
 #endif
 }
 
@@ -212,13 +217,13 @@ Mutex::~Mutex() {
 #ifdef THREAD_WIN32
 	CloseHandle(_mutex);
 #endif
-
 }
 
 void Mutex::lock() {
 #ifdef THREAD_PTHREAD
 	int err = pthread_mutex_lock(&_mutex);
-	assert(!err);
+  if (err)
+    LOG_ERR("pthread_mutex_lock: %s", strerror(err));
 	(void)err;
 #endif
 #ifdef THREAD_WIN32
@@ -255,6 +260,10 @@ ScopeLock::ScopeLock(Mutex* mutex) : _mutex(mutex) {
 ScopeLock::~ScopeLock() {
 	_mutex->unlock();
 }
+
+//Monitor::Monitor(const Monitor& other) {
+//	LOG_ERR("CopyConstructor!");
+//}
 
 Monitor::Monitor() {
 	_waiters = 0;

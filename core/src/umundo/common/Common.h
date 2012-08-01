@@ -17,7 +17,7 @@
 #define COMMON_H_ANPQOWX0
 
 // disable: "<type> needs to have dll-interface to be used by clients'
-// Happens on STL member variables which are not public therefore is ok
+// Happens on STL member variables which are not public therefore is ok?
 //#pragma warning (disable : 4251)
 
 #if defined(_MSC_VER)
@@ -25,6 +25,10 @@
 #pragma warning (disable : 4018)
 // possible loss of data
 #pragma warning (disable : 4244)
+#pragma warning (disable : 4267)
+// 'this' : used in base member initializer list (TypedSubscriber)
+#pragma warning (disable : 4355)
+
 #endif
 
 #include <map>
@@ -66,6 +70,22 @@ using boost::shared_ptr;
 using boost::weak_ptr;
 
 extern string procUUID;
+
+// see http://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
+template <typename T> std::string toStr(T tmp)
+{
+    std::ostringstream out;
+    out << tmp;
+    return out.str();
+}
+
+template <typename T> T strTo(std::string tmp)
+{
+    T output;
+    std::istringstream in(tmp);
+    in >> output;
+    return output;
+}
 
 }
 

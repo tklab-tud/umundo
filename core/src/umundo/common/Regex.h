@@ -17,7 +17,6 @@
 #define REGEX_H_HUE92M
 
 #include <umundo/common/Common.h>
-#include <pcre.h>
 #include <string>
 #include <vector>
 
@@ -55,7 +54,7 @@ public:
 
 protected:
 	int _nrMatches;
-	pcre* _re;
+	void* _re;
 	string _pattern;
 	int _ovector[OVECCOUNT];
 	std::pair<int, int> _matchIndex;

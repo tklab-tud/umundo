@@ -28,6 +28,7 @@ for your platform. It contains
 * Available language bindings
 * Android cross-compiled libraries
 * iOS cross-compiled libraries with the darwin installer
+* Templates for Eclipse, XCode and Visual Studio
 
 ## Components
 

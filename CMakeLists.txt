@@ -48,6 +48,12 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	endif()
 endif()
 
+if (CMAKE_CROSSCOMPILING AND ANDROID_ABI)
+	set(ANDROID ON)
+	set(CMAKE_CROSSCOMPILING_TARGET android)
+	set(CMAKE_SYSTEM_VERSION ${ANDROID_NATIVE_API_LEVEL})
+endif()
+
 #
 # Setting the CMAKE_FIND_ROOT_PATH to a list of directories will cause all CMake modules
 # to look in these directories in addition to the system search paths:
@@ -66,7 +72,7 @@ if(CMAKE_CROSSCOMPILING)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni - we don't?
 		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
-		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/android/${ANDROID_NDK_ABI_EXT}")
+		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/android/${ANDROID_ABI}")
 		LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/bin") # this is needed to find swig
 		LIST(APPEND CMAKE_FIND_ROOT_PATH "/opt/local/bin") # this is needed to find protoc
 	endif ()
@@ -83,10 +89,11 @@ endif()
 
 #
 # BUILD_PREFER_PREBUILT_LIBS:
-# Do we want to search system path or contrib/prebuilt first?
+# Do we want to search system paths or contrib/prebuilt first?
 #
 if (CMAKE_CROSSCOMPILING)
 	# always prefer prebuilt libraries for cross-compiling
+	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)
 	SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_FIND_ROOT_PATH}")
 else()
 	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)

@@ -191,8 +191,39 @@ bool testTimedMonitors() {
 	return true;
 }
 
+class FooTracer : public Traceable, public Thread {
+	void run() {
+		while(isStarted()) {
+			trace("This is foo");
+			Thread::sleepMs(20);
+		}
+	}
+};
+
+bool testTracing() {
+	FooTracer* tr1 = new FooTracer();
+	FooTracer* tr2 = new FooTracer();
+	FooTracer* tr3 = new FooTracer();
+
+	tr1->setTraceFile("trace.txt");
+	tr2->setTraceFile("trace.txt");
+	tr3->setTraceFile("trace.txt");
+
+	tr1->start();
+	tr2->start();
+	tr3->start();
+
+	Thread::sleepMs(100);
+	delete tr1;
+	delete tr2;
+	delete tr3;
+
+	return true;
+}
 
 int main(int argc, char** argv) {
+	if(!testTracing())
+		return EXIT_FAILURE;
 	if(!testRecursiveMutex())
 		return EXIT_FAILURE;
 	if(!testThreads())

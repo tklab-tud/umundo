@@ -1,34 +1,5 @@
 # Building from Source
 
-**Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*
-
-- [Introduction](#introduction)
-- [Build Dependencies](#build-dependencies)
-- [Platform Notes](#platform-notes)
-	- [Mac OSX](#mac-osx)
-		- [Console / Make](#console--make)
-		- [Xcode](#xcode)
-	- [Linux](#linux)
-		- [Preparing apt-get based distributions](#preparing-apt-get-based-distributions)
-		- [Preparing yum based distributions](#preparing-yum-based-distributions)
-		- [Console / Make](#console--make-1)
-		- [Eclipse CDT](#eclipse-cdt)
-		- [Compiling Dependencies](#compiling-dependencies)
-			- [SWIG](#swig)
-			- [CMake](#cmake)
-	- [Windows](#windows)
-		- [Details on required build-time dependencies](#details-on-required-build-time-dependencies)
-		- [Prepare compilation](#prepare-compilation)
-		- [Language Bindings](#language-bindings)
-			- [Java](#java)
-			- [CSharp](#csharp)
-	- [Cross Compiling](#cross-compiling)
-- [Build process](#build-process)
-	- [Influential CMake Variables](#influential-cmake-variables)
-	- [CMake files](#cmake-files)
-
-# Introduction
-
 The source code is built using CMake, the process of building umundo is
 essentially the same on every platform:
 

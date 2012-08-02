@@ -42,8 +42,8 @@ public:
 	const string getName()                           { return _svcName; }
 	const string getChannelName()                    { return _channelName; }
 	const map<string, string>& getProperties()       { return _properties; }
-	const string getProperty(const string&)          { return _properties[key]; }
-	void setProperty(const string&, const string&)   { _properties[key] = value; }
+	const string getProperty(const string& key)      { return _properties[key]; }
+	void setProperty(const string& key, const string& value)   { _properties[key] = value; }
 
 	///< We need the ServiceManagers nodes in several Services
 	ServiceManager* getServiceManager() {

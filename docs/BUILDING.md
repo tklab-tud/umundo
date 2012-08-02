@@ -236,6 +236,9 @@ Now open Eclipse CDT and import the out-of-source directory as an existing proje
 into workspace" checkbox unchecked. There are some more [detailed instruction](http://www.cmake.org/Wiki/Eclipse_CDT4_Generator) available
 in the cmake wiki as well.
 
+<b>Note:</b> Eclipse does not like the project to be a subdirectory in the source.
+You may need to choose your build directory with the generated project accordingly.
+
 ### Compiling Dependencies
 
 If the packages in your distribution are too old, you will have to compile current
@@ -450,7 +453,7 @@ illustrating how to use umundo.core with C#.
 
 ## Cross Compiling
 
-See the dedicated [cross-compiling guide](https://github.com/tklab-tud/umundo/tree/master/docs/CROSS_COMPILING.md)
+See the dedicated [cross-compiling guide](https://github.com/tklab-tud/umundo/tree/master/docs/CROSS_COMPILING.md).
 
 # Build process
 

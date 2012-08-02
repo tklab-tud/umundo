@@ -74,16 +74,18 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
 ctest_update()                    # synchronize with git head
 ctest_configure()                 # run cmake
+
+if (NOT CTEST_TOOLCHAIN)
 #
-# We will not build tests when cross-compiled, make sure we compile
-# the libraries at least. None will depend on target ctest :(
+# We do not want to build the tests everytime we compile something, but we cannot
+# add a dependency to target "test" as it is unknown to CMake, instead, we introduce
+# a new target "ctest" for all tests to depend upon.
 #
-ctest_build()
+# But when cross-compiling, we do not add any tests, that is "ctest" depends on nothing,
+# in this case, build the whole library without tests.
 #
-# We cannot add dependencies to target "test" e.g. for the java bindings, we
-# work around it by having an explicit "ctest" target as well
-#
-set(CTEST_BUILD_TARGET "ctest")
+	set(CTEST_BUILD_TARGET "ctest")
+endif()
 ctest_build()                     # build custom target that depends on all the actual tests
 ctest_test()                      # run tests
 

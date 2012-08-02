@@ -188,7 +188,7 @@ language bindings, you will need the following packages in addition:
 	# umundo optional dependencies - SWIG and the Java Developer Kit
 	$ sudo apt-get install swig openjdk-7-jdk ant
 
-If CMake still does not find your JDK location, make sure JAVA_HOME is set:
+If CMake does not find your JDK location, make sure JAVA_HOME is set:
 
 	$ echo $JAVA_HOME
 	/usr/lib/jvm/java-7-openjdk-i386
@@ -450,12 +450,7 @@ illustrating how to use umundo.core with C#.
 
 ## Cross Compiling
 
-Cross compiling for Android and iOS is best done with the <tt>build-umundo-*</tt> scripts in <tt>contrib</tt>. You have to make
-sure that CMake can find <tt>protoc-umundo-cpp-rpc</tt> and <tt>protoc-umundo-java-rpc</tt> on your system, both can be build
-and installed with a host-native (non cross-compiled) installation first.
-
-Cross Compiling for Android on Windows is possible but the process is not wrapped in a script yet. Have a look at the unix shell
-scripts to see what's needed.
+See the dedicated [cross-compiling guide](https://github.com/tklab-tud/umundo/tree/master/docs/CROSS_COMPILING.md)
 
 # Build process
 
@@ -465,67 +460,105 @@ it will only generate the artifacts required for an actual build-system. The def
 unices and files for <tt>nmake</tt> on windows. If you invoke <tt>ccmake</tt> instead of <tt>cmake</tt>, you get an user interfaces
 to set some variables related to the build:
 
-### What to build
+## Influential CMake Variables
 
-<dl>
-	<dt><b>CMAKE_BUILD_TYPE</b></dt>
-	<dd>Only <tt>Debug</tt> and <tt>Release</tt> are actually supported. In debug builds, all asserts are stripped and the default
-		log-level is decreased.</dd>
+<table>
+	<tr><th>Name</th><th>Description</th><th style="width: 17%;">Default Value</th></tr>
+	<tr><td colspan=3><small><b>How to build</b>:</small></td></tr>
+	<tr>
+		<td><tt>CMAKE_BUILD_TYPE</tt></td>
+		<td>The build type as in <tt>Debug</tt> or <tt>Release</tt>. CMake also
+		offers <tt>MinSizeRel</tt>and <tt>RelWithDebInfo</tt></td>, but I have
+		never used them. In debug builds, all asserts are stripped and the default
+		log-level is decreased.
 
-	<dt><b>BUILD_PREFER_STATIC_LIBRARIES</b></dt>
-	<dd>Prefer static libraries in <tt>contrib/prebuilt/</tt> or system supplied libraries as found by CMake.</dd>
+		When you choose the Visual Studio generator, you can change the build-type
+		within the IDE as well.</td>
+		<td>Release</td>
+	</tr>
+	<tr>
+		<td><tt>BUILD_PREFER_STATIC_LIBRARIES</tt></td>
+		<td>When searching for libraries, prefer a statically compiled variant.</td>
+		<td>On</td>
+	</tr>
+	<tr>
+		<td><tt>BUILD_STATIC_LIBRARIES</tt></td>
+		<td>Whether to build uMundo as shared or static libraries.<br/>
+			<b>Note: </b>This does not influence the libraries for language bindings.</td>
+		<td>On for Unices<br />Off for Windows<br />Off when cross-compiling</td>
+	</tr>
+	<tr>
+		<td><tt>DIST_PREPARE</tt></td>
+		<td>Put all libraries and binaries into SOURCE_DIR/package/ to prepare a
+		release. We need access to all artifacts from other platforms to create
+		the installers with platform independent JARs and cross-compiled mobile
+		platforms.</td>
+		<td>Off</td>
+	</tr>
+	<tr><td colspan=3><small><b>What to build</b> (umundo.core is always built):</small></td></tr>
+	<tr>
+		<td><tt>BUILD_UMUNDO_S11N</tt></td>
+		<td>Build the <tt>umundoserial</tt> library for object serialization.<br />
+		<b>Note:</b> This only applies to the umundo.s11n C++ component. Individual target
+		languages are expected to bring their own implementation anyway.</td>
+		<td>Off for Android<br /> On otherwise</td>
+	</tr>
+	<tr>
+		<td><tt>BUILD_UMUNDO_RPC</tt></td>
+		<td>Build the <tt>umundorpc</tt> library for remote procedure calls via uMundo.</td>
+		<td>Off for Android<br /> On otherwise</td>
+	</tr>
+	<tr>
+		<td><tt>BUILD_TESTS</tt></td>
+		<td>Build the test executables.</td>
+		<td>Off</td>
+	</tr>
+	<tr>
+		<td><tt>BUILD_UMUNDO_APPS</tt></td>
+		<td>Include the <tt>apps/</tt> directory when building.</td>
+		<td>Off</td>
+	</tr>
+	<tr><td colspan=3><small><b>Implementations</b>:</small></td></tr>
+	<tr>
+		<td><tt>DISC_AVAHI</tt></td>
+		<td>Use the Avahi ZeroConf implementation for discovery with umundo.core.</td>
+		<td>On for Linux<br />Off otherwise</td>
+	</tr>
+	<tr>
+		<td><tt>DISC_BONJOUR</tt></td>
+		<td>Use the Bonjour ZeroConf implementation found on every MacOSX installation and every iOS device.</td>
+		<td>On for Mac OSX<br />On for iOS<br />Off otherwise</td>
+	</tr>
+	<tr>
+		<td><tt>DISC_BONJOUR_EMBED</tt></td>
+		<td>Embed the Bonjour ZeroConf implementation into umundo.core, much like with printers or routers.</td>
+		<td>On for Windows<br />On for Android<br />Off otherwise</td>
+	</tr>
+	<tr>
+		<td><tt>NET_ZEROMQ</tt></td>
+		<td>Use ZeroMQ to connect nodes to each other and publishers to subscribers.</td>
+		<td>On</td>
+	</tr>
+	<tr>
+		<td><tt>NET_ZEROMQ_SND_HWM</tt><br /><tt>NET_ZEROMQ_RCV_HWM</tt></td>
+		<td>High water mark for ZeroMQ queues in messages. One uMundo message represents multiple ZeroMQ messages, one per meta field and
+		one for the actual data.</td>
+		<td>10000<br /> 10000</td>
+	</tr>
+	<tr>
+		<td><tt>S11N_PROTOBUF</tt></td>
+		<td>Use Google's ProtoBuf to serialize objects.</td>
+		<td>On</td>
+	</tr>
+	<tr>
+		<td><tt>RPC_PROTOBUF</tt></td>
+		<td>Use Google's ProtoBuf to call remote procedure calls.</td>
+		<td>On</td>
+	</tr>
 
-	<dt><b>BUILD_STATIC_LIBRARIES</b></dt>
-	<dd>Create the uMundo libraries as static libraries. This does not apply to the JNI library which needs to be a shared library for
-		Java.</dd>
+</table>
 
-	<dt><b>BUILD_TESTS</b></dt>
-	<dd>Build the test executables.</dd>
-
-	<dt><b>BUILD_UMUNDO_APPS</b></dt>
-	<dd>Include the <tt>apps/</tt> directory when building.</dd>
-
-	<dt><b>BUILD_UMUNDO_RPC</b></dt>
-	<dd>Build the <tt>umundorpc</tt> library for remote procedure calls via uMundo.</dd>
-
-	<dt><b>BUILD_UMUNDO_S11N</b></dt>
-	<dd>Build the <tt>umundos11n</tt> library for object serialization. Only Googles ProtoBuf is supported as o now.</dd>
-
-	<dt><b>BUILD_UMUNDO_UTIL</b></dt>
-	<dd>Build <tt>umundoutil</tt> with some growing set of convenience services.</dd>
-
-	<dt><b>DIST_PREPARE</b></dt>
-	<dd>Put all libraries and binaries into SOURCE_DIR/package/ to prepare a release. We need access to all artifacts from other
-		platforms to create the installers with platform independent JARs and cross-compiled mobile platforms.</dd>
-</dl>
-
-### Implementations
-
-<dl>
-	<dt><b>DISC_AVAHI</b></dt>
-	<dd>Use the Avahi ZeroConf implementation with umundocore found on modern Linux distributions.</dd>
-
-	<dt><b>DISC_BONJOUR</b></dt>
-	<dd>Use the Bonjour ZeroConf implementation found on every MacOSX installation and every iOS device.</dd>
-
-	<dt><b>DISC_BONJOUR_EMBED</b></dt>
-	<dd>Embed the Bonjour ZeroConf implementation into umundocore. This is the default for Android and Windows.</dd>
-
-	<dt><b>NET_ZEROMQ</b></dt>
-	<dd>Use ZeroMQ to connect nodes to each other and publishers to subscribers.</dd>
-
-	<dt><b>NET_ZEROMQ_RCV_HWM, NET_ZEROMQ_SND_HWM</b></dt>
-	<dd>High water mark for ZeroMQ queues in messages. One uMundo message represents multiple ZeroMQ messages, one per meta field and
-		one for the actual data.</dd>
-
-	<dt><b>S11N_PROTOBUF</b></dt>
-	<dd>Use Google's ProtoBuf to serialize objects.</dd>
-
-	<dt><b>RPC_PROTOBUF</b></dt>
-	<dd>Use Google's ProtoBuf to call remote methods.</dd>
-</dl>
-
-### CMake files
+## CMake files
 
 Throughout the source, there are <tt>CMakeLists.txt</tt> build files for CMake. The topmost build file will call the build files
 from the directories directly contained via <tt>add_directory</tt>, which in turn call build files further down the directory

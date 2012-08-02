@@ -484,12 +484,15 @@ else()
 endif()
 
 if (BUILD_PREFER_PREBUILT_LIBS)
-	message(STATUS "  Preferring dependent libraries . : from contrib/prebuilt")
+	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/" "" REL_UMUNDO_PREBUILT_LIBRARY_PATH ${UMUNDO_PREBUILT_LIBRARY_PATH})
+	message(STATUS "  Preferring dependent libraries . : from ${REL_UMUNDO_PREBUILT_LIBRARY_PATH}")
 else()
 	message(STATUS "  Preferring dependent libraries . : installed on system")
 endif()
 
-message(STATUS "Libraries will end up in: " ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+STRING(REGEX REPLACE "${CMAKE_BINARY_DIR}" "BUILD_DIR" REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+STRING(REGEX REPLACE "${CMAKE_SOURCE_DIR}" "SOURCE_DIR" REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+message(STATUS "  Libraries will end up in ....... : " ${REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 ############################################################
 # Tests

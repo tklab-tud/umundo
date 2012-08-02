@@ -48,6 +48,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	endif()
 endif()
 
+# We use the toolchain file from http://code.google.com/p/android-cmake/
 if (CMAKE_CROSSCOMPILING AND ANDROID_ABI)
 	set(ANDROID ON)
 	set(CMAKE_CROSSCOMPILING_TARGET android)
@@ -140,6 +141,8 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
 # some compiler flags
 if(CMAKE_COMPILER_IS_GNUCXX)
+	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+
 	# best practices from scott meyers
 	#	add_definitions(-Weffc++)
 
@@ -156,10 +159,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	add_definitions(-fno-strict-aliasing)
 	add_definitions("-Wno-unused-value -Wno-unused-function -Wno-sign-compare")
 
-	if (NOT CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
-		add_definitions("-s")
-    #set(CMAKE_CXX_FLAGS "-s")  ## Strip binary for everything but debug builds
-    # set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
+	if (NOT CMAKE_BUILD_TYPE MATCHES ".*Deb.*") # when not building for debug
+		# add_definitions("-s")
+    	#set(CMAKE_CXX_FLAGS "-s")  ## Strip binary for everything but debug builds
+    	# set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
 		# add_definitions("-mpreferred-stack-boundary=4")
 		# add_definitions("-fmerge-constants")
 		# add_definitions("-fno-rtti -DBOOST_NO_TYPEID")
@@ -195,7 +198,7 @@ else()
 	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
 endif()
 
-if (WIN32 OR IOS)
+if (WIN32 OR CMAKE_CROSSCOMPILING)
 	OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 else()
 	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)

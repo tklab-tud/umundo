@@ -6,6 +6,7 @@
 # CTEST_SITE                - the name of this build-slave
 # CTEST_BUILD_CONFIGURATION - "Debug", "Release" ..
 # CTEST_BUILD_NAME          - name of the particular build (e.g. "darwin-x86_64 llvm bonjour")
+# CMAKE_TOOLCHAIN_FILE      - name of a toolchain file for cross-compiling
 #
 # CTEST_BUILD_OPTIONS       - parameters to be passed to cmake when preparing the build
 #                             these will most likely come from one of the tests/*.ctest files

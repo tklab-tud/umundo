@@ -75,7 +75,7 @@ ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
 ctest_update()                    # synchronize with git head
 ctest_configure()                 # run cmake
 
-if (NOT CTEST_TOOLCHAIN)
+if (CTEST_TOOLCHAIN)
 #
 # We do not want to build the tests everytime we compile something, but we cannot
 # add a dependency to target "test" as it is unknown to CMake, instead, we introduce
@@ -84,6 +84,8 @@ if (NOT CTEST_TOOLCHAIN)
 # But when cross-compiling, we do not add any tests, that is "ctest" depends on nothing,
 # in this case, build the whole library without tests.
 #
+	set(CTEST_BUILD_TARGET "")
+else()
 	set(CTEST_BUILD_TARGET "ctest")
 endif()
 ctest_build()                     # build custom target that depends on all the actual tests

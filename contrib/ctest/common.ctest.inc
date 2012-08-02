@@ -75,11 +75,16 @@ ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
 ctest_update()                    # synchronize with git head
 ctest_configure()                 # run cmake
 #
+# We will not build tests when cross-compiled, make sure we compile
+# the libraries at least. None will depend on target ctest :(
+#
+ctest_build()
+#
 # We cannot add dependencies to target "test" e.g. for the java bindings, we
-# work around it by having an explicit "check" target as well
+# work around it by having an explicit "ctest" target as well
 #
 set(CTEST_BUILD_TARGET "ctest")
-ctest_build()                     # build custom target to depend upon
+ctest_build()                     # build custom target that depends on all the actual tests
 ctest_test()                      # run tests
 
 if (WITH_MEMCHECK AND CTEST_COVERAGE_COMMAND)

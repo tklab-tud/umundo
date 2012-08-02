@@ -12,7 +12,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-android"
 
-. ${DIR}/find-android-ndk.sh
+#. ${DIR}/find-android-ndk.sh
 
 mkdir -p ${BUILD_DIR} &> /dev/null
 

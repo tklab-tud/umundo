@@ -19,6 +19,7 @@
 
 #include "umundo/common/Debug.h"
 #include "umundo/thread/Thread.h"
+#include <fstream>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -286,5 +287,62 @@ void Debug::stackTraceSigHandler(int sig) {
 }
 
 #endif
+
+Mutex Traceable::_mutex;
+std::map<std::string, boost::weak_ptr<std::ofstream> > Traceable::_files;
+
+Traceable::Traceable() {
+}
+
+Traceable::~Traceable() {
+	ScopeLock lock(&_mutex);
+	if (_traceFile) {
+		_traceFile->flush();
+	}
+}
+
+bool Traceable::setTraceFile(const std::string& filename) {
+	_traceFileName = filename;
+	ScopeLock lock(&_mutex);
+	if (_files.find(_traceFileName) == _files.end() || _files[_traceFileName].lock() == NULL) {
+		_traceFile = boost::shared_ptr<std::ofstream>(new std::ofstream(_traceFileName.c_str()));
+		if (!_traceFile)
+			return false;
+		_files[_traceFileName] = _traceFile;
+	} else {
+		_traceFile = _files[_traceFileName].lock();
+	}
+	return true;
+}
+
+void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::string> info) {
+	if (_traceFile) {
+		ScopeLock lock(&_mutex);
+/*
+		info["threadId"] = toStr(Thread::getThreadId());
+		info["this"] = toStr(*this);
+
+ */
+		(*_traceFile) << Thread::getTimeStampMs() <<  ": " << traceMsg << " ### ";
+		std::map<std::string, std::string>::iterator infoIter = info.begin();
+		if (infoIter != info.end()) {
+			(*_traceFile) << "[";
+			while(infoIter != info.end()) {
+				(*_traceFile) << infoIter->first << "=" << infoIter->second << " ## ";
+				infoIter++;
+			}
+			(*_traceFile) << "]";
+		}
+		(*_traceFile) << std::endl;
+	}
+}
+
+
+/*
+	std::string _traceFileName;
+	boost::shared_ptr<std::ofstream> _streams;
+
+ */
+
 
 }

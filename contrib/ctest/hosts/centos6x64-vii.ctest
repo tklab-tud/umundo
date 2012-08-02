@@ -12,8 +12,30 @@ include("tests/bonjourEmbedded.ctest")
 set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour embedded")
 include("common.ctest.inc")
 
-# test android cross-compile with embedded bonjour
+# test android-8 cross-compile with embedded bonjour on ndk r8
 include("tests/bonjourEmbedded.ctest")
-set(CTEST_BUILD_NAME "linux-x86_64-android gcc bonjour embedded")
+set(CTEST_BUILD_NAME "linux-x86_64 android-8 ndk-r8 gcc bonjour-embedded")
+set(CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -DANDROID_NDK=/opt/android-ndk-r8 -DANDROID_NATIVE_API_LEVEL=android-8")
+set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
+include("common.ctest.inc")
+
+# test android-8 cross-compile with embedded bonjour on ndk r7c
+include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64 android-8 ndk-r7c gcc bonjour-embedded")
+set(CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -DANDROID_NDK=/opt/android-ndk-r7c -DANDROID_NATIVE_API_LEVEL=android-8")
+set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
+include("common.ctest.inc")
+
+# test android-8 cross-compile with embedded bonjour on ndk r7b
+include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64 android-8 ndk-r7b gcc bonjour-embedded")
+set(CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -DANDROID_NDK=/opt/android-ndk-r7b -DANDROID_NATIVE_API_LEVEL=android-8")
+set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
+include("common.ctest.inc")
+
+# test android-8 cross-compile with embedded bonjour on ndk r7
+include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64 android-8 ndk-r7 gcc bonjour-embedded")
+set(CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -DANDROID_NDK=/opt/android-ndk-r7 -DANDROID_NATIVE_API_LEVEL=android-8")
 set(CTEST_TOOLCHAIN "$ENV{UMUNDO_SOURCE_DIR}/contrib/cmake/CrossCompile-Android.cmake")
 include("common.ctest.inc")

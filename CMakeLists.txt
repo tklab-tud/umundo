@@ -145,7 +145,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 	if(GCC_VERSION VERSION_EQUAL 4.7 OR GCC_VERSION VERSION_GREATER 4.7)
 		# when compiling as C++11, narrowing is a warning but older compilers complain about the option
-		add_compile_flags(-Wno-narrowing)
+		add_definitions(-Wno-narrowing)
 	endif()
 
 	# best practices from scott meyers

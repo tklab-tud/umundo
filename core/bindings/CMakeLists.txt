@@ -118,7 +118,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 		add_dependencies(java umundoNativeJava)
 		set_target_properties(java PROPERTIES FOLDER "Bindings")
 		if (BUILD_TESTS)
-			add_dependencies(ctest java)
+			add_dependencies(ALL_TESTS java)
 		endif()
 
 		add_test(java-tests
@@ -154,7 +154,7 @@ if (UMUNDONATIVECSHARP_LOCATION)
 		# make sure ant runs after we built the wrappers
 		add_dependencies(csharp umundoNativeCSharp)
 		if (BUILD_TESTS)
-			add_dependencies(ctest csharp)
+			add_dependencies(ALL_TESTS csharp)
 		endif()
 		set_target_properties(csharp PROPERTIES FOLDER "Bindings")
 	else()

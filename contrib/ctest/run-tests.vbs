@@ -3,12 +3,35 @@ Set fso      = CreateObject("Scripting.FileSystemObject")
 Set ip       = CreateObject("WScript.Network")
 Set procEnv  = shell.Environment("Process")
 
+' see http://stackoverflow.com/questions/4692542/force-a-vbs-to-run-using-cscript-instead-of-wscript
+Sub forceCScriptExecution
+    Dim Arg, Str
+    If Not LCase( Right( WScript.FullName, 12 ) ) = "\cscript.exe" Then
+        For Each Arg In WScript.Arguments
+            If InStr( Arg, " " ) Then Arg = """" & Arg & """"
+            Str = Str & " " & Arg
+        Next
+        shell.Run """" & VCVARSALL & """" & " && cscript //nologo """ & WScript.ScriptFullName & """" & Str
+		WScript.Sleep 1000
+        WScript.Quit
+    End If
+End Sub
+
 ME_NAME  = Wscript.ScriptFullName
 TEST_DIR = fso.GetParentFolderName(fso.GetFile(ME_NAME))
 TESTS    = TEST_DIR + "\tests"
 HOSTS    = TEST_DIR + "\hosts"
 HOSTNAME = LCase(ip.ComputerName)
 TESTFILE = HOSTS + "\" + HOSTNAME + ".ctest"
+
+VCVARSALL = shell.ExpandEnvironmentStrings("%VCVARSALL%")
+If VCVARSALL = "%VCVARSALL%" Then
+	VCVARSALL = "C:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"
+End If
+if (NOT fso.FileExists(VCVARSALL)) Then
+	MsgBox("Please export %VCVARSALL% as the command to get a build environment for msvc.")
+	WScript.Quit
+End If
 
 CTEST_SUBMIT_TYPE = shell.ExpandEnvironmentStrings("%CTEST_SUBMIT_TYPE%")
 If CTEST_SUBMIT_TYPE = "%CTEST_SUBMIT_TYPE%" Then
@@ -33,6 +56,8 @@ if (NOT fso.FileExists(TESTFILE)) Then
 	WScript.Quit
 End If
 
+' continue with cscript
+forceCScriptExecution
 
 ' Aqcuire lock to avoid concurrent builds
 ' this will throw a permission denied error :(
@@ -50,15 +75,9 @@ if (CTEST_SUBMIT_TYPE = "Continuous") Then
 End If
 
 shell.CurrentDirectory = TEST_DIR
-'"C:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat
-Set exec = shell.Exec("C:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat")
-exec.StdOut.ReadAll()
-Set exec = shell.Exec("ctest -VV --timeout 100 -S " + TESTFILE)
-'Set exec = shell.Exec("cmd.exe /c dir %windir%\*")
+Set exec = shell.Exec("CMD /S /C ctest -VV --timeout 100 -S " + TESTFILE + " 2>&1")
 Do While exec.Status = 0
-    WScript.Sleep 100
-    WScript.StdOut.Write(exec.StdOut.ReadLine())
-    WScript.StdErr.Write(exec.StdErr.ReadLine())
+    WScript.Sleep 10
+    WScript.StdOut.Write(exec.StdOut.ReadLine() & vbCRLF)
+'    WScript.StdErr.Write(exec.StdErr.ReadLine())
 Loop
-
-MsgBox("CTest:" + exec.StdOut.ReadAll)

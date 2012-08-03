@@ -561,6 +561,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 			UMUNDO_UNLOCK(myself->_mutex);
 			return;
 		}
+		assert(node.get() != NULL);
 		node->_interfaceIndices.erase(ifIndex);
 		node->_interfacesIPv4.erase(ifIndex);
 		node->_interfacesIPv6.erase(ifIndex);

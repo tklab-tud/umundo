@@ -126,7 +126,7 @@ endif()
 
 # a dummy target to depend on the targets needed for tests, see:
 # http://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
-add_custom_target(ctest COMMENT "Target to build all tests when BUILD_TESTS is enabled")
+add_custom_target(ctest COMMENT "Building all tests when BUILD_TESTS is enabled")
 if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)

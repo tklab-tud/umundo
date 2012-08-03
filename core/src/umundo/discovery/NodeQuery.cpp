@@ -32,6 +32,7 @@ NodeQuery::~NodeQuery() {
 
 void NodeQuery::found(shared_ptr<NodeStub> node) {
 	UMUNDO_LOCK(_mutex);
+	assert(node.get() != NULL);
 	if (_notifyImmediately) {
 		if (_nodes.find(node->getUUID()) != _nodes.end()) {
 //      LOG_DEBUG("Changed node %s", SHORT_UUID(node->getUUID()).c_str());
@@ -49,6 +50,7 @@ void NodeQuery::found(shared_ptr<NodeStub> node) {
 
 void NodeQuery::removed(shared_ptr<NodeStub> node) {
 	UMUNDO_LOCK(_mutex);
+	assert(node.get() != NULL);
 	if (_notifyImmediately) {
 		LOG_DEBUG("Removed node %s", SHORT_UUID(node->getUUID()).c_str());
 		_listener->removed(node);
@@ -68,12 +70,14 @@ void NodeQuery::notifyResultSet() {
 	set<shared_ptr<NodeStub> >::const_iterator nodeIter;
 
 	for (nodeIter = _pendingRemovals.begin(); nodeIter != _pendingRemovals.end(); nodeIter++) {
+		assert(node.get() != NULL);
 		LOG_DEBUG("Removed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
 		_listener->removed(*nodeIter);
 		_nodes.erase((*nodeIter)->getUUID());
 	}
 
 	for (nodeIter = _pendingFinds.begin(); nodeIter != _pendingFinds.end(); nodeIter++) {
+		assert(node.get() != NULL);
 		if (_nodes.find((*nodeIter)->getUUID()) != _nodes.end()) {
 //      LOG_DEBUG("Changed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
 			_listener->changed(*nodeIter);

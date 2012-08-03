@@ -141,7 +141,7 @@ void* Thread::runWrapper(void *obj) {
 	t->run();
 	// @TODO: Is there a race-condition here?
 	t->_isStarted = false;
-	pthread_exit();
+	pthread_exit(NULL);
 	return NULL;
 }
 #endif

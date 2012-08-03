@@ -185,7 +185,10 @@ bool testTimedMonitors() {
 		testTimedMonitor.signal();
 		Thread::sleepMs(5);
 		assert(passedTimedMonitor == 2);
+
+		assert(!thread1.isStarted());
 		assert(!thread2.isStarted());
+		assert(!thread3.isStarted());
 
 	}
 	return true;

@@ -107,8 +107,11 @@ void Thread::start() {
 	_isStarted = true;
 
 #ifdef THREAD_PTHREAD
+/*
 	if (_thread)
 		join();
+
+ */
 
 	int err = pthread_create(&_thread, NULL, &runWrapper, (void*)this);
 	if (err != 0) {

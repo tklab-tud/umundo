@@ -73,7 +73,12 @@ set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} \"${CTEST_SOURCE_DIRECTO
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ctest_start(${CTEST_SUBMIT_TYPE}) # start testing
-ctest_update()                    # synchronize with git head
+#
+# I accidentally resynced when running from IDE thrice!
+# We will rely on the run_tests.cron script to update to head
+#
+#ctest_update()                    # synchronize with git head
+
 ctest_configure()                 # run cmake
 
 if (CTEST_TOOLCHAIN)
@@ -87,7 +92,7 @@ if (CTEST_TOOLCHAIN)
 #
 	set(CTEST_BUILD_TARGET "")
 else()
-	set(CTEST_BUILD_TARGET "ctest")
+	set(CTEST_BUILD_TARGET "ALL_TESTS")
 endif()
 ctest_build()                     # build custom target that depends on all the actual tests
 ctest_test()                      # run tests

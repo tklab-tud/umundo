@@ -143,11 +143,6 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 if(CMAKE_COMPILER_IS_GNUCXX)
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
-	if(GCC_VERSION VERSION_EQUAL 4.7 OR GCC_VERSION VERSION_GREATER 4.7)
-		# when compiling as C++11, narrowing is a warning but older compilers complain about the option
-		add_definitions(-Wno-narrowing)
-	endif()
-
 	# best practices from scott meyers
 	#	add_definitions(-Weffc++)
 
@@ -156,6 +151,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 	# we cannot tread warning as error with the "narrowing problem"
 	# add_definitions(-Werror)
+
+	if(GCC_VERSION VERSION_EQUAL 4.7 OR GCC_VERSION VERSION_GREATER 4.7)
+		# when compiling as C++11, narrowing is a warning but older compilers complain about the option
+		add_definitions(-Wno-narrowing)
+	endif()
 
 	# swig will throw a warning with optimization otherwise
 	add_definitions(-fno-strict-aliasing)

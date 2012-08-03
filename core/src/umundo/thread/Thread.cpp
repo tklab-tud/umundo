@@ -33,7 +33,7 @@ namespace umundo {
 
 Thread::Thread() {
 	_isStarted = false;
-	_thread = NULL;
+//	_thread = NULL; // pthread_t is actually typedef'd to "long unsigned int"
 }
 
 Thread::~Thread() {
@@ -67,7 +67,7 @@ void Thread::join() {
 		LOG_ERR("join: no such thread");
 		break;
 	default:
-		_thread = NULL;
+//		_thread = NULL;
 		break;
 	}
 #endif

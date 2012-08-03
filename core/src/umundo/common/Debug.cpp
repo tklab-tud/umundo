@@ -192,8 +192,10 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 
 	// get current thread id
 	int threadId = -1;
-//	if (strcmp(filename, "Thread.cpp") != 0)
-//		threadId = Thread::getThreadId();
+	if (strcmp(filename, "Thread.cpp") != 0)
+		threadId = Thread::getThreadId();
+
+
 
 	// timestamp
 	time_t current_time;

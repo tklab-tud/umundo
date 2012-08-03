@@ -556,7 +556,11 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		node->_interfaceIndices.insert(ifIndex);
 	} else {
 		// remove or change the node or an interface
-		assert(node.get() != NULL);
+		if(node.get() == NULL) {
+			LOG_WARN("Query %p reports removal of unknown or vanished node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
+			UMUNDO_UNLOCK(myself->_mutex);
+			return;
+		}
 		node->_interfaceIndices.erase(ifIndex);
 		node->_interfacesIPv4.erase(ifIndex);
 		node->_interfacesIPv6.erase(ifIndex);

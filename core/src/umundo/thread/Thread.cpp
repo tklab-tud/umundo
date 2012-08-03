@@ -139,7 +139,9 @@ void Thread::start() {
 void* Thread::runWrapper(void *obj) {
 	Thread* t = (Thread*)obj;
 	t->run();
+	// @TODO: Is there a race-condition here?
 	t->_isStarted = false;
+	pthread_exit();
 	return NULL;
 }
 #endif

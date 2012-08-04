@@ -70,14 +70,14 @@ void NodeQuery::notifyResultSet() {
 	set<shared_ptr<NodeStub> >::const_iterator nodeIter;
 
 	for (nodeIter = _pendingRemovals.begin(); nodeIter != _pendingRemovals.end(); nodeIter++) {
-		assert(node.get() != NULL);
+		assert(nodeIter->get() != NULL);
 		LOG_DEBUG("Removed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
 		_listener->removed(*nodeIter);
 		_nodes.erase((*nodeIter)->getUUID());
 	}
 
 	for (nodeIter = _pendingFinds.begin(); nodeIter != _pendingFinds.end(); nodeIter++) {
-		assert(node.get() != NULL);
+		assert(nodeIter->get() != NULL);
 		if (_nodes.find((*nodeIter)->getUUID()) != _nodes.end()) {
 //      LOG_DEBUG("Changed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
 			_listener->changed(*nodeIter);

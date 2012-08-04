@@ -70,8 +70,7 @@ public:
 #ifdef HAVE_EXECINFO
 	static void abortWithStackTraceOnSignal(int sig);
 	static void stackTraceSigHandler(int sig);
-#endif
-#ifndef HAVE_EXECINFO
+#else
 	// noop with non-gcc compilers
 	static void abortWithStackTraceOnSignal(int sig) {};
 	static void stackTraceSigHandler(int sig) {};

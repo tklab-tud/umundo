@@ -442,6 +442,7 @@ void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
 	for (queryNodeIter = _queryToNodes[query].begin(); queryNodeIter != _queryToNodes[query].end(); queryNodeIter++) {
 		// for every node found for the query, remove all bonjour queries
 		shared_ptr<BonjourNodeStub> node = queryNodeIter->second;
+		assert(node.get() != NULL);
 		getInstance()->forgetRemoteNodesFDs(node);
 	}
 
@@ -457,6 +458,7 @@ void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
 
 void BonjourNodeDiscovery::forgetRemoteNodesFDs(shared_ptr<BonjourNodeStub> node) {
 	UMUNDO_LOCK(_mutex);
+	assert(node.get() != NULL);
 
 	map<string, DNSServiceRef>::iterator serviceResolveIter = node->_serviceResolveClients.begin();
 	while (serviceResolveIter != node->_serviceResolveClients.end()) {
@@ -583,9 +585,9 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		*/
 		map<string, shared_ptr<BonjourNodeStub> >::iterator nodeIter;
 		for (nodeIter = getInstance()->_queryToNodes[query].begin(); nodeIter != getInstance()->getInstance()->_queryToNodes[query].end(); nodeIter++) {
-			assert(nodeIter->second.get() != NULL);
 			string uuid = nodeIter->first;
 			shared_ptr<BonjourNodeStub> node = nodeIter->second;
+			assert(node.get() != NULL);
 
 			intptr_t address = (intptr_t)(node.get());
 			char* regtype;
@@ -660,6 +662,7 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 	if(errorCode == kDNSServiceErr_NoError) {
 		shared_ptr<NodeQuery> query = getInstance()->_nodeToQuery[(intptr_t)context];
 		shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
+		assert(node.get() != NULL);
 
 		node->_fullname = fullname;
 		node->_host = hosttarget;
@@ -754,6 +757,7 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 
 	shared_ptr<NodeQuery> query = getInstance()->_nodeToQuery[(intptr_t)context];
 	shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
+	assert(node.get() != NULL);
 
 //  LOG_DEBUG("addrInfoReply: Got info on %s at if %d", hostname, interfaceIndex);
 
@@ -947,6 +951,7 @@ bool BonjourNodeDiscovery::validateState() {
 		map<string, shared_ptr<BonjourNodeStub> >::iterator remoteNodeIter;
 		for (remoteNodeIter = remoteNodes.begin(); remoteNodeIter != remoteNodes.end(); remoteNodeIter++) {
 			shared_ptr<BonjourNodeStub> remoteNode = remoteNodeIter->second;
+
 			assert(remoteNode->getDomain().find(query->getDomain()) >= 0);
 			map<string, DNSServiceRef>::iterator serviceResolverIter;
 			for (serviceResolverIter = remoteNode->_serviceResolveClients.begin(); serviceResolverIter != remoteNode->_serviceResolveClients.end(); serviceResolverIter++) {

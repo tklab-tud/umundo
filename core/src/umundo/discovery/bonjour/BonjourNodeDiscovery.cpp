@@ -583,6 +583,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		*/
 		map<string, shared_ptr<BonjourNodeStub> >::iterator nodeIter;
 		for (nodeIter = getInstance()->_queryToNodes[query].begin(); nodeIter != getInstance()->getInstance()->_queryToNodes[query].end(); nodeIter++) {
+			assert(nodeIter->second.get() != NULL);
 			string uuid = nodeIter->first;
 			shared_ptr<BonjourNodeStub> node = nodeIter->second;
 

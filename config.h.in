@@ -20,6 +20,7 @@
 #cmakedefine APPLE
 #cmakedefine CYGWIN
 #cmakedefine IOS
+#cmakedefine IOSSIM
 
 // suppress warnings with already define -DANDROID macro
 #ifndef ANDROID

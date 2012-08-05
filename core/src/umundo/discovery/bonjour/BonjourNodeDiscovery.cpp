@@ -515,8 +515,10 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 
 	// do we already know this node?
 	shared_ptr<BonjourNodeStub> node;
-	if (getInstance()->_queryToNodes[query].find(replyName) != getInstance()->_queryToNodes[query].end())
+	if (getInstance()->_queryToNodes[query].find(replyName) != getInstance()->_queryToNodes[query].end()) {
 		node = boost::static_pointer_cast<BonjourNodeStub>(getInstance()->_queryToNodes[query][replyName]);
+		assert(node.get() != NULL);
+	}
 
 	if (flags & kDNSServiceFlagsAdd) {
 		// we have a node to add
@@ -891,7 +893,7 @@ void DNSSD_API BonjourNodeDiscovery::registerReply(
  * Whenever one of our member functions is left, all the assumptions in this function have to hold.
  */
 bool BonjourNodeDiscovery::validateState() {
-
+	return true;
 	UMUNDO_LOCK(_mutex);
 	map<int, DNSServiceRef>::iterator activeFDIter;
 	map<intptr_t, shared_ptr<NodeImpl> >::iterator localNodeIter;

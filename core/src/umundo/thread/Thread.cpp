@@ -203,10 +203,21 @@ Mutex::Mutex() {
 #ifdef THREAD_PTHREAD
 	pthread_mutexattr_t attrib;
 	int ret = pthread_mutexattr_init(&attrib);
-	(void)ret;
+	if (ret != 0)
+		switch(ret) {
+			case ENOMEM: LOG_ERR("pthread_mutexattr_init: %s", strerror(ret)); break;
+			default: LOG_ERR("pthread_mutexattr_init: unknown error"); break;
+		}
 	assert(ret == 0);
+
 	ret = pthread_mutexattr_settype(&attrib, PTHREAD_MUTEX_RECURSIVE);
-	assert(ret == 0);
+	if (ret != 0)
+		switch(ret) {
+			case EINVAL: LOG_ERR("pthread_mutexattr_settype: %s", strerror(ret)); break;
+			default: LOG_ERR("pthread_mutexattr_settype: unknown error"); break;
+		}
+-	assert(ret == 0);
+
 	pthread_mutex_init(&_mutex, &attrib);
 	pthread_mutexattr_destroy(&attrib);
 #endif
@@ -242,7 +253,8 @@ void Mutex::lock() {
 
 bool Mutex::tryLock() {
 #ifdef THREAD_PTHREAD
-	if(pthread_mutex_trylock(&_mutex) == EBUSY)
+	int rv = pthread_mutex_trylock(&_mutex);
+	if(rv == EBUSY)
 		return false;
 #endif
 #ifdef THREAD_WIN32

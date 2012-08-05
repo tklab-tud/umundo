@@ -141,7 +141,7 @@ bool testTimedMonitors() {
 		thread5.start();
 		Thread::sleepMs(5);
 		testTimedMonitor.signal(2); // signal 2 threads
-		Thread::sleepMs(5);
+		Thread::sleepMs(10);
 		assert(passedTimedMonitor == 2);
 		testTimedMonitor.signal(1); // signal another thread
 		Thread::sleepMs(5);

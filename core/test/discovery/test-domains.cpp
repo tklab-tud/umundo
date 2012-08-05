@@ -8,6 +8,8 @@ using namespace umundo;
 
 static int receives = 0;
 static Mutex mutex;
+static string hostId;
+
 
 class TestReceiver : public Receiver {
 public:
@@ -24,8 +26,8 @@ public:
 };
 
 void testDifferentDomain() {
-	Node* fooNode = new Node("foo");
-	Node* barNode = new Node("bar");
+	Node* fooNode = new Node(hostId + "foo");
+	Node* barNode = new Node(hostId + "bar");
 	printf("%d\n", Node::instances);
 	assert(Node::instances == 2);
 
@@ -45,8 +47,8 @@ void testDifferentDomain() {
 }
 
 void testSameDomain() {
-	Node* fooNode = new Node("foo");
-	Node* barNode = new Node("foo");
+	Node* fooNode = new Node(hostId + "foo");
+	Node* barNode = new Node(hostId + "foo");
 	assert(Node::instances == 2);
 
 	Subscriber* sub = new Subscriber("test1", new TestReceiver("test1"));
@@ -64,9 +66,9 @@ void testSameDomain() {
 }
 
 void testDomainReception() {
-	Node* fooNode1 = new Node("foo");
-	Node* fooNode2 = new Node("foo");
-	Node* barNode = new Node("bar");
+	Node* fooNode1 = new Node(hostId + "foo");
+	Node* fooNode2 = new Node(hostId + "foo");
+	Node* barNode = new Node(hostId + "bar");
 	assert(Node::instances == 3);
 
 	Subscriber* sub = new Subscriber("test1", new TestReceiver("test1"));
@@ -113,6 +115,7 @@ void testDomainReception() {
 }
 
 int main(int argc, char** argv, char** envp) {
+	hostId = Host::getHostId();
 //	setenv("UMUNDO_LOGLEVEL_DISC", "4", 1);
 //	setenv("UMUNDO_LOGLEVEL_NET", "2", 1);
 	int i = 1;

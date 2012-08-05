@@ -34,21 +34,22 @@ public:
 int main(int argc, char** argv, char** envp) {
 	setenv("UMUNDO_LOGLEVEL", "4", 1);
 
-	std::cout << "HostId:" << Host::getHostId() << std::endl;
+	string hostId = Host::getHostId();
+	std::cout << "HostId:" << hostId << std::endl;
 
 	TestDiscoverer* testDiscoverer = new TestDiscoverer();
-	shared_ptr<NodeQuery> query = shared_ptr<NodeQuery>(new NodeQuery("fooDomain", testDiscoverer));
+	shared_ptr<NodeQuery> query = shared_ptr<NodeQuery>(new NodeQuery(hostId + "fooDomain", testDiscoverer));
 	Discovery::browse(query);
 
-	TestDiscoverable* testDiscoverable = new TestDiscoverable("fooDomain");
+	TestDiscoverable* testDiscoverable = new TestDiscoverable(hostId + "fooDomain");
 	Discovery::add(testDiscoverable);
 	while(receives < 1)
 		UMUNDO_WAIT(monitor);
 
 	// test node / publisher / subscriber churn
 	for (int i = 0; i < 2; i++) {
-		Node* node1 = new Node();
-		Node* node2 = new Node();
+		Node* node1 = new Node(hostId);
+		Node* node2 = new Node(hostId);
 		for (int j = 0; j < 2; j++) {
 			Subscriber* sub1 = new Subscriber("foo", NULL);
 			Subscriber* sub2 = new Subscriber("foo", NULL);

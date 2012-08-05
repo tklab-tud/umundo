@@ -493,6 +493,7 @@ void AvahiNodeDiscovery::entryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupS
 	if (myself->_avahiGroups.find((intptr_t)userdata) != myself->_avahiGroups.end())
 		group = myself->_avahiGroups[(intptr_t)userdata];
 
+	(void)group;
 	assert(g == group || group == NULL);
 	myself->_avahiGroups[(intptr_t)userdata] = g;
 

@@ -129,7 +129,7 @@ bool testTimedMonitors() {
 		thread1.start(); // wait for 15ms at mutex before resuming
 		Thread::sleepMs(5);
 		assert(passedTimedMonitor == 0); // thread1 should not have passed
-		Thread::sleepMs(15);
+		Thread::sleepMs(25);
 		assert(passedTimedMonitor == 1); // thread1 should have passed
 		assert(!thread1.isStarted());
 

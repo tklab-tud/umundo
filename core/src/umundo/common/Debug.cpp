@@ -273,7 +273,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 #include <signal.h>
 
 void Debug::abortWithStackTraceOnSignal(int sig) {
-	signal(sig, stackTraceSigHandler);
+//	signal(sig, stackTraceSigHandler);
 }
 
 void Debug::stackTraceSigHandler(int sig) {

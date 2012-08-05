@@ -59,12 +59,12 @@ int main(int argc, char** argv, char** envp) {
 		}
 
 		// wait until all messages are delivered
-		Thread::sleepMs(200);
-#ifdef WIN32
-		// sometimes there is some weird latency with windows
+		Thread::sleepMs(500);
+
+		// sometimes there is some weird latency
 		if (nrReceptions < 100)
-			Thread::sleepMs(2000);
-#endif
+			Thread::sleepMs(1200);
+
 		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == 100);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);

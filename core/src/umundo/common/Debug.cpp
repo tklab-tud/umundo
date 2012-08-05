@@ -70,6 +70,8 @@ static int logLevelDisc = -1;
 static int logLevelS11n = -1;
 
 static int useColors = -1;
+static int useThreadId = -1;
+static int useMSinLog = -1;
 
 const char* Debug::relFileName(const char* filename) {
 	const char* relPath = filename;
@@ -128,6 +130,24 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 				}
 			}
 #endif
+		}
+	}
+
+	// check whether we want to use the thread id in log messages
+	// this caused some problems at Thread destruction
+	if (useThreadId < 0) {
+		if (getenv("UMUNDO_THREADID_IN_LOG") != NULL && strcmp(getenv("UMUNDO_THREADID_IN_LOG"), "ON") == 0) {
+			useThreadId = 1;
+		} else {
+			useThreadId = 0;
+		}
+	}
+
+	if (useMSinLog < 0) {
+		if (getenv("UMUNDO_MILLISEC_IN_LOG") != NULL && strcmp(getenv("UMUNDO_MILLISEC_IN_LOG"), "ON") == 0) {
+			useMSinLog = 1;
+		} else {
+			useMSinLog = 0;
 		}
 	}
 
@@ -192,21 +212,23 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 
 	// get current thread id
 	int threadId = -1;
-/*
-	if (strcmp(filename, "Thread.cpp") != 0)
+	if (useThreadId && strcmp(filename, "Thread.cpp") != 0)
 		threadId = Thread::getThreadId();
 
- */
-
 	// timestamp
-	time_t current_time;
-	struct tm * time_info;
 	char timeStr[9] = "        ";  // space for "HH:MM:SS\0"
-	time(&current_time);
-	if (lastTime != current_time) {
-		time_info = localtime(&current_time);
-		strftime(timeStr, sizeof(timeStr), "%H:%M:%S", time_info);
-		lastTime = current_time;
+	if (useMSinLog) {
+		int64_t currTime = Thread::getTimeStampMs();
+		snprintf(timeStr, 8, "%lld", currTime % 100000000);
+	} else {
+		time_t current_time;
+		struct tm * time_info;
+		time(&current_time);
+		if (lastTime != current_time) {
+			time_info = localtime(&current_time);
+			strftime(timeStr, sizeof(timeStr), "%H:%M:%S", time_info);
+			lastTime = current_time;
+		}
 	}
 
 #ifdef ANDROID
@@ -230,7 +252,6 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 
 		SetConsoleTextAttribute(hConsole, attribute);
 
-		// @todo implement color output on windows
 		printf("%s %02d|%s:%d:%s %s %s\n", timeStr, threadId, filename, line, padding, severity, message);
 
 #else
@@ -321,15 +342,14 @@ bool Traceable::setTraceFile(const std::string& filename) {
 void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::string> info) {
 	if (_traceFile) {
 		ScopeLock lock(&_mutex);
-/*
-		info["threadId"] = toStr(Thread::getThreadId());
-		info["this"] = toStr(*this);
 
- */
+		info["threadId"] = toStr(Thread::getThreadId());
+		info["this"] = toStr(this);
+
 		(*_traceFile) << Thread::getTimeStampMs() <<  ": " << traceMsg << " ### ";
 		std::map<std::string, std::string>::iterator infoIter = info.begin();
 		if (infoIter != info.end()) {
-			(*_traceFile) << "[";
+			(*_traceFile) << "[ ";
 			while(infoIter != info.end()) {
 				(*_traceFile) << infoIter->first << "=" << infoIter->second << " ## ";
 				infoIter++;
@@ -337,6 +357,75 @@ void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::st
 			(*_traceFile) << "]";
 		}
 		(*_traceFile) << std::endl;
+	}
+}
+
+void Traceable::replay(const std::string& filename) {
+  uint64_t now = 0;
+	int64_t fileOffset = 0;
+	std::ifstream traceFile(filename.c_str());
+	if (!traceFile) {
+		LOG_WARN("Replaying %s: Cannot open file", filename.c_str());
+		return;
+	}
+	string line = "";
+	while (!traceFile.eof()) {
+    std::getline(traceFile, line);
+    std::cout << line << std::endl;
+    size_t lastMatch = 0;
+    
+    // match time of trace
+    size_t currMatch = line.find(": ");
+    uint64_t linetime = strTo<uint64_t>(line.substr(lastMatch, currMatch));
+    lastMatch = currMatch;
+    
+    // match message
+    lastMatch += 2;
+    currMatch = line.find(" ###", lastMatch);
+    if (currMatch == string::npos)
+      continue;
+    string msg = line.substr(lastMatch, currMatch - lastMatch);
+    lastMatch = currMatch;
+    
+    // match info
+    std::map<std::string, std::string> info;
+    currMatch = line.find(" [ ", lastMatch);
+    if (currMatch != string::npos) {
+      lastMatch = currMatch + 3;
+      while(true) {
+        currMatch = line.find("=", lastMatch);
+        if (currMatch == string::npos)
+          break;
+
+        string key = line.substr(lastMatch, currMatch - lastMatch);
+        lastMatch = currMatch + 1;
+        currMatch = line.find(" ## ", lastMatch);
+
+        string value = line.substr(lastMatch, currMatch - lastMatch);
+        info[key] = value;
+        lastMatch = currMatch + 4;
+      }
+    }
+    
+    // wait until we are in sync with the trace event
+    now = Thread::getTimeStampMs();
+    if (fileOffset == 0)
+      fileOffset = now - linetime;
+    
+    int64_t toWait = (linetime + fileOffset) - now;
+    if (toWait > 0) {
+      Thread::sleepMs(toWait);
+    }
+
+//    std::cout << msg << " [ ";
+//    std::map<std::string, std::string>::iterator infoIter = info.begin();
+//    while(infoIter != info.end()) {
+//      std::cout << infoIter->first << "=" << infoIter->second << " ";
+//      infoIter++;
+//    }
+//    std::cout << "]" << std::endl;
+
+    retrace(msg, info);
 	}
 }
 

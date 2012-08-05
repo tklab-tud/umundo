@@ -87,9 +87,15 @@ public:
 	Traceable();
 	virtual ~Traceable();
 	bool setTraceFile(const std::string& filename);
+
+	void replay(const std::string& filename);
+
 protected:
 	void trace(const std::string& traceMsg) { trace(traceMsg, std::map<std::string, std::string>()); }
 	void trace(const std::string& traceMsg, std::map<std::string, std::string> info);
+  virtual void retrace(const std::string& msg, std::map<std::string, std::string> info) {};
+
+
 	std::string _traceFileName;
 	boost::shared_ptr<std::ofstream> _traceFile;
 

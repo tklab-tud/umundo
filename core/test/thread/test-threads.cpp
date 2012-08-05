@@ -201,6 +201,11 @@ class FooTracer : public Traceable, public Thread {
 			Thread::sleepMs(20);
 		}
 	}
+  
+  void retrace(const std::string& msg, std::map<std::string, std::string> info) {
+  };
+
+  
 };
 
 bool testTracing() {
@@ -221,6 +226,11 @@ bool testTracing() {
 	delete tr2;
 	delete tr3;
 
+  Thread::sleepMs(100);
+
+  FooTracer* tr4 = new FooTracer();
+  tr4->replay("trace.txt");
+  
 	return true;
 }
 

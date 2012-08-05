@@ -219,7 +219,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	char timeStr[9] = "        ";  // space for "HH:MM:SS\0"
 	if (useMSinLog) {
 		int64_t currTime = Thread::getTimeStampMs();
-		snprintf(timeStr, 8, "%lld", currTime % 100000000);
+		snprintf(timeStr, 8, "%ld", (long)(currTime % 100000000));
 	} else {
 		time_t current_time;
 		struct tm * time_info;

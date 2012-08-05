@@ -555,6 +555,7 @@ void ZeroMQNode::added(shared_ptr<NodeStub> node) {
 }
 
 void ZeroMQNode::removed(shared_ptr<NodeStub> node) {
+	assert(node.get() != NULL);
 	if (node->getUUID().compare(_uuid) != 0) {
 		std::stringstream nodeDesc;
 		nodeDesc << node;

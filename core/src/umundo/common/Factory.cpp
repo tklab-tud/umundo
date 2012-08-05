@@ -55,6 +55,10 @@ Factory* Factory::getInstance() {
 		procUUID = UUID::getUUID();
 #ifdef BUILD_DEBUG
 		Debug::abortWithStackTraceOnSignal(SIGSEGV);
+		Debug::abortWithStackTraceOnSignal(SIGBUS);
+		Debug::abortWithStackTraceOnSignal(SIGILL);
+		Debug::abortWithStackTraceOnSignal(SIGFPE);
+		Debug::abortWithStackTraceOnSignal(SIGABRT);
 #endif
 		Factory::_instance = new Factory();
 		assert(_instance->_prototypes["publisher"] != NULL);

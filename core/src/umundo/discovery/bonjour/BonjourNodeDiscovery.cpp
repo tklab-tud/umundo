@@ -561,7 +561,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 	} else {
 		// remove or change the node or an interface
 		if(node.get() == NULL) {
-			LOG_WARN("Query %p reports removal of unknown or vanished node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
+			LOG_WARN("Query %p reports removal of unknown or vanished node", queryAddr);
 			UMUNDO_UNLOCK(myself->_mutex);
 			return;
 		}

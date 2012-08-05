@@ -275,7 +275,7 @@ void ZeroMQNode::run() {
 				if (type != Message::PUB_ADDED && _nodes.find(remoteId) == _nodes.end()) {
 					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 					string remoteIdStr(remoteId);
-					LOG_WARN("Ignoring message from unconnected node %s", SHORT_UUID(remoteIdStr).c_str());
+					LOG_WARN("Ignoring %s message from unconnected node %s", Message::typeToString(type), SHORT_UUID(remoteIdStr).c_str());
 					UMUNDO_UNLOCK(_mutex);
 					continue;
 				}

@@ -216,7 +216,7 @@ Mutex::Mutex() {
 			case EINVAL: LOG_ERR("pthread_mutexattr_settype: %s", strerror(ret)); break;
 			default: LOG_ERR("pthread_mutexattr_settype: unknown error"); break;
 		}
--	assert(ret == 0);
+	assert(ret == 0);
 
 	pthread_mutex_init(&_mutex, &attrib);
 	pthread_mutexattr_destroy(&attrib);

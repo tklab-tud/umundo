@@ -158,7 +158,7 @@ bool testTimedMonitors() {
 		thread3.start(); // with another thread
 		Thread::sleepMs(5);
 		testTimedMonitor.signal(); // explicit signal
-		Thread::sleepMs(5);
+		Thread::sleepMs(10);
 		assert(passedTimedMonitor == 1);
 		// wo do not know which thread passed
 		assert(!thread1.isStarted() || !thread2.isStarted() || !thread3.isStarted());

@@ -10,6 +10,7 @@ using namespace umundo;
 static int nrReceptions = 0;
 static int bytesRecvd = 0;
 static int nrMissing = 0;
+static string hostId;
 
 class TestReceiver : public Receiver {
 	void receive(Message* msg) {
@@ -30,15 +31,16 @@ class TestReceiver : public Receiver {
 };
 
 int main(int argc, char** argv, char** envp) {
+	hostId = Host::getHostId();
 	for (int i = 0; i < 2; i++) {
 		nrReceptions = 0;
 		bytesRecvd = 0;
 
-		Node* pubNode = new Node("foo");
+		Node* pubNode = new Node(hostId + "foo");
 		Publisher* pub = new Publisher("foo");
 		pubNode->addPublisher(pub);
 
-		Node* subNode = new Node("foo");
+		Node* subNode = new Node(hostId + "foo");
 		Subscriber* sub = new Subscriber("foo", new TestReceiver());
 		subNode->addSubscriber(sub);
 
@@ -86,7 +88,7 @@ int main(int argc, char** argv, char** envp) {
 		for (int k = 0; k < 8; k++) {
 			if (pub->waitForSubscribers(0) == 0)
 				break;
-			Thread::sleepMs(50);			
+			Thread::sleepMs(50);
 		}
 		assert(pub->waitForSubscribers(0) == 0);
 
@@ -100,7 +102,7 @@ int main(int argc, char** argv, char** envp) {
 		for (int k = 0; k < 8; k++) {
 			if (pub->waitForSubscribers(0) == 0)
 				break;
-			Thread::sleepMs(50);			
+			Thread::sleepMs(50);
 		}
 		assert(pub->waitForSubscribers(0) == 0);
 #endif

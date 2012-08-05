@@ -893,7 +893,6 @@ void DNSSD_API BonjourNodeDiscovery::registerReply(
  * Whenever one of our member functions is left, all the assumptions in this function have to hold.
  */
 bool BonjourNodeDiscovery::validateState() {
-	return true;
 	UMUNDO_LOCK(_mutex);
 	map<int, DNSServiceRef>::iterator activeFDIter;
 	map<intptr_t, shared_ptr<NodeImpl> >::iterator localNodeIter;

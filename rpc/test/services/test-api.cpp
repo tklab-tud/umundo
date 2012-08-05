@@ -8,6 +8,7 @@
 using namespace umundo;
 
 #define BUFFER_SIZE 1024 * 1024
+static string hostId;
 
 class EchoService : public EchoServiceBase {
 public:
@@ -35,8 +36,8 @@ bool findServices() {
 
 	for (int i = 0; i < 2; i++) {
     LOG_INFO("Instantiating nodes");
-    Node* node1 = new Node();
-    Node* node2 = new Node();
+    Node* node1 = new Node(hostId);
+    Node* node2 = new Node(hostId);
 
     LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
@@ -328,8 +329,8 @@ bool queryTests() {
 
 bool continuousQueries() {
 	int iterations = 5;
-	Node* hostNode = new Node();
-	Node* queryNode = new Node();
+	Node* hostNode = new Node(hostId);
+	Node* queryNode = new Node(hostId);
 
 	while (iterations) {
 		std::cout << "Starting continuous query test" << std::endl;
@@ -417,6 +418,7 @@ bool continuousQueries() {
 }
 
 int main(int argc, char** argv) {
+	hostId = Host::getHostId();
 	if (!findServices())
 		return EXIT_FAILURE;
 //	if (!queryTests())

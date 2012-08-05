@@ -57,6 +57,7 @@ int main(int argc, char** argv, char** envp) {
 			Publisher* pub = new Publisher("foo");
 
 			int subs = 0;
+			(void)subs;
 			node1->addPublisher(pub);
 			subs = pub->waitForSubscribers(0);
 			assert(subs == 0);

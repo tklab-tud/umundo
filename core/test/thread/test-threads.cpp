@@ -95,7 +95,7 @@ bool testMonitors() {
 			assert(false);
 		}
 		UMUNDO_BROADCAST(testMonitor); // signal all other threads
-		Thread::sleepMs(15);
+		Thread::sleepMs(40);
 
 		if (thread1.isStarted() || thread2.isStarted() || thread3.isStarted()) {
 			LOG_ERR("Threads ran to completion but still insist on being started");
@@ -201,11 +201,11 @@ class FooTracer : public Traceable, public Thread {
 			Thread::sleepMs(20);
 		}
 	}
-  
+
   void retrace(const std::string& msg, std::map<std::string, std::string> info) {
   };
 
-  
+
 };
 
 bool testTracing() {
@@ -230,7 +230,7 @@ bool testTracing() {
 
   FooTracer* tr4 = new FooTracer();
   tr4->replay("trace.txt");
-  
+
 	return true;
 }
 

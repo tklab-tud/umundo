@@ -117,7 +117,7 @@ public:
 
 	static Message* toSubscriber(const string& uuid) {
 		Message* msg = new Message();
-		msg->putMeta("subscriber", uuid);
+		msg->putMeta("um.sub", uuid);
 		return msg;
 	}
 

@@ -1,4 +1,6 @@
 #!/usr/bin/expect
+
+## way more verbose:
 #!/usr/bin/expect -d
 
 set timeout 2;
@@ -104,6 +106,8 @@ set reqFilesIOS {
 	"/usr/local/share/umundo/ios-.*/libumundorpc_d.ios.a"
 	"/usr/local/share/umundo/ios-.*/libumundoutil.ios.a"
 	"/usr/local/share/umundo/ios-.*/libumundoutil_d.ios.a"
+	"/usr/local/share/umundo/ios-.*/libumundo.ios.a"
+	"/usr/local/share/umundo/ios-.*/libumundo_d.ios.a"
 
 	"/usr/local/share/umundo/prebuilt/ios/.*/libpcreposix.a"
 	"/usr/local/share/umundo/prebuilt/ios/.*/libpcrecpp.a"

@@ -29,6 +29,7 @@
 #include "umundo/connection/zeromq/ZeroMQNode.h"
 #include "umundo/common/Message.h"
 #include "umundo/common/UUID.h"
+#include "umundo/common/Host.h"
 
 #include "umundo/config.h"
 #if defined UNIX || defined IOS || defined IOSSIM
@@ -238,9 +239,9 @@ void ZeroMQPublisher::send(Message* msg) {
 
 	// topic name or explicit subscriber id is first message in envelope
 	zmq_msg_t channelEnvlp;
-	if (msg->getMeta().find("subscriber") != msg->getMeta().end()) {
+	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
-		ZMQ_PREPARE_STRING(channelEnvlp, msg->getMeta("subscriber").c_str(), msg->getMeta("subscriber").size());
+		ZMQ_PREPARE_STRING(channelEnvlp, msg->getMeta("um.sub").c_str(), msg->getMeta("um.sub").size());
 	} else {
 		// everyone on channel
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
@@ -249,8 +250,9 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// mandatory meta fields
-	msg->putMeta("publisher", _uuid);
-	msg->putMeta("proc", procUUID);
+	msg->putMeta("um.pub", _uuid);
+	msg->putMeta("um.proc", procUUID);
+	msg->putMeta("um.host", Host::getHostId());
 
 	// all our meta information
 	map<string, string>::const_iterator metaIter;

@@ -89,7 +89,7 @@ bool testMonitors() {
 			assert(false);
 		}
 		UMUNDO_SIGNAL(testMonitor); // signal a single thread
-		Thread::sleepMs(15); // thread will increase passedMonitor
+		Thread::sleepMs(40); // thread will increase passedMonitor
 		if(passedMonitor != 1) {
 			LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
 			assert(false);

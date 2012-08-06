@@ -63,7 +63,7 @@ public:
 	map<string, Message*> _findResponses;
 	map<intptr_t, Service*> _svc; ///< Instances of local services
 	map<intptr_t, ServiceDescription*> _localSvcDesc; ///< Descriptions of local services
-	map<string, shared_ptr<ServiceDescription> > _remoteSvcDesc; ///< Descriptions of remote services
+	map<string, shared_ptr<ServiceDescription> > _remoteSvcDesc; ///< Channel names to descriptions of remote services
 	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp> _localQueries; ///< filters for local continuous service queries
 
 	std::set<Node*> _nodes; ///< all the nodes we were added to

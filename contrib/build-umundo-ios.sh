@@ -26,21 +26,10 @@ cmake ${DIR}/../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/cmake/CrossCompile-iOS.cmake -DDI
 
 # build universal libraries for debug
 cd ${DIR}
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundocore_d.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundocore_d.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundocore_d.a
 
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundoserial_d.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundoserial_d.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundoserial_d.a
-
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundorpc_d.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundorpc_d.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundorpc_d.a
-
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundoutil_d.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundoutil_d.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundoutil_d.a
+lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundo_d.ios.a \
+../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundo_d.a \
+../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundo_d.a
 
 fi
 
@@ -56,21 +45,10 @@ cmake ${DIR}/../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/cmake/CrossCompile-iOS.cmake -DDI
 
 # build universal libraries for release
 cd ${DIR}
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundocore.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundocore.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundocore.a
 
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundoserial.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundoserial.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundoserial.a
-
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundorpc.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundorpc.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundorpc.a
-
-lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundoutil.ios.a \
-../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundoutil.a \
-../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundoutil.a
+lipo -create -output ../package/cross-compiled/ios-${SDK_VER}/libumundo.ios.a \
+../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundo.a \
+../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundo.a
 
 fi
 

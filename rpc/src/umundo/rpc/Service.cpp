@@ -31,53 +31,53 @@ ServiceFilter::ServiceFilter(const string& svcName) {
 	_uuid = UUID::getUUID();
 }
 
+Message* ServiceFilter::toMessage() {
+  Message* msg = new Message();
+  msg->putMeta("um.rpc.filter.svcName", _svcName);
+  msg->putMeta("um.rpc.filter.uuid", _uuid);
+  
+  map<string, string>::iterator valIter = _value.begin();
+  while(valIter != _value.end()) {
+    msg->putMeta("um.rpc.filter.value." + valIter->first, valIter->second);
+    valIter++;
+  }
+  
+  map<string, string>::iterator patternIter = _pattern.begin();
+  while(patternIter != _pattern.end()) {
+    msg->putMeta("um.rpc.filter.pattern." + patternIter->first, patternIter->second);
+    patternIter++;
+  }
+  
+  map<string, int>::iterator predIter = _predicate.begin();
+  while(predIter != _predicate.end()) {
+    std::stringstream ss;
+    ss << predIter->second;
+    msg->putMeta("um.rpc.filter.pred." + predIter->first, ss.str());
+    predIter++;
+  }
+  return msg;
+}
+
 ServiceFilter::ServiceFilter(Message* msg) {
-	_svcName = msg->getMeta("serviceName");
-	_uuid = msg->getMeta("uuid");
+	_svcName = msg->getMeta("um.rpc.filter.svcName");
+	_uuid = msg->getMeta("um.rpc.filter.uuid");
 	map<string, string> meta = msg->getMeta();
 	map<string, string>::const_iterator metaIter = meta.begin();
 	while(metaIter != meta.end()) {
 		string key = metaIter->first;
 		string value = metaIter->second;
 
-		if (key.compare(0, 6, "value:") == 0) {
+		if (key.compare(0, 6, "um.rpc.filter.value.") == 0) {
 			key = key.substr(6, key.length());
-			assert(meta.find("pattern:" + key) != meta.end());
-			assert(meta.find("pred:" + key) != meta.end());
+			assert(meta.find("um.rpc.filter.pattern." + key) != meta.end());
+			assert(meta.find("um.rpc.filter.pred." + key) != meta.end());
 
 			_value[key] = value;
-			_pattern[key] = meta["pattern:" + key];
-			_predicate[key] = (Predicate)atoi(meta["pred:" + key].c_str());
+			_pattern[key] = meta["um.rpc.filter.pattern." + key];
+			_predicate[key] = (Predicate)atoi(meta["um.rpc.filter.pred." + key].c_str());
 		}
 		metaIter++;
 	}
-}
-
-Message* ServiceFilter::toMessage() {
-	Message* msg = new Message();
-	msg->putMeta("serviceName", _svcName);
-	msg->putMeta("uuid", _uuid);
-
-	map<string, string>::iterator valIter = _value.begin();
-	while(valIter != _value.end()) {
-		msg->putMeta("value:" + valIter->first, valIter->second);
-		valIter++;
-	}
-
-	map<string, string>::iterator patternIter = _pattern.begin();
-	while(patternIter != _pattern.end()) {
-		msg->putMeta("pattern:" + patternIter->first, patternIter->second);
-		patternIter++;
-	}
-
-	map<string, int>::iterator predIter = _predicate.begin();
-	while(predIter != _predicate.end()) {
-		std::stringstream ss;
-		ss << predIter->second;
-		msg->putMeta("pred:" + predIter->first, ss.str());
-		predIter++;
-	}
-	return msg;
 }
 
 void ServiceFilter::addRule(const string& key, const string& value, int pred) {
@@ -250,13 +250,13 @@ ServiceDescription::ServiceDescription(const string& svcName, map<string, string
 }
 
 ServiceDescription::ServiceDescription(Message* msg) {
-	_svcName = msg->getMeta("desc:name");
-	_channelName = msg->getMeta("desc:channel");
+	_svcName = msg->getMeta("um.rpc.desc.name");
+	_channelName = msg->getMeta("um.rpc.desc.channel");
 	map<string, string>::const_iterator metaIter = msg->getMeta().begin();
 	while(metaIter != msg->getMeta().end()) {
 		string key = metaIter->first;
 		string value = metaIter->second;
-		if (key.length() > 5 && key.compare(0, 5, "desc:") == 0) {
+		if (key.length() > 5 && key.compare(0, 12, "um.rpc.desc.") == 0) {
 			key = key.substr(5, key.length());
 			_properties[key] = value;
 		}
@@ -268,11 +268,11 @@ Message* ServiceDescription::toMessage() {
 	Message* msg = new Message();
 	map<string, string>::const_iterator propIter = _properties.begin();
 	while(propIter != _properties.end()) {
-		msg->putMeta("desc:" + propIter->first, propIter->second);
+		msg->putMeta("um.rpc.desc." + propIter->first, propIter->second);
 		propIter++;
 	}
-	msg->putMeta("desc:name", _svcName);
-	msg->putMeta("desc:channel", _channelName);
+	msg->putMeta("um.rpc.desc.name", _svcName);
+	msg->putMeta("um.rpc.desc.channel", _channelName);
 	return msg;
 }
 
@@ -325,9 +325,9 @@ const string& ServiceStub::getName() {
 void ServiceStub::callStubMethod(const string& name, void* in, const string& inType, void* &out, const string& outType) {
 	Message* rpcReqMsg = _rpcPub->prepareMsg(inType, in);
 	string reqId = UUID::getUUID();
-	rpcReqMsg->putMeta("reqId", reqId);
-	rpcReqMsg->putMeta("methodName", name);
-	rpcReqMsg->putMeta("outType", outType);
+	rpcReqMsg->putMeta("um.rpc.reqId", reqId);
+	rpcReqMsg->putMeta("um.rpc.method", name);
+	rpcReqMsg->putMeta("um.rpc.outType", outType);
 	assert(_requests.find(reqId) == _requests.end());
 	_requests[reqId] = new Monitor();
 	_rpcPub->send(rpcReqMsg);
@@ -342,8 +342,8 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 
 
 void ServiceStub::receive(void* obj, Message* msg) {
-	if (msg->getMeta().find("respId") != msg->getMeta().end()) {
-		string respId = msg->getMeta("respId");
+	if (msg->getMeta().find("um.rpc.respId") != msg->getMeta().end()) {
+		string respId = msg->getMeta("um.rpc.respId");
 		ScopeLock lock(&_mutex);
 		if (_requests.find(respId) != _requests.end()) {
 			_responses[respId] = obj;
@@ -365,15 +365,15 @@ Service::~Service() {
 
 void Service::receive(void* obj, Message* msg) {
 	// somone wants a method called
-	if (msg->getMeta().find("methodName") != msg->getMeta().end()) {
-		string methodName = msg->getMeta("methodName");
-		string inType = msg->getMeta("type");
-		string outType = msg->getMeta("outType");
+	if (msg->getMeta().find("um.rpc.method") != msg->getMeta().end()) {
+		string methodName = msg->getMeta("um.rpc.method");
+		string inType = msg->getMeta("um.s11n.type");
+		string outType = msg->getMeta("um.rpc.outType");
 		void* out = NULL;
 		callMethod(methodName, obj, inType, out, outType);
 		if (out != NULL) {
 			Message* rpcReplMsg = _rpcPub->prepareMsg(outType, out);
-			rpcReplMsg->putMeta("respId", msg->getMeta("reqId"));
+			rpcReplMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
 			_rpcPub->send(rpcReplMsg);
 			delete rpcReplMsg;
 		}

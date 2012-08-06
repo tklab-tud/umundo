@@ -112,12 +112,12 @@ void SCache::update() {
 		if (growing) {
 			std::cout << "new upper bound" << std::endl;
 			upperPressure = newPressure; // (upperPressure - lowerPressure) / 2.0;
-			if (upperPressure < _convergenceThreshold && lowerPressure == 0)
+			if (upperPressure < (_convergenceThreshold / 4) && lowerPressure == 0)
 				upperPressure = 0;
 		} else {
 			std::cout << "new lower bound" << std::endl;
 			lowerPressure = newPressure; //(upperPressure - lowerPressure) / 2.0;
-			if (1 - lowerPressure < _convergenceThreshold && upperPressure == 1)
+			if (1 - lowerPressure < (_convergenceThreshold / 4) && upperPressure == 1)
 				lowerPressure = 1;
 		}
 		assert(upperPressure >= lowerPressure);

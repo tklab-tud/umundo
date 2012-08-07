@@ -63,12 +63,11 @@ public:
 	map<string, Message*> _findResponses;
 	map<intptr_t, Service*> _svc; ///< Instances of local services
 	map<intptr_t, ServiceDescription*> _localSvcDesc; ///< Descriptions of local services
-	map<string, shared_ptr<ServiceDescription> > _remoteSvcDesc; ///< Channel names to descriptions of remote services
 	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp> _localQueries; ///< filters for local continuous service queries
 
 	std::set<Node*> _nodes; ///< all the nodes we were added to
 	std::map<string, ServiceFilter*> _remoteQueries; ///< UUID to remote continuous query
-	std::map<string, std::set<string> > _remoteMgrServices; ///< Service Manager UUIDs -> set of service UUIDs
+	map<string, map<string, shared_ptr<ServiceDescription> > > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
 	Mutex _mutex;

@@ -117,23 +117,6 @@ bool findServices() {
 	return true;
 }
 
-class ServiceListener : public ResultSet<ServiceDescription> {
-public:
-	virtual ~ServiceListener() {}
-
-	virtual void added(shared_ptr<ServiceDescription> desc) {
-		_instances.insert(desc);
-	}
-
-	virtual void removed(shared_ptr<ServiceDescription> desc) {
-		_instances.erase(desc);
-	}
-
-	virtual void changed(shared_ptr<ServiceDescription> desc) {}
-
-	set<shared_ptr<ServiceDescription> > _instances;
-};
-
 bool queryTests() {
 	ServiceDescription* desc = new ServiceDescription("FooService", map<string, string>());
 	desc->setProperty("foo", "the lazy brown fox 123.34");
@@ -327,6 +310,23 @@ bool queryTests() {
 	return true;
 }
 
+class ServiceListener : public ResultSet<ServiceDescription> {
+public:
+	virtual ~ServiceListener() {}
+  
+	virtual void added(shared_ptr<ServiceDescription> desc) {
+		_instances.insert(desc);
+	}
+  
+	virtual void removed(shared_ptr<ServiceDescription> desc) {
+		_instances.erase(desc);
+	}
+  
+	virtual void changed(shared_ptr<ServiceDescription> desc) {}
+  
+	set<shared_ptr<ServiceDescription> > _instances;
+};
+
 bool continuousQueries() {
 	int iterations = 5;
 	Node* hostNode = new Node(hostId);
@@ -349,7 +349,7 @@ bool continuousQueries() {
 		ServiceManager* queryMgr = new ServiceManager();
 		queryNode->connect(queryMgr);
 		queryMgr->startQuery(pingSvcFilter, svcListener);
-		Thread::sleepMs(200);
+		Thread::sleepMs(2000);
 
 		std::cout << "\tDone Setup nodes and services" << std::endl;
 
@@ -395,13 +395,20 @@ bool continuousQueries() {
 		queryMgr->stopQuery(pingSvcFilter);
 		Thread::sleepMs(200);
 		assert(svcListener->_instances.size() == 1);
-		delete svcListener;
 		std::cout << "\tQuery removed" << std::endl;
 
-		queryNode->disconnect(queryMgr);
+    queryMgr->startQuery(pingSvcFilter, svcListener);
 		Thread::sleepMs(200);
+		assert(svcListener->_instances.size() == 1);
+		std::cout << "\tQuery restarted" << std::endl;
+    
 		hostNode->disconnect(hostMgr);
+		Thread::sleepMs(200);
+    assert(svcListener->_instances.size() == 0);
 		std::cout << "\tService Managers disconnected" << std::endl;
+
+    queryNode->disconnect(queryMgr);
+		delete svcListener;
 
 		delete queryMgr;
 		delete hostMgr;
@@ -419,11 +426,11 @@ bool continuousQueries() {
 
 int main(int argc, char** argv) {
 	hostId = Host::getHostId();
-	if (!findServices())
-		return EXIT_FAILURE;
+//	if (!findServices())
+//		return EXIT_FAILURE;
 //	if (!queryTests())
 //		return EXIT_FAILURE;
-//	if (!continuousQueries())
-//		return EXIT_FAILURE;
+	if (!continuousQueries())
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

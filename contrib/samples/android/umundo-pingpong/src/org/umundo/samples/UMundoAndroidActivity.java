@@ -21,7 +21,7 @@ import android.widget.TextView;
  * to take the umundo.jar for Android, as you are not allowed to have JNI code within
  * and the desktop umundo.jar includes all supported JNI libraries.
  * 
- * 2. Copy the JNI library libumundoNativeJava.so (or the debug variant) into libs/armeabi
+ * 2. Copy the JNI library libumundoNativeJava.so (or the debug variant) into libs/armeabi/
  * 
  * 3. Make sure System.loadLibrary() loads the correct variant.
  * 
@@ -96,8 +96,8 @@ public class UMundoAndroidActivity extends Activity {
 			Log.v("android-umundo", "Cannot get WifiManager");
 		}
 
-		System.loadLibrary("umundoNativeJava");
-//		System.loadLibrary("umundoNativeJava_d");
+//		System.loadLibrary("umundoNativeJava");
+		System.loadLibrary("umundoNativeJava_d");
 
 		node = new Node();
 		fooPub = new Publisher("pingpong");

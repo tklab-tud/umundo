@@ -35,8 +35,10 @@ public:
 
 	/// Convenience API
 	virtual std::vector<shared_ptr<DirectoryEntry> > list(const string& pattern);
-  map<string, shared_ptr<DirectoryEntry> > getKnownEntries() {return _knownEntries; }
-  
+	map<string, shared_ptr<DirectoryEntry> > getKnownEntries() {
+		return _knownEntries;
+	}
+
 protected:
 	TypedSubscriber* _notifySub;
 	ResultSet<DirectoryEntry>* _listener;

@@ -55,10 +55,10 @@ std::vector<shared_ptr<DirectoryEntry> > DirectoryListingClient::list(const stri
 
 		entries.push_back(_knownEntries[key]);
 	}
-  
-  delete req;
-  delete reply;
-  
+
+	delete req;
+	delete reply;
+
 	return entries;
 }
 

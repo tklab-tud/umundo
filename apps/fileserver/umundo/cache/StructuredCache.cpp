@@ -178,14 +178,14 @@ void SCache::resetDistance() {
 	while(!itemQueue.empty()) {
 		int distance = itemQueue.front().first;
 		SCacheItem* item = itemQueue.front().second;
-    item->_distance = distance;
+		item->_distance = distance;
 
 		set<SCacheItem*> next = item->getNext();
 		set<SCacheItem*>::iterator nextIter = next.begin();
 		while(nextIter != next.end()) {
-      if ((*nextIter)->_distance > distance + 1) {
-        itemQueue.push_back(std::make_pair(distance + 1, (*nextIter)));
-      }
+			if ((*nextIter)->_distance > distance + 1) {
+				itemQueue.push_back(std::make_pair(distance + 1, (*nextIter)));
+			}
 			nextIter++;
 		}
 		itemQueue.pop_front();

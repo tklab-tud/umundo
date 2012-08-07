@@ -22,7 +22,7 @@
 namespace umundo {
 
 ServiceManager::ServiceManager() {
-  // connect to well-known service discovery channel
+	// connect to well-known service discovery channel
 	_svcPub = new Publisher("umundo.sd");
 	_svcSub = new Subscriber("umundo.sd", this);
 	_svcPub->setGreeter(this);
@@ -70,26 +70,26 @@ void ServiceManager::welcome(Publisher*, const string nodeId, const string subId
  */
 void ServiceManager::farewell(Publisher*, const string nodeId, const string subId) {
 	ScopeLock lock(&_mutex);
-  LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
+	LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 
-  // did this publisher responded to our queries before?
-  if (_remoteSvcDesc.find(subId) != _remoteSvcDesc.end()) {
+	// did this publisher responded to our queries before?
+	if (_remoteSvcDesc.find(subId) != _remoteSvcDesc.end()) {
 
-    // check all local queries if the remote services matched and notify about removal
-    map<ServiceFilter*, ResultSet<ServiceDescription>* >::iterator queryIter = _localQueries.begin();
-    while(queryIter != _localQueries.end()) {
+		// check all local queries if the remote services matched and notify about removal
+		map<ServiceFilter*, ResultSet<ServiceDescription>* >::iterator queryIter = _localQueries.begin();
+		while(queryIter != _localQueries.end()) {
 
-      map<string, shared_ptr<ServiceDescription> >::iterator remoteSvcIter = _remoteSvcDesc[subId].begin();
-      while(remoteSvcIter != _remoteSvcDesc[subId].end()) {
-        if (queryIter->first->matches(remoteSvcIter->second.get())) {
-          queryIter->second->removed(remoteSvcIter->second);
-        }
-        remoteSvcIter++;
-      }
-      queryIter++;
-    }
-  }
-  _remoteSvcDesc.erase(subId);
+			map<string, shared_ptr<ServiceDescription> >::iterator remoteSvcIter = _remoteSvcDesc[subId].begin();
+			while(remoteSvcIter != _remoteSvcDesc[subId].end()) {
+				if (queryIter->first->matches(remoteSvcIter->second.get())) {
+					queryIter->second->removed(remoteSvcIter->second);
+				}
+				remoteSvcIter++;
+			}
+			queryIter++;
+		}
+	}
+	_remoteSvcDesc.erase(subId);
 }
 
 
@@ -147,10 +147,10 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 
 ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 	if(_svcPub->waitForSubscribers(1, 3000) < 1) {
-    // there is no other ServiceManager yet
-    LOG_INFO("Failed to find another ServiceManager");
-    return NULL;
-  }
+		// there is no other ServiceManager yet
+		LOG_INFO("Failed to find another ServiceManager");
+		return NULL;
+	}
 
 	Message* findMsg = svcFilter->toMessage();
 	string reqId = UUID::getUUID();
@@ -171,19 +171,19 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 	_findRequests.erase(reqId);
 
 	if (_findResponses.find(reqId) == _findResponses.end()) {
-    LOG_INFO("Failed to find %s", svcFilter->getServiceName().c_str());
-    return NULL;
-  }
+		LOG_INFO("Failed to find %s", svcFilter->getServiceName().c_str());
+		return NULL;
+	}
 
-  // TODO: Remove other replies as they come in!
+	// TODO: Remove other replies as they come in!
 
-  Message* foundMsg = _findResponses[reqId];
-  assert(foundMsg != NULL);
-  ServiceDescription* svcDesc = new ServiceDescription(foundMsg);
-  svcDesc->_svcManager = this;
-  _findResponses.erase(reqId);
-  delete foundMsg;
-  return svcDesc;
+	Message* foundMsg = _findResponses[reqId];
+	assert(foundMsg != NULL);
+	ServiceDescription* svcDesc = new ServiceDescription(foundMsg);
+	svcDesc->_svcManager = this;
+	_findResponses.erase(reqId);
+	delete foundMsg;
+	return svcDesc;
 
 }
 
@@ -209,7 +209,7 @@ void ServiceManager::receive(Message* msg) {
 	if (msg->getMeta().find("um.rpc.respId") != msg->getMeta().end()) {
 		string respId = msg->getMeta("um.rpc.respId");
 		if (_findRequests.find(respId) != _findRequests.end()) {
-      // put message into responses and signal waiting thread
+			// put message into responses and signal waiting thread
 			_findResponses[respId] = new Message(*msg);
 			_findRequests[respId]->signal();
 		}
@@ -280,15 +280,15 @@ void ServiceManager::receive(Message* msg) {
 			ResultSet<ServiceDescription>* listener = _localQueries[keyFilter];
 			assert(msg->getMeta("um.rpc.channel").size() > 0);
 			assert(msg->getMeta("um.rpc.mgrId").size() > 0);
-      string svcChannel = msg->getMeta("um.rpc.channel");
-      string managerId = msg->getMeta("um.rpc.mgrId");
+			string svcChannel = msg->getMeta("um.rpc.channel");
+			string managerId = msg->getMeta("um.rpc.mgrId");
 			if (_remoteSvcDesc.find(managerId) == _remoteSvcDesc.end() || _remoteSvcDesc[managerId].find(svcChannel) == _remoteSvcDesc[managerId].end()) {
 				_remoteSvcDesc[managerId][svcChannel] = shared_ptr<ServiceDescription>(new ServiceDescription(msg));
 				_remoteSvcDesc[managerId][svcChannel]->_svcManager = this;
 			}
-      assert(_remoteSvcDesc.find(managerId) != _remoteSvcDesc.end());
-      assert(_remoteSvcDesc[managerId].find(svcChannel) != _remoteSvcDesc[managerId].end());
-      assert(_remoteSvcDesc[managerId][svcChannel].get() != NULL);
+			assert(_remoteSvcDesc.find(managerId) != _remoteSvcDesc.end());
+			assert(_remoteSvcDesc[managerId].find(svcChannel) != _remoteSvcDesc[managerId].end());
+			assert(_remoteSvcDesc[managerId][svcChannel].get() != NULL);
 			if (msg->getMeta("um.rpc.type").compare("discovered") == 0) {
 				listener->added(_remoteSvcDesc[managerId][svcChannel]);
 			} else {

@@ -100,7 +100,7 @@
 		<!-- The JNI libraries -->
     <fileset dir="${lib.dir}/jni" >
       <include name="**/*" />
-			<!-- exclude name="**/*" if="${exclude.jni.jar}" / -->
+	  <exclude name="**/*" if="${exclude.jni.jar}" />
     </fileset>
 	</jar>
 	<delete dir="${lib.dir}/jni" />

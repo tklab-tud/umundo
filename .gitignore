@@ -15,3 +15,5 @@ contrib/samples/csharp/umundo-pingpong/obj/
 contrib/samples/android/umundo-pingpong/libs/umundo.jar
 
 contrib/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava.so
+
+*.class

@@ -17,8 +17,8 @@ ends, your system is setup correctly to run umundo programs. If not see the
 
 You can export <tt>UMUNDO&#95;LOGLEVEL=[0..3]</tt> to increase the global log-level,
 with 3 being the most verbose. You can also increase/descrease log-levels per
-component by exporting <tt>UMUNDO_LOGLEVEL_[COMMON|NET|DISC|S11N]=[0..4]</tt>.
-With some terminals, colored output is available via <tt>UMUNDO_LOGCOLORS=[ON|OFF]</tt>.
+component by exporting <tt>UMUNDO&#95;LOGLEVEL&#95;[COMMON|NET|DISC|S11N]=[0..4]</tt>.
+With some terminals, colored output is available via <tt>UMUNDO&#95;LOGCOLORS=[ON|OFF]</tt>.
 Have a look at the <a href="https://github.com/tklab-tud/umundo/blob/master/core/src/umundo/common/Debug.cpp">Debug.cpp</a>
 file to see how the various options are used.
 

@@ -35,29 +35,29 @@ bool findServices() {
 		buffer[i] = (char)i + 1;
 
 	for (int i = 0; i < 2; i++) {
-    LOG_INFO("Instantiating nodes");
-    Node* node1 = new Node(hostId);
-    Node* node2 = new Node(hostId);
+		LOG_INFO("Instantiating nodes");
+		Node* node1 = new Node(hostId);
+		Node* node2 = new Node(hostId);
 
-    LOG_INFO("Instantiating local services");
+		LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
 		PingService* localPingService = new PingService();
 
-    LOG_INFO("Connecting ServiceManagers");
+		LOG_INFO("Connecting ServiceManagers");
 		ServiceManager* svcMgr1 = new ServiceManager();
 		node1->connect(svcMgr1);
 
 		ServiceManager* svcMgr2 = new ServiceManager();
 		node2->connect(svcMgr2);
 
-    LOG_INFO("Adding Services to ServiceManager1");
-    svcMgr1->addService(localEchoService);
+		LOG_INFO("Adding Services to ServiceManager1");
+		svcMgr1->addService(localEchoService);
 		svcMgr1->addService(localPingService);
 
-    LOG_INFO("Querying from ServiceManager2 for a PingService");
+		LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter* pingSvcFilter = new ServiceFilter("PingService");
-    ServiceDescription* pingSvcDesc = svcMgr2->find(pingSvcFilter);
-    assert(pingSvcDesc);
+		ServiceDescription* pingSvcDesc = svcMgr2->find(pingSvcFilter);
+		assert(pingSvcDesc);
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
 		delete pingSvcFilter;
 
@@ -110,10 +110,10 @@ bool findServices() {
 		delete svcMgr1;
 		delete svcMgr2;
 
-    delete node1;
+		delete node1;
 		delete node2;
 
-  }
+	}
 	return true;
 }
 
@@ -313,17 +313,17 @@ bool queryTests() {
 class ServiceListener : public ResultSet<ServiceDescription> {
 public:
 	virtual ~ServiceListener() {}
-  
+
 	virtual void added(shared_ptr<ServiceDescription> desc) {
 		_instances.insert(desc);
 	}
-  
+
 	virtual void removed(shared_ptr<ServiceDescription> desc) {
 		_instances.erase(desc);
 	}
-  
+
 	virtual void changed(shared_ptr<ServiceDescription> desc) {}
-  
+
 	set<shared_ptr<ServiceDescription> > _instances;
 };
 
@@ -397,17 +397,17 @@ bool continuousQueries() {
 		assert(svcListener->_instances.size() == 1);
 		std::cout << "\tQuery removed" << std::endl;
 
-    queryMgr->startQuery(pingSvcFilter, svcListener);
+		queryMgr->startQuery(pingSvcFilter, svcListener);
 		Thread::sleepMs(200);
 		assert(svcListener->_instances.size() == 1);
 		std::cout << "\tQuery restarted" << std::endl;
-    
+
 		hostNode->disconnect(hostMgr);
 		Thread::sleepMs(200);
-    assert(svcListener->_instances.size() == 0);
+		assert(svcListener->_instances.size() == 0);
 		std::cout << "\tService Managers disconnected" << std::endl;
 
-    queryNode->disconnect(queryMgr);
+		queryNode->disconnect(queryMgr);
 		delete svcListener;
 
 		delete queryMgr;

@@ -92,7 +92,7 @@ int Thread::getThreadId() {
 	static std::map<DWORD, int> ids;
 	DWORD pt = GetCurrentThreadId();
 #endif
-  // locking breaks sometimes at pthread_mutex_lock
+	// locking breaks sometimes at pthread_mutex_lock
 	_threadIdMutex.lock();
 	if (ids.find(pt) == ids.end()) {
 		ids[pt] = _nextThreadId++;
@@ -107,11 +107,11 @@ void Thread::start() {
 	_isStarted = true;
 
 #ifdef THREAD_PTHREAD
-/*
-	if (_thread)
-		join();
+	/*
+		if (_thread)
+			join();
 
- */
+	 */
 
 	int err = pthread_create(&_thread, NULL, &runWrapper, (void*)this);
 	if (err != 0) {
@@ -205,16 +205,24 @@ Mutex::Mutex() {
 	int ret = pthread_mutexattr_init(&attrib);
 	if (ret != 0)
 		switch(ret) {
-			case ENOMEM: LOG_ERR("pthread_mutexattr_init: %s", strerror(ret)); break;
-			default: LOG_ERR("pthread_mutexattr_init: unknown error"); break;
+		case ENOMEM:
+			LOG_ERR("pthread_mutexattr_init: %s", strerror(ret));
+			break;
+		default:
+			LOG_ERR("pthread_mutexattr_init: unknown error");
+			break;
 		}
 	assert(ret == 0);
 
 	ret = pthread_mutexattr_settype(&attrib, PTHREAD_MUTEX_RECURSIVE);
 	if (ret != 0)
 		switch(ret) {
-			case EINVAL: LOG_ERR("pthread_mutexattr_settype: %s", strerror(ret)); break;
-			default: LOG_ERR("pthread_mutexattr_settype: unknown error"); break;
+		case EINVAL:
+			LOG_ERR("pthread_mutexattr_settype: %s", strerror(ret));
+			break;
+		default:
+			LOG_ERR("pthread_mutexattr_settype: unknown error");
+			break;
 		}
 	assert(ret == 0);
 
@@ -242,8 +250,8 @@ Mutex::~Mutex() {
 void Mutex::lock() {
 #ifdef THREAD_PTHREAD
 	int err = pthread_mutex_lock(&_mutex);
-  if (err)
-    LOG_ERR("pthread_mutex_lock: %s", strerror(err));
+	if (err)
+		LOG_ERR("pthread_mutex_lock: %s", strerror(err));
 	(void)err;
 #endif
 #ifdef THREAD_WIN32

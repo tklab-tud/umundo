@@ -39,11 +39,21 @@ public:
 	ServiceDescription(const string&, map<string, string>);
 	ServiceDescription(const string&);
 
-	const string getName()                           { return _svcName; }
-	const string getChannelName()                    { return _channelName; }
-	const map<string, string>& getProperties()       { return _properties; }
-	const string getProperty(const string& key)      { return _properties[key]; }
-	void setProperty(const string& key, const string& value)   { _properties[key] = value; }
+	const string getName()                           {
+		return _svcName;
+	}
+	const string getChannelName()                    {
+		return _channelName;
+	}
+	const map<string, string>& getProperties()       {
+		return _properties;
+	}
+	const string getProperty(const string& key)      {
+		return _properties[key];
+	}
+	void setProperty(const string& key, const string& value)   {
+		_properties[key] = value;
+	}
 
 	///< We need the ServiceManagers nodes in several Services
 	ServiceManager* getServiceManager() {
@@ -69,11 +79,11 @@ protected:
  */
 class DLLEXPORT ServiceFilter {
 public:
-  struct filterCmp {
-    bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
-      return a->_uuid.compare(b->_uuid) < 0;
-    }
-  };
+	struct filterCmp {
+		bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
+			return a->_uuid.compare(b->_uuid) < 0;
+		}
+	};
 
 	enum Predicate {
 	    OP_EQUALS       = 0x0001,
@@ -97,21 +107,25 @@ public:
 	void clearRules();
 	bool matches(ServiceDescription*);
 
-  const string& getServiceName() { return _svcName; }
-  const string& getUUID() { return _uuid; }
+	const string& getServiceName() {
+		return _svcName;
+	}
+	const string& getUUID() {
+		return _uuid;
+	}
 
 	map<string, string> _pattern;
 	map<string, string> _value;
 	map<string, int> _predicate;
 
 private:
-  string _uuid;
+	string _uuid;
 	string _svcName;
 
 	bool isNumeric(const string& test);
 	double toNumber(const string& numberString);
 
-  friend class ServiceManager;
+	friend class ServiceManager;
 };
 
 /**

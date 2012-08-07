@@ -89,11 +89,11 @@ DirectoryListingReply* DirectoryListingService::list(DirectoryListingRequest* re
 DirectoryEntryContent* DirectoryListingService::get(DirectoryEntry* req) {
 	DirectoryEntryContent* rep = new DirectoryEntryContent();
 
-  if (_knownEntries.find(req->name()) == _knownEntries.end()) {
+	if (_knownEntries.find(req->name()) == _knownEntries.end()) {
 		LOG_ERR("Request for unkown file '%s'", req->name().c_str());
 		return rep;
-  }
-  
+	}
+
 	struct stat fileStat;
 	if (stat((_dir + '/' +  req->name()).c_str(), &fileStat) != 0) {
 		LOG_ERR("Error with stat on '%s': %s", req->name().c_str(), strerror(errno));
@@ -183,7 +183,7 @@ void DirectoryListingService::updateEntries() {
 			// see if the file was changed
 			char* filename;
 			asprintf(&filename, "%s/%s", _dir.c_str(), dname.c_str());
-      
+
 			struct stat fileStat;
 			if (stat(filename, &fileStat) != 0) {
 				LOG_ERR("Error with stat on directory entry '%s': %s", filename, strerror(errno));

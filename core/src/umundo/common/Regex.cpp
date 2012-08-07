@@ -32,10 +32,10 @@ void Regex::setPattern(const string& pattern) {
 
 	const char *error;
 	_re = (void*)pcre_compile(_pattern.c_str(),    // the pattern
-	                   0,              // default options
-	                   &error,         // error message
-	                   &_errorOffset,  // error offset
-	                   NULL);          // default character table
+	                          0,              // default options
+	                          &error,         // error message
+	                          &_errorOffset,  // error offset
+	                          NULL);          // default character table
 
 	if (_re == NULL) {
 		_error = error;

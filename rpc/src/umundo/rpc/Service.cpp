@@ -32,30 +32,30 @@ ServiceFilter::ServiceFilter(const string& svcName) {
 }
 
 Message* ServiceFilter::toMessage() {
-  Message* msg = new Message();
-  msg->putMeta("um.rpc.filter.svcName", _svcName);
-  msg->putMeta("um.rpc.filter.uuid", _uuid);
-  
-  map<string, string>::iterator valIter = _value.begin();
-  while(valIter != _value.end()) {
-    msg->putMeta("um.rpc.filter.value." + valIter->first, valIter->second);
-    valIter++;
-  }
-  
-  map<string, string>::iterator patternIter = _pattern.begin();
-  while(patternIter != _pattern.end()) {
-    msg->putMeta("um.rpc.filter.pattern." + patternIter->first, patternIter->second);
-    patternIter++;
-  }
-  
-  map<string, int>::iterator predIter = _predicate.begin();
-  while(predIter != _predicate.end()) {
-    std::stringstream ss;
-    ss << predIter->second;
-    msg->putMeta("um.rpc.filter.pred." + predIter->first, ss.str());
-    predIter++;
-  }
-  return msg;
+	Message* msg = new Message();
+	msg->putMeta("um.rpc.filter.svcName", _svcName);
+	msg->putMeta("um.rpc.filter.uuid", _uuid);
+
+	map<string, string>::iterator valIter = _value.begin();
+	while(valIter != _value.end()) {
+		msg->putMeta("um.rpc.filter.value." + valIter->first, valIter->second);
+		valIter++;
+	}
+
+	map<string, string>::iterator patternIter = _pattern.begin();
+	while(patternIter != _pattern.end()) {
+		msg->putMeta("um.rpc.filter.pattern." + patternIter->first, patternIter->second);
+		patternIter++;
+	}
+
+	map<string, int>::iterator predIter = _predicate.begin();
+	while(predIter != _predicate.end()) {
+		std::stringstream ss;
+		ss << predIter->second;
+		msg->putMeta("um.rpc.filter.pred." + predIter->first, ss.str());
+		predIter++;
+	}
+	return msg;
 }
 
 ServiceFilter::ServiceFilter(Message* msg) {

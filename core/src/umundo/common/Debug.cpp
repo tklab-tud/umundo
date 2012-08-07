@@ -361,7 +361,7 @@ void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::st
 }
 
 void Traceable::replay(const std::string& filename) {
-  uint64_t now = 0;
+	uint64_t now = 0;
 	int64_t fileOffset = 0;
 	std::ifstream traceFile(filename.c_str());
 	if (!traceFile) {
@@ -370,52 +370,52 @@ void Traceable::replay(const std::string& filename) {
 	}
 	string line = "";
 	while (!traceFile.eof()) {
-    std::getline(traceFile, line);
-    std::cout << line << std::endl;
-    size_t lastMatch = 0;
-    
-    // match time of trace
-    size_t currMatch = line.find(": ");
-    uint64_t linetime = strTo<uint64_t>(line.substr(lastMatch, currMatch));
-    lastMatch = currMatch;
-    
-    // match message
-    lastMatch += 2;
-    currMatch = line.find(" ###", lastMatch);
-    if (currMatch == string::npos)
-      continue;
-    string msg = line.substr(lastMatch, currMatch - lastMatch);
-    lastMatch = currMatch;
-    
-    // match info
-    std::map<std::string, std::string> info;
-    currMatch = line.find(" [ ", lastMatch);
-    if (currMatch != string::npos) {
-      lastMatch = currMatch + 3;
-      while(true) {
-        currMatch = line.find("=", lastMatch);
-        if (currMatch == string::npos)
-          break;
+		std::getline(traceFile, line);
+		std::cout << line << std::endl;
+		size_t lastMatch = 0;
 
-        string key = line.substr(lastMatch, currMatch - lastMatch);
-        lastMatch = currMatch + 1;
-        currMatch = line.find(" ## ", lastMatch);
+		// match time of trace
+		size_t currMatch = line.find(": ");
+		uint64_t linetime = strTo<uint64_t>(line.substr(lastMatch, currMatch));
+		lastMatch = currMatch;
 
-        string value = line.substr(lastMatch, currMatch - lastMatch);
-        info[key] = value;
-        lastMatch = currMatch + 4;
-      }
-    }
-    
-    // wait until we are in sync with the trace event
-    now = Thread::getTimeStampMs();
-    if (fileOffset == 0)
-      fileOffset = now - linetime;
-    
-    int64_t toWait = (linetime + fileOffset) - now;
-    if (toWait > 0) {
-      Thread::sleepMs(toWait);
-    }
+		// match message
+		lastMatch += 2;
+		currMatch = line.find(" ###", lastMatch);
+		if (currMatch == string::npos)
+			continue;
+		string msg = line.substr(lastMatch, currMatch - lastMatch);
+		lastMatch = currMatch;
+
+		// match info
+		std::map<std::string, std::string> info;
+		currMatch = line.find(" [ ", lastMatch);
+		if (currMatch != string::npos) {
+			lastMatch = currMatch + 3;
+			while(true) {
+				currMatch = line.find("=", lastMatch);
+				if (currMatch == string::npos)
+					break;
+
+				string key = line.substr(lastMatch, currMatch - lastMatch);
+				lastMatch = currMatch + 1;
+				currMatch = line.find(" ## ", lastMatch);
+
+				string value = line.substr(lastMatch, currMatch - lastMatch);
+				info[key] = value;
+				lastMatch = currMatch + 4;
+			}
+		}
+
+		// wait until we are in sync with the trace event
+		now = Thread::getTimeStampMs();
+		if (fileOffset == 0)
+			fileOffset = now - linetime;
+
+		int64_t toWait = (linetime + fileOffset) - now;
+		if (toWait > 0) {
+			Thread::sleepMs(toWait);
+		}
 
 //    std::cout << msg << " [ ";
 //    std::map<std::string, std::string>::iterator infoIter = info.begin();
@@ -425,7 +425,7 @@ void Traceable::replay(const std::string& filename) {
 //    }
 //    std::cout << "]" << std::endl;
 
-    retrace(msg, info);
+		retrace(msg, info);
 	}
 }
 

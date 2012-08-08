@@ -54,6 +54,7 @@ public:
  */
 class DLLEXPORT SubscriberStub {
 public:
+	virtual ~SubscriberStub() {}
 	virtual const string& getChannelName()           {
 		return _channelName;
 	}

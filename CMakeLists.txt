@@ -208,7 +208,7 @@ else()
 	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 
-OPTION(PUBPORT_SHARING "Share a single publisher socket" OFF)
+OPTION(PUBPORT_SHARING "Share a single publisher socket (Experimental)" OFF)
 
 # Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
 # http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
@@ -590,9 +590,15 @@ else()
 	message(STATUS "  Preferring dependent libraries . : installed on system")
 endif()
 
+
 STRING(REGEX REPLACE "${CMAKE_BINARY_DIR}" "BUILD_DIR" REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 STRING(REGEX REPLACE "${CMAKE_SOURCE_DIR}" "SOURCE_DIR" REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+STRING(REGEX REPLACE "${CMAKE_BINARY_DIR}" "BUILD_DIR" REL_CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+STRING(REGEX REPLACE "${CMAKE_SOURCE_DIR}" "SOURCE_DIR" REL_CMAKE_RUNTIME_OUTPUT_DIRECTORY ${REL_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 message(STATUS "  Libraries will end up in ....... : " ${REL_CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+message(STATUS "  Binaries will end up in ........ : " ${REL_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 ############################################################
 # Tests

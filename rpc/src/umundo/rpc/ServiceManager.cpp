@@ -76,7 +76,7 @@ void ServiceManager::farewell(Publisher*, const string nodeId, const string subI
 	if (_remoteSvcDesc.find(subId) != _remoteSvcDesc.end()) {
 
 		// check all local queries if the remote services matched and notify about removal
-		map<ServiceFilter*, ResultSet<ServiceDescription>* >::iterator queryIter = _localQueries.begin();
+		map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp >::iterator queryIter = _localQueries.begin();
 		while(queryIter != _localQueries.end()) {
 
 			map<string, shared_ptr<ServiceDescription> >::iterator remoteSvcIter = _remoteSvcDesc[subId].begin();

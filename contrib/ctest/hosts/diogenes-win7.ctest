@@ -3,5 +3,6 @@ set(CTEST_SITE "diogenes-win7")
 set(CTEST_BUILD_CONFIGURATION "Debug")
 
 include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1")
 set(CTEST_BUILD_NAME "windows-x86 msvc bonjour embedded")
 include("common.ctest.inc")

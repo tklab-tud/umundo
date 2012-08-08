@@ -137,11 +137,9 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
 	# count the rules and remove e.g. first rule from INPUT chain
 	$ sudo iptables -D INPUT 1
 </pre>
-
 			The prebuilt binaries from the SDK installers are built against the Avahi
 			daemon for Linux, make sure it is running and available (you will have to
 			recompile with <tt>DISC_BONJOUR_EMBED</tt> if this is a problem).
-
 			I will not ask whether you actually started <b>two</b> instances.
 		</td>
 	</tr>
@@ -150,4 +148,13 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
 		<td>GNU/Linux</td>
 		<td>After installing the libraries the first time, you might need to run <tt>sudo ldconfig</tt> to make them known.</td>
 	</tr>
+	<tr>
+		<td>The program can't start because MSVP100.dll is missing from your computer.
+		Try reinstalling the program to fix this problem.</td>
+		<td>Windows</td>
+		<td>Contrary to the suggested fix, reinstalling uMundo is not helpful.
+		You will need to download and install the [VC++ Redistributable Package](http://www.microsoft.com/en-us/download/details.aspx?id=5555).</td>
+	</tr>
 <table>
+
+msvcp100

@@ -93,7 +93,7 @@ public:
 //	set<NodeStub*> getAllNodes();
 	//@}
 
-
+  static uint16_t bindToFreePort(void* socket, const string& transport, const string& address);
 	static void* getZeroMQContext();
 
 protected:

@@ -67,27 +67,8 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	zmq_bind(_socket, ssInProc.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
 
 #ifndef PUBPORT_SHARING
-  uint16_t port = 4242;
-
-	std::stringstream ssNet;
-	ssNet << _transport << "://*:" << port;
-  
-	while(zmq_bind(_socket, ssNet.str().c_str()) < 0) {
-		switch(errno) {
-      case EADDRINUSE:
-        port++;
-        ssNet.clear();             // clear error bits
-        ssNet.str(string());  // reset string
-        ssNet << _transport << "://*:" << port;
-        break;
-      default:
-        LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
-        Thread::sleepMs(100);
-		}
-	}
-	LOG_INFO("creating publisher for %s on %s", _channelName.c_str(), ssNet.str().c_str());
-
-	_port = port;
+	_port = ZeroMQNode::bindToFreePort(_socket, _transport, "*");
+	LOG_INFO("creating publisher for %s on port %d", _channelName.c_str(), _port);
 	start();
 #else
   

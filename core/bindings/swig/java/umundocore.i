@@ -28,6 +28,7 @@ typedef std::set set;
 #include "../../../../core/src/umundo/common/EndPoint.h"
 #include "../../../../core/src/umundo/connection/Node.h"
 #include "../../../../core/src/umundo/common/Message.h"
+#include "../../../../core/src/umundo/common/Regex.h"
 #include "../../../../core/src/umundo/thread/Thread.h"
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
@@ -81,7 +82,7 @@ using namespace umundo;
 %feature("director") umundo::Greeter;
 
 // enable conversion from char*, int to jbytearray
-%apply (char *STRING, size_t LENGTH) { (const char* data, size_t length) }; 
+%apply (char *STRING, size_t LENGTH) { (const char* data, size_t length) };
 
 // ignore these functions in every class
 %ignore setChannelName(string);
@@ -112,12 +113,12 @@ using namespace umundo;
 # %ignore umundo::Subscriber::Subscriber(string, Receiver*);
 # %typemap(javacode) umundo::Subscriber %{
 #   private Receiver _receiver;
-# 
+#
 #   public Subscriber(String channelName, Receiver receiver) {
 #     this(umundoNativeJavaJNI.new_Subscriber(channelName), true);
 # 		setReceiver(receiver);
 #   }
-# 
+#
 #   protected void setReceiver(Receiver receiver) {
 # 		_receiver = receiver;
 #     umundoNativeJavaJNI.Subscriber_setReceiver(swigCPtr, this, Receiver.getCPtr(receiver), receiver);
@@ -127,6 +128,19 @@ using namespace umundo;
 
 # messages are destroyed upon return, always pass copies to Java
 %typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
+
+//******************************
+// Beautify Node class
+//******************************
+
+%ignore umundo::Node::hasSubscriber(const string& uuid);
+%ignore umundo::Node::getSubscriber(const string& uuid);
+%ignore umundo::Node::getSubscribers();
+
+%ignore umundo::Node::hasPublisher(const string& uuid);
+%ignore umundo::Node::getPublisher(const string& uuid);
+%ignore umundo::Node::getPublishers();
+
 
 //******************************
 // Beautify Message class
@@ -142,8 +156,8 @@ using namespace umundo;
 %rename(getSize) umundo::Message::size;
 
 // import java.util.HashMap
-%typemap(javaimports) umundo::Message %{ 
-import java.util.HashMap; 
+%typemap(javaimports) umundo::Message %{
+import java.util.HashMap;
 %}
 
 #if 0
@@ -167,7 +181,7 @@ import java.util.HashMap;
 			keys.put(getKeys().get(i), getMeta(getKeys().get(i)));
 		}
 		return keys;
-	}	
+	}
 %}
 
 // passing a jbytearray into C++ is done by applying the STRING, LENGTH conversion above
@@ -222,6 +236,7 @@ import java.util.HashMap;
 %include "../../../../core/src/umundo/thread/Thread.h"
 %include "../../../../core/src/umundo/common/Implementation.h"
 %include "../../../../core/src/umundo/common/EndPoint.h"
+%include "../../../../core/src/umundo/common/Regex.h"
 %include "../../../../core/src/umundo/connection/Publisher.h"
 %include "../../../../core/src/umundo/connection/Subscriber.h"
 %include "../../../../core/src/umundo/connection/Node.h"

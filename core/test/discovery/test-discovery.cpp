@@ -32,7 +32,7 @@ public:
 };
 
 int main(int argc, char** argv, char** envp) {
-	setenv("UMUNDO_LOGLEVEL", "4", 1);
+//	setenv("UMUNDO_LOGLEVEL", "4", 1);
 
 	string hostId = Host::getHostId();
 	std::cout << "HostId:" << hostId << std::endl;

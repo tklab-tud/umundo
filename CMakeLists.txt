@@ -208,6 +208,8 @@ else()
 	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 
+OPTION(PUBPORT_SHARING "Share a single publisher socket" OFF)
+
 # Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
 # http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
 if (NOT 64BIT_HOST AND CMAKE_CROSSCOMPILING OR WIN32)

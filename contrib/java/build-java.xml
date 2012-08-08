@@ -9,7 +9,7 @@
 
 <target name="compile" description="Compile the umundo java code.">
   <mkdir dir="${build.dir}/core/bindings/swig/java-class/" />
-	<javac destdir="${build.dir}/core/bindings/swig/java-class/" debug="true" includeantruntime="false">
+	<javac destdir="${build.dir}/core/bindings/swig/java-class/" debug="true" includeantruntime="false" target="1.5" source="1.5">
       <src path="${build.dir}/protobuf/generated/" />
       <src path="${build.dir}/core/bindings/swig/java/" />
       <src path="${src.dir}/s11n/src/umundo-java/" />

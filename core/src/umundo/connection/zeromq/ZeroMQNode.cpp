@@ -68,7 +68,7 @@ void ZeroMQNode::join() {
 	(closer = zmq_socket(getZeroMQContext(), ZMQ_DEALER)) || LOG_ERR("zmq_socket: %s",zmq_strerror(errno));
 	std::stringstream ss;
 	ss << _transport << "://127.0.0.1:" << _port;
-	zmq_connect(closer, ss.str().c_str()) && LOG_WARN("zmq_connect: %s",zmq_strerror(errno));
+	zmq_connect(closer, ss.str().c_str()) && LOG_WARN("zmq_connect at %s: %s", ss.str().c_str(), zmq_strerror(errno));
 	zmq_msg_t msg;
 	ZMQ_PREPARE_STRING(msg, "quit", 4);
 
@@ -105,6 +105,30 @@ void ZeroMQNode::destroy() {
 	delete(this);
 }
 
+uint16_t ZeroMQNode::bindToFreePort(void* socket, const string& transport, const string& address) {
+  std::stringstream ss;
+  int port = 4242;
+
+  ss << transport << "://" << address << ":" << port;
+
+  while(zmq_bind(socket, ss.str().c_str()) == -1) {
+    switch(errno) {
+      case EADDRINUSE:
+        port++;
+        ss.clear();        // clear error bits
+        ss.str(string());  // reset string
+        ss << transport << "://" << address << ":" << port;
+        break;
+      default:
+        LOG_WARN("zmq_bind at %s: %s", ss.str().c_str(), zmq_strerror(errno));
+        Thread::sleepMs(100);
+    }
+  }
+
+  return port;
+}
+
+  
 #ifdef PUBPORT_SHARING
 void* ZeroMQNode::_sharedPubSocket = NULL;
 void* ZeroMQNode::_sharedSubSocket = NULL;
@@ -121,62 +145,20 @@ uint16_t ZeroMQNode::_sharedPubPort = 0;
 void ZeroMQNode::init(shared_ptr<Configuration> config) {
   _config = boost::static_pointer_cast<NodeConfig>(config);
   _transport = "tcp";
-  std::stringstream ss;
-  int port = 4242;
-
 #ifdef PUBPORT_SHARING
   if(_forwarder == NULL) {
     (_sharedPubSocket = zmq_socket(getZeroMQContext(), ZMQ_PUB))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
     (_sharedSubSocket = zmq_socket(getZeroMQContext(), ZMQ_SUB))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 
     _forwarder = new ZeroMQForwarder(_sharedSubSocket, _sharedPubSocket);
-    
-    ss.clear();
-    ss << _transport << "://*:" << port;
-
-    // @TODO: refactor as static method
-    while(zmq_bind(_sharedPubSocket, ss.str().c_str()) == -1) {
-      switch(errno) {
-        case EADDRINUSE:
-          port++;
-          ss.clear();        // clear error bits
-          ss.str(string());  // reset string
-          ss << _transport << "://*:" << port;
-          break;
-        default:
-          LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
-          Thread::sleepMs(100);
-      }
-    }
-    _sharedPubPort = port;
+    _sharedPubPort = bindToFreePort(_sharedPubSocket, _transport, "*");
     _forwarder->start();
   }
 #endif
   
   (_responder = zmq_socket(getZeroMQContext(), ZMQ_ROUTER))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-  
-  // start with 4242 and work your way up until we find a free port
-  port = 4242;
-  
-  ss.clear();
-  ss.str(string());
-  ss << _transport << "://*:" << port;
-
-  while(zmq_bind(_responder, ss.str().c_str()) == -1) {
-    switch(errno) {
-      case EADDRINUSE:
-        port++;
-        ss.clear();        // clear error bits
-        ss.str(string());  // reset string
-        ss << _transport << "://*:" << port;
-        break;
-      default:
-        LOG_WARN("zmq_bind at %s: %s", ss.str().c_str(), zmq_strerror(errno));
-        Thread::sleepMs(100);
-    }
-  }
-  _port = port;
-  LOG_INFO("Node %s listening as %s", SHORT_UUID(_uuid).c_str(), ss.str().c_str());
+  _port = bindToFreePort(_responder, _transport, "*");;
+  LOG_INFO("Node %s listening on port %d", SHORT_UUID(_uuid).c_str(), _port);
   
   start();
   

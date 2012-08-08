@@ -52,19 +52,13 @@ public:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberImpl : public Thread, public Implementation {
+class DLLEXPORT SubscriberStub {
 public:
 	virtual const string& getChannelName()           {
 		return _channelName;
 	}
 	virtual void setChannelName(string channelName)  {
 		_channelName = channelName;
-	}
-	virtual const Receiver* getReceiver()            {
-		return _receiver;
-	}
-	virtual void setReceiver(Receiver* receiver)     {
-		_receiver = receiver;
 	}
 	virtual const string& getUUID()                  {
 		return _uuid;
@@ -74,9 +68,26 @@ public:
 	}
 
 protected:
-	Receiver* _receiver;
 	string _channelName;
 	string _uuid;
+};
+
+
+
+/**
+ * Subscriber implementor basis class (bridge pattern).
+ */
+class DLLEXPORT SubscriberImpl : public Thread, public Implementation, public SubscriberStub {
+public:
+	virtual const Receiver* getReceiver()            {
+		return _receiver;
+	}
+	virtual void setReceiver(Receiver* receiver)     {
+		_receiver = receiver;
+	}
+
+protected:
+	Receiver* _receiver;
 };
 
 /**
@@ -87,7 +98,7 @@ protected:
  * constructor without a receiver and the setReceiver method are required for Java as we cannot
  * inherit publishers while being its receiver at the same time as is used for the TypedSubscriber.
  */
-class DLLEXPORT Subscriber {
+class DLLEXPORT Subscriber : public SubscriberStub {
 public:
 	Subscriber(string channelName);
 	Subscriber(string channelName, Receiver* receiver);

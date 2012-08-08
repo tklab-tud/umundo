@@ -31,8 +31,10 @@ namespace umundo {
 
 class Publisher;
 class PublisherImpl;
+class PublisherStub;
 class Subscriber;
 class SubscriberImpl;
+class SubscriberStub;
 class NodeStub;
 class Node;
 class Connectable;
@@ -86,12 +88,30 @@ public:
 		return (getUUID().compare(n->getUUID()) != 0);
 	}
 
+	/** @name Publish / Subscriber Maintenance */
+	//@{
+	virtual void addSubscriber(shared_ptr<SubscriberStub>);
+	virtual void removeSubscriber(shared_ptr<SubscriberStub>);
+	virtual void addPublisher(shared_ptr<PublisherStub>);
+	virtual void removePublisher(shared_ptr<PublisherStub>);
+
+  bool hasSubscriber(const string& uuid);
+  shared_ptr<SubscriberStub> getSubscriber(const string& uuid);
+  map<string, shared_ptr<SubscriberStub> >& getSubscribers() { return _subs; }
+
+  bool hasPublisher(const string& uuid);
+  shared_ptr<PublisherStub> getPublisher(const string& uuid);
+  map<string, shared_ptr<PublisherStub> >& getPublishers() { return _pubs; }
+  
+	//@}
+
 protected:
 	string _uuid;
+	map<string, shared_ptr<PublisherStub> > _pubs; ///< UUIDS to publishers.
+	map<string, shared_ptr<SubscriberStub> > _subs; ///< UUIDS to subscribers.
 
 private:
 	friend std::ostream& operator<<(std::ostream&, const NodeStub*);
-
 };
 
 class DLLEXPORT NodeConfig : public Configuration {
@@ -115,20 +135,19 @@ public:
 	NodeImpl();
 	virtual ~NodeImpl() {}
 
-	/** @name Publish / Subscriber Maintenance */
-	//@{
 	virtual void addSubscriber(shared_ptr<SubscriberImpl>) = 0;
 	virtual void removeSubscriber(shared_ptr<SubscriberImpl>) = 0;
 	virtual void addPublisher(shared_ptr<PublisherImpl>) = 0;
 	virtual void removePublisher(shared_ptr<PublisherImpl>) = 0;
-	//@}
+
+protected:
 
 };
 
 /**
  * The local umundo node abstraction (bridge pattern).
  */
-class DLLEXPORT Node : public NodeStub {
+class DLLEXPORT Node : public virtual NodeStub {
 public:
 	Node();
 	Node(string domain);

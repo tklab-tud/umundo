@@ -130,35 +130,77 @@ private:
 		return *this;
 	}
 
+  /**
+   * Subscribe to all in-process publishers and publish on network port.
+   *
+   * The forwarder is used when PUBPORT_SHARING is enabled, see also:
+   * http://zguide.zeromq.org/page:all#A-Publish-Subscribe-Proxy-Server
+   */
+  struct ZeroMQForwarder : public Thread {
+    ZeroMQForwarder(void* subSocket, void* pubSocket) {
+      _subSocket = subSocket;
+      _pubSocket = pubSocket;
+    }
+    void run() {
+      while (isStarted()) {
+        while (1) {
+          zmq_msg_t message;
+          int64_t more;
+          //  Process all parts of the message
+          zmq_msg_init (&message);
+          zmq_recvmsg (_subSocket, &message, 0);
+          size_t more_size = sizeof (more);
+          zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size);
+          zmq_sendmsg (_pubSocket, &message, more ? ZMQ_SNDMORE : 0);
+          zmq_msg_close (&message);
+          if (!more)
+            break;      //  Last message part
+        }
+      }
+    }
+    void* _pubSocket;
+    void* _subSocket;
+  };
+
 	void processSubscription(const char*, zmq_msg_t, bool); ///< notify local publishers about subscriptions
 	bool validateState(); ///< check the nodes state
 
+  /** @name Read / Write to raw byte arrays */
+	//@{
 	static char* writePubInfo(char*, shared_ptr<PublisherStub>); ///< write publisher info into given byte array
 	static char* readPubInfo(char*, uint16_t&, char*&, char*&); ///< read publisher from given byte array
 	static char* writeSubInfo(char*, shared_ptr<ZeroMQSubscriber>); ///< write subscriber info into given byte array
 	static char* readSubInfo(char*, char*&); ///< read subscriber from given byte array
+	//@}
 
 	static void* _zmqContext; ///< global 0MQ context.
 	void* _responder; ///< 0MQ node socket for administrative messages.
-	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered at the Discovery sub-system.
+
+  /** @name Sharing a single pulishe port (PUBPORT_SHARING) */
+	//@{
+  static void* _sharedPubSocket; ///< External 0MQ publisher socket where we forward to.
+	static void* _sharedSubSocket; ///< Internal 0MQ subscriber socket for ZeroMQPublisher internal publisher sockets.
+  static uint16_t _sharedPubPort;
+  static ZeroMQForwarder* _forwarder;
+	//@}
+  
+	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
 	Mutex _mutex;
 
-	map<string, shared_ptr<NodeStub> > _nodes;                                    ///< UUIDs to remote NodeStub%s.
+	map<string, shared_ptr<NodeStub> > _nodes;                                    ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
 	map<string, void*> _sockets;                                                  ///< UUIDs to ZeroMQ Node Sockets.
 
-	map<string, map<string, shared_ptr<PublisherStub> > > _remotePubs;            ///< remote node UUIDs to remote publisher UUIDs.
 	map<string, map<string, shared_ptr<PublisherStub> > > _pendingRemotePubs;     ///< publishers of yet undiscovered nodes.
 	map<string, map<string, set<string> > > _subscriptions;                       ///< remote node UUIDs to local publisher UUID to remote subscriber UUIDs.
 
-	map<string, shared_ptr<ZeroMQPublisher> > _localPubs;                         ///< UUIDS to local publishers.
-	set<shared_ptr<ZeroMQSubscriber> > _localSubs;                                ///< Local subscribers.
-	map<string, shared_ptr<ZeroMQPublisher> > _suspendedLocalPubs;                ///< suspended publishers to be resumed.
+	map<string, shared_ptr<PublisherStub> > _suspendedLocalPubs;                  ///< suspended publishers to be resumed when we wake up again.
 
 	shared_ptr<NodeConfig> _config;
 
 	static shared_ptr<ZeroMQNode> _instance; ///< Singleton instance.
 
 	friend class Factory;
+	friend class ZeroMQPublisher;
 };
 
 }

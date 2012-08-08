@@ -54,39 +54,46 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	_uuid = (_uuid.length() > 0 ? _uuid : UUID::getUUID());
 	_config = boost::static_pointer_cast<PublisherConfig>(config);
 	_transport = "tcp";
-	/// @todo: We might want all publishers to share only a few sockets
-	(_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
+
+  (_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	(_closer = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	zmq_setsockopt(_closer, ZMQ_SUBSCRIBE, _uuid.c_str(), _uuid.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-	int hwm = NET_ZEROMQ_SND_HWM;
+  int hwm = NET_ZEROMQ_SND_HWM;
 	zmq_setsockopt(_socket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-	std::stringstream ssInProc;
+  std::stringstream ssInProc;
 	ssInProc << "inproc://" << _uuid;
 	zmq_bind(_socket, ssInProc.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
 
-	uint16_t port = 4242;
+#ifndef PUBPORT_SHARING
+  uint16_t port = 4242;
+
 	std::stringstream ssNet;
 	ssNet << _transport << "://*:" << port;
-
+  
 	while(zmq_bind(_socket, ssNet.str().c_str()) < 0) {
 		switch(errno) {
-		case EADDRINUSE:
-			port++;
-			ssNet.clear();             // clear error bits
-			ssNet.str(string());  // reset string
-			ssNet << _transport << "://*:" << port;
-			break;
-		default:
-			LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
-			Thread::sleepMs(100);
+      case EADDRINUSE:
+        port++;
+        ssNet.clear();             // clear error bits
+        ssNet.str(string());  // reset string
+        ssNet << _transport << "://*:" << port;
+        break;
+      default:
+        LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
+        Thread::sleepMs(100);
 		}
 	}
+	LOG_INFO("creating publisher for %s on %s", _channelName.c_str(), ssNet.str().c_str());
+
 	_port = port;
 	start();
+#else
+  
+  _port = ZeroMQNode::_sharedPubPort;
+#endif
 
-	LOG_INFO("creating publisher for %s on %s", _channelName.c_str(), ssNet.str().c_str());
 	LOG_DEBUG("creating publisher on %s", ssInProc.str().c_str());
 }
 

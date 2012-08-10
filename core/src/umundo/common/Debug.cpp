@@ -371,7 +371,7 @@ void Traceable::replay(const std::string& filename) {
 	string line = "";
 	while (!traceFile.eof()) {
 		std::getline(traceFile, line);
-		std::cout << line << std::endl;
+		//std::cout << line << std::endl;
 		size_t lastMatch = 0;
 
 		// match time of trace

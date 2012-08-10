@@ -96,13 +96,17 @@ public:
 	virtual void addPublisher(shared_ptr<PublisherStub>);
 	virtual void removePublisher(shared_ptr<PublisherStub>);
 
-  bool hasSubscriber(const string& uuid);
-  shared_ptr<SubscriberStub> getSubscriber(const string& uuid);
-  map<string, shared_ptr<SubscriberStub> >& getSubscribers() { return _subs; }
+	bool hasSubscriber(const string& uuid);
+	shared_ptr<SubscriberStub> getSubscriber(const string& uuid);
+	map<string, shared_ptr<SubscriberStub> >& getSubscribers() {
+		return _subs;
+	}
 
-  bool hasPublisher(const string& uuid);
-  shared_ptr<PublisherStub> getPublisher(const string& uuid);
-  map<string, shared_ptr<PublisherStub> >& getPublishers() { return _pubs; }
+	bool hasPublisher(const string& uuid);
+	shared_ptr<PublisherStub> getPublisher(const string& uuid);
+	map<string, shared_ptr<PublisherStub> >& getPublishers() {
+		return _pubs;
+	}
 #endif
 	//@}
 
@@ -142,11 +146,11 @@ public:
 	virtual void addPublisher(shared_ptr<PublisherImpl>) = 0;
 	virtual void removePublisher(shared_ptr<PublisherImpl>) = 0;
 
-  using NodeStub::addSubscriber;
-  using NodeStub::removeSubscriber;
-  using NodeStub::addPublisher;
-  using NodeStub::removePublisher;
-#endif  
+	using NodeStub::addSubscriber;
+	using NodeStub::removeSubscriber;
+	using NodeStub::addPublisher;
+	using NodeStub::removePublisher;
+#endif
 };
 
 /**
@@ -168,10 +172,10 @@ public:
 	void disconnect(Connectable*);
 
 #if !defined(SWIGJAVA) && !defined(SWIGCSHARP)
-  using NodeStub::addSubscriber;
-  using NodeStub::removeSubscriber;
-  using NodeStub::addPublisher;
-  using NodeStub::removePublisher;
+	using NodeStub::addSubscriber;
+	using NodeStub::removeSubscriber;
+	using NodeStub::addPublisher;
+	using NodeStub::removePublisher;
 #endif
 	//@}
 

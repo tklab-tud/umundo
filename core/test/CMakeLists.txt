@@ -25,6 +25,6 @@ add_dependencies(ALL_TESTS test-core-message-transmission)
 
 add_executable(test-core-stress test-stress.cpp)
 target_link_libraries(test-core-stress ${UMUNDOCORE_LIBRARIES})
-add_test(test-core-stress ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-stress)
+#add_test(test-core-stress ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-stress)
 set_target_properties(test-core-stress PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-core-stress)

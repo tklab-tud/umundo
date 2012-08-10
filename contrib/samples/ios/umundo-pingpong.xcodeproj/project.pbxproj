@@ -16,9 +16,8 @@
 		95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */; };
 		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
 		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
-		95017BAD1503AAA2002BCAAA /* libzmq.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017BAC1503AAA2002BCAAA /* libzmq.a */; };
-		955BA7C015C9502000949F02 /* libumundocore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 955BA7BF15C9502000949F02 /* libumundocore.a */; };
 		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
+		95B081A315D5456F00B807B5 /* libumundo.ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95B081A215D5456F00B807B5 /* libumundo.ios.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,9 +35,8 @@
 		95017B7C150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPad.storyboard; sourceTree = "<group>"; };
 		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		95017BAC1503AAA2002BCAAA /* libzmq.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzmq.a; path = ../../prebuilt/ios/5.0/lib/libzmq.a; sourceTree = "<group>"; };
-		955BA7BF15C9502000949F02 /* libumundocore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundocore.a; path = "../../../package/cross-compiled/ios-5.1/i386/lib/libumundocore.a"; sourceTree = "<group>"; };
 		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
+		95B081A215D5456F00B807B5 /* libumundo.ios.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.ios.a; path = "../../../package/cross-compiled/ios-5.1/libumundo.ios.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,8 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				955BA7C015C9502000949F02 /* libumundocore.a in Frameworks */,
-				95017BAD1503AAA2002BCAAA /* libzmq.a in Frameworks */,
+				95B081A315D5456F00B807B5 /* libumundo.ios.a in Frameworks */,
 				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
 				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
 				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
@@ -77,8 +74,7 @@
 		95017B65150391D5002BCAAA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				955BA7BF15C9502000949F02 /* libumundocore.a */,
-				95017BAC1503AAA2002BCAAA /* libzmq.a */,
+				95B081A215D5456F00B807B5 /* libumundo.ios.a */,
 				95017B66150391D5002BCAAA /* UIKit.framework */,
 				95017B68150391D5002BCAAA /* Foundation.framework */,
 				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
@@ -281,6 +277,7 @@
 					"../../../package/cross-compiled/ios-5.1",
 					../../../contrib/prebuilt/ios/5.1/lib,
 					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
+					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -305,6 +302,7 @@
 					"../../../package/cross-compiled/ios-5.1",
 					../../../contrib/prebuilt/ios/5.1/lib,
 					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
+					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;

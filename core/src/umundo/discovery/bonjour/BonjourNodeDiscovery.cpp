@@ -517,6 +517,8 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		assert(node.get() != NULL);
 	}
 
+  /// @TODO: We can save plenty of lookups if we share nodes between queries.
+  
 	if (flags & kDNSServiceFlagsAdd) {
 		// we have a node to add
 		if (node.get() == NULL) {

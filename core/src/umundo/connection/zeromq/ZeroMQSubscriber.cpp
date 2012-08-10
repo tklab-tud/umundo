@@ -137,8 +137,15 @@ void ZeroMQSubscriber::run() {
 	int32_t more;
 	size_t more_size = sizeof(more);
 
+//  zmq_pollitem_t pollItem;
+//  pollItem.socket = _socket;
+//  pollItem.events = ZMQ_POLLIN;
+
 	while(isStarted()) {
-		// read whole envelope
+//    _mutex.lock();
+//    int rc = zmq_poll(&pollItem, 1, 100);
+//    if (rc > 0){
+
 		Message* msg = new Message();
 		while (1) {
 			zmq_msg_t message;
@@ -186,12 +193,12 @@ void ZeroMQSubscriber::run() {
 			}
 		}
 		delete(msg);
-
+//    }
+//    _mutex.unlock();
 	}
 }
 
 void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
-	UMUNDO_LOCK(_mutex);
 	std::stringstream ss;
 	if (pub->isInProcess() && false) {
 		ss << "inproc://" << pub->getUUID();
@@ -199,22 +206,32 @@ void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
 		ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
 	}
 	if (_connections.find(ss.str()) != _connections.end()) {
-		LOG_INFO("relying on 0MQ auto-reconnect for %s", ss.str().c_str());
-	} else {
-		LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
-		zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
-		_connections.insert(ss.str());
+		LOG_INFO("Already connected to %s", ss.str().c_str());
+		return;
 	}
-	UMUNDO_UNLOCK(_mutex);
+
+	ScopeLock lock(&_mutex);
+	LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
+	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
+	_connections.insert(ss.str());
 }
 
 void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(&_mutex);
 	std::stringstream ss;
-	ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
-	//_connections.erase(ss.str());
+	if (pub->isInProcess() && false) {
+		ss << "inproc://" << pub->getUUID();
+	} else {
+		ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
+	}
+	if (_connections.find(ss.str()) == _connections.end()) {
+		LOG_INFO("Never connected to %s won't disconnect", ss.str().c_str());
+		return;
+	}
+
 	LOG_DEBUG("unsubscribing from %s", ss.str().c_str());
-	UMUNDO_UNLOCK(_mutex);
+	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_disconnect: %s", zmq_strerror(errno));
+	_connections.erase(ss.str());
 }
 
 void ZeroMQSubscriber::changed(shared_ptr<PublisherStub>) {

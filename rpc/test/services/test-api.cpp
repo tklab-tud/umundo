@@ -315,10 +315,12 @@ public:
 	virtual ~ServiceListener() {}
 
 	virtual void added(shared_ptr<ServiceDescription> desc) {
+		std::cout << "Found Service" << std::endl;
 		_instances.insert(desc);
 	}
 
 	virtual void removed(shared_ptr<ServiceDescription> desc) {
+		std::cout << "Lost Service" << std::endl;
 		_instances.erase(desc);
 	}
 
@@ -337,6 +339,7 @@ bool continuousQueries() {
 
 		PingService* localPingService1 = new PingService();
 		PingService* localPingService2 = new PingService();
+		PingService* localPingService3 = new PingService();
 
 		ServiceManager* hostMgr = new ServiceManager();
 		hostNode->connect(hostMgr);
@@ -349,57 +352,62 @@ bool continuousQueries() {
 		ServiceManager* queryMgr = new ServiceManager();
 		queryNode->connect(queryMgr);
 		queryMgr->startQuery(pingSvcFilter, svcListener);
-		Thread::sleepMs(2000);
-
 		std::cout << "\tDone Setup nodes and services" << std::endl;
 
+		Thread::sleepMs(2000);
 		assert(svcListener->_instances.size() == 1);
 		std::cout << "\tFound first service" << std::endl;
 
 		// adding another matching service
 		hostMgr->addService(localPingService2);
-		Thread::sleepMs(200);
+		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tFound second service" << std::endl;
 
 		// adding the same service ought to be ignored
 		hostMgr->addService(localPingService2);
-		Thread::sleepMs(200);
+		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tNo change with duplicate service" << std::endl;
 
+		// adding another matching service
+		hostMgr->addService(localPingService3);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 3);
+		std::cout << "\tFound third service" << std::endl;
+
 		// remove matching services
 		hostMgr->removeService(localPingService1);
-		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 1);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tService removed sucessfully" << std::endl;
 
 		// removing same service ought to do nothing
 		hostMgr->removeService(localPingService1);
-		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 1);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tNo change with duplicate removal" << std::endl;
 
 		hostMgr->removeService(localPingService2);
-		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 0);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 1);
 		std::cout << "\tService removed sucessfully" << std::endl;
 
 		// add service again
 		hostMgr->addService(localPingService2);
-		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 1);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tFound second service again" << std::endl;
 
 		// stop query - listener should know nothing
 		queryMgr->stopQuery(pingSvcFilter);
-		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 1);
+		Thread::sleepMs(400);
+		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tQuery removed" << std::endl;
 
 		queryMgr->startQuery(pingSvcFilter, svcListener);
 		Thread::sleepMs(200);
-		assert(svcListener->_instances.size() == 1);
+		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tQuery restarted" << std::endl;
 
 		hostNode->disconnect(hostMgr);
@@ -426,10 +434,10 @@ bool continuousQueries() {
 
 int main(int argc, char** argv) {
 	hostId = Host::getHostId();
-//	if (!findServices())
-//		return EXIT_FAILURE;
-//	if (!queryTests())
-//		return EXIT_FAILURE;
+	if (!findServices())
+		return EXIT_FAILURE;
+	if (!queryTests())
+		return EXIT_FAILURE;
 	if (!continuousQueries())
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

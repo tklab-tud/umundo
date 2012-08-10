@@ -407,16 +407,22 @@ bool Monitor::wait(uint32_t ms) {
 		// get endtime for waiting
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
-		tv.tv_usec += (ms % 1000) * 1000;
-		tv.tv_sec += (ms / 1000) + (tv.tv_usec / 1000000);
-		tv.tv_usec %= 1000000;
+		assert(tv.tv_usec < 1000000);
+//		tv.tv_usec += (ms % 1000) * 1000;
+//		tv.tv_sec += (ms / 1000) + (tv.tv_usec / 1000000);
+//		tv.tv_usec %= 1000000;
 		struct timespec ts;
-		ts.tv_sec = tv.tv_sec;
-		ts.tv_nsec = tv.tv_usec * 1000;
+		ts.tv_sec = tv.tv_sec + (ms / 1000);
+		ts.tv_nsec = (tv.tv_usec * 1000); // convert tv microseconds to nanoseconds
+		ts.tv_nsec += (ms % 1000) * 1000000; // add millisecond part of wait time
 
 		// were we signaled or timed out?
-		while(!_signaled && rv != ETIMEDOUT)
+		while(!_signaled && rv != ETIMEDOUT) {
 			rv = pthread_cond_timedwait(&_cond, &_mutex, &ts);
+//      if (!rv)
+//        break;
+//      LOG_ERR("%d %s", rv, strerror(rv));
+		}
 		// decrease number of signals if we awoke due to signal
 		if (rv != ETIMEDOUT) {
 			assert(_signaled > 0);

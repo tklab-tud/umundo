@@ -172,7 +172,7 @@ void BonjourNodeDiscovery::run() {
 		tv.tv_sec  = BONJOUR_REPOLL_SEC;
 		tv.tv_usec = BONJOUR_REPOLL_USEC;
 
-		UMUNDO_LOCK(_mutex);
+		ScopeLock lock(&_mutex);
 		// initialize file desriptor set for select
 		std::map<int, DNSServiceRef>::const_iterator cIt;
 		for (cIt = _activeFDs.begin(); cIt != _activeFDs.end(); cIt++) {
@@ -199,12 +199,9 @@ void BonjourNodeDiscovery::run() {
 					it = _activeFDs.begin();
 				}
 			}
-			UMUNDO_UNLOCK(_mutex);
 		} else if (result == 0) {
 			// timeout as no socket is selectable, just retry
-			UMUNDO_UNLOCK(_mutex);
 		} else {
-			UMUNDO_UNLOCK(_mutex);
 			if (errno != 0)
 				LOG_WARN("select failed %s", strerror(errno));
 			Thread::sleepMs(300);

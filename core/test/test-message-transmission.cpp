@@ -63,7 +63,7 @@ int main(int argc, char** argv, char** envp) {
 
 		// sometimes there is some weird latency
 		if (nrReceptions < 100)
-			Thread::sleepMs(1200);
+			Thread::sleepMs(2000);
 
 		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == 100);

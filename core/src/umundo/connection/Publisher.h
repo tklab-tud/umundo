@@ -106,6 +106,9 @@ public:
 	virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
+	void putMeta(const string& key, const string& value) {
+		_mandatoryMeta[key] = value;
+	}
 
 	/** @name Optional subscriber awareness */
 	//@{
@@ -128,6 +131,7 @@ protected:
 	}
 	//@}
 
+	std::map<string, string> _mandatoryMeta;
 	Greeter* _greeter;
 	friend class Publisher;
 };
@@ -153,6 +157,9 @@ public:
 	}
 	void setGreeter(Greeter* greeter)    {
 		return _impl->setGreeter(greeter);
+	}
+	void putMeta(const string& key, const string& value) {
+		return _impl->putMeta(key, value);
 	}
 	//@}
 

@@ -93,7 +93,7 @@ public:
 //	set<NodeStub*> getAllNodes();
 	//@}
 
-  static uint16_t bindToFreePort(void* socket, const string& transport, const string& address);
+	static uint16_t bindToFreePort(void* socket, const string& transport, const string& address);
 	static void* getZeroMQContext();
 
 protected:
@@ -130,42 +130,42 @@ private:
 		return *this;
 	}
 
-  /**
-   * Subscribe to all in-process publishers and publish on network port.
-   *
-   * The forwarder is used when PUBPORT_SHARING is enabled, see also:
-   * http://zguide.zeromq.org/page:all#A-Publish-Subscribe-Proxy-Server
-   */
-  struct ZeroMQForwarder : public Thread {
-    ZeroMQForwarder(void* subSocket, void* pubSocket) {
-      _subSocket = subSocket;
-      _pubSocket = pubSocket;
-    }
-    void run() {
-      while (isStarted()) {
-        while (1) {
-          zmq_msg_t message;
-          int64_t more;
-          //  Process all parts of the message
-          zmq_msg_init (&message);
-          zmq_recvmsg (_subSocket, &message, 0);
-          size_t more_size = sizeof (more);
-          zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size);
-          zmq_sendmsg (_pubSocket, &message, more ? ZMQ_SNDMORE : 0);
-          zmq_msg_close (&message);
-          if (!more)
-            break;      //  Last message part
-        }
-      }
-    }
-    void* _pubSocket;
-    void* _subSocket;
-  };
+	/**
+	 * Subscribe to all in-process publishers and publish on network port.
+	 *
+	 * The forwarder is used when PUBPORT_SHARING is enabled, see also:
+	 * http://zguide.zeromq.org/page:all#A-Publish-Subscribe-Proxy-Server
+	 */
+	struct ZeroMQForwarder : public Thread {
+		ZeroMQForwarder(void* subSocket, void* pubSocket) {
+			_subSocket = subSocket;
+			_pubSocket = pubSocket;
+		}
+		void run() {
+			while (isStarted()) {
+				while (1) {
+					zmq_msg_t message;
+					int64_t more;
+					//  Process all parts of the message
+					zmq_msg_init (&message);
+					zmq_recvmsg (_subSocket, &message, 0);
+					size_t more_size = sizeof (more);
+					zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size);
+					zmq_sendmsg (_pubSocket, &message, more ? ZMQ_SNDMORE : 0);
+					zmq_msg_close (&message);
+					if (!more)
+						break;      //  Last message part
+				}
+			}
+		}
+		void* _pubSocket;
+		void* _subSocket;
+	};
 
 	void processSubscription(const char*, zmq_msg_t, bool); ///< notify local publishers about subscriptions
 	bool validateState(); ///< check the nodes state
 
-  /** @name Read / Write to raw byte arrays */
+	/** @name Read / Write to raw byte arrays */
 	//@{
 	static char* writePubInfo(char*, shared_ptr<PublisherStub>); ///< write publisher info into given byte array
 	static char* readPubInfo(char*, uint16_t&, char*&, char*&); ///< read publisher from given byte array
@@ -176,14 +176,14 @@ private:
 	static void* _zmqContext; ///< global 0MQ context.
 	void* _responder; ///< 0MQ node socket for administrative messages.
 
-  /** @name Sharing a single pulishe port (PUBPORT_SHARING) */
+	/** @name Sharing a single pulishe port (PUBPORT_SHARING) */
 	//@{
-  static void* _sharedPubSocket; ///< External 0MQ publisher socket where we forward to.
+	static void* _sharedPubSocket; ///< External 0MQ publisher socket where we forward to.
 	static void* _sharedSubSocket; ///< Internal 0MQ subscriber socket for ZeroMQPublisher internal publisher sockets.
-  static uint16_t _sharedPubPort;
-  static ZeroMQForwarder* _forwarder;
+	static uint16_t _sharedPubPort;
+	static ZeroMQForwarder* _forwarder;
 	//@}
-  
+
 	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
 	Mutex _mutex;
 

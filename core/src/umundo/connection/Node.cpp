@@ -53,29 +53,29 @@ void NodeStub::removePublisher(shared_ptr<PublisherStub> pub) {
 }
 
 bool NodeStub::hasSubscriber(const string& uuid) {
-  if (isInProcess() || isRemote())
-    LOG_WARN("Querying remote node for subscribers, which we do not track!");
-  return (_subs.find(uuid) != _subs.end());
+	if (isInProcess() || isRemote())
+		LOG_WARN("Querying remote node for subscribers, which we do not track!");
+	return (_subs.find(uuid) != _subs.end());
 }
 
 shared_ptr<SubscriberStub> NodeStub::getSubscriber(const string& uuid) {
-  shared_ptr<SubscriberStub> sub;
-  if (hasSubscriber(uuid))
-    sub = _subs[uuid];
-  
-  return sub;
+	shared_ptr<SubscriberStub> sub;
+	if (hasSubscriber(uuid))
+		sub = _subs[uuid];
+
+	return sub;
 }
 
 bool NodeStub::hasPublisher(const string& uuid) {
-  return (_pubs.find(uuid) != _pubs.end());
+	return (_pubs.find(uuid) != _pubs.end());
 }
 
 shared_ptr<PublisherStub> NodeStub::getPublisher(const string& uuid) {
-  shared_ptr<PublisherStub> pub;
-  if (hasPublisher(uuid))
-    pub = _pubs[uuid];
-  
-  return pub;
+	shared_ptr<PublisherStub> pub;
+	if (hasPublisher(uuid))
+		pub = _pubs[uuid];
+
+	return pub;
 }
 
 

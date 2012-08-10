@@ -50,19 +50,19 @@ void ZeroMQPublisher::destroy() {
 }
 
 void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
-
+	ScopeLock lock(&_mutex);
 	_uuid = (_uuid.length() > 0 ? _uuid : UUID::getUUID());
 	_config = boost::static_pointer_cast<PublisherConfig>(config);
 	_transport = "tcp";
 
-  (_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
+	(_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	(_closer = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 	zmq_setsockopt(_closer, ZMQ_SUBSCRIBE, _uuid.c_str(), _uuid.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-  int hwm = NET_ZEROMQ_SND_HWM;
+	int hwm = NET_ZEROMQ_SND_HWM;
 	zmq_setsockopt(_socket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-  std::stringstream ssInProc;
+	std::stringstream ssInProc;
 	ssInProc << "inproc://" << _uuid;
 	zmq_bind(_socket, ssInProc.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
 
@@ -71,8 +71,8 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	LOG_INFO("creating publisher for %s on port %d", _channelName.c_str(), _port);
 	start();
 #else
-  
-  _port = ZeroMQNode::_sharedPubPort;
+
+	_port = ZeroMQNode::_sharedPubPort;
 #endif
 
 	LOG_DEBUG("creating publisher on %s", ssInProc.str().c_str());
@@ -104,6 +104,8 @@ void ZeroMQPublisher::join() {
 void ZeroMQPublisher::suspend() {
 	if (_isSuspended)
 		return;
+	ScopeLock lock(&_mutex);
+
 	_isSuspended = true;
 
 	stop();
@@ -135,11 +137,6 @@ void ZeroMQPublisher::run() {
 					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 			}
 		}
-		// zmq_recvmsg is blocking and we use an ipc socket _closer to unblock in join() - not needed as we use ZMQ_DONTWAIT
-		//if (!isStarted()) {
-		//	zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
-		//	return;
-		//}
 
 		if (rv > 0) {
 			size_t msgSize = zmq_msg_size(&message);
@@ -160,7 +157,7 @@ void ZeroMQPublisher::run() {
 					LOG_INFO("%s received ZMQ unsubscription from %s", _channelName.c_str(), subId);
 				}
 			}
-//			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
 		} else {
 			Thread::sleepMs(50);
 		}
@@ -171,12 +168,11 @@ void ZeroMQPublisher::run() {
  * Block until we have a given number of subscribers.
  */
 int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
+	uint64_t now = Thread::getTimeStampMs();
 	while (_subscriptions.size() < (unsigned int)count) {
-		UMUNDO_WAIT(_pubLock);
-#ifdef WIN32
-		// even after waiting for the signal from ZMQ subscriptions Windows needs a moment
-		//Thread::sleepMs(300);
-#endif
+		_pubLock.wait(timeoutMs);
+		if (timeoutMs > 0 && Thread::getTimeStampMs() - timeoutMs > now)
+			break;
 	}
 	return _subscriptions.size();
 }
@@ -210,7 +206,9 @@ void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId)
 void ZeroMQPublisher::removedSubscriber(const string remoteId, const string subId) {
 	ScopeLock lock(&_mutex);
 
-	assert(_subscriptions.find(subId) != _subscriptions.end());
+	if (_subscriptions.find(subId) == _subscriptions.end())
+		return;
+
 	_subscriptions.erase(subId);
 
 	if (_greeter != NULL)
@@ -234,16 +232,24 @@ void ZeroMQPublisher::send(Message* msg) {
 		// everyone on channel
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
 	}
-	zmq_sendmsg(_socket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// mandatory meta fields
 	msg->putMeta("um.pub", _uuid);
 	msg->putMeta("um.proc", procUUID);
 	msg->putMeta("um.host", Host::getHostId());
 
+	map<string, string>::const_iterator metaIter = _mandatoryMeta.begin();
+	while(metaIter != _mandatoryMeta.end()) {
+		if (metaIter->second.length() > 0)
+			msg->putMeta(metaIter->first, metaIter->second);
+		metaIter++;
+	}
+
+	ScopeLock lock(&_mutex);
+	zmq_sendmsg(_socket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+
 	// all our meta information
-	map<string, string>::const_iterator metaIter;
 	for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
 		// string key(metaIter->first);
 		// string value(metaIter->second);

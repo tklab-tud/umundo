@@ -33,7 +33,7 @@
 #include "umundo/thread/Thread.h"
 #include "umundo/discovery/Discovery.h"
 
-#define BONJOUR_REPOLL_USEC 100000
+#define BONJOUR_REPOLL_USEC 20000
 #define BONJOUR_REPOLL_SEC 0
 
 namespace umundo {

@@ -117,7 +117,7 @@ bool testTimedMonitors() {
 		}
 	};
 
-	TestThread thread1(40);
+	TestThread thread1(60);
 	TestThread thread2(0); // waits forever
 	TestThread thread3(0); // waits forever
 	TestThread thread4(0); // waits forever
@@ -129,7 +129,7 @@ bool testTimedMonitors() {
 		thread1.start(); // wait for 15ms at mutex before resuming
 		Thread::sleepMs(10);
 		assert(passedTimedMonitor == 0); // thread1 should not have passed
-		Thread::sleepMs(60);
+		Thread::sleepMs(100);
 		assert(passedTimedMonitor == 1); // thread1 should have passed
 		assert(!thread1.isStarted());
 
@@ -139,15 +139,15 @@ bool testTimedMonitors() {
 		thread3.start();
 		thread4.start();
 		thread5.start();
-		Thread::sleepMs(5);
-		testTimedMonitor.signal(2); // signal 2 threads
 		Thread::sleepMs(20);
+		testTimedMonitor.signal(2); // signal 2 threads
+		Thread::sleepMs(50);
 		assert(passedTimedMonitor == 2);
 		testTimedMonitor.signal(1); // signal another thread
-		Thread::sleepMs(20);
+		Thread::sleepMs(50);
 		assert(passedTimedMonitor == 3);
 		testTimedMonitor.broadcast(); // signal last thread
-		Thread::sleepMs(20);
+		Thread::sleepMs(50);
 		assert(passedTimedMonitor == 4);
 		assert(!thread2.isStarted() && !thread3.isStarted() && !thread4.isStarted() && !thread5.isStarted());
 
@@ -156,19 +156,19 @@ bool testTimedMonitors() {
 		thread1.start();
 		thread2.start(); // with another thread
 		thread3.start(); // with another thread
-		Thread::sleepMs(5);
+		Thread::sleepMs(10);
 		testTimedMonitor.signal(); // explicit signal
-		Thread::sleepMs(20);
+		Thread::sleepMs(30);
 		assert(passedTimedMonitor == 1);
 		// wo do not know which thread passed
 		assert(!thread1.isStarted() || !thread2.isStarted() || !thread3.isStarted());
 		if (thread1.isStarted()) {
 			// thread1 is still running, just wait
-			Thread::sleepMs(60);
+			Thread::sleepMs(100);
 			assert(passedTimedMonitor == 2);
 		}
 		testTimedMonitor.broadcast(); // explicit signal
-		Thread::sleepMs(20);
+		Thread::sleepMs(100);
 		assert(passedTimedMonitor == 3);
 		assert(!thread1.isStarted() && !thread2.isStarted() && !thread3.isStarted());
 
@@ -176,14 +176,13 @@ bool testTimedMonitors() {
 		passedTimedMonitor = 0;
 		testTimedMonitor.signal();
 		thread1.start();
-		Thread::sleepMs(10);
 		thread2.start();
-		Thread::sleepMs(10);
+		Thread::sleepMs(100);
 		assert(passedTimedMonitor == 1);
 		assert(!thread1.isStarted());
 		assert(thread2.isStarted());
 		testTimedMonitor.signal();
-		Thread::sleepMs(20);
+		Thread::sleepMs(40);
 		assert(passedTimedMonitor == 2);
 
 		assert(!thread1.isStarted());

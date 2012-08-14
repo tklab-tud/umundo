@@ -61,21 +61,39 @@ bool findServices() {
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
 		delete pingSvcFilter;
 
-		PingRequest* pingReq = new PingRequest();
-		pingReq->set_name("ping");
-		PingReply* pingRep = pingSvc->ping(pingReq);
-		std::cout << pingRep->name() << std::endl;
-		delete pingReq;
-		delete pingRep;
-
-		// test rpc throughput with the echo service
 		int iterations = 5;
 		int sends = 0;
 
-		ServiceFilter* echoSvcFilter = new ServiceFilter("EchoService");
-		EchoServiceStub* echoSvc = new EchoServiceStub(svcMgr2->find(echoSvcFilter));
 		time_t now;
 		time_t start;
+		time(&start);
+
+		while (iterations > 0) {
+
+			PingRequest* pingReq = new PingRequest();
+			pingReq->set_name("ping");
+			PingReply* pingRep = pingSvc->ping(pingReq);
+			assert(pingRep->name().compare("pong") == 0);
+
+			sends++;
+			time(&now);
+			if ((now - start) > 0) {
+				iterations--;
+				std::cout << sends << " requests per second " << iterations << " iterations remaining" << std::endl;
+				time(&start);
+				sends = 0;
+			}
+
+			delete pingReq;
+			delete pingRep;
+
+		}
+		// test rpc throughput with the echo service
+		iterations = 5;
+		sends = 0;
+
+		ServiceFilter* echoSvcFilter = new ServiceFilter("EchoService");
+		EchoServiceStub* echoSvc = new EchoServiceStub(svcMgr2->find(echoSvcFilter));
 		time(&start);
 		while (iterations > 0) {
 			EchoRequest* echoReq = new EchoRequest();

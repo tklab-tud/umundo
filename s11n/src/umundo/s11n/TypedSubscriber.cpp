@@ -30,6 +30,17 @@
 
 namespace umundo {
 
+TypedSubscriber::TypedSubscriber(string channelName) : Subscriber(channelName) {
+	if (_registeredPrototype == NULL) {
+#ifdef S11N_PROTOBUF
+		_registeredPrototype = new PBDeserializer();
+#endif
+		Factory::registerPrototype("typeDeserializer", _registeredPrototype, NULL);
+	}
+	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
+	assert(_impl != NULL);
+}
+
 TypedSubscriber::TypedSubscriber(string channelName, TypedReceiver* recv) : Subscriber(channelName, this) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
@@ -48,6 +59,20 @@ TypedSubscriber::~TypedSubscriber() {
 
 void TypedSubscriber::registerType(const string& type, void* deserializer) {
 	_impl->registerType(type, deserializer);
+}
+
+string TypedSubscriber::getType(Message* msg) {
+	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+		return msg->getMeta("um.s11n.type");
+	}
+	return "";
+}
+
+void* TypedSubscriber::deserialize(Message* msg) {
+	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+		return _impl->deserialize(msg->getMeta("um.s11n.type"), string(msg->data(), msg->size()));
+	}
+	return NULL;
 }
 
 void TypedSubscriber::receive(Message* msg) {

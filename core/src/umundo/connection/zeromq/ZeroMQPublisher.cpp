@@ -65,6 +65,7 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	std::stringstream ssInProc;
 	ssInProc << "inproc://" << _uuid;
 	zmq_bind(_socket, ssInProc.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
+	LOG_INFO("creating publisher for %s on uuid %s", _channelName.c_str(), ssInProc.str().c_str());
 
 #ifndef PUBPORT_SHARING
 	_port = ZeroMQNode::bindToFreePort(_socket, _transport, "*");

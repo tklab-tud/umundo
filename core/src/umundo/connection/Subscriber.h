@@ -25,6 +25,8 @@
 #include "umundo/common/Implementation.h"
 #include "umundo/thread/Thread.h"
 
+#include <list>
+
 namespace umundo {
 
 class DLLEXPORT Message;
@@ -87,6 +89,9 @@ public:
 		_receiver = receiver;
 	}
 
+	virtual Message* getNextMsg() = 0;
+	virtual Message* peekNextMsg() = 0;
+
 protected:
 	Receiver* _receiver;
 };
@@ -117,6 +122,14 @@ public:
 
 	virtual void setChannelName(string channelName)  {
 		_impl->setChannelName(channelName);
+	}
+
+	virtual Message* getNextMsg() {
+		return _impl->getNextMsg();
+	}
+
+	virtual Message* peekNextMsg() {
+		return _impl->peekNextMsg();
 	}
 
 protected:

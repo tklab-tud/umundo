@@ -47,10 +47,14 @@ public:
  */
 class DLLEXPORT TypedSubscriber : public Subscriber, public Receiver {
 public:
+	TypedSubscriber(string channelName);
 	TypedSubscriber(string channelName, TypedReceiver* recv);
 	virtual ~TypedSubscriber();
 	void registerType(const string& type, void* serializer);
 	void receive(Message* msg);
+
+	virtual string getType(Message* msg);
+	virtual void* deserialize(Message* msg);
 
 private:
 	shared_ptr<TypeDeserializerImpl> _impl;

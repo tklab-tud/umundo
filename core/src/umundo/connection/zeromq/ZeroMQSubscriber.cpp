@@ -204,6 +204,11 @@ void ZeroMQSubscriber::run() {
 }
 
 Message* ZeroMQSubscriber::getNextMsg() {
+  if (_receiver != NULL) {
+    LOG_WARN("getNextMsg not functional when a receiver is given");
+    return NULL;
+  }
+  
 	ScopeLock lock(&_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {
@@ -214,6 +219,11 @@ Message* ZeroMQSubscriber::getNextMsg() {
 }
 
 Message* ZeroMQSubscriber::peekNextMsg() {
+  if (_receiver != NULL) {
+    LOG_WARN("peekNextMsg not functional when a receiver is given");
+    return NULL;
+  }
+
 	ScopeLock lock(&_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {

@@ -17,6 +17,7 @@
 typedef std::string string;
 typedef std::vector vector;
 typedef std::set set;
+typedef std::list list;
 
 %javaconst(1);
 

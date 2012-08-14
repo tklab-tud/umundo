@@ -44,6 +44,7 @@ Subscriber::Subscriber(string channelName) {
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
 	_impl->setChannelName(channelName);
+	_impl->init(_config);
 }
 
 void Subscriber::setReceiver(Receiver* receiver) {

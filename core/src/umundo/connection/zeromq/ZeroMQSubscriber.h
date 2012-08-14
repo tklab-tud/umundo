@@ -44,6 +44,9 @@ public:
 	void suspend();
 	void resume();
 
+	virtual Message* getNextMsg();
+	virtual Message* peekNextMsg();
+
 	void added(shared_ptr<PublisherStub>);
 	void removed(shared_ptr<PublisherStub>);
 	void changed(shared_ptr<PublisherStub>);
@@ -55,6 +58,9 @@ public:
 protected:
 	ZeroMQSubscriber();
 	ZeroMQSubscriber(string, Receiver*);
+
+	std::list<Message*> _msgQueue;
+	Mutex _msgMutex;
 
 	set<string> _connections;
 	void* _closer; ///< needed to join the thread with blocking receive

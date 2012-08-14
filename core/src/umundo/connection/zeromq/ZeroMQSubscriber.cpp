@@ -137,65 +137,89 @@ void ZeroMQSubscriber::run() {
 	int32_t more;
 	size_t more_size = sizeof(more);
 
-//  zmq_pollitem_t pollItem;
-//  pollItem.socket = _socket;
-//  pollItem.events = ZMQ_POLLIN;
+	zmq_pollitem_t pollItem;
+	pollItem.socket = _socket;
+	pollItem.events = ZMQ_POLLIN | ZMQ_POLLOUT;
 
 	while(isStarted()) {
-//    _mutex.lock();
-//    int rc = zmq_poll(&pollItem, 1, 100);
-//    if (rc > 0){
+		_mutex.lock();
+		int rc = zmq_poll(&pollItem, 1, 100);
+		if (rc > 0) {
 
-		Message* msg = new Message();
-		while (1) {
-			zmq_msg_t message;
-			zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
+			Message* msg = new Message();
+			while (1) {
+				zmq_msg_t message;
+				zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
-			while (zmq_recvmsg(_socket, &message, 0) < 0)
-				if (errno != EINTR)
-					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+				while (zmq_recvmsg(_socket, &message, 0) < 0)
+					if (errno != EINTR)
+						LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 
-			size_t msgSize = zmq_msg_size(&message);
+				size_t msgSize = zmq_msg_size(&message);
 
-			if (!isStarted()) {
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-				return;
-			}
-
-			// last message contains actual data
-			zmq_getsockopt(_socket, ZMQ_RCVMORE, &more, &more_size) && LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
-
-			if (more) {
-				char* key = (char*)zmq_msg_data(&message);
-				char* value = ((char*)zmq_msg_data(&message) + strlen(key) + 1);
-
-				// is this the first message with the channelname?
-				if (strlen(key) + 1 == msgSize &&
-				        msg->getMeta().find(key) == msg->getMeta().end()) {
-					msg->putMeta("channel", key);
-				} else {
-					assert(strlen(key) + strlen(value) + 2 == msgSize);
-					if (strlen(key) + strlen(value) + 2 != msgSize) {
-						LOG_WARN("Received malformed message %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
-						zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-						break;
-					} else {
-						msg->putMeta(key, value);
-					}
+				if (!isStarted()) {
+					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+					return;
 				}
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-			} else {
-				msg->setData((char*)zmq_msg_data(&message), msgSize);
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
-				_receiver->receive(msg);
-				break; // last message part
+				// last message contains actual data
+				zmq_getsockopt(_socket, ZMQ_RCVMORE, &more, &more_size) && LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
+
+				if (more) {
+					char* key = (char*)zmq_msg_data(&message);
+					char* value = ((char*)zmq_msg_data(&message) + strlen(key) + 1);
+
+					// is this the first message with the channelname?
+					if (strlen(key) + 1 == msgSize &&
+					        msg->getMeta().find(key) == msg->getMeta().end()) {
+						msg->putMeta("channel", key);
+					} else {
+						assert(strlen(key) + strlen(value) + 2 == msgSize);
+						if (strlen(key) + strlen(value) + 2 != msgSize) {
+							LOG_WARN("Received malformed message %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
+							zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+							break;
+						} else {
+							msg->putMeta(key, value);
+						}
+					}
+					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				} else {
+					msg->setData((char*)zmq_msg_data(&message), msgSize);
+					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+
+					if (_receiver != NULL) {
+						_receiver->receive(msg);
+						delete(msg);
+					} else {
+						ScopeLock lock(&_msgMutex);
+						_msgQueue.push_back(msg);
+					}
+					break; // last message part
+				}
 			}
 		}
-		delete(msg);
-//    }
-//    _mutex.unlock();
+		_mutex.unlock();
 	}
+}
+
+Message* ZeroMQSubscriber::getNextMsg() {
+	ScopeLock lock(&_msgMutex);
+	Message* msg = NULL;
+	if (_msgQueue.size() > 0) {
+		msg = _msgQueue.front();
+		_msgQueue.pop_front();
+	}
+	return msg;
+}
+
+Message* ZeroMQSubscriber::peekNextMsg() {
+	ScopeLock lock(&_msgMutex);
+	Message* msg = NULL;
+	if (_msgQueue.size() > 0) {
+		msg = _msgQueue.front();
+	}
+	return msg;
 }
 
 void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {

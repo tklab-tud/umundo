@@ -66,7 +66,6 @@ private:
 	void join();
 
 	void* _socket;
-	void* _closer;
 	void* _zeroMQCtx;
 	shared_ptr<PublisherConfig> _config;
 

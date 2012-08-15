@@ -47,8 +47,8 @@ ZeroMQSubscriber::ZeroMQSubscriber() {
 
 ZeroMQSubscriber::~ZeroMQSubscriber() {
 	LOG_INFO("deleting subscriber for %s", _channelName.c_str());
+	stop();
 	join();
-	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
 
@@ -59,7 +59,6 @@ void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
 
 	void* ctx = ZeroMQNode::getZeroMQContext();
 	(_socket = zmq_socket(ctx, ZMQ_SUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
-	(_closer = zmq_socket(ctx, ZMQ_PUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 
 	assert(_channelName.size() > 0);
 	int hwm = NET_ZEROMQ_RCV_HWM;
@@ -76,32 +75,8 @@ void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
 	zmq_setsockopt (_socket, ZMQ_RECONNECT_IVL, &reconnect_ivl_min, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt (_socket, ZMQ_RECONNECT_IVL_MAX, &reconnect_ivl_max, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-	// make sure we can close the socket later
-	std::stringstream ss;
-	ss << "inproc://" << _uuid;
-	zmq_bind(_closer, ss.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
-	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s",zmq_strerror(errno));
-
 	LOG_INFO("creating subscriber for %s", _channelName.c_str());
 	start();
-}
-
-/**
- * Break blocking zmq_recvmsg in ZeroMQSubscriber::run.
- */
-void ZeroMQSubscriber::join() {
-	UMUNDO_LOCK(_mutex);
-	stop();
-
-	// this is a hack .. the thread is blocking at zmq_recvmsg - unblock by sending a message
-	zmq_msg_t channelEnvlp;
-	ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
-
-	zmq_sendmsg(_closer, &channelEnvlp, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-
-	Thread::join();
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void ZeroMQSubscriber::suspend() {
@@ -115,7 +90,6 @@ void ZeroMQSubscriber::suspend() {
 	join();
 
 	_connections.clear();
-	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 	UMUNDO_UNLOCK(_mutex);
@@ -150,15 +124,15 @@ void ZeroMQSubscriber::run() {
 		if (rc < 0) {
 			// an error occurred
 			switch(rc) {
-				case ETERM:
-					LOG_WARN("zmq_poll called with terminated socket");
-					break;
-				case EFAULT:
-					LOG_WARN("zmq_poll called with invalid items");
-					break;
-				case EINTR:
-				default:
-					break;
+			case ETERM:
+				LOG_WARN("zmq_poll called with terminated socket");
+				break;
+			case EFAULT:
+				LOG_WARN("zmq_poll called with invalid items");
+				break;
+			case EINTR:
+			default:
+				break;
 			}
 
 		} else if (rc == 0) {
@@ -166,12 +140,13 @@ void ZeroMQSubscriber::run() {
 			Thread::yield();
 //			Thread::sleepMs(5);
 
-		} if (rc > 0) {
+		}
+		if (rc > 0) {
 			// there is a message to be read
 			ScopeLock lock(&_mutex);
 			Message* msg = new Message();
 			while (1) {
-			// read and dispatch the whole message
+				// read and dispatch the whole message
 				zmq_msg_t message;
 				zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
@@ -227,10 +202,10 @@ void ZeroMQSubscriber::run() {
 }
 
 Message* ZeroMQSubscriber::getNextMsg() {
-  if (_receiver != NULL) {
-    LOG_WARN("getNextMsg not functional when a receiver is given");
-    return NULL;
-  }
+	if (_receiver != NULL) {
+		LOG_WARN("getNextMsg not functional when a receiver is given");
+		return NULL;
+	}
 
 	ScopeLock lock(&_msgMutex);
 	Message* msg = NULL;
@@ -242,10 +217,10 @@ Message* ZeroMQSubscriber::getNextMsg() {
 }
 
 Message* ZeroMQSubscriber::peekNextMsg() {
-  if (_receiver != NULL) {
-    LOG_WARN("peekNextMsg not functional when a receiver is given");
-    return NULL;
-  }
+	if (_receiver != NULL) {
+		LOG_WARN("peekNextMsg not functional when a receiver is given");
+		return NULL;
+	}
 
 	ScopeLock lock(&_msgMutex);
 	Message* msg = NULL;

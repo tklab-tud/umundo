@@ -350,6 +350,12 @@ void Monitor::signal() {
 	signal(1);
 }
 
+void Monitor::reset() {
+	broadcast();
+	_waiters = 0;
+	_signaled = 0;
+}
+
 void Monitor::broadcast() {
 	signal(_waiters);
 }

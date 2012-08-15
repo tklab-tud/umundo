@@ -142,12 +142,36 @@ void ZeroMQSubscriber::run() {
 	pollItem.events = ZMQ_POLLIN | ZMQ_POLLOUT;
 
 	while(isStarted()) {
-		_mutex.lock();
-		int rc = zmq_poll(&pollItem, 1, 100);
-		if (rc > 0) {
+		int rc = 0;
+		{
+			ScopeLock lock(&_mutex);
+			zmq_poll(&pollItem, 1, 30);
+		}
+		if (rc < 0) {
+			// an error occurred
+			switch(rc) {
+				case ETERM:
+					LOG_WARN("zmq_poll called with terminated socket");
+					break;
+				case EFAULT:
+					LOG_WARN("zmq_poll called with invalid items");
+					break;
+				case EINTR:
+				default:
+					break;
+			}
 
+		} else if (rc == 0) {
+			// Nothing to read - released lock
+			Thread::yield();
+//			Thread::sleepMs(5);
+
+		} if (rc > 0) {
+			// there is a message to be read
+			ScopeLock lock(&_mutex);
 			Message* msg = new Message();
 			while (1) {
+			// read and dispatch the whole message
 				zmq_msg_t message;
 				zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
@@ -199,7 +223,6 @@ void ZeroMQSubscriber::run() {
 				}
 			}
 		}
-		_mutex.unlock();
 	}
 }
 
@@ -208,7 +231,7 @@ Message* ZeroMQSubscriber::getNextMsg() {
     LOG_WARN("getNextMsg not functional when a receiver is given");
     return NULL;
   }
-  
+
 	ScopeLock lock(&_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {

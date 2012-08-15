@@ -63,6 +63,14 @@ void ServiceManager::welcome(Publisher*, const string nodeId, const string subId
 		delete queryMsg;
 		queryIter++;
 	}
+	if (_pendingMessages.find(subId) != _pendingMessages.end()) {
+		std::list<std::pair<uint64_t, Message*> >::iterator msgIter = _pendingMessages[subId].begin();
+		while(msgIter != _pendingMessages[subId].end()) {
+			_svcPub->send(msgIter->second);
+			delete msgIter->second;
+		}
+		_pendingMessages.erase(subId);
+	}
 }
 
 /**
@@ -225,10 +233,16 @@ void ServiceManager::receive(Message* msg) {
 		if (foundSvcs.size() > 0) {
 			ServiceDescription* svcDesc = (*(foundSvcs.begin()));
 			Message* foundMsg = svcDesc->toMessage();
+			foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
 			foundMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
 			foundMsg->putMeta("um.rpc.channel", svcDesc->getChannelName());
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
-			_svcPub->send(foundMsg);
+			if (_svcPub->isPublishingTo(msg->getMeta("um.rpc.mgrId"))) {
+				_svcPub->send(foundMsg);
+			} else {
+				// queue message and send in welcome
+				_pendingMessages[msg->getMeta("um.rpc.mgrId")].push_back(std::make_pair(Thread::getTimeStampMs(), foundMsg));
+			}
 			delete foundMsg;
 		}
 	}
@@ -247,6 +261,7 @@ void ServiceManager::receive(Message* msg) {
 		while(svcDescIter != foundSvcs.end()) {
 			if (filter->matches(*svcDescIter)) {
 				Message* foundMsg = (*svcDescIter)->toMessage();
+				foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
 				foundMsg->putMeta("um.rpc.filterId", filter->_uuid);
 				foundMsg->putMeta("um.rpc.type", "discovered");
 				foundMsg->putMeta("um.rpc.channel", (*svcDescIter)->getChannelName());

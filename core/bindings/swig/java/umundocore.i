@@ -4,7 +4,6 @@
 %include <stl.i>
 %include <inttypes.i>
 %include "stl_set.i"
-//%include "boost_shared_ptr.i"
 
 // macros from cmake
 %import "umundo/config.h"
@@ -29,7 +28,6 @@ typedef std::list list;
 #include "../../../../core/src/umundo/common/EndPoint.h"
 #include "../../../../core/src/umundo/connection/Node.h"
 #include "../../../../core/src/umundo/common/Message.h"
-#include "../../../../core/src/umundo/common/Regex.h"
 #include "../../../../core/src/umundo/thread/Thread.h"
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
@@ -74,6 +72,7 @@ using namespace umundo;
 
 // Provide a nicer Java interface to STL containers
 %template(StringVector) std::vector<std::string>;
+%template(StringSet)    std::set<std::string>;
 %template(PublisherSet) std::set<umundo::Publisher*>;
 %template(SubcriberSet) std::set<umundo::Subscriber*>;
 
@@ -237,7 +236,6 @@ import java.util.HashMap;
 %include "../../../../core/src/umundo/thread/Thread.h"
 %include "../../../../core/src/umundo/common/Implementation.h"
 %include "../../../../core/src/umundo/common/EndPoint.h"
-%include "../../../../core/src/umundo/common/Regex.h"
 %include "../../../../core/src/umundo/connection/Publisher.h"
 %include "../../../../core/src/umundo/connection/Subscriber.h"
 %include "../../../../core/src/umundo/connection/Node.h"

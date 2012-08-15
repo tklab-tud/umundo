@@ -92,12 +92,16 @@ public:
 	virtual void setReceiver(Receiver* receiver)     {
 		_receiver = receiver;
 	}
+	std::set<string> getPublisherUUIDs()             {
+		return _pubUUIDs;
+	}
 
 	virtual Message* getNextMsg() = 0;
 	virtual Message* peekNextMsg() = 0;
 
 protected:
 	Receiver* _receiver;
+	std::set<string> _pubUUIDs;
 };
 
 /**
@@ -134,6 +138,13 @@ public:
 
 	virtual Message* peekNextMsg() {
 		return _impl->peekNextMsg();
+	}
+
+	std::set<string> getPublisherUUIDs()             {
+		return _impl->getPublisherUUIDs();
+	}
+	bool isSubscribedTo(const string& uuid) {
+		return _impl->getPublisherUUIDs().find(uuid) != _impl->getPublisherUUIDs().end();
 	}
 
 protected:

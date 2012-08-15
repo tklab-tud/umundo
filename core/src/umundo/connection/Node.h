@@ -96,18 +96,18 @@ public:
 	virtual void addPublisher(shared_ptr<PublisherStub>);
 	virtual void removePublisher(shared_ptr<PublisherStub>);
 
-	bool hasSubscriber(const string& uuid);
 	shared_ptr<SubscriberStub> getSubscriber(const string& uuid);
 	map<string, shared_ptr<SubscriberStub> >& getSubscribers() {
 		return _subs;
 	}
 
-	bool hasPublisher(const string& uuid);
 	shared_ptr<PublisherStub> getPublisher(const string& uuid);
 	map<string, shared_ptr<PublisherStub> >& getPublishers() {
 		return _pubs;
 	}
 #endif
+	bool hasSubscriber(const string& uuid);
+	bool hasPublisher(const string& uuid);
 	//@}
 
 protected:

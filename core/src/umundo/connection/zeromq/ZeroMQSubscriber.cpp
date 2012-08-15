@@ -145,7 +145,7 @@ void ZeroMQSubscriber::run() {
 		int rc = 0;
 		{
 			ScopeLock lock(&_mutex);
-			zmq_poll(&pollItem, 1, 30);
+			rc = zmq_poll(&pollItem, 1, 30);
 		}
 		if (rc < 0) {
 			// an error occurred

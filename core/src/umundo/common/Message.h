@@ -115,10 +115,10 @@ public:
 		return keys;
 	}
 
-  void setReceiver(const string& uuid) {
+	void setReceiver(const string& uuid) {
 		putMeta("um.sub", uuid);
-  }
-  
+	}
+
 	static Message* toSubscriber(const string& uuid) {
 		Message* msg = new Message();
 		msg->putMeta("um.sub", uuid);

@@ -179,6 +179,7 @@ public:
 	void signal();
 	void signal(int nrThreads);
 	void broadcast();
+	void reset();
 	bool wait() {
 		return wait(0);
 	}

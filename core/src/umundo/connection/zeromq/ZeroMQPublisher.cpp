@@ -56,8 +56,6 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 	_transport = "tcp";
 
 	(_socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_XPUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
-	(_closer = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
-	zmq_setsockopt(_closer, ZMQ_SUBSCRIBE, _uuid.c_str(), _uuid.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
 	int hwm = NET_ZEROMQ_SND_HWM;
 	zmq_setsockopt(_socket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
@@ -87,17 +85,11 @@ ZeroMQPublisher::~ZeroMQPublisher() {
 	stop();
 	join();
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
-	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
 
 void ZeroMQPublisher::join() {
 	UMUNDO_LOCK(_mutex);
 	stop();
-
-	std::stringstream ssInProc;
-	ssInProc << "inproc://" << _uuid;
-	zmq_connect(_closer, ssInProc.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
-
 	Thread::join();
 	UMUNDO_UNLOCK(_mutex);
 }
@@ -113,7 +105,6 @@ void ZeroMQPublisher::suspend() {
 	join();
 
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
-	zmq_close(_closer) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
 
 void ZeroMQPublisher::resume() {

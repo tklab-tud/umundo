@@ -82,10 +82,10 @@ protected:
  */
 class DLLEXPORT SubscriberImpl : public Thread, public Implementation, public SubscriberStub {
 public:
-  SubscriberImpl()                                 {
-    _receiver = NULL;
-  }
-  
+	SubscriberImpl()                                 {
+		_receiver = NULL;
+	}
+
 	virtual const Receiver* getReceiver()            {
 		return _receiver;
 	}

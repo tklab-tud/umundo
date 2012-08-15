@@ -82,10 +82,10 @@ public:
 	virtual void setDomain(string domain)             {
 		_domain = domain;
 	}
-	virtual const string& getUUID() const           {
+	virtual const string& getUUID() const             {
 		return _uuid;
 	}
-	virtual void setUUID(string uuid)             {
+	virtual void setUUID(string uuid)                 {
 		_uuid = uuid;
 	}
 	//@}
@@ -118,6 +118,10 @@ public:
 	virtual void setGreeter(Greeter* greeter)        {
 		_greeter = greeter;
 	}
+	std::set<string> getSubscriberUUIDs()             {
+		return _subUUIDs;
+	}
+
 	//@}
 
 protected:
@@ -132,6 +136,7 @@ protected:
 	//@}
 
 	std::map<string, string> _mandatoryMeta;
+	std::set<string> _subUUIDs;
 	Greeter* _greeter;
 	friend class Publisher;
 };
@@ -161,6 +166,13 @@ public:
 	void putMeta(const string& key, const string& value) {
 		return _impl->putMeta(key, value);
 	}
+	std::set<string> getSubscriberUUIDs()             {
+		return _impl->getSubscriberUUIDs();
+	}
+	bool isPublishingTo(const string& uuid) {
+		return _impl->getSubscriberUUIDs().find(uuid) != _impl->getSubscriberUUIDs().end();
+	}
+
 	//@}
 
 	/** @name Overwrite PublisherStub */

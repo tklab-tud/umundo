@@ -243,6 +243,7 @@ void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
 	}
 
 	ScopeLock lock(&_mutex);
+	_pubUUIDs.insert(pub->getUUID());
 	LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
 	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
 	_connections.insert(ss.str());
@@ -260,6 +261,8 @@ void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
 		LOG_INFO("Never connected to %s won't disconnect", ss.str().c_str());
 		return;
 	}
+
+	_pubUUIDs.erase(pub->getUUID());
 
 	LOG_DEBUG("unsubscribing from %s", ss.str().c_str());
 	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_disconnect: %s", zmq_strerror(errno));

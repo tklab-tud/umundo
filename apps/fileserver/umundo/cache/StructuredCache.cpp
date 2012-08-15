@@ -86,36 +86,36 @@ void SCache::update() {
 	if (_profiler != NULL)
 		_profiler->newBounds(lowerPressure, upperPressure, newPressure, pSize);
 
-	if (growing) {
-		std::cout << "Growing ";
-	} else {
-		std::cout << "Shrinking ";
-	}
+//	if (growing) {
+//		std::cout << "Growing ";
+//	} else {
+//		std::cout << "Shrinking ";
+//	}
 	std::cout << "cache at pressure " << _pressure << std::endl;
 	// use binary search to arrive at optimal pressure
 	while(pSize > _maxSize || growing) {
 		newPressure = (float)((upperPressure + lowerPressure) / 2.0);
 		pSize = getSizeAtPressure(newPressure, _profiler == NULL);
 		growing = pSize < _maxSize;
-		std::cout << "[" << lowerPressure << "," << upperPressure << "]: " << newPressure << " => " << pSize << " of " << _maxSize << " ";
+//		std::cout << "[" << lowerPressure << "," << upperPressure << "]: " << newPressure << " => " << pSize << " of " << _maxSize << " ";
 
 		if (_profiler != NULL)
 			_profiler->newBounds(lowerPressure, upperPressure, newPressure, pSize);
 
 		// did we convert?
 		if (pSize == _maxSize || (upperPressure - lowerPressure < _convergenceThreshold && pSize < _maxSize)) {
-			std::cout << "breaking" << std::endl;
+//			std::cout << "breaking" << std::endl;
 			break;
 		}
 
 		// set new bounds
 		if (growing) {
-			std::cout << "new upper bound" << std::endl;
+//			std::cout << "new upper bound" << std::endl;
 			upperPressure = newPressure; // (upperPressure - lowerPressure) / 2.0;
 			if (upperPressure < (_convergenceThreshold / 4) && lowerPressure == 0)
 				upperPressure = 0;
 		} else {
-			std::cout << "new lower bound" << std::endl;
+//			std::cout << "new lower bound" << std::endl;
 			lowerPressure = newPressure; //(upperPressure - lowerPressure) / 2.0;
 			if (1 - lowerPressure < (_convergenceThreshold / 4) && upperPressure == 1)
 				lowerPressure = 1;

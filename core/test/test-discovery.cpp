@@ -5,6 +5,7 @@
 using namespace umundo;
 
 static int receives = 0;
+static string hostId;
 static Monitor monitor;
 
 class TestDiscoverer : public ResultSet<NodeStub> {
@@ -31,10 +32,8 @@ public:
 	}
 };
 
-int main(int argc, char** argv, char** envp) {
-//	setenv("UMUNDO_LOGLEVEL", "4", 1);
-
-	string hostId = Host::getHostId();
+bool testNodeDiscovery() {
+	hostId = Host::getHostId();
 	std::cout << "HostId:" << hostId << std::endl;
 
 	TestDiscoverer* testDiscoverer = new TestDiscoverer();
@@ -46,7 +45,10 @@ int main(int argc, char** argv, char** envp) {
 	while(receives < 1)
 		UMUNDO_WAIT(monitor);
 	std::cout << "Successfully found node via discovery" << std::endl;
+	return true;
+}
 
+bool testPubSubConnections() {
 	// test node / publisher / subscriber churn
 	for (int i = 0; i < 2; i++) {
 		Node* node1 = new Node(hostId);
@@ -111,4 +113,16 @@ int main(int argc, char** argv, char** envp) {
 		delete node1;
 		delete node2;
 	}
+	return true;
+}
+
+int main(int argc, char** argv, char** envp) {
+//	setenv("UMUNDO_LOGLEVEL", "4", 1);
+// 	if (!testNodeDiscovery())
+// 		return EXIT_FAILURE;
+	if (!testPubSubConnections())
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+
+
 }

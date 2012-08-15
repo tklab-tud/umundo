@@ -71,6 +71,8 @@ public:
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
 	Mutex _mutex;
+
+	map<string, std::list<std::pair<uint64_t, Message*> > > _pendingMessages;
 };
 
 }

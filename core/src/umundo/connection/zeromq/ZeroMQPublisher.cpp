@@ -190,6 +190,8 @@ void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId)
 	_pendingSubscriptions.erase(subId);
 	_pendingZMQSubscriptions.erase(subId);
 
+	_subUUIDs.insert(subId);
+
 	if (_greeter != NULL)
 		_greeter->welcome((Publisher*)_facade, _pendingSubscriptions[subId], subId);
 	UMUNDO_SIGNAL(_pubLock);
@@ -202,6 +204,7 @@ void ZeroMQPublisher::removedSubscriber(const string remoteId, const string subI
 		return;
 
 	_subscriptions.erase(subId);
+	_subUUIDs.erase(subId);
 
 	if (_greeter != NULL)
 		_greeter->farewell((Publisher*)_facade, _pendingSubscriptions[subId], subId);
@@ -220,6 +223,8 @@ void ZeroMQPublisher::send(Message* msg) {
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
 		ZMQ_PREPARE_STRING(channelEnvlp, msg->getMeta("um.sub").c_str(), msg->getMeta("um.sub").size());
+		if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end())
+			LOG_ERR("Subscriber %s is not (yet) connected on %s", msg->getMeta("um.sub").c_str(), _channelName.c_str());
 	} else {
 		// everyone on channel
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());

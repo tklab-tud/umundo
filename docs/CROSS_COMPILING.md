@@ -27,6 +27,8 @@ or select the file from the CMake-GUI when setting up a new build directory.
 
 ## iOS (iPhone, iPad, iPod)
 
+<b>Note:</b> You can only cross-compile for iOS on a Mac OSX host.
+
 The iOS platform prohibits the loading of 3rd party shared libraries - everything
 needs to be statically compiled. CMake will realize that you are building for iOS
 if you use the toolchain files from above and sets all build parameters accordingly.
@@ -118,3 +120,32 @@ library along with some JNI code and not needed when deploying. Have a look at t
 
 <b>Note:</b> Make sure your <tt>JAVA_HOME</tt> points to a JVM installation that
 will run on the device.
+
+## Cross Compiling on Windows
+
+To cross-compile the Android binaries on a Windows system, you cannot use MS
+Visual Studio, instead, you need to create Makefiles and use the <tt>make</tt>
+binary shipped as part of the <tt>android-ndk-7</tt> and above. 
+
+<b>Note:</b> You need to have installed the protoc compiler plugins, either from 
+the installer or by installing the umundo binaries you built from source.
+
+First, download the [Android NDK](http://dl.google.com/android/ndk/android-ndk-r8-windows.zip)
+and extract it somewhere, without spaces or special characters in the path. Then
+open up the <emph>Advanced system settings</emph> and set the <tt>%ANDROID_NDK%</tt>
+environment variable to the path of the ndk installation.
+
+Start the CMake-GUI, select the folder for the umundo source and any folder for
+the binaries. Again, try to avoid special characters as part of the path - that
+includes spaces. Click <tt>Configure</tt> and select <tt>MinGW Makefiles</tt>
+and specify the toolchain file as <tt>&lt;UMUNDO_SRC&gt;/contrib/cmake/CrossCompile-Android.cmake</tt>.
+CMake will most likely complain about not finding <tt>CMAKE_MAKE_PROGRAM</tt>, just
+select the <tt>&lt;ANDROID_NDK&gt;/prebuilt/windows/bin/make.exe</tt> distributed
+with the NDK and hit <tt>Configure</tt> until there are no more red items. Then
+hit <tt>Generate</tt>.
+
+If everything worked out, CMake generated a <tt>Makefile</tt> in the build folder
+you specified. Navigate there in <tt>cmd.exe</tt> and invoke make:
+
+	$ "%ANDROID_NDK%\prebuilt\windows\bin\make.exe"
+	

@@ -22,6 +22,7 @@
 #define DEBUG_H_Z6YNJLCS
 
 #include "umundo/common/Common.h"
+#include "umundo/thread/Thread.h"
 
 #include <stdarg.h> ///< variadic functions
 
@@ -76,8 +77,6 @@ public:
 	static void stackTraceSigHandler(int sig) {};
 #endif
 };
-
-class Mutex;
 
 /**
  * Inherit this class to enable tracing for a class.

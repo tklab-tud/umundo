@@ -346,7 +346,7 @@ void ZeroMQNode::run() {
  * A remote subscriber either subscribed or unsubscribed from one of our publishers.
  */
 void ZeroMQNode::processSubscription(const char* remoteId, zmq_msg_t message, bool subscribe) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	int msgSize = zmq_msg_size(&message);
 	char* buffer = (char*)zmq_msg_data(&message);

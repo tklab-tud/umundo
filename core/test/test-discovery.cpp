@@ -7,6 +7,7 @@ using namespace umundo;
 static int receives = 0;
 static string hostId;
 static Monitor monitor;
+static Mutex mutex;
 
 class TestDiscoverer : public ResultSet<NodeStub> {
 public:
@@ -43,7 +44,7 @@ bool testNodeDiscovery() {
 	TestDiscoverable* testDiscoverable = new TestDiscoverable(hostId + "fooDomain");
 	Discovery::add(testDiscoverable);
 	while(receives < 1)
-		UMUNDO_WAIT(monitor);
+		UMUNDO_WAIT(monitor, mutex);
 	std::cout << "Successfully found node via discovery" << std::endl;
 	return true;
 }

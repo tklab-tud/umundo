@@ -79,10 +79,10 @@ shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::getInstance() {
 shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::_instance;
 
 BonjourNodeDiscovery::~BonjourNodeDiscovery() {
-	UMUNDO_LOCK(_mutex); // we had some segfaults in validateState from other threads?
+//	UMUNDO_LOCK(_mutex); // we had some segfaults in validateState from other threads?
 	stop();
 #ifndef DISC_BONJOUR_EMBED
-//	join(); // we have deadlock in embedded?
+	join(); // we have deadlock in embedded?
 #endif
 #ifdef DISC_BONJOUR_EMBED
 	// notify every other host that we are about to vanish
@@ -172,7 +172,7 @@ void BonjourNodeDiscovery::run() {
 		tv.tv_sec  = BONJOUR_REPOLL_SEC;
 		tv.tv_usec = BONJOUR_REPOLL_USEC;
 
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		// initialize file desriptor set for select
 		std::map<int, DNSServiceRef>::const_iterator cIt;
 		for (cIt = _activeFDs.begin(); cIt != _activeFDs.end(); cIt++) {

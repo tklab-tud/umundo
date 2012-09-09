@@ -50,7 +50,7 @@ void ZeroMQPublisher::destroy() {
 }
 
 void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	_uuid = (_uuid.length() > 0 ? _uuid : UUID::getUUID());
 	_config = boost::static_pointer_cast<PublisherConfig>(config);
 	_transport = "tcp";
@@ -97,7 +97,7 @@ void ZeroMQPublisher::join() {
 void ZeroMQPublisher::suspend() {
 	if (_isSuspended)
 		return;
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	_isSuspended = true;
 
@@ -121,7 +121,7 @@ void ZeroMQPublisher::run() {
 		zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
 		int rv;
 		{
-			ScopeLock lock(&_mutex);
+			ScopeLock lock(_mutex);
 			while ((rv = zmq_recvmsg(_socket, &message, ZMQ_DONTWAIT)) < 0) {
 				if (errno == EAGAIN) // no messages available at the moment
 					break;
@@ -162,7 +162,7 @@ void ZeroMQPublisher::run() {
 int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 	uint64_t now = Thread::getTimeStampMs();
 	while (_subscriptions.size() < (unsigned int)count) {
-		_pubLock.wait(timeoutMs);
+		_pubLock.wait(_mutex, timeoutMs);
 		if (timeoutMs > 0 && Thread::getTimeStampMs() - timeoutMs > now)
 			break;
 	}
@@ -170,7 +170,7 @@ int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 }
 
 void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	// ZeroMQPublisher::run calls us without a remoteId
 	if (remoteId.length() != 0) {
@@ -198,7 +198,7 @@ void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId)
 }
 
 void ZeroMQPublisher::removedSubscriber(const string remoteId, const string subId) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	if (_subscriptions.find(subId) == _subscriptions.end())
 		return;
@@ -242,7 +242,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		metaIter++;
 	}
 
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	zmq_sendmsg(_socket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
 	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 

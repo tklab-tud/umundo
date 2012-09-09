@@ -45,6 +45,9 @@ public:
 	virtual uint64_t getSizeAtPressure(float pressure) = 0;
 	virtual void applyPressure(float pressure) = 0;
 
+  const string getName() { return _name; }
+  const string getBand() { return _band; }
+  
 	NBandCacheItem* _left;
 	NBandCacheItem* _right;
 	NBandProxyCacheItem* _up;
@@ -81,6 +84,7 @@ public:
 	using SCache::getPointer;
 	virtual shared_ptr<NBandCachePtr> getPointer();
 	virtual shared_ptr<NBandCachePtr> getPointer(const string& band, int elemId = -1);
+	virtual shared_ptr<NBandCachePtr> getPointer(const string& band, const string& name);
 	virtual void insert(NBandCacheItem* item);
 	virtual void remove(NBandCacheItem* item);
 

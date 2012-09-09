@@ -21,6 +21,7 @@
 #ifndef PTHREAD_H_KU2YWI3W
 #define PTHREAD_H_KU2YWI3W
 
+#include "umundo/thread/tinythread.h"
 #include "umundo/common/Common.h"
 
 // this is a hack until we get a compiler firewall per Pimpl
@@ -91,8 +92,8 @@ monitor.broadcast();
 #define UMUNDO_LOCK(mutex) mutex.lock();
 #define UMUNDO_TRYLOCK(mutex) mutex.tryLock();
 #define UMUNDO_UNLOCK(mutex) mutex.unlock();
-#define UMUNDO_WAIT(monitor) monitor.wait();
-#define UMUNDO_WAIT2(monitor, timeout) monitor.wait(timeout);
+#define UMUNDO_WAIT(monitor, mutex) monitor.wait(mutex);
+#define UMUNDO_WAIT2(monitor, mutex, timeout) monitor.wait(mutex, timeout);
 #define UMUNDO_SIGNAL(monitor) monitor.signal();
 #define UMUNDO_BROADCAST(monitor) monitor.broadcast();
 #endif
@@ -121,55 +122,27 @@ public:
 
 private:
 	bool _isStarted;
-
-#ifdef THREAD_PTHREAD
-	static void* runWrapper(void*);
-	pthread_t _thread;
-#endif
-#ifdef THREAD_WIN32
-	static DWORD runWrapper(Thread *t);
-	HANDLE _thread;
-#endif
+	static void runWrapper(void*);
+  tthread::thread* _thread;
 
 };
 
 /**
  * Platform independent mutual exclusion.
  */
-class DLLEXPORT Mutex {
-public:
-	Mutex();
-	virtual ~Mutex();
-
-	void lock();
-	bool tryLock();
-	void unlock();
-
-private:
-#ifdef THREAD_PTHREAD
-	pthread_mutex_t _mutex;
-#endif
-#ifdef THREAD_WIN32
-	HANDLE _mutex;
-#endif
-
-};
+typedef tthread::recursive_mutex Mutex;
+  
 
 /**
  * Instantiate on stack to give code in scope below exclusive access.
  */
-class DLLEXPORT ScopeLock {
-public:
-	ScopeLock(Mutex*);
-	~ScopeLock();
-
-	Mutex* _mutex;
-};
+typedef tthread::lock_guard<tthread::recursive_mutex> ScopeLock;
 
 /**
  * See comments from Schmidt on condition variables in windows:
  * http://www.cs.wustl.edu/~schmidt/win32-cv-1.html (we choose 3.2)
  */
+
 class DLLEXPORT Monitor {
 public:
 	Monitor();
@@ -179,25 +152,16 @@ public:
 	void signal();
 	void signal(int nrThreads);
 	void broadcast();
-	void reset();
-	bool wait() {
-		return wait(0);
+	void wait(Mutex& mutex) {
+		return wait(mutex, 0);
 	}
-	bool wait(uint32_t ms);
+	void wait(Mutex& mutex, uint32_t ms);
 
 private:
-	int _waiters;
-	int _signaled;
-#ifdef THREAD_PTHREAD
-	pthread_mutex_t _mutex;
-	pthread_cond_t _cond;
-#endif
-#ifdef THREAD_WIN32
-	Mutex _monitorLock;
-	HANDLE _monitor;
-#endif
-
+  tthread::condition_variable _cond;
 };
+
+typedef Monitor Condition;
 
 }
 

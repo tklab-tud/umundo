@@ -118,7 +118,7 @@ void ZeroMQSubscriber::run() {
 	while(isStarted()) {
 		int rc = 0;
 		{
-			ScopeLock lock(&_mutex);
+			ScopeLock lock(_mutex);
 			rc = zmq_poll(&pollItem, 1, 30);
 		}
 		if (rc < 0) {
@@ -143,7 +143,7 @@ void ZeroMQSubscriber::run() {
 		}
 		if (rc > 0) {
 			// there is a message to be read
-			ScopeLock lock(&_mutex);
+			ScopeLock lock(_mutex);
 			Message* msg = new Message();
 			while (1) {
 				// read and dispatch the whole message
@@ -191,7 +191,7 @@ void ZeroMQSubscriber::run() {
 						_receiver->receive(msg);
 						delete(msg);
 					} else {
-						ScopeLock lock(&_msgMutex);
+						ScopeLock lock(_msgMutex);
 						_msgQueue.push_back(msg);
 					}
 					break; // last message part
@@ -207,7 +207,7 @@ Message* ZeroMQSubscriber::getNextMsg() {
 		return NULL;
 	}
 
-	ScopeLock lock(&_msgMutex);
+	ScopeLock lock(_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {
 		msg = _msgQueue.front();
@@ -222,7 +222,7 @@ Message* ZeroMQSubscriber::peekNextMsg() {
 		return NULL;
 	}
 
-	ScopeLock lock(&_msgMutex);
+	ScopeLock lock(_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {
 		msg = _msgQueue.front();
@@ -242,7 +242,7 @@ void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
 		return;
 	}
 
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	_pubUUIDs.insert(pub->getUUID());
 	LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
 	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
@@ -250,7 +250,7 @@ void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
 }
 
 void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	std::stringstream ss;
 	if (pub->isInProcess() && false) {
 		ss << "inproc://" << pub->getUUID();

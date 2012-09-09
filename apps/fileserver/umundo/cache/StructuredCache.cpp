@@ -103,7 +103,7 @@ void SCache::update() {
 			_profiler->newBounds(lowerPressure, upperPressure, newPressure, pSize);
 
 		// did we convert?
-		if (pSize == _maxSize || (upperPressure - lowerPressure < _convergenceThreshold && pSize < _maxSize)) {
+		if (pSize == _maxSize || newPressure == 1 || (upperPressure - lowerPressure < _convergenceThreshold && pSize < _maxSize)) {
 //			std::cout << "breaking" << std::endl;
 			break;
 		}
@@ -153,20 +153,22 @@ void SCache::run() {
 void SCache::resetDistance() {
 	ScopeLock lock(&_mutex);
 
-	// set distance to infinity
+	// set distance to infinity and paths to none
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();
 	while(itemIter != _cacheItems.end()) {
 		(*itemIter)->_distance = std::numeric_limits<int>::max();
+    (*itemIter)->_paths.clear();
 		itemIter++;
 	}
 
-	// calculate relevance from all pointers
+	// calculate distance from all pointers
 	set<weak_ptr<SCachePointer> >::iterator ptrIter = _cachePointers.begin();
-	list<std::pair<float, SCacheItem*> > itemQueue;
+	list<std::pair<std::list<SCacheItem*>, SCacheItem*> > itemQueue;
+
 	while(ptrIter != _cachePointers.end()) {
 		shared_ptr<SCachePointer> ptr = ptrIter->lock();
-		if (ptr.get() != NULL) {
-			itemQueue.push_back(std::make_pair(0, ptr->_item));
+		if (ptr.get() != NULL && ptr->_item != NULL) {
+			itemQueue.push_back(std::make_pair(std::list<SCacheItem*>(), ptr->_item));
 		} else {
 			// weak pointer points to deleted object
 			_cachePointers.erase(ptrIter);
@@ -174,20 +176,26 @@ void SCache::resetDistance() {
 		ptrIter++;
 	}
 
-	// breadth first propagation of relevance
+	// breadth first propagation of distance
 	while(!itemQueue.empty()) {
-		int distance = itemQueue.front().first;
 		SCacheItem* item = itemQueue.front().second;
-		item->_distance = distance;
+		std::list<SCacheItem*> history = itemQueue.front().first;
+    
+    int distance = history.size();
+    
+    if (item->addPath(history) || item->_distance > distance) {
+      if (item->_distance > distance)
+        item->_distance = distance;
 
-		set<SCacheItem*> next = item->getNext();
-		set<SCacheItem*>::iterator nextIter = next.begin();
-		while(nextIter != next.end()) {
-			if ((*nextIter)->_distance > distance + 1) {
-				itemQueue.push_back(std::make_pair(distance + 1, (*nextIter)));
-			}
-			nextIter++;
-		}
+      history.push_back(item);
+
+      set<SCacheItem*> nexts = item->getNext();
+      set<SCacheItem*>::iterator nextIter = nexts.begin();
+      while(nextIter != nexts.end()) {
+        itemQueue.push_back(std::make_pair(history, (*nextIter)));
+        nextIter++;
+      }
+    }
 		itemQueue.pop_front();
 	}
 
@@ -214,7 +222,9 @@ void SCache::remove(SCacheItem* item) {
 	if(_cacheItems.find(item) != _cacheItems.end()) {
 		item->_cache = NULL;
 		_cacheItems.erase(item);
-	}
+	} else {
+    LOG_WARN("Cannot remove unknown item");
+  }
 	dirty();
 }
 

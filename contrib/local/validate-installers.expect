@@ -68,9 +68,8 @@ set reqFilesXCodeProject {
 
 set reqFilesAndroidProject {
 	"templates/android/umundo-pingpong/AndroidManifest.xml"
-	"templates/android/umundo-pingpong/proguard.cfg"
 	"templates/android/umundo-pingpong/project.properties"
-	"templates/android/umundo-pingpong/src/org/umundo/android/UMundoAndroidActivity.java"
+	"templates/android/umundo-pingpong/src/org/umundo/samples/UMundoAndroidActivity.java"
 }
 
 set reqFilesDesktopCommonUnix {
@@ -85,27 +84,20 @@ set reqFilesAndroid {
 	"/share/umundo/android-.*/armv.*/libumundoNativeJava.so"
 	"/share/umundo/android-.*/armv.*/libumundoNativeJava_d.so"
 
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.so"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.so"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libpcre.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libpcre_d.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libpcreposix.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libpcreposix_d.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libzmq.a"
-	"/share/umundo/prebuilt/android/arm-linux-androideabi/libzmq_d.a"
 }
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.so"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.so"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libpcre.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libpcre_d.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libpcreposix.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libpcreposix_d.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libzmq.a"
+# "/share/umundo/prebuilt/android/arm-linux-androideabi/libzmq_d.a"
+
 
 set reqFilesIOS {
-	"/usr/local/share/umundo/ios-.*/libumundocore.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundocore_d.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundoserial.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundoserial_d.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundorpc.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundorpc_d.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundoutil.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundoutil_d.ios.a"
 	"/usr/local/share/umundo/ios-.*/libumundo.ios.a"
 	"/usr/local/share/umundo/ios-.*/libumundo_d.ios.a"
 
@@ -117,6 +109,15 @@ set reqFilesIOS {
 	"/usr/local/share/umundo/prebuilt/ios/.*/libprotoc.a"
 	"/usr/local/share/umundo/prebuilt/ios/.*/libzmq.a"
 }
+
+# "/usr/local/share/umundo/ios-.*/libumundocore.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundocore_d.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundoserial.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundoserial_d.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundorpc.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundorpc_d.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundoutil.ios.a"
+# "/usr/local/share/umundo/ios-.*/libumundoutil_d.ios.a"
 
 #############################
 # Validate Mac installers

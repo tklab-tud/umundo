@@ -70,11 +70,18 @@ public:
 
 	virtual set<SCacheItem*> getNext() = 0;
 
+  // return true if this path ought to be continued
+  virtual bool addPath(std::list<SCacheItem*> path) {
+    _paths.push_back(path);
+    return false;
+  }
+
 	virtual uint64_t getSizeAtPressure(float pressure) = 0;
 	virtual void applyPressure(float pressure) = 0;
 
 protected:
 	uint32_t _distance;
+  std::list<std::list<SCacheItem*> > _paths;
 	SCache* _cache;
 
 	friend class SCache;

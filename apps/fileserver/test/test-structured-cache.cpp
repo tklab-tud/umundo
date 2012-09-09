@@ -1,12 +1,14 @@
 #include "umundo/core.h"
 #include "umundo/cache/StructuredCache.h"
 #include "umundo/cache/NBandCache.h"
+#include "umundo/cache/RandomCache.h"
 #include "umundo/cache/CacheProfiler.h"
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
 #include <algorithm>
+#include <math.h>
 
 using namespace umundo;
 
@@ -67,7 +69,7 @@ public:
 
 			NBandCacheItem* iterItem = currItem;
 			while(iterItem != NULL) {
-				outFile << currWidth << " " << std::setw(2) << std::setfill('0') << bandsOnTop(iterItem) << " " << iterItem->getRelevance() << std::endl;
+				outFile << currWidth << " " << std::setw(2) << std::setfill('0') << bandsOnTop(iterItem) << " " << iterItem->getDistance() << std::endl;
 				iterItem = iterItem->_right;
 				currWidth++;
 			}
@@ -87,7 +89,7 @@ public:
 		currItem = topLeft->_up->_currentItem;
 		int i = 0;
 		for(;;) {
-			outFile << leftMost - i << " " << std::setw(2) << std::setfill('0') << bandsOnTop(currItem) << " " << currItem->getRelevance() << std::endl;
+			outFile << leftMost - i << " " << std::setw(2) << std::setfill('0') << bandsOnTop(currItem) << " " << currItem->getDistance() << std::endl;
 			if(currItem->_down->_otherBand == NULL)
 				break;
 			currItem = currItem->_down->_otherBand->_currentItem;
@@ -107,10 +109,12 @@ public:
 		_hasPreviewLoaded = false;
 	}
 	uint64_t getSizeAtPressure(float pressure) {
+    float relevance = pow((float)0.8, (float)_distance);
+
 //    std::cout << "\t" << _name << ":" << _band << " assuming pressure: " << pressure << " at " << getRelevance() << " -> ";
-		if (getRelevance() > pressure) {
+		if (relevance > pressure) {
 			_currSize = _fullSize;
-		} else if (1.2*(getRelevance()*(1/(getRelevance() + 0.2))) > pressure) {
+		} else if (1.2*(relevance*(1/(relevance + 0.2))) > pressure) {
 //    } else if (1.2 * getRelevance() > pressure) {
 			_currSize = _previewSize;
 		} else {
@@ -123,13 +127,14 @@ public:
 
 	void applyPressure(float pressure) {
 //    std::cout << _name << ":" << _band << " applying pressure: " << getRelevance() << ":" << pressure << std::endl;
-		if (getRelevance() > pressure) {
+    float relevance = pow((float)0.8, (float)_distance);
+		if (relevance > pressure) {
 			if (!_hasAllLoaded) {
 				std::cout << _name << ":" << _band << " is loading full" << std::endl;
 				_hasAllLoaded = true;
 				_hasPreviewLoaded = false;
 			}
-		} else if (1.2*(getRelevance()*(1/(getRelevance() + 0.2))) > pressure) {
+		} else if (1.2*(relevance*(1/(relevance + 0.2))) > pressure) {
 			if (!_hasPreviewLoaded) {
 				std::cout << _name << ":" << _band << " is loading preview" << std::endl;
 				_hasAllLoaded = false;
@@ -144,6 +149,27 @@ public:
 		}
 	}
 
+  bool addPath(std::list<SCacheItem*> path) {
+    if (path.size() > 5)
+      return false;
+    
+    _paths.push_back(path);
+    
+    std::list<SCacheItem*>::iterator pathIter = path.begin();
+    while(pathIter != path.end()) {
+      TestCacheItem* tItem = dynamic_cast<TestCacheItem*>(*pathIter);
+      if (tItem) {
+        std::cout << tItem->_band << ":" << tItem->_name << " -> ";
+      } else {
+        std::cout << "proxy -> ";        
+      }
+      pathIter++;
+    }
+    std::cout << _band << ":" << _name << std::endl;
+      
+    return true;
+  }
+  
 	bool _hasPreviewLoaded;
 	bool _hasAllLoaded;
 	uint64_t _currSize;
@@ -168,7 +194,7 @@ public:
 		if (tItem) {
 			std::stringstream ss;
 			ss << tItem->_band << ":" << tItem->_name << "\\n";
-			ss << (tItem->_currSize / 1024) << "kB at " << std::setprecision(3) << tItem->getRelevance() << "\\n";
+			ss << (tItem->_currSize / 1024) << "kB at " << std::setprecision(3) << tItem->getDistance() << "\\n";
 			return ss.str();
 		}
 		return "";
@@ -197,180 +223,273 @@ public:
 	string _additionalCaption;
 };
 
+bool testPaths() {
+  NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 * 2.3);
+  nbCache->stop();
+  
+  for (int band = 0; band < 3; band++) {
+    for (int item = 0; item < 3; item++) {
+      nbCache->insert(new TestCacheItem(0, toStr(item), toStr(band)));
+    }
+  }
+  shared_ptr<NBandCachePtr> ptr = nbCache->getPointer("0", "0");
+  nbCache->update();
+  return true;
+}
+
+bool testNodeLoading() {
+  // test pressure and relevance
+  NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 - 1);
+  
+  // insert a single item
+  TestCacheItem* tItem1 = new TestCacheItem(1024 * 1024, "00", "0");
+  nbCache->insert(tItem1);
+  Thread::sleepMs(50);
+  CacheProfiler::layoutToDot(nbCache, "foo1.dot", TestCacheItemLabeler("Single item without cache pointer"));
+  
+  // we have no pointer, therefore no relevance
+  assert(!tItem1->_hasAllLoaded);
+  assert(!tItem1->_hasPreviewLoaded);
+  
+  // get a pointer
+  shared_ptr<NBandCachePtr> nbPtr = nbCache->getPointer("0");
+  Thread::sleepMs(50);
+  
+  // item is too big, preview only
+  assert(tItem1->_hasPreviewLoaded);
+  CacheProfiler::layoutToDot(nbCache, "foo2.dot", TestCacheItemLabeler());
+  
+  // increase cache size for item to be fully loaded
+  nbCache->setMaxSize(1024 * 1024);
+  Thread::sleepMs(50);
+  assert(tItem1->_hasAllLoaded);
+  CacheProfiler::layoutToDot(nbCache, "foo3.dot", TestCacheItemLabeler());
+  
+  // add another item to the right of the existing one
+  TestCacheItem* tItem2 = new TestCacheItem(1024 * 1024, "01", "0");
+  nbCache->insert(tItem2);
+  Thread::sleepMs(100);
+  
+  // both have their previews loaded
+  CacheProfiler::layoutToDot(nbCache, "foo4.dot", TestCacheItemLabeler());
+  
+  // increase cache size to hold one full and a preview
+  nbCache->setMaxSize(1024.0 * 1024.0 + (1024.0 * 1024.0 * 0.3));
+  Thread::sleepMs(50);
+  assert(tItem1->_hasAllLoaded);
+  assert(tItem2->_hasPreviewLoaded);
+  CacheProfiler::layoutToDot(nbCache, "foo5.dot", TestCacheItemLabeler());
+  
+  delete nbCache;
+  return true;
+}
+
+bool testNavigation() {
+  // test navigation in NBand cache
+  NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 * 2.3);
+  nbCache->stop();
+  nbCache->insert(new TestCacheItem(1024 * 1024, "00", "0"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "01", "0"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "02", "0"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "00", "1"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "01", "1"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "02", "1"));
+  nbCache->insert(new TestCacheItem(1024 * 1024, "00", "2"));
+  
+  shared_ptr<NBandCachePtr> nbPtr = nbCache->getPointer("2");
+  assert(nbPtr.get() != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("00") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("2") == 0);
+  assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar01.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->right() == NULL);
+  nbCache->update();
+  //    CacheProfiler::layoutToDot(nbCache, "bar02.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->down() == NULL);
+  nbCache->update();
+  //    CacheProfiler::layoutToDot(nbCache, "bar03.dot", TestCacheItemLabeler());
+  
+  nbPtr->up();
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("00") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("1") == 0);
+  assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 1);
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 1);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
+  
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar04.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->right(true) != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("01") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("1") == 0);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 1);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 1);
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar05.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->right(true) != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("02") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("1") == 0);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 2);
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar06.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->right() == NULL);
+  nbCache->update();
+  //    CacheProfiler::layoutToDot(nbCache, "bar07.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->up() != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("00") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("0") == 0);
+  assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar08.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->down() != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("02") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("1") == 0);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 2);
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar09.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->up() != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("00") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("0") == 0);
+  assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
+  
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar11.dot", TestCacheItemLabeler());
+  
+  assert(nbPtr->down() != NULL);
+  assert(nbPtr->down() != NULL);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("00") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("2") == 0);
+  assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 2);
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
+  
+  nbCache->update();
+  CacheProfiler::layoutToDot(nbCache, "bar12.dot", TestCacheItemLabeler());
+  
+  // start deleting entries
+  nbPtr->up();
+  assert(((NBandCacheItem*)nbPtr->getItem())->getName().compare("02") == 0);
+  assert(((NBandCacheItem*)nbPtr->getItem())->getBand().compare("1") == 0);
+  nbCache->remove(((NBandCacheItem*)nbPtr->getItem())->_left); // removed 1.01
+  assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 1);
+  
+  nbCache->remove(((NBandCacheItem*)nbPtr->getItem())->_down->_otherBand->_currentItem); // removed 2.00
+  assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 0);
+  
+  nbCache->remove((NBandCacheItem*)nbPtr->getItem()); // removed 1.02
+  assert((NBandCacheItem*)nbPtr->getItem() == NULL);
+  
+  delete nbCache;
+  return true;
+}
+
+bool testProfiling() {
+  NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 * 4.8);
+  NBandCacheProfiler* profiler = new NBandCacheProfiler(nbCache, "test");
+  nbCache->stop();
+  nbCache->setProfiler(profiler);
+  srand ( time(NULL) );
+  int nrBands = 10 + rand() % 10;
+  for (int band = 0; band < nrBands; band++) {
+    std::stringstream ssBand;
+    ssBand << std::setw(2) << std::setfill('0') << band;
+    int nrItem = 10 + rand() % 20;
+    for (int entity = 0; entity < nrItem; entity++) {
+      std::stringstream ssEntity;
+      ssEntity << entity;
+      
+      nbCache->insert(new TestCacheItem(1024 * 1024, ssEntity.str(), ssBand.str()));
+    }
+  }
+  
+  shared_ptr<NBandCachePtr> nbPtr1 = nbCache->getPointer("00", 0);
+  for (int i = 0; i < nrBands; i++) {
+    int random = rand() % itemsToRight((NBandCacheItem*)nbPtr1->getItem());
+    for (int j = 0; j < random; j++) {
+      nbPtr1->right(true);
+    }
+    nbPtr1->down();
+  }
+  nbPtr1 = nbCache->getPointer("10");
+  
+  //    shared_ptr<NBandCachePtr> nbPtr2 = nbCache->getPointer("10", 10);
+  
+  nbCache->update();
+  
+  CacheProfiler::layoutToDot(nbCache, "baz.dot", TestCacheItemLabeler());
+  profiler->writeToPlot();
+  return true;
+}
+
+class TestRandomCacheItem : public RandomCacheItem {
+public:
+  TestRandomCacheItem(const string& name) : RandomCacheItem(name) {}
+  
+  uint64_t getSizeAtPressure(float pressure) {
+    return 0;
+  }
+  
+  void applyPressure(float pressure) {
+  }
+};
+
+class RandomCacheItemLabeler : public CacheItemLabeler {
+  const string label(SCacheItem* item) const {
+    return ((RandomCacheItem*)item)->_name;
+  }
+  
+	const string label(SCacheItem* item1, SCacheItem* item2) const {
+    return "";
+  }
+
+};
+
+bool testRandomCache() {
+  RandomCache* rCache = new RandomCache(1024 * 1024);
+  rCache->stop();
+  for (int i = 0; i < 20; i++) {
+    rCache->insert(new TestRandomCacheItem(toStr(i)));
+  }
+  rCache->connectItems(.2);
+  CacheProfiler::layoutToDot(rCache, "rCache.dot", RandomCacheItemLabeler());
+    
+  return true;
+}
+
 int main(int argc, char** argv, char** envp) {
 
-	{
-		// test pressure and relevance
-		NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 - 1);
-
-		// insert a single item
-		TestCacheItem* tItem1 = new TestCacheItem(1024 * 1024, "00", "0");
-		nbCache->insert(tItem1);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "foo1.dot", TestCacheItemLabeler("Single item without cache pointer"));
-
-		// we have no pointer, therefore no relevance
-		assert(!tItem1->_hasAllLoaded);
-		assert(!tItem1->_hasPreviewLoaded);
-
-		// get a pointer
-		shared_ptr<NBandCachePtr> nbPtr = nbCache->getPointer("0");
-		Thread::sleepMs(50);
-
-		// item is too big, preview only
-		assert(tItem1->_hasPreviewLoaded);
-		CacheProfiler::layoutToDot(nbCache, "foo2.dot", TestCacheItemLabeler());
-
-		// increase cache size for item to be fully loaded
-		nbCache->setMaxSize(1024 * 1024);
-		Thread::sleepMs(50);
-		assert(tItem1->_hasAllLoaded);
-		CacheProfiler::layoutToDot(nbCache, "foo3.dot", TestCacheItemLabeler());
-
-		// add another item to the right of the existing one
-		TestCacheItem* tItem2 = new TestCacheItem(1024 * 1024, "01", "0");
-		nbCache->insert(tItem2);
-		Thread::sleepMs(100);
-
-		// both have their previews loaded
-		CacheProfiler::layoutToDot(nbCache, "foo4.dot", TestCacheItemLabeler());
-
-		// increase cache size to hold one full and a preview
-		nbCache->setMaxSize(1024.0 * 1024.0 + (1024.0 * 1024.0 * 0.3));
-		Thread::sleepMs(50);
-		assert(tItem1->_hasAllLoaded);
-		assert(tItem2->_hasPreviewLoaded);
-		CacheProfiler::layoutToDot(nbCache, "foo5.dot", TestCacheItemLabeler());
-
-		delete nbCache;
-	}
-
-	{
-		// test navigation in NBand cache
-		NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 * 2.3);
-		nbCache->insert(new TestCacheItem(1024 * 1024, "00", "0"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "01", "0"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "02", "0"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "00", "1"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "01", "1"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "02", "1"));
-		nbCache->insert(new TestCacheItem(1024 * 1024, "00", "2"));
-
-		shared_ptr<NBandCachePtr> nbPtr = nbCache->getPointer("2");
-		assert(nbPtr.get() != NULL);
-		assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar01.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->right() == NULL);
-		Thread::sleepMs(50);
-//    CacheProfiler::layoutToDot(nbCache, "bar02.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->down() == NULL);
-		Thread::sleepMs(50);
-//    CacheProfiler::layoutToDot(nbCache, "bar03.dot", TestCacheItemLabeler());
-
-		nbPtr->up();
-		assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 1);
-		assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 1);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
-
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar04.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->right(true) != NULL);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 1);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 1);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar05.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->right(true) != NULL);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 2);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar06.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->right() == NULL);
-		Thread::sleepMs(50);
-//    CacheProfiler::layoutToDot(nbCache, "bar07.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->up() != NULL);
-		assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar08.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->down() != NULL);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 2);
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar09.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->up() != NULL);
-		assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
-
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar11.dot", TestCacheItemLabeler());
-
-		assert(nbPtr->down() != NULL);
-		assert(nbPtr->down() != NULL);
-		assert(bandsOnTop((NBandCacheItem*)nbPtr->getItem()) == 2);
-		assert(bandsBelow((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToRight((NBandCacheItem*)nbPtr->getItem()) == 0);
-		assert(itemsToLeft((NBandCacheItem*)nbPtr->getItem()) == 0);
-
-		Thread::sleepMs(50);
-		CacheProfiler::layoutToDot(nbCache, "bar12.dot", TestCacheItemLabeler());
-
-		delete nbCache;
-	}
-
-	{
-		NBandCache* nbCache = new NBandCache(1024.0 * 1024.0 * 4.8);
-		NBandCacheProfiler* profiler = new NBandCacheProfiler(nbCache, "test");
-		nbCache->stop();
-		nbCache->setProfiler(profiler);
-		srand ( time(NULL) );
-		int nrBands = 10 + rand() % 10;
-		for (int band = 0; band < nrBands; band++) {
-			std::stringstream ssBand;
-			ssBand << std::setw(2) << std::setfill('0') << band;
-			int nrItem = 10 + rand() % 20;
-			for (int entity = 0; entity < nrItem; entity++) {
-				std::stringstream ssEntity;
-				ssEntity << entity;
-
-				nbCache->insert(new TestCacheItem(1024 * 1024, ssEntity.str(), ssBand.str()));
-			}
-		}
-
-		shared_ptr<NBandCachePtr> nbPtr1 = nbCache->getPointer("00", 0);
-		for (int i = 0; i < nrBands; i++) {
-			int random = rand() % itemsToRight((NBandCacheItem*)nbPtr1->getItem());
-			for (int j = 0; j < random; j++) {
-				nbPtr1->right(true);
-			}
-			nbPtr1->down();
-		}
-		nbPtr1 = nbCache->getPointer("10");
-
-		//    shared_ptr<NBandCachePtr> nbPtr2 = nbCache->getPointer("10", 10);
-
-		nbCache->update();
-
-		CacheProfiler::layoutToDot(nbCache, "baz.dot", TestCacheItemLabeler());
-		profiler->writeToPlot();
-
-	}
+//  if (!testPaths())
+//    return EXIT_FAILURE;
+  if (!testRandomCache())
+    return EXIT_FAILURE;
+//  if (!testNodeLoading())
+//    return EXIT_FAILURE;
+//  if (!testNavigation())
+//    return EXIT_FAILURE;
+//  if (!testProfiling())
+//    return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }
 
 int itemsToLeft(NBandCacheItem* item) {

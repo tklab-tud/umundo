@@ -16,6 +16,7 @@ target_link_libraries(test-util-directory-monitoring ${UMUNDOS11N_LIBRARIES})
 set_target_properties(test-util-directory-monitoring PROPERTIES FOLDER "Tests")
 
 add_executable(test-util-structured-cache test-structured-cache.cpp
+	"../umundo/cache/RandomCache.cpp"
 	"../umundo/cache/StructuredCache.cpp"
 	"../umundo/cache/NBandCache.cpp"
 	"../umundo/cache/CacheProfiler.cpp"

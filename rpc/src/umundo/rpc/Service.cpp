@@ -331,8 +331,8 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 	assert(_requests.find(reqId) == _requests.end());
 	_requests[reqId] = new Monitor();
 	_rpcPub->send(rpcReqMsg);
-	_requests[reqId]->wait();
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
+	_requests[reqId]->wait(_mutex);
 	delete _requests[reqId];
 	_requests.erase(reqId);
 	out = _responses[reqId];
@@ -344,7 +344,7 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 void ServiceStub::receive(void* obj, Message* msg) {
 	if (msg->getMeta().find("um.rpc.respId") != msg->getMeta().end()) {
 		string respId = msg->getMeta("um.rpc.respId");
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		if (_requests.find(respId) != _requests.end()) {
 			_responses[respId] = obj;
 			_requests[respId]->signal();

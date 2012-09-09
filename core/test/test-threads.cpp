@@ -6,7 +6,7 @@ using namespace umundo;
 bool testRecursiveMutex() {
 	Mutex mutex;
 	UMUNDO_LOCK(mutex);
-	if(!mutex.tryLock()) {
+	if(!mutex.try_lock()) {
 		LOG_ERR("tryLock should be possible from within the same thread");
 		assert(false);
 	}
@@ -18,10 +18,11 @@ bool testRecursiveMutex() {
 }
 
 static Mutex testMutex;
+
 bool testThreads() {
 	class Thread1 : public Thread {
 		void run() {
-			if(testMutex.tryLock()) {
+			if(testMutex.try_lock()) {
 				LOG_ERR("tryLock should return false with a mutex locked in another thread");
 				assert(false);
 			}
@@ -46,7 +47,7 @@ bool testThreads() {
 	UMUNDO_UNLOCK(testMutex);  // unlock
 	Thread::sleepMs(20); // yield cpu and sleep
 	// thread1 sleeps with lock on mutex
-	if(testMutex.tryLock()) {
+	if(testMutex.try_lock()) {
 		LOG_ERR("tryLock should return false with a mutex locked in another thread");
 		assert(false);
 	}
@@ -67,7 +68,8 @@ bool testMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-			testMonitor.wait();
+      ScopeLock lock(testMutex);
+			testMonitor.wait(testMutex);
 			Thread::sleepMs(10); // avoid clash with other threads
 			passedMonitor++;
 		}
@@ -76,7 +78,7 @@ bool testMonitors() {
 	TestThread thread1(0);
 	TestThread thread2(5);
 	TestThread thread3(10);
-
+  testMutex = Mutex();
 	for (int i = 0; i < 10; i++) {
 		passedMonitor = 0;
 
@@ -89,13 +91,15 @@ bool testMonitors() {
 			LOG_ERR("%d threads already passed the monitor", passedMonitor);
 			assert(false);
 		}
-		UMUNDO_SIGNAL(testMonitor); // signal a single thread
-		Thread::sleepMs(40); // thread will increase passedMonitor
-		if(passedMonitor != 1) {
-			LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
-			assert(false);
-		}
-		UMUNDO_BROADCAST(testMonitor); // signal all other threads
+    {
+      UMUNDO_SIGNAL(testMonitor); // signal a single thread
+      Thread::sleepMs(40); // thread will increase passedMonitor
+      if(passedMonitor != 1) {
+        LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
+        assert(false);
+      }
+    }
+    UMUNDO_BROADCAST(testMonitor); // signal all other threads
 		Thread::sleepMs(40);
 
 		if (thread1.isStarted() || thread2.isStarted() || thread3.isStarted()) {
@@ -106,6 +110,7 @@ bool testMonitors() {
 	return true;
 }
 
+static Mutex testTimedMutex;
 static Monitor testTimedMonitor;
 static int passedTimedMonitor = 0;
 
@@ -114,32 +119,34 @@ bool testTimedMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-			testTimedMonitor.wait(_ms);
+      ScopeLock lock(testTimedMutex);
+			testTimedMonitor.wait(testTimedMutex, _ms);
 			passedTimedMonitor++;
 		}
 	};
 
-	TestThread thread1(100);
+	TestThread thread1(1000);
 	TestThread thread2(0); // waits forever
 	TestThread thread3(0); // waits forever
 	TestThread thread4(0); // waits forever
 	TestThread thread5(0); // waits forever
-
-	for (int i = 0; i < 10; i++) {
+  testTimedMutex = Mutex();
+  
+	for (int i = 0; i < 2; i++) {
 		// test waiting for a given time
+		testTimedMonitor = Monitor();
 		passedTimedMonitor = 0;
-		testTimedMonitor.reset();
 
 		thread1.start(); // wait for 100ms at mutex before resuming
-		Thread::sleepMs(50);
+		Thread::sleepMs(100);
 		assert(passedTimedMonitor == 0); // thread1 should not have passed
-		Thread::sleepMs(200);
+		Thread::sleepMs(1500);
 		assert(passedTimedMonitor == 1); // thread1 should have passed
 		assert(!thread1.isStarted());
 
 		// test signalling a set of threads
 		passedTimedMonitor = 0;
-		testTimedMonitor.reset();
+		testTimedMonitor = Monitor();
 
 		thread2.start();
 		thread3.start();
@@ -159,43 +166,26 @@ bool testTimedMonitors() {
 
 		// test timed and unlimited waiting
 		passedTimedMonitor = 0;
-		testTimedMonitor.reset();
+		testTimedMonitor = Monitor();
 
 		thread1.start();
 		thread2.start(); // with another thread
 		thread3.start(); // with another thread
 		Thread::sleepMs(10);
 		testTimedMonitor.signal(); // explicit signal
-		Thread::sleepMs(30);
+		Thread::sleepMs(50);
 		assert(passedTimedMonitor == 1);
 		// wo do not know which thread passed
 		assert(!thread1.isStarted() || !thread2.isStarted() || !thread3.isStarted());
 		if (thread1.isStarted()) {
 			// thread1 is still running, just wait
-			Thread::sleepMs(100);
+			Thread::sleepMs(1000);
 			assert(passedTimedMonitor == 2);
 		}
 		testTimedMonitor.broadcast(); // explicit signal
 		Thread::sleepMs(100);
 		assert(passedTimedMonitor == 3);
 		assert(!thread1.isStarted() && !thread2.isStarted() && !thread3.isStarted());
-
-		Thread::sleepMs(100);
-		// test signalling prior to waiting
-		passedTimedMonitor = 0;
-		testTimedMonitor.reset();
-
-		testTimedMonitor.signal();
-		thread2.start();
-		Thread::sleepMs(200);
-		assert(passedTimedMonitor == 1);
-		assert(!thread1.isStarted());
-		testTimedMonitor.signal();
-		Thread::sleepMs(40);
-
-		assert(!thread1.isStarted());
-		assert(!thread2.isStarted());
-		assert(!thread3.isStarted());
 
 	}
 	return true;

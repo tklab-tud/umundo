@@ -54,6 +54,7 @@ fi
 echo -n "Build umundo for Android? [y/N]: "; read BUILD_ANDROID
 if [ "$BUILD_ANDROID" == "y" ] || [ "$BUILD_ANDROID" == "Y" ]; then
 	echo == BUILDING UMUNDO FOR Android =========================================================
+	export ANDROID_NDK=/Developer/Applications/android-ndk-r8
 	${DIR}/../build-umundo-android.sh
 fi
 

@@ -319,7 +319,7 @@ Traceable::Traceable() {
 }
 
 Traceable::~Traceable() {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	if (_traceFile) {
 		_traceFile->flush();
 	}
@@ -327,7 +327,7 @@ Traceable::~Traceable() {
 
 bool Traceable::setTraceFile(const std::string& filename) {
 	_traceFileName = filename;
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	if (_files.find(_traceFileName) == _files.end() || _files[_traceFileName].lock() == NULL) {
 		_traceFile = boost::shared_ptr<std::ofstream>(new std::ofstream(_traceFileName.c_str()));
 		if (!_traceFile)
@@ -341,7 +341,7 @@ bool Traceable::setTraceFile(const std::string& filename) {
 
 void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::string> info) {
 	if (_traceFile) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 
 		info["threadId"] = toStr(Thread::getThreadId());
 		info["this"] = toStr(this);

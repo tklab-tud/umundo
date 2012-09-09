@@ -51,7 +51,7 @@ std::set<umundo::Subscriber*> ServiceManager::getSubscribers() {
  * Send all local continuous queries.
  */
 void ServiceManager::welcome(Publisher*, const string nodeId, const string subId) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
 	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp>::iterator queryIter = _localQueries.begin();
 	while (queryIter != _localQueries.end()) {
@@ -77,7 +77,7 @@ void ServiceManager::welcome(Publisher*, const string nodeId, const string subId
  * A ServiceManager was removed.
  */
 void ServiceManager::farewell(Publisher*, const string nodeId, const string subId) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 
 	// did this publisher responded to our queries before?
@@ -102,7 +102,7 @@ void ServiceManager::farewell(Publisher*, const string nodeId, const string subI
 
 
 void ServiceManager::addedToNode(Node* node) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	map<intptr_t, Service*>::iterator svcIter = _svc.begin();
 	while(svcIter != _svc.end()) {
 		node->connect(svcIter->second);
@@ -112,7 +112,7 @@ void ServiceManager::addedToNode(Node* node) {
 }
 
 void ServiceManager::removedFromNode(Node* node) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	if (_nodes.find(node) == _nodes.end())
 		return;
 
@@ -130,7 +130,7 @@ void ServiceManager::removedFromNode(Node* node) {
  * Remember service filter and send query to all connected ServiceManagers.
  */
 void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescription>* listener) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	_localQueries[filter] = listener;
 	Message* queryMsg = filter->toMessage();
 	queryMsg->putMeta("um.rpc.type", "startDiscovery");
@@ -142,7 +142,7 @@ void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescript
 }
 
 void ServiceManager::stopQuery(ServiceFilter* filter) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	if (_localQueries.find(filter) != _localQueries.end()) {
 		Message* unqueryMsg = filter->toMessage();
 		unqueryMsg->putMeta("um.rpc.type", "stopDiscovery");
@@ -173,8 +173,8 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 	_svcPub->send(findMsg);
 	delete findMsg;
 
-	_findRequests[reqId]->wait(3000);
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
+	_findRequests[reqId]->wait(_mutex, 3000);
 	delete _findRequests[reqId];
 	_findRequests.erase(reqId);
 
@@ -212,7 +212,7 @@ std::set<ServiceDescription*> ServiceManager::findLocal(ServiceFilter* svcFilter
 }
 
 void ServiceManager::receive(Message* msg) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	// is this a response for one of our requests?
 	if (msg->getMeta().find("um.rpc.respId") != msg->getMeta().end()) {
 		string respId = msg->getMeta("um.rpc.respId");
@@ -320,7 +320,7 @@ void ServiceManager::addService(Service* service) {
 }
 
 void ServiceManager::addService(Service* service, ServiceDescription* desc) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	if (service == NULL)
 		return;
@@ -359,7 +359,7 @@ void ServiceManager::addService(Service* service, ServiceDescription* desc) {
 }
 
 void ServiceManager::removeService(Service* service) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	if (service == NULL)
 		return;

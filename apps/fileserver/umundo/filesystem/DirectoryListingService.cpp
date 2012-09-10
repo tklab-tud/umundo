@@ -144,7 +144,7 @@ void DirectoryListingService::notifyRemovedFile(const string& fileName, struct s
 }
 
 void DirectoryListingService::updateEntries() {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	// stat directory for modification date
 	struct stat dirStat;

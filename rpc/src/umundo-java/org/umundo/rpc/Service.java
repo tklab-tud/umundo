@@ -38,10 +38,10 @@ public abstract class Service extends ServiceStub implements ITypedReceiver {
 	
 	@Override
 	public void receiveObject(Object object, Message msg) {
-		if (msg.getMeta().containsKey("methodName")) {
-			String methodName = msg.getMeta("methodName");
-			String inType = msg.getMeta("type");
-			String outType = msg.getMeta("outType");
+		if (msg.getMeta().containsKey("um.rpc.method")) {
+			String methodName = msg.getMeta("um.rpc.method");
+			String inType = msg.getMeta("um.s11n.type");
+			String outType = msg.getMeta("um.rpc.outType");
 			Object out = null;
 			try {
 				out = callMethod(methodName, (MessageLite)object, inType, outType);
@@ -50,7 +50,7 @@ public abstract class Service extends ServiceStub implements ITypedReceiver {
 				e.printStackTrace();
 			}
 			Message rpcReplMsg = _rpcPub.prepareMessage(outType, (MessageLite) out);
-			rpcReplMsg.putMeta("respId", msg.getMeta("reqId"));
+			rpcReplMsg.putMeta("um.rpc.respId", msg.getMeta("um.rpc.reqId"));
 			_rpcPub.send(rpcReplMsg);
 		}
 

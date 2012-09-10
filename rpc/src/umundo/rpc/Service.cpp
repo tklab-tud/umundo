@@ -67,8 +67,8 @@ ServiceFilter::ServiceFilter(Message* msg) {
 		string key = metaIter->first;
 		string value = metaIter->second;
 
-		if (key.compare(0, 6, "um.rpc.filter.value.") == 0) {
-			key = key.substr(6, key.length());
+		if (key.compare(0, 20, "um.rpc.filter.value.") == 0) {
+			key = key.substr(20, key.length());
 			assert(meta.find("um.rpc.filter.pattern." + key) != meta.end());
 			assert(meta.find("um.rpc.filter.pred." + key) != meta.end());
 
@@ -256,8 +256,8 @@ ServiceDescription::ServiceDescription(Message* msg) {
 	while(metaIter != msg->getMeta().end()) {
 		string key = metaIter->first;
 		string value = metaIter->second;
-		if (key.length() > 5 && key.compare(0, 12, "um.rpc.desc.") == 0) {
-			key = key.substr(5, key.length());
+		if (key.length() > 12 && key.compare(0, 12, "um.rpc.desc.") == 0) {
+			key = key.substr(12, key.length());
 			_properties[key] = value;
 		}
 		metaIter++;

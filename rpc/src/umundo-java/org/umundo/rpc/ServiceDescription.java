@@ -27,12 +27,12 @@ public class ServiceDescription {
 	protected ServiceManager _svcMgr;
 
 	public ServiceDescription(Message msg) {
-		_svcName = msg.getMeta("desc:name");
-		_channelName = msg.getMeta("desc:channel");
+		_svcName = msg.getMeta("um.rpc.desc.name");
+		_channelName = msg.getMeta("um.rpc.desc.channel");
 		for (String key : msg.getMeta().keySet()) {
 			String value = msg.getMeta(key);
-			if (key.length() > 5 && key.substring(0, 5).compareTo("desc:") == 0) {
-				key = key.substring(5, key.length());
+			if (key.length() > 12 && key.substring(0, 12).compareTo("um.rpc.desc.") == 0) {
+				key = key.substring(12, key.length());
 				_properties.put(key, value);
 			}
 		}
@@ -47,10 +47,10 @@ public class ServiceDescription {
 		Message msg = new Message();
 		for (String key : _properties.keySet()) {
 			String value = _properties.get(key);
-			msg.putMeta("desc:" + key, value);
+			msg.putMeta("um.rpc.desc." + key, value);
 		}
-		msg.putMeta("desc:name", _svcName);
-		msg.putMeta("desc:channel", _channelName);
+		msg.putMeta("um.rpc.desc.name", _svcName);
+		msg.putMeta("um.rpc.desc.channel", _channelName);
 		return msg;
 	}
 

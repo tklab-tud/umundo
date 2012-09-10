@@ -43,7 +43,7 @@ SCache::~SCache() {
  * The maximum size for the cache in bytes.
  */
 void SCache::setMaxSize(uint64_t maxSize) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	_maxSize = maxSize;
 	// have the cache thread remanage its items
 	_monitor.signal();
@@ -65,7 +65,7 @@ uint64_t SCache::getSizeAtPressure(float pressure, bool breakEarly) {
 }
 
 void SCache::update() {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	resetDistance();
 
@@ -144,14 +144,15 @@ void SCache::update() {
  * Caclulate relevance and apply pressure.
  */
 void SCache::run() {
-	while(_monitor.wait() && isStarted()) {
-		ScopeLock lock(&_mutex);
+	while(isStarted()) {
+		ScopeLock lock(_mutex);
+    _monitor.wait(_mutex);
 		update();
 	}
 }
 
 void SCache::resetDistance() {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 
 	// set distance to infinity and paths to none
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();

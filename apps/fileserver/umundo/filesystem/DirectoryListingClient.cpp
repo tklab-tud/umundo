@@ -42,7 +42,7 @@ std::set<umundo::Subscriber*> DirectoryListingClient::getSubscribers() {
 }
 
 std::vector<shared_ptr<DirectoryEntry> > DirectoryListingClient::list(const string& pattern) {
-	ScopeLock lock(&_mutex);
+	ScopeLock lock(_mutex);
 	DirectoryListingRequest* req = new DirectoryListingRequest();
 	req->set_pattern(pattern);
 	DirectoryListingReply* reply = DirectoryListingServiceStub::list(req);
@@ -66,7 +66,7 @@ void DirectoryListingClient::receive(void* object, Message* msg) {
 	ServiceStub::receive(object, msg);
 
 	if (msg->getMeta().find("operation") != msg->getMeta().end()) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		string op = msg->getMeta("operation");
 		DirectoryEntry* dirEntry = new DirectoryEntry(*(DirectoryEntry*)object);
 		string key = dirEntry->path() + ":" + dirEntry->name();

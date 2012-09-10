@@ -60,8 +60,8 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 
 	@Override
 	public void receiveObject(Object object, Message msg) {
-		if (msg.getMeta().containsKey("respId")) {
-			String respId = msg.getMeta("respId");
+		if (msg.getMeta().containsKey("um.rpc.respId")) {
+			String respId = msg.getMeta("um.rpc.respId");
 			if (_requests.containsKey(respId)) {
 				_responses.put(respId, object);
 				synchronized (_requests.get(respId)) {
@@ -74,9 +74,9 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 	public Object callStubMethod(String name, MessageLite in, String inType, String outType) throws InterruptedException {
 		Message rpcReqMsg = _rpcPub.prepareMessage(inType, in);
 		String reqId = UUID.randomUUID().toString();
-		rpcReqMsg.putMeta("reqId", reqId);
-		rpcReqMsg.putMeta("methodName", name);
-		rpcReqMsg.putMeta("outType", outType);
+		rpcReqMsg.putMeta("um.rpc.reqId", reqId);
+		rpcReqMsg.putMeta("um.rpc.method", name);
+		rpcReqMsg.putMeta("um.rpc.outType", outType);
 		_requests.put(reqId, new Object());
 		synchronized (_requests.get(reqId)) {
 			//System.out.println("Waiting");

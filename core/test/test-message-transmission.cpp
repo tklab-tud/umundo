@@ -6,6 +6,7 @@
 #define BUFFER_SIZE 1024*1024
 
 using namespace umundo;
+using namespace std;
 
 static int nrReceptions = 0;
 static int bytesRecvd = 0;
@@ -30,26 +31,28 @@ class TestReceiver : public Receiver {
 	}
 };
 
-int main(int argc, char** argv, char** envp) {
+bool testMessageTransmission() {
 	hostId = Host::getHostId();
 	for (int i = 0; i < 2; i++) {
 		nrReceptions = 0;
 		bytesRecvd = 0;
-
+    
 		Node* pubNode = new Node(hostId + "foo");
 		Publisher* pub = new Publisher("foo");
 		pubNode->addPublisher(pub);
-
+    
+    TestReceiver* testRecv = new TestReceiver();
 		Node* subNode = new Node(hostId + "foo");
-		Subscriber* sub = new Subscriber("foo", new TestReceiver());
+		Subscriber* sub = new Subscriber("foo", testRecv);
+    sub->setReceiver(testRecv);
 		subNode->addSubscriber(sub);
-
+    
 		pub->waitForSubscribers(1);
 		assert(pub->waitForSubscribers(0) == 1);
-
+    
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, 40, BUFFER_SIZE);
-
+    
 		for (int j = 0; j < 100; j++) {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
 			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
@@ -57,18 +60,18 @@ int main(int argc, char** argv, char** envp) {
 			pub->send(msg);
 			delete msg;
 		}
-
+    
 		// wait until all messages are delivered
 		Thread::sleepMs(500);
-
+    
 		// sometimes there is some weird latency
 		if (nrReceptions < 100)
 			Thread::sleepMs(2000);
-
+    
 		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == 100);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
-
+    
 		int iterations = 5;
 		while(iterations-- > 0) {
 			nrReceptions = 0;
@@ -82,7 +85,7 @@ int main(int argc, char** argv, char** envp) {
 			Thread::sleepMs(100);
 			std::cout << nrReceptions * 100 << " messages per second" << std::endl;
 		}
-
+    
 		// test explicit sub removal
 		subNode->removeSubscriber(sub);
 		for (int k = 0; k < 8; k++) {
@@ -91,12 +94,12 @@ int main(int argc, char** argv, char** envp) {
 			Thread::sleepMs(50);
 		}
 		assert(pub->waitForSubscribers(0) == 0);
-
+    
 #if 0
 		// The node still tells everyone else that the subscriber unsubscribed
 		subNode->addSubscriber(sub);
 		pub->waitForSubscribers(1);
-
+    
 		// test node destruction
 		delete subNode;
 		for (int k = 0; k < 8; k++) {
@@ -107,11 +110,18 @@ int main(int argc, char** argv, char** envp) {
 		assert(pub->waitForSubscribers(0) == 0);
 #endif
 		pubNode->removePublisher(pub);
-
+    
 		delete pubNode;
 		delete pub;
 		delete sub;
-
+    
 	}
-	return EXIT_SUCCESS;
+  return true;
+}
+
+
+int main(int argc, char** argv, char** envp) {
+  if (!testMessageTransmission())
+    return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }

@@ -17,7 +17,7 @@ package org.umundo.rpc;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.UUID;
 import org.umundo.core.Message;
 
 public class ServiceFilter {
@@ -33,36 +33,47 @@ public class ServiceFilter {
 
 	public ServiceFilter(String svcName) {
 		_svcName = svcName;
+		_uuid = UUID.randomUUID().toString();
 	}
 
 	public ServiceFilter(Message msg) {
-		_svcName = msg.getMeta("serviceName");
+		_svcName = msg.getMeta("um.rpc.filter.svcName");
 		for (String key : msg.getMeta().keySet()) {
-			if (key.length() > 5 && key.substring(0, 5).compareTo("cond:") == 0) {
+			if (key.length() > 20 && key.substring(0, 20).compareTo("um.rpc.filter.value.") == 0) {
 				String value = msg.getMeta(key);
-				key = key.substring(5, key.length());
-				_condition.put(key, value);
-				if (msg.getMeta().containsKey("pred:" + key)) {
-					_predicate.put(key, Integer.valueOf(msg.getMeta().get("pred:" + key)));
-				}
+				key = key.substring(20, key.length());
+				_value.put(key, value);
+				_pattern.put(key, msg.getMeta("um.rpc.filter.pattern." + key));
+				_predicate.put(key, Integer.valueOf(msg.getMeta("um.rpc.filter.pred." + key)));
 			}
 		}
 	}
 
 	public Message toMessage() {
 		Message msg = new Message();
-		msg.putMeta("serviceName", _svcName);
-		for (String key : _condition.keySet()) {
-			msg.putMeta("cond:" + key, _condition.get(key));
+		msg.putMeta("um.rpc.filter.svcName", _svcName);
+		msg.putMeta("um.rpc.filter.uuid", _uuid);
+		for (String key : _value.keySet()) {
+			msg.putMeta("um.rpc.filter.value." + key, _value.get(key));
 		}
+
+		for (String key : _pattern.keySet()) {
+			msg.putMeta("um.rpc.filter.pattern." + key, _pattern.get(key));
+		}
+		
 		for (String key : _predicate.keySet()) {
-			msg.putMeta("pred:" + key, Integer.toString(_predicate.get(key)));
+			msg.putMeta("um.rpc.filter.pred." + key, _predicate.get(key).toString());
 		}
 		return msg;
 	}
 
-	public void addRule(String key, String pattern, int pred) {
-		_condition.put(key, pattern);
+	public void addRule(String key, String value, int pred) {
+		addRule(key, ".*", value, pred);
+	}
+
+	public void addRule(String key, String pattern, String value, int pred) {
+		_pattern.put(key, pattern);
+		_value.put(key, value);
 		_predicate.put(key, pred);
 	}
 
@@ -72,16 +83,18 @@ public class ServiceFilter {
 			return false;
 
 		// check filter
-		for (String key : _condition.keySet()) {
-			String pattern = _condition.get(key);
-			String value = svcDesc.getProperty(key);
-			int pred = OP_EQUALS;
+		for (String key : _value.keySet()) {
+			String actual = svcDesc.getProperty(key);  // the actual string as it is present in the description
+			String target = _value.get(key);                // the substring from the filter
+			String pattern = _pattern.get(key);             // the pattern that will transform the actual string into a substring
+			int pred = _predicate.get(key);                 // the relation between filter and description sting
+
 			if (_predicate.containsKey(key))
 				pred = _predicate.get(key);
 
 			switch (pred) {
 			case OP_EQUALS:
-				if (pattern.compareTo(value) != 0) {
+				if (pattern.compareTo(target) != 0) {
 					return false;
 				}
 				break;
@@ -94,7 +107,9 @@ public class ServiceFilter {
 	}
 
 	String _svcName;
-	Map<String, String> _condition = new HashMap<String, String>();
+	String _uuid;
+	Map<String, String> _pattern = new HashMap<String, String>();
+	Map<String, String> _value = new HashMap<String, String>();
 	Map<String, Integer> _predicate = new HashMap<String, Integer>();
 
 }

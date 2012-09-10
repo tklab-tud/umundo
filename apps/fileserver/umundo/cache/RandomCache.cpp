@@ -30,7 +30,7 @@ namespace umundo {
   }
   
   shared_ptr<RandomCachePtr> RandomCache::getPointer(const string& name) {
-    ScopeLock lock(&_mutex);
+    ScopeLock lock(_mutex);
     shared_ptr<RandomCachePtr> ptr = shared_ptr<RandomCachePtr>(new RandomCachePtr());
     if (_items.find(name) != _items.end())
       ptr->_item = _items[name];

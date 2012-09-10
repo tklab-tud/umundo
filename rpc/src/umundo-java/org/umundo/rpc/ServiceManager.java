@@ -36,9 +36,10 @@ public class ServiceManager extends Connectable {
 
 		@Override
 		public void receive(Message msg) {
+			HashMap<String, String> meta = msg.getMeta();
 			// is someone answering one of our requests
-			if (msg.getMeta().containsKey("respId")) {
-				String respId = msg.getMeta("respId");
+			if (msg.getMeta().containsKey("um.rpc.respId")) {
+				String respId = msg.getMeta("um.rpc.respId");
 				if (_findRequests.containsKey(respId)) {
 					_findResponses.put(respId, msg);
 					synchronized (_findRequests.get(respId)) {
@@ -49,14 +50,15 @@ public class ServiceManager extends Connectable {
 			}
 
 			// is someone asking for a service?
-			if (msg.getMeta().containsKey("type") && msg.getMeta("type").compareTo("serviceDisc") == 0) {
+			if (msg.getMeta().containsKey("um.s11n.type") && msg.getMeta("um.s11n.type").compareTo("discover") == 0) {
 				ServiceFilter filter = new ServiceFilter(msg);
 				for (Service svc : _svc.keySet()) {
 					ServiceDescription svcDesc = _svc.get(svc);
 					if (filter.matches(svcDesc)) {
 						Message foundMsg = svcDesc.toMessage();
-						foundMsg.putMeta("respId", msg.getMeta("reqId"));
-						foundMsg.putMeta("desc:channel", svc.getChannelName());
+						foundMsg.putMeta("um.s11n.respId", msg.getMeta("um.s11n.reqId"));
+						foundMsg.putMeta("um.rpc.channel", svc.getChannelName());
+						foundMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
 						_svcPub.send(foundMsg);
 					}
 				}
@@ -99,8 +101,9 @@ public class ServiceManager extends Connectable {
 	public synchronized ServiceDescription find(ServiceFilter filter) throws InterruptedException {
 		Message findMsg = filter.toMessage();
 		String reqId = UUID.randomUUID().toString();
-		findMsg.putMeta("type", "serviceDisc");
-		findMsg.putMeta("reqId", reqId);
+		findMsg.putMeta("um.rpc.type", "discover");
+		findMsg.putMeta("um.rpc.reqId", reqId);
+		findMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
 		_svcPub.waitForSubscribers(1);
 		_svcPub.send(findMsg);
 

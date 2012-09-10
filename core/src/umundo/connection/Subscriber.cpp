@@ -49,8 +49,8 @@ Subscriber::Subscriber(string channelName) {
 
 void Subscriber::setReceiver(Receiver* receiver) {
 	_impl->setReceiver(receiver);
-	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
-	_impl->init(_config);
+// _config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
+// _impl->init(_config);
 }
 
 }

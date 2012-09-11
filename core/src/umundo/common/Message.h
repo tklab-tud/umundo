@@ -52,15 +52,15 @@ public:
 		return "UNKNOWN";
 	}
 
-	Message() : _data(NULL), _size(0) {}
-	Message(const char* data, size_t length) : _data(NULL), _size(length) {
+	Message() : _data(NULL), _size(0), _isQueued(false) {}
+	Message(const char* data, size_t length) : _data(NULL), _size(length), _isQueued(false) {
 		if (_size > 0) {
 			_data = (char*)malloc(_size);
 			memcpy(_data, data, _size);
 		}
 	}
 
-	Message(const Message& other) : _data(NULL), _size(other.size()) {
+	Message(const Message& other) : _data(NULL), _size(other.size()), _isQueued(other._isQueued) {
 		if (_size > 0) {
 			_data = (char*)malloc(_size);
 			memcpy(_data, other.data(), _size);
@@ -115,6 +115,13 @@ public:
 		return keys;
 	}
 
+  void setQueued(bool isQueued) {
+    _isQueued = isQueued;
+  }
+  bool isQueued() {
+    return _isQueued;
+  }
+  
 	void setReceiver(const string& uuid) {
 		putMeta("um.sub", uuid);
 	}
@@ -128,6 +135,7 @@ public:
 protected:
 	char* _data;
 	size_t _size;
+	bool _isQueued;
 	map<string, string> _meta;
 };
 }

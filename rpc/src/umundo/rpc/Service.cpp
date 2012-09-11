@@ -36,25 +36,27 @@ Message* ServiceFilter::toMessage() {
 	msg->putMeta("um.rpc.filter.svcName", _svcName);
 	msg->putMeta("um.rpc.filter.uuid", _uuid);
 
-	map<string, string>::iterator valIter = _value.begin();
-	while(valIter != _value.end()) {
-		msg->putMeta("um.rpc.filter.value." + valIter->first, valIter->second);
-		valIter++;
-	}
+  vector<Rule>::iterator ruleIter = _rules.begin();
+  int i = 0;
+	while(ruleIter != _rules.end()) {
+    std::stringstream ssValueKey;
+    std::stringstream ssPatternKey;
+    std::stringstream ssPredKey;
+    
+    ssValueKey << "um.rpc.filter.value." << i << "." << ruleIter->key;
+    msg->putMeta(ssValueKey.str(), ruleIter->value);
 
-	map<string, string>::iterator patternIter = _pattern.begin();
-	while(patternIter != _pattern.end()) {
-		msg->putMeta("um.rpc.filter.pattern." + patternIter->first, patternIter->second);
-		patternIter++;
-	}
+    ssPatternKey << "um.rpc.filter.pattern." << i << "." << ruleIter->key;
+    msg->putMeta(ssPatternKey.str(), ruleIter->pattern);
 
-	map<string, int>::iterator predIter = _predicate.begin();
-	while(predIter != _predicate.end()) {
-		std::stringstream ss;
-		ss << predIter->second;
-		msg->putMeta("um.rpc.filter.pred." + predIter->first, ss.str());
-		predIter++;
-	}
+    std::stringstream ssPredValue;
+    ssPredValue << ruleIter->predicate;
+    
+    ssPredKey << "um.rpc.filter.pred." << i << "." << ruleIter->key;
+    msg->putMeta(ssPredKey.str(), ssPredValue.str());
+
+    i++; ruleIter++;
+  }  
 	return msg;
 }
 
@@ -67,14 +69,24 @@ ServiceFilter::ServiceFilter(Message* msg) {
 		string key = metaIter->first;
 		string value = metaIter->second;
 
-		if (key.compare(0, 20, "um.rpc.filter.value.") == 0) {
-			key = key.substr(20, key.length());
-			assert(meta.find("um.rpc.filter.pattern." + key) != meta.end());
-			assert(meta.find("um.rpc.filter.pred." + key) != meta.end());
+		if (key.size() > 20 && key.compare(0, 20, "um.rpc.filter.value.") == 0) {
+      size_t dotPos = key.find(".", 20);
+      if (dotPos == std::string::npos)
+        continue;
 
-			_value[key] = value;
-			_pattern[key] = meta["um.rpc.filter.pattern." + key];
-			_predicate[key] = (Predicate)atoi(meta["um.rpc.filter.pred." + key].c_str());
+      string indexStr(key.substr(20, dotPos - 20));
+
+			key = key.substr(20 + 1 + indexStr.length(), key.length() - (20 + indexStr.length()));
+			assert(meta.find("um.rpc.filter.pattern." + indexStr + "." + key) != meta.end());
+			assert(meta.find("um.rpc.filter.pred." + indexStr + "." + key) != meta.end());
+
+      Rule rule;
+      rule.key = key;
+      rule.value = value;
+      rule.predicate = (Predicate)atoi(meta["um.rpc.filter.pred." + indexStr + "." + key].c_str());
+      rule.pattern = meta["um.rpc.filter.pattern." + indexStr + "." + key];
+
+      _rules.push_back(rule);
 		}
 		metaIter++;
 	}
@@ -85,15 +97,17 @@ void ServiceFilter::addRule(const string& key, const string& value, int pred) {
 }
 
 void ServiceFilter::addRule(const string& key, const string& pattern, const string& value, int pred) {
-	_pattern[key] = pattern;
-	_value[key] = value;
-	_predicate[key] = pred;
+  // @TODO: we cannot use a map here!
+  Rule rule;
+  rule.pattern = pattern;
+  rule.key = key;
+  rule.value = value;
+  rule.predicate = pred;
+  _rules.push_back(rule);
 }
 
 void ServiceFilter::clearRules() {
-	_pattern.clear();
-	_value.clear();
-	_predicate.clear();
+	_rules.clear();
 }
 
 bool ServiceFilter::matches(ServiceDescription* svcDesc) {
@@ -102,19 +116,24 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 		return false;
 
 	// check filter
-	map<string, string>::iterator condIter = _value.begin();
-	while(condIter != _value.end()) {
+	vector<Rule>::iterator ruleIter = _rules.begin();
+	while(ruleIter != _rules.end()) {
 
 		/* A condition is true, if the matched substring from the value for key of
 		 * the service description is in the relation given by the predicate to the
 		 * filter value.
 		 */
+    
+		string key = ruleIter->key;                     // the key for the values
+    if (!svcDesc->hasProperty(key)) {
+      ruleIter++;
+      continue;
+    }
 
-		string key = condIter->first;               // the key for the values
-		string actual = svcDesc->getProperty(key);  // the actual string as it is present in the description
-		string target = _value[key];                // the substring from the filter
-		string pattern = _pattern[key];             // the pattern that will transform the actual string into a substring
-		int pred = _predicate[key];                 // the relation between filter and description sting
+		string actual = svcDesc->getProperty(key);      // the actual string as it is present in the description
+		string target = ruleIter->value;                // the substring from the filter
+		string pattern = ruleIter->pattern;             // the pattern that will transform the actual string into a substring
+		int pred = ruleIter->predicate;                 // the relation between filter and description sting
 		Regex regex(pattern);
 
 		bool numericMode = false;
@@ -132,9 +151,9 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 		// if we matched a substring with (regex) notation, use it
 		string substring;
 		if (regex.hasSubMatches()) {
-			substring = actual.substr(regex.getSubMatches()[0].first, regex.getSubMatches()[0].second);
+			substring = regex.getSubMatches()[0];
 		} else {
-			substring = actual.substr(regex.getMatch().first, regex.getMatch().second);
+			substring = regex.getMatch();
 		}
 
 		// use numeric mode with OP_EQUALS, OP_LESS and OP_GREATER?
@@ -214,7 +233,7 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 			break;
 		}
 
-		condIter++;
+		ruleIter++;
 	}
 	return true;
 }
@@ -240,18 +259,18 @@ double ServiceFilter::toNumber(const string& numberString) {
 	return d;
 }
 
-ServiceDescription::ServiceDescription(const string& svcName) {
-	_svcName = svcName;
+ServiceDescription::ServiceDescription() {
 }
 
-ServiceDescription::ServiceDescription(const string& svcName, map<string, string> properties) {
-	_svcName = svcName;
+ServiceDescription::ServiceDescription(map<string, string> properties) {
 	_properties = properties;
 }
 
 ServiceDescription::ServiceDescription(Message* msg) {
 	_svcName = msg->getMeta("um.rpc.desc.name");
 	_channelName = msg->getMeta("um.rpc.desc.channel");
+	assert(_svcName.size() > 0);
+	assert(_channelName.size() > 0);
 	map<string, string>::const_iterator metaIter = msg->getMeta().begin();
 	while(metaIter != msg->getMeta().end()) {
 		string key = metaIter->first;
@@ -271,6 +290,8 @@ Message* ServiceDescription::toMessage() {
 		msg->putMeta("um.rpc.desc." + propIter->first, propIter->second);
 		propIter++;
 	}
+	assert(_svcName.size() > 0);
+	assert(_channelName.size() > 0);
 	msg->putMeta("um.rpc.desc.name", _svcName);
 	msg->putMeta("um.rpc.desc.channel", _channelName);
 	return msg;

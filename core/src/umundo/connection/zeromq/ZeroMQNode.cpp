@@ -540,7 +540,7 @@ void ZeroMQNode::added(shared_ptr<NodeStub> node) {
 
 		// give the socket an id for zeroMQ routing
 		zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_connect(client, ss.str().c_str()) && LOG_WARN("zmq_connect: %s",zmq_strerror(errno));
+		zmq_connect(client, ss.str().c_str()) && LOG_WARN("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
 
 		// remember node stub and socket
 		_nodes[node->getUUID()] = node;

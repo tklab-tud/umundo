@@ -82,9 +82,22 @@ ZeroMQPublisher::ZeroMQPublisher() {
 
 ZeroMQPublisher::~ZeroMQPublisher() {
 	LOG_INFO("deleting publisher for %s", _channelName.c_str());
+  
 	stop();
 	join();
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+
+  // clean up pending messages
+  map<string, std::list<std::pair<uint64_t, Message*> > >::iterator queuedMsgHostIter = _queuedMessages.begin();
+  while(queuedMsgHostIter != _queuedMessages.end()) {
+    std::list<std::pair<uint64_t, Message*> >::iterator queuedMsgIter = queuedMsgHostIter->second.begin();
+    while(queuedMsgIter != queuedMsgHostIter->second.end()) {
+      delete (queuedMsgIter->second);
+      queuedMsgIter++;
+    }
+    queuedMsgHostIter++;
+  }
+
 }
 
 void ZeroMQPublisher::join() {
@@ -153,6 +166,40 @@ void ZeroMQPublisher::run() {
 		} else {
 			Thread::sleepMs(50);
 		}
+    
+    // try to send pending messages
+    ScopeLock lock(_mutex);
+    if (_queuedMessages.size() > 0) {
+      uint64_t now = Thread::getTimeStampMs();
+      map<string, std::list<std::pair<uint64_t, Message*> > >::iterator queuedMsgHostIter = _queuedMessages.begin();
+      while(queuedMsgHostIter != _queuedMessages.end()) {
+        std::list<std::pair<uint64_t, Message*> >::iterator queuedMsgIter = queuedMsgHostIter->second.begin();
+        if (_subUUIDs.find(queuedMsgHostIter->first) != _subUUIDs.end()) {
+          // node became available, send pending messages
+          LOG_INFO("Subscriber %s became available on %s - sending %d pending message", queuedMsgHostIter->first.c_str(), _channelName.c_str(), queuedMsgHostIter->second.size());
+          while(queuedMsgIter != queuedMsgHostIter->second.end()) {
+            send(queuedMsgIter->second);
+            delete queuedMsgIter->second;
+            queuedMsgHostIter->second.erase(queuedMsgIter++);
+          }
+        } else {
+          while(queuedMsgIter != queuedMsgHostIter->second.end()) {
+            if (now - queuedMsgIter->first > 5000) {
+              LOG_ERR("Pending message for %s on %s is too old - removing", queuedMsgHostIter->first.c_str(), _channelName.c_str());
+              delete queuedMsgIter->second;
+              queuedMsgIter = queuedMsgHostIter->second.erase(queuedMsgIter);
+            } else {
+              queuedMsgIter++;
+            }
+          }
+        }
+        if (queuedMsgHostIter->second.empty()) {
+          _queuedMessages.erase(queuedMsgHostIter++);
+        } else {
+          queuedMsgHostIter++;
+        }
+      }
+    }
 	}
 }
 
@@ -212,7 +259,9 @@ void ZeroMQPublisher::removedSubscriber(const string remoteId, const string subI
 }
 
 void ZeroMQPublisher::send(Message* msg) {
-	//LOG_DEBUG("ZeroMQPublisher sending msg on %s", _channelName.c_str());
+  ScopeLock lock(_mutex);
+
+  //LOG_DEBUG("ZeroMQPublisher sending msg on %s", _channelName.c_str());
 	if (_isSuspended) {
 		LOG_WARN("Not sending message on suspended publisher");
 		return;
@@ -222,9 +271,14 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_msg_t channelEnvlp;
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
+		if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end() && !msg->isQueued()) {
+			LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
+      Message* queuedMsg = new Message(*msg); // copy message
+      queuedMsg->setQueued(true);
+      _queuedMessages[msg->getMeta("um.sub")].push_back(std::make_pair(Thread::getTimeStampMs(), queuedMsg));
+      return;
+    }
 		ZMQ_PREPARE_STRING(channelEnvlp, msg->getMeta("um.sub").c_str(), msg->getMeta("um.sub").size());
-		if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end())
-			LOG_ERR("Subscriber %s is not (yet) connected on %s", msg->getMeta("um.sub").c_str(), _channelName.c_str());
 	} else {
 		// everyone on channel
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
@@ -241,8 +295,7 @@ void ZeroMQPublisher::send(Message* msg) {
 			msg->putMeta(metaIter->first, metaIter->second);
 		metaIter++;
 	}
-
-	ScopeLock lock(_mutex);
+  
 	zmq_sendmsg(_socket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
 	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 

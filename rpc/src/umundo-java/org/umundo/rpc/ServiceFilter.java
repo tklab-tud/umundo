@@ -16,11 +16,21 @@
 package org.umundo.rpc;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+import java.util.Vector;
+
 import org.umundo.core.Message;
+import org.umundo.core.Regex;
 
 public class ServiceFilter {
+
+	public class Rule {
+		String key;
+		String pattern;
+		String value;
+		int predicate;
+	}
+
 	public static final int OP_EQUALS = 0x0001;
 	public static final int OP_GREATER = 0x0002;
 	public static final int OP_LESS = 0x0003;
@@ -38,13 +48,25 @@ public class ServiceFilter {
 
 	public ServiceFilter(Message msg) {
 		_svcName = msg.getMeta("um.rpc.filter.svcName");
+		_uuid = msg.getMeta("um.rpc.filter.uuid");
+		HashMap<String, String> meta = msg.getMeta();
 		for (String key : msg.getMeta().keySet()) {
+			String value = msg.getMeta(key);
+
 			if (key.length() > 20 && key.substring(0, 20).compareTo("um.rpc.filter.value.") == 0) {
-				String value = msg.getMeta(key);
-				key = key.substring(20, key.length());
-				_value.put(key, value);
-				_pattern.put(key, msg.getMeta("um.rpc.filter.pattern." + key));
-				_predicate.put(key, Integer.valueOf(msg.getMeta("um.rpc.filter.pred." + key)));
+				try {
+					String indexStr = key.substring(20, key.indexOf(".", 20));
+					key = key.substring(20 + 1 + indexStr.length(), key.length());
+
+					Rule rule = new Rule();
+					rule.key = key;
+					rule.value = value;
+					rule.predicate = Integer.valueOf(msg.getMeta().get("um.rpc.filter.pred." + indexStr + "." + key));
+					rule.pattern = msg.getMeta("um.rpc.filter.pattern." + indexStr + "." + key);
+					_rules.add(rule);
+				} catch (Exception e) {
+					System.err.println(e);
+				}
 			}
 		}
 	}
@@ -53,16 +75,14 @@ public class ServiceFilter {
 		Message msg = new Message();
 		msg.putMeta("um.rpc.filter.svcName", _svcName);
 		msg.putMeta("um.rpc.filter.uuid", _uuid);
-		for (String key : _value.keySet()) {
-			msg.putMeta("um.rpc.filter.value." + key, _value.get(key));
-		}
 
-		for (String key : _pattern.keySet()) {
-			msg.putMeta("um.rpc.filter.pattern." + key, _pattern.get(key));
-		}
-		
-		for (String key : _predicate.keySet()) {
-			msg.putMeta("um.rpc.filter.pred." + key, _predicate.get(key).toString());
+		int i = 0;
+		for (Rule rule : _rules) {
+			msg.putMeta("um.rpc.filter.value." + i + "." + rule.key, rule.value);
+			msg.putMeta("um.rpc.filter.pattern." + i + "." + rule.key, rule.pattern);
+			msg.putMeta("um.rpc.filter.pred." + i + "." + rule.key, Integer.toString(rule.predicate));
+
+			i++;
 		}
 		return msg;
 	}
@@ -72,9 +92,12 @@ public class ServiceFilter {
 	}
 
 	public void addRule(String key, String pattern, String value, int pred) {
-		_pattern.put(key, pattern);
-		_value.put(key, value);
-		_predicate.put(key, pred);
+		Rule rule = new Rule();
+		rule.key = key;
+		rule.pattern = pattern;
+		rule.value = value;
+		rule.predicate = pred;
+		_rules.add(rule);
 	}
 
 	public boolean matches(ServiceDescription svcDesc) {
@@ -83,22 +106,88 @@ public class ServiceFilter {
 			return false;
 
 		// check filter
-		for (String key : _value.keySet()) {
-			String actual = svcDesc.getProperty(key);  // the actual string as it is present in the description
-			String target = _value.get(key);                // the substring from the filter
-			String pattern = _pattern.get(key);             // the pattern that will transform the actual string into a substring
-			int pred = _predicate.get(key);                 // the relation between filter and description sting
+		for (Rule rule : _rules) {
+			String key = rule.key;
+			String target = rule.value;
+			String pattern = rule.pattern;
+			int pred = rule.predicate;
+			Regex regex = new Regex(pattern);
 
-			if (_predicate.containsKey(key))
-				pred = _predicate.get(key);
+			boolean numericMode = false;
+			double numTarget = 0;
+			double numSubstring = 0;
 
-			switch (pred) {
+			if (regex.hasError()) {
+				System.err.println("Pattern " + pattern + " does not compile as regular expression");
+				return false;
+			}
+
+			String actual = svcDesc.getProperty(key);
+			// the description says nothing about the given key
+			if (actual == null)
+				return false;
+			
+			if (!regex.matches(actual))
+				return false;
+
+			// if we matched a substring with (regex) notation, use it
+			String substring = "";
+			if (regex.hasSubMatches()) {
+				substring = regex.getSubMatches().elementAt(0);
+			} else {
+				substring = regex.getMatch();
+			}
+
+			try {
+				numTarget = Double.parseDouble(target);
+				numSubstring = Double.parseDouble(substring);
+				numericMode = true;
+			} catch (NumberFormatException nfe) {
+			}
+
+			int mod = pred & MASK_MOD;
+			int op = pred & MASK_OP;
+
+			switch (op) {
 			case OP_EQUALS:
-				if (pattern.compareTo(target) != 0) {
-					return false;
+				if (numericMode) {
+					if (!(numSubstring == numTarget) ^ ((mod & MOD_NOT) > 0))
+						return false;
+				} else {
+					if (!(substring.compareTo(target) == 0) ^ ((mod & MOD_NOT) > 0))
+						return false;
 				}
 				break;
-
+			case OP_LESS:
+				if (numericMode) {
+					if (!(numSubstring < numTarget) ^ ((mod & MOD_NOT) > 0))
+						return false;
+				} else {
+					if (!(substring.compareTo(target) < 0) ^ ((mod & MOD_NOT) > 0))
+						return false;
+				}
+				break;
+			case OP_GREATER:
+				if (numericMode) {
+					if (!(numSubstring > numTarget) ^ ((mod & MOD_NOT) > 0))
+						return false;
+				} else {
+					if (!(substring.compareTo(target) > 0) ^ ((mod & MOD_NOT) > 0))
+						return false;
+				}
+				break;
+			case OP_STARTS_WITH:
+				if (!(substring.startsWith(target)) ^ ((mod & MOD_NOT) > 0))
+					return false;
+				break;
+			case OP_ENDS_WITH:
+				if (!(substring.endsWith(target)) ^ ((mod & MOD_NOT) > 0))
+					return false;
+				break;
+			case OP_CONTAINS:
+				if (!(substring.contains(target)) ^ ((mod & MOD_NOT) > 0))
+					return false;
+				break;
 			default:
 				break;
 			}
@@ -106,10 +195,12 @@ public class ServiceFilter {
 		return true;
 	}
 
+	public String getUUID() {
+		return _uuid;
+	}
+
 	String _svcName;
 	String _uuid;
-	Map<String, String> _pattern = new HashMap<String, String>();
-	Map<String, String> _value = new HashMap<String, String>();
-	Map<String, Integer> _predicate = new HashMap<String, Integer>();
+	Vector<Rule> _rules = new Vector<Rule>();
 
 }

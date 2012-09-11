@@ -47,6 +47,7 @@ bool Regex::hasError() {
 }
 
 bool Regex::matches(const string& text) {
+	_text = text;
 	_error.clear();
 	_matchIndex = std::make_pair(0, 0);
 	_subMatchIndex.clear();
@@ -109,6 +110,20 @@ bool Regex::matches(const string& text) {
 	}
 
 	return true;
+}
+
+std::string Regex::getMatch()                            {
+	return _text.substr(_matchIndex.first, _matchIndex.second);
+}
+
+std::vector<std::string> Regex::getSubMatches() {
+	std::vector<std::string> subMatches;
+	std::vector<std::pair<int, int> >::iterator subMatchIter = _subMatchIndex.begin();
+	while(subMatchIter != _subMatchIndex.end()) {
+		subMatches.push_back(_text.substr(subMatchIter->first, subMatchIter->second));
+		subMatchIter++;
+	}
+	return subMatches;
 }
 
 }

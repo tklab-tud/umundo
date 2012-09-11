@@ -27,6 +27,8 @@
 #include "umundo/connection/Publisher.h"
 #include "umundo/thread/Thread.h"
 
+#include <list>
+
 namespace umundo {
 
 class ZeroMQNode;
@@ -78,7 +80,8 @@ private:
 	set<string> _pendingZMQSubscriptions;
 	map<string, string> _pendingSubscriptions;
 	map<string, string> _subscriptions;
-
+  map<string, std::list<std::pair<uint64_t, Message*> > > _queuedMessages;
+  
 	Monitor _pubLock;
 	Mutex _mutex;
 

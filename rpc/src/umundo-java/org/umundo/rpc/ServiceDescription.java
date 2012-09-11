@@ -38,8 +38,10 @@ public class ServiceDescription {
 		}
 	}
 
-	public ServiceDescription(String svcName, Map<String, String> properties) {
-		_svcName = svcName;
+	public ServiceDescription() {
+	}
+	
+	public ServiceDescription(Map<String, String> properties) {
 		_properties = properties;
 	}
 
@@ -72,6 +74,14 @@ public class ServiceDescription {
 
 	public void setProperty(String key, String value) {
 		_properties.put(key, value);
+	}
+
+	public void setChannelName(String channelName) {
+		_channelName = channelName;
+	}
+
+	public void setServiceName(String name) {
+		_svcName = name;
 	}
 
 }

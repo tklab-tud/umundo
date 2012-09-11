@@ -28,6 +28,7 @@ typedef std::list list;
 #include "../../../../core/src/umundo/common/EndPoint.h"
 #include "../../../../core/src/umundo/connection/Node.h"
 #include "../../../../core/src/umundo/common/Message.h"
+#include "../../../../core/src/umundo/common/Regex.h"
 #include "../../../../core/src/umundo/thread/Thread.h"
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
@@ -141,6 +142,29 @@ using namespace umundo;
 %ignore umundo::Node::getPublisher(const string& uuid);
 %ignore umundo::Node::getPublishers();
 
+//******************************
+// Beautify Regex class
+//******************************
+
+%rename(getSubMatchesNative) umundo::Regex::getSubMatches();
+%javamethodmodifiers umundo::Regex::getSubMatches() "private";
+
+%typemap(javaimports) umundo::Regex %{
+import java.util.Vector;
+%}
+
+%typemap(javacode) umundo::Regex %{
+
+	public Vector<String> getSubMatches() {
+		Vector<String> subMatches = new Vector<String>();
+		StringVector subMatchesNative = getSubMatchesNative();
+		for (int i = 0; i < subMatchesNative.size(); i++) {
+			subMatches.add(subMatchesNative.get(i));
+		}
+		return subMatches;
+	}
+%}
+
 
 //******************************
 // Beautify Message class
@@ -236,6 +260,7 @@ import java.util.HashMap;
 %include "../../../../core/src/umundo/thread/Thread.h"
 %include "../../../../core/src/umundo/common/Implementation.h"
 %include "../../../../core/src/umundo/common/EndPoint.h"
+%include "../../../../core/src/umundo/common/Regex.h"
 %include "../../../../core/src/umundo/connection/Publisher.h"
 %include "../../../../core/src/umundo/connection/Subscriber.h"
 %include "../../../../core/src/umundo/connection/Node.h"

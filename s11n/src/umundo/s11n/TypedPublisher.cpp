@@ -47,7 +47,10 @@ TypedPublisher::~TypedPublisher() {
 
 Message* TypedPublisher::prepareMsg(const string& type, void* obj) {
 	Message* msg = new Message();
-	string buffer(_impl->serialize(type, obj));
+	string buffer = _impl->serialize(type, obj);
+  if (buffer.length() == 0) {
+    LOG_ERR("Something went wrong when serializing %s", type.c_str());
+  }
 	msg->setData(buffer);
 	msg->putMeta("um.s11n.type", type);
 	return msg;

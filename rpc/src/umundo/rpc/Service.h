@@ -36,8 +36,8 @@ class ServiceStub;
  */
 class DLLEXPORT ServiceDescription {
 public:
-	ServiceDescription(const string&, map<string, string>);
-	ServiceDescription(const string&);
+	ServiceDescription(map<string, string>);
+	ServiceDescription();
 
 	const string getName()                           {
 		return _svcName;
@@ -47,6 +47,9 @@ public:
 	}
 	const map<string, string>& getProperties()       {
 		return _properties;
+	}
+	const bool hasProperty(const string& key)      {
+		return _properties.find(key) != _properties.end();
 	}
 	const string getProperty(const string& key)      {
 		return _properties[key];
@@ -79,6 +82,13 @@ protected:
  */
 class DLLEXPORT ServiceFilter {
 public:
+  struct Rule {
+    string key;
+    string pattern;
+    string value;
+    int predicate;
+  };
+  
 	struct filterCmp {
 		bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
 			return a->_uuid.compare(b->_uuid) < 0;
@@ -114,9 +124,7 @@ public:
 		return _uuid;
 	}
 
-	map<string, string> _pattern;
-	map<string, string> _value;
-	map<string, int> _predicate;
+	vector<Rule> _rules;
 
 private:
 	string _uuid;

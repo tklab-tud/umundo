@@ -171,7 +171,7 @@ void ZeroMQSubscriber::run() {
 					// is this the first message with the channelname?
 					if (strlen(key) + 1 == msgSize &&
 					        msg->getMeta().find(key) == msg->getMeta().end()) {
-						msg->putMeta("channel", key);
+						msg->putMeta("um.channel", key);
 					} else {
 						assert(strlen(key) + strlen(value) + 2 == msgSize);
 						if (strlen(key) + strlen(value) + 2 != msgSize) {
@@ -265,7 +265,7 @@ void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
 	_pubUUIDs.erase(pub->getUUID());
 
 	LOG_DEBUG("unsubscribing from %s", ss.str().c_str());
-	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_disconnect: %s", zmq_strerror(errno));
+	zmq_disconnect(_socket, ss.str().c_str()) && LOG_WARN("zmq_disconnect: %s", zmq_strerror(errno));
 	_connections.erase(ss.str());
 }
 

@@ -40,6 +40,8 @@ void PBSerializer::init(shared_ptr<Configuration> config) {
 
 string PBSerializer::serialize(const string& type, void* obj) {
 	MessageLite* pbObj = (MessageLite*)obj;
+//  MessageLite* pbObj = _serializers[type]->New();
+//  pbObj->CheckTypeAndMergeFrom(*((MessageLite*)obj));
 	return pbObj->SerializeAsString();
 }
 

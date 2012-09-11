@@ -235,14 +235,13 @@ void ServiceManager::receive(Message* msg) {
 			Message* foundMsg = svcDesc->toMessage();
 			foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
 			foundMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
-			foundMsg->putMeta("um.rpc.channel", svcDesc->getChannelName());
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
-			if (_svcPub->isPublishingTo(msg->getMeta("um.rpc.mgrId"))) {
+//			if (_svcPub->isPublishingTo(msg->getMeta("um.rpc.mgrId"))) {
 				_svcPub->send(foundMsg);
-			} else {
-				// queue message and send in welcome
-				_pendingMessages[msg->getMeta("um.rpc.mgrId")].push_back(std::make_pair(Thread::getTimeStampMs(), foundMsg));
-			}
+			// } else {
+			// 	// queue message and send in welcome
+			// 	_pendingMessages[msg->getMeta("um.rpc.mgrId")].push_back(std::make_pair(Thread::getTimeStampMs(), foundMsg));
+			// }
 			delete foundMsg;
 		}
 	}
@@ -259,16 +258,13 @@ void ServiceManager::receive(Message* msg) {
 		std::set<ServiceDescription*> foundSvcs = findLocal(filter);
 		std::set<ServiceDescription*>::iterator svcDescIter = foundSvcs.begin();
 		while(svcDescIter != foundSvcs.end()) {
-			if (filter->matches(*svcDescIter)) {
-				Message* foundMsg = (*svcDescIter)->toMessage();
-				foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
-				foundMsg->putMeta("um.rpc.filterId", filter->_uuid);
-				foundMsg->putMeta("um.rpc.type", "discovered");
-				foundMsg->putMeta("um.rpc.channel", (*svcDescIter)->getChannelName());
-				foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
-				_svcPub->send(foundMsg);
-				delete foundMsg;
-			}
+			Message* foundMsg = (*svcDescIter)->toMessage();
+			foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
+			foundMsg->putMeta("um.rpc.filterId", filter->_uuid);
+			foundMsg->putMeta("um.rpc.type", "discovered");
+			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
+			_svcPub->send(foundMsg);
+			delete foundMsg;
 			svcDescIter++;
 		}
 	}
@@ -293,9 +289,9 @@ void ServiceManager::receive(Message* msg) {
 		keyFilter->_uuid = msg->getMeta("um.rpc.filterId");
 		if (_localQueries.find(keyFilter) != _localQueries.end()) {
 			ResultSet<ServiceDescription>* listener = _localQueries[keyFilter];
-			assert(msg->getMeta("um.rpc.channel").size() > 0);
+			assert(msg->getMeta("um.rpc.desc.channel").size() > 0);
 			assert(msg->getMeta("um.rpc.mgrId").size() > 0);
-			string svcChannel = msg->getMeta("um.rpc.channel");
+			string svcChannel = msg->getMeta("um.rpc.desc.channel");
 			string managerId = msg->getMeta("um.rpc.mgrId");
 			if (_remoteSvcDesc.find(managerId) == _remoteSvcDesc.end() || _remoteSvcDesc[managerId].find(svcChannel) == _remoteSvcDesc[managerId].end()) {
 				_remoteSvcDesc[managerId][svcChannel] = shared_ptr<ServiceDescription>(new ServiceDescription(msg));
@@ -316,20 +312,21 @@ void ServiceManager::receive(Message* msg) {
 }
 
 void ServiceManager::addService(Service* service) {
-	addService(service, new ServiceDescription(service->getName(), map<string, string>()));
+	addService(service, new ServiceDescription(map<string, string>()));
 }
 
 void ServiceManager::addService(Service* service, ServiceDescription* desc) {
 	ScopeLock lock(_mutex);
-
-	if (service == NULL)
+  if (service == NULL)
 		return;
 
 	intptr_t svcPtr = (intptr_t)service;
 	if (_svc.find(svcPtr) != _svc.end())
 		return;
 
-	desc->_channelName = service->getChannelName();
+  desc->_channelName = service->getChannelName();
+	desc->_svcName = service->getName();
+
 	assert(desc->_channelName.length() > 0);
 
 	_svc[svcPtr] = service;

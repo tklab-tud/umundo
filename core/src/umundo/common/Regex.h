@@ -50,21 +50,18 @@ public:
 	bool hasSubMatches()                              {
 		return _subMatchIndex.size() > 0;
 	}
-	std::pair<int, int> getMatch()                    {
-		return _matchIndex;
-	}
-	std::vector<std::pair<int, int> > getSubMatches() {
-		return _subMatchIndex;
-	}
-
+	
+	std::string getMatch();
+	std::vector<std::string> getSubMatches();
+	
 protected:
-	int _nrMatches;
 	void* _re;
 	string _pattern;
 	int _ovector[OVECCOUNT];
 	std::pair<int, int> _matchIndex;
 	std::vector<std::pair<int, int> > _subMatchIndex;
 
+	string _text;
 	string _error;
 	int _errorOffset;
 };

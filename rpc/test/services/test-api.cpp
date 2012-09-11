@@ -1,6 +1,8 @@
 #include <umundo/core.h>
 #include <umundo/s11n.h>
+#define protected public
 #include <umundo/rpc.h>
+#undef protected
 
 #include "protobuf/generated/TestServices.rpc.pb.h"
 #include "protobuf/generated/TestServices.pb.h"
@@ -136,7 +138,8 @@ bool findServices() {
 }
 
 bool queryTests() {
-	ServiceDescription* desc = new ServiceDescription("FooService", map<string, string>());
+	ServiceDescription* desc = new ServiceDescription(map<string, string>());
+  desc->_svcName = "FooService";
 	desc->setProperty("foo", "the lazy brown fox 123.34");
 
 	ServiceFilter* filter = new ServiceFilter("FooService");

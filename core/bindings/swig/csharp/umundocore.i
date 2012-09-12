@@ -1,5 +1,6 @@
 %module(directors="1", allprotected="1") umundoNativeCSharp
 // import swig typemaps
+%include <arrays_csharp.i>
 %include <stl.i>
 %include <inttypes.i>
 //%include "boost_shared_ptr.i"
@@ -38,10 +39,10 @@ using namespace umundo;
 
 //*************************************************/
 
-// Provide a nicer Java interface to STL containers
+// Provide a nicer CSharp interface to STL containers
 %template(StringVector) std::vector<std::string>;
 
-// allow Java classes to act as callbacks from C++
+// allow CSharp classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
 %feature("director") umundo::Connectable;
 %feature("director") umundo::Greeter;
@@ -77,6 +78,18 @@ using namespace umundo;
 %ignore umundo::Message::Message(string);
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
+
+%typemap(ctype) char *data "char*"
+%typemap(imtype) char *data "byte[]"
+%typemap(cstype) char* data "byte[]"
+%typemap(csout) char* data {
+  return $imcall;
+}
+
+# %typemap(out) char *data {
+#   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
+#   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
+# }
 
 
 //******************************

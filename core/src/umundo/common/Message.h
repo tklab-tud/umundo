@@ -87,6 +87,7 @@ public:
 		_data = (char*)malloc(_size);
 		memcpy(_data, data.data(), _size);
 	}
+
 	virtual void setData(const char* data, size_t length)               {
 		if (_data)
 			free(_data);

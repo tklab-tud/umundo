@@ -101,10 +101,7 @@ ZeroMQPublisher::~ZeroMQPublisher() {
 }
 
 void ZeroMQPublisher::join() {
-	UMUNDO_LOCK(_mutex);
-	stop();
 	Thread::join();
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void ZeroMQPublisher::suspend() {

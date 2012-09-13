@@ -81,9 +81,20 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 		synchronized (_requests.get(reqId)) {
 			//System.out.println("Waiting");
 			_rpcPub.send(rpcReqMsg);
-			_requests.get(reqId).wait();
-			//System.out.println("Continuing");
+			
+			int retries = 3;
+			while(retries-- > 0) {
+				_requests.get(reqId).wait(1000);
+				if (_responses.containsKey(reqId))
+					break;
+				System.err.println("Calling " + name + " did not return within 1s - retrying");
+			}
 		}
+
+		if (!_responses.containsKey(reqId)) {
+			System.err.println("Did not get a reply for calling " + name);
+		}
+
 		_requests.remove(reqId);
 		Object out = _responses.get(reqId);
 		_responses.remove(reqId);

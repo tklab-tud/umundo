@@ -357,7 +357,7 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
   int retries = 3;
   while(retries-- > 0) {
     _requests[reqId]->wait(_mutex, 1000);
-    if (_requests.find(reqId) != _requests.end()) {
+    if (_responses.find(reqId) != _responses.end()) {
       break;
     }
     LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());

@@ -432,7 +432,7 @@ bool continuousQueries() {
 		std::cout << "\tQuery restarted" << std::endl;
 
 		hostNode->disconnect(hostMgr);
-		Thread::sleepMs(200);
+		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 0);
 		std::cout << "\tService Managers disconnected" << std::endl;
 

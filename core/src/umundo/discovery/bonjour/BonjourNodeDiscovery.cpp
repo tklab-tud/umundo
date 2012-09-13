@@ -81,9 +81,9 @@ shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::_instance;
 BonjourNodeDiscovery::~BonjourNodeDiscovery() {
 //	UMUNDO_LOCK(_mutex); // we had some segfaults in validateState from other threads?
 	stop();
-#ifndef DISC_BONJOUR_EMBED
+//#ifndef DISC_BONJOUR_EMBED
 	join(); // we have deadlock in embedded?
-#endif
+//#endif
 #ifdef DISC_BONJOUR_EMBED
 	// notify every other host that we are about to vanish
 	embedded_mDNSExit();

@@ -82,8 +82,6 @@ bool testMessageTransmission() {
 				Thread::yield();
 				delete msg2;
 			}
-			Thread::sleepMs(100);
-			std::cout << nrReceptions * 100 << " messages per second" << std::endl;
 		}
     
 		// test explicit sub removal

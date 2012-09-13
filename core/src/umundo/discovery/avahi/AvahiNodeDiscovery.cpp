@@ -105,6 +105,8 @@ void AvahiNodeDiscovery::resume() {
 }
 
 AvahiNodeDiscovery::~AvahiNodeDiscovery() {
+	stop();
+	join();
 }
 
 void AvahiNodeDiscovery::remove(shared_ptr<NodeImpl> node) {

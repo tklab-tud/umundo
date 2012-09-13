@@ -353,7 +353,20 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 	_requests[reqId] = new Monitor();
 	_rpcPub->send(rpcReqMsg);
 	ScopeLock lock(_mutex);
-	_requests[reqId]->wait(_mutex);
+  
+  int retries = 3;
+  while(retries-- > 0) {
+    _requests[reqId]->wait(_mutex, 1000);
+    if (_requests.find(reqId) != _requests.end()) {
+      break;
+    }
+    LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());
+  }
+  
+  if (_requests.find(reqId) == _requests.end()) {
+    LOG_ERR("Did not get a reply for calling %s", name.c_str());
+  }
+  
 	delete _requests[reqId];
 	_requests.erase(reqId);
 	out = _responses[reqId];

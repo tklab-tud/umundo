@@ -6,7 +6,7 @@
 include_directories(src)
 
 # gather all header files
-file(GLOB_RECURSE UMUNDORPC_HEADER_FILES src/umundo/rpc/*.h)
+file(GLOB_RECURSE UMUNDORPC_HEADER_FILES src/umundo/rpc/*.h src/umundo/rpc.h)
 
 include(UseUMundo)
 

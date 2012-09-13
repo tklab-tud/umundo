@@ -204,6 +204,7 @@ void ZeroMQPublisher::run() {
  * Block until we have a given number of subscribers.
  */
 int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
+	ScopeLock lock(_mutex);
 	uint64_t now = Thread::getTimeStampMs();
 	while (_subscriptions.size() < (unsigned int)count) {
 		_pubLock.wait(_mutex, timeoutMs);

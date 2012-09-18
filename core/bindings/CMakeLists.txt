@@ -1,6 +1,13 @@
 # if you build swig from sources on windows, this is where it will end up
 # see also: http://www.swig.org/Doc2.0/Windows.html#Windows_mingw_msys
 if (WIN32)
+	if(EXISTS "${PROJECT_BINARY_DIR}/../swig/")
+		LIST(APPEND CMAKE_PROGRAM_PATH "${PROJECT_BINARY_DIR}/../swig/")
+	elseif(EXISTS "${PROJECT_BINARY_DIR}/../../swig/")
+		LIST(APPEND CMAKE_PROGRAM_PATH "${PROJECT_BINARY_DIR}/../../swig/")
+	endif()
+
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # csc.exe

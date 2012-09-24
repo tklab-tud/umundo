@@ -42,7 +42,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="umundoCSharp">
-      <HintPath>C:\Users\sradomski\Desktop\build\umundo\lib\umundoCSharp.dll</HintPath>
+      <HintPath>..\..\..\..\build\lib\umundoCSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

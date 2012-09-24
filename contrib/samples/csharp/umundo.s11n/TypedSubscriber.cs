@@ -19,41 +19,39 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+using System.IO;
 using org.umundo.core;
-using Google.ProtocolBuffers;
+using ProtoBuf.Meta;
 
-namespace umundo.s11n
+namespace org.umundo.s11n
 {
-    public class TypedReceiver { 
-    }
-
     public class TypedSubscriber : Subscriber
     {
         class RawReceiver : Receiver {
-            TypedSubscriber _sub;
 
-            public RawReceiver(TypedSubscriber sub) {
-                _sub = sub;
+            public RawReceiver(ITypedReceiver rcv) {
+                TypedReceiver = rcv;
             }
-            public virtual void receive(Message msg) { 
-                
+
+            internal ITypedReceiver TypedReceiver { get; private set; }
+
+            public override void receive(Message msg) {
+                String typename = msg.getMeta("um.s11n.type");
+                byte[] data = msg.getData();
+                Type type = Type.GetType(typename);
+                Stream source = new MemoryStream(data);
+                Object o = RuntimeTypeModel.Default.Deserialize(source, null, type);
+                TypedReceiver.receiveObject(o, msg);
             }
         }
 
-        RawReceiver _rawReceiver;
-        TypedReceiver _typedReceiver;
-
-        TypedSubscriber(String channel, TypedReceiver receiver)
+        public TypedSubscriber(String channel, ITypedReceiver receiver)
             : base(channel)
         {
-            _typedReceiver = receiver;
-            _rawReceiver = new RawReceiver(this);
-            setReceiver(_rawReceiver);
+            Receiver = new RawReceiver(receiver);
+            setReceiver(Receiver);
         }
 
+        private RawReceiver Receiver { get; set; }
     }
 }

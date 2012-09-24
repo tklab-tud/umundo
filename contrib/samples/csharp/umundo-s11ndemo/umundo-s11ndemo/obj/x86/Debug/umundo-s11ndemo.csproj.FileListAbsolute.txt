@@ -1,0 +1,10 @@
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\umundo-s11ndemo.exe
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\umundo-s11ndemo.pdb
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\protobuf-net.dll
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\umundoCSharp.dll
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\protobuf-net.pdb
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\protobuf-net.xml
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\obj\x86\Debug\umundo-s11ndemo.exe
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\obj\x86\Debug\umundo-s11ndemo.pdb
+C:\Users\Piri\Documents\Entwicklung\tu-darmstadt\umundo\contrib\samples\csharp\umundo-s11ndemo\umundo-s11ndemo\bin\Debug\umundoNativeCSharp_d.dll

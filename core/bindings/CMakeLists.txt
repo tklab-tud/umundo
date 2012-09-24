@@ -149,17 +149,23 @@ GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
 if (UMUNDONATIVECSHARP_LOCATION)
 	FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH )
 	if (CSC_EXECUTABLE)
-		# package everything into a jar
+		# package everything into a DLL
 #		ADD_CUSTOM_TARGET(csharp_build_dll ALL
 		ADD_CUSTOM_TARGET(csharp
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedPublisher.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CSC_EXECUTABLE}
-			/target:library
-			/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll
-			*.cs
-			WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+				/target:library
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll
+				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
+				*.cs
+				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMENT "Creating the dll for C# ...")
-		# make sure ant runs after we built the wrappers
-		add_dependencies(csharp umundoNativeCSharp)
+   add_dependencies(csharp umundoNativeCSharp)
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS csharp)
 		endif()

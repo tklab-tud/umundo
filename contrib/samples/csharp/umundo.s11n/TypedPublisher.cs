@@ -19,33 +19,52 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+using System.IO;
+using System.Runtime.Serialization;
 using org.umundo.core;
-using Google.ProtocolBuffers;
+using ProtoBuf;
 
-namespace umundo.s11n
+namespace org.umundo.s11n
 {
     public class TypedPublisher : Publisher
     {
-        TypedPublisher(String channel) : base(channel) { 
+        public TypedPublisher(String channel) : base(channel) { 
         }
 
-        public Message prepareMessage(String type, IMessageLite o)
+        public Message prepareMessage(String type, ISerializable o)
         {
             Message msg = new Message();
-            byte[] buffer = o.ToByteArray();
-            msg.setData(buffer, (uint)buffer.Length);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                Serializer.Serialize(stream, o);
+                byte[] buffer = stream.ToArray();
+                msg.setData(buffer, (uint)buffer.Length);
+            }
             msg.putMeta("um.s11n.type", type);	
             return msg;
         }
 
-        public void sendObject(String type, IMessageLite o)
+        public Message prepareMessage(String type, IExtensible o)
+        {
+            Message msg = new Message();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                Serializer.Serialize(stream, o);
+                byte[] buffer = stream.ToArray();
+                msg.setData(buffer, (uint)buffer.Length);
+            }
+            msg.putMeta("um.s11n.type", type);
+            return msg;
+        }
+
+        public void sendObject(String type, ISerializable o)
         {
             send(prepareMessage(type, o));
         }
 
+        public void sendObject(String type, IExtensible o)
+        {
+            send(prepareMessage(type, o));
+        }
     }
 }

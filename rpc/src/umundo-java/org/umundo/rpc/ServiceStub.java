@@ -55,7 +55,7 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 			node.addSubscriber(_rpcSub);
 			node.addPublisher(_rpcPub);
 		}
-		_rpcPub.waitForSubscribers(1);
+//		_rpcPub.waitForSubscribers(1);
 	}
 
 	@Override
@@ -82,12 +82,13 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 			//System.out.println("Waiting");
 			_rpcPub.send(rpcReqMsg);
 			
-			int retries = 3;
+			int retries = 10;
 			while(retries-- > 0) {
 				_requests.get(reqId).wait(1000);
 				if (_responses.containsKey(reqId))
 					break;
-				System.err.println("Calling " + name + " did not return within 1s - retrying");
+				_rpcPub.send(rpcReqMsg);
+//				System.err.println("Calling " + name + " did not return within 1s - retrying");
 			}
 		}
 

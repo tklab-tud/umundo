@@ -1,5 +1,6 @@
 /**
  *  Copyright (C) 2012  Daniel Schreiber
+ *  Copyright (C) 2012  Stefan Radomski
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
@@ -21,16 +22,29 @@ import java.io.ObjectOutputStream;
 
 import org.umundo.core.Message;
 import org.umundo.core.Publisher;
+import org.umundo.core.Greeter;
+import org.umundo.s11n.ITypedGreeter;
 
 import com.google.protobuf.MessageLite;
 
-/**
- * 
- * 
- * @author ds1019
- *
- */
 public class TypedPublisher extends Publisher {
+
+	ITypedGreeter typedGreeter;
+	GreeterDecorator greeterDecorator;
+
+	class GreeterDecorator extends Greeter {
+		public void welcome(Publisher pub, String nodeId, String subId) {
+			if (TypedPublisher.this.typedGreeter != null) {
+				TypedPublisher.this.typedGreeter.welcome(TypedPublisher.this, nodeId, subId);
+			}
+		}
+
+		public void farewell(Publisher pub, String nodeId, String subId) {
+			if (TypedPublisher.this.typedGreeter != null) {
+				TypedPublisher.this.typedGreeter.farewell(TypedPublisher.this, nodeId, subId);
+			}
+		}	
+	}
 
 	public TypedPublisher(String channel) {
 		super(channel);
@@ -56,4 +70,17 @@ public class TypedPublisher extends Publisher {
 	  send(prepareMessage(type, o));
 	}
 
+	public void setGreeter(Greeter greeter) {
+		System.err.println("Ignoring call to setGreeter(Greeter): use a TypedGreeter with a TypedPublisher");
+	}
+	
+	public void setGreeter(ITypedGreeter greeter) {
+		if (greeterDecorator == null) {
+			greeterDecorator = new GreeterDecorator();
+			super.setGreeter(greeterDecorator);
+		}
+
+		typedGreeter = greeter;
+	}
+	
 }

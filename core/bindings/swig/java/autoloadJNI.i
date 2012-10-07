@@ -6,6 +6,7 @@
 import java.net.URL;
 import java.util.zip.ZipFile;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 %}
@@ -87,6 +88,8 @@ import java.io.InputStream;
 			System.load(f.getAbsolutePath());
 			f.delete();
 
+    } catch (FileNotFoundException e) {
+      System.err.println(e);
     } catch (Exception e) {
       System.err.println("Warning: failed to load native library " + fullLibName + " use System.load() yourself.");
     }

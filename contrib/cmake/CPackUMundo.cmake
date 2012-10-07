@@ -190,8 +190,8 @@ if (APPLE)
 		# strip root
 		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${IOS_PINGPONG_SAMPLE_FILE})
 		get_filename_component(REL_PATH ${REL_PATH} PATH)
-#		message("Installing ${IOS_PINGPONG_SAMPLE_FILE} in share/templates/${REL_PATH}")
-		install(FILES ${IOS_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+#		message("Installing ${IOS_PINGPONG_SAMPLE_FILE} in share/umundo/samples/${REL_PATH}")
+		install(FILES ${IOS_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 	endforeach()
 	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 endif()
@@ -202,7 +202,7 @@ foreach(ANDROID_PINGPONG_SAMPLE_FILE ${ANDROID_PINGPONG_SAMPLE})
 #	message("ANDROID_PINGPONG_SAMPLE_FILE: ${ANDROID_PINGPONG_SAMPLE_FILE}")
 	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
 	get_filename_component(REL_PATH ${REL_PATH} PATH)
-	install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+	install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 endforeach()
 list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 
@@ -213,10 +213,20 @@ if (WIN32)
 #		message("CSHARP_PINGPONG_SAMPLE_FILE: ${CSHARP_PINGPONG_SAMPLE_FILE}")
 		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${CSHARP_PINGPONG_SAMPLE_FILE})
 		get_filename_component(REL_PATH ${REL_PATH} PATH)
-		install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/templates/${REL_PATH} COMPONENT samples)
+		install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 	endforeach()
 	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 endif()
+
+# All the java samples
+file(GLOB_RECURSE JAVA_SAMPLES ${PROJECT_SOURCE_DIR}/contrib/samples/java/*)
+foreach(JAVA_SAMPLES_FILE ${JAVA_SAMPLES})
+	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${JAVA_SAMPLES_FILE})
+	get_filename_component(REL_PATH ${REL_PATH} PATH)
+	install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+endforeach()
+
+list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 
 ########################################
 # House keeping
@@ -325,7 +335,7 @@ list(FIND UMUNDO_CPACK_COMPONENTS "samples" FOUND_ITEM)
 if (FOUND_ITEM GREATER -1)
 	set(CPACK_COMPONENT_SAMPLES_DISPLAY_NAME "IDE Templates and sample programs")
 	set(CPACK_COMPONENT_SAMPLES_DESCRIPTION
-  		"Templates for Xcode, Visual Studio and Eclipse with a sample program.")
+  		"Templates for Xcode, Visual Studio and Eclipse with sample programs.")
 endif()
 
 list(FIND UMUNDO_CPACK_COMPONENTS "docs" FOUND_ITEM)

@@ -539,7 +539,7 @@ list(APPEND ALL_LIBRARIES ${UMUNDOUTIL_LIBRARIES})
 list(SORT ALL_LIBRARIES)
 list(REMOVE_DUPLICATES ALL_LIBRARIES)
 
-message(STATUS "Linking dynamically against:")
+message(STATUS "Linking against external:")
 foreach(LIBRARY ${ALL_LIBRARIES})
 	if (LIBRARY MATCHES "debug")
 	elseif (LIBRARY MATCHES "optimized")

@@ -50,8 +50,16 @@ public class TypedSubscriber extends Subscriber {
 		}
 
 		public void receive(Message msg) {
+			// just receive the message if there is no serialized object inside
+			if (!msg.getMeta().containsKey("um.s11n.type")) {
+				r.receiveObject(null, msg);
+				return;
+			}
+
 			String type = msg.getMeta("um.s11n.type");
 			byte[] data = msg.getData();
+						
+			// try to auto-register the serializer
 			if (TypedSubscriber.this.autoRegisterTypes && !TypedSubscriber.this.autoDeserLoadFailed.containsKey(type)
 					&& !TypedSubscriber.this.deserializerMethods.containsKey(type)) {
 				try {
@@ -68,6 +76,7 @@ public class TypedSubscriber extends Subscriber {
 				}
 			}
 
+			// do we have a suitable deserializer?
 			if (TypedSubscriber.this.deserializerMethods.containsKey(type)) {
 				Object o = null;
 				Method m = TypedSubscriber.this.deserializerMethods.get(type);

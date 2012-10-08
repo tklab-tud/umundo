@@ -11,21 +11,6 @@ export COPYFILE_DISABLE=1
 # Compile libraries
 ############################
 
-
-echo -n "Build umundo for Mac OSX? [y/N]: "; read BUILD_MAC
-if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
-	echo == BUILDING UMUNDO FOR Mac OSX =========================================================
-	rm -rf /tmp/build-umundo
-	mkdir -p /tmp/build-umundo
-	cd /tmp/build-umundo
-	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
-	make -j2
-	make -j2 java	
-	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
-	make -j2
-	make -j2 java	
-fi
-
 cd ${DIR}
 
 echo -n "Build umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32
@@ -78,22 +63,26 @@ if [ "$BUILD_WIN64" == "y" ] || [ "$BUILD_WIN64" == "Y" ]; then
 	TERM=xterm expect build-windows.expect
 fi
 
+echo -n "Build umundo for Mac OSX? [y/N]: "; read BUILD_MAC
+if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
+	echo == BUILDING UMUNDO FOR Mac OSX =========================================================
+	rm -rf /tmp/build-umundo
+	mkdir -p /tmp/build-umundo
+	cd /tmp/build-umundo
+	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
+	make -j2
+	make -j2 java	
+	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+	make -j2
+	make -j2 java	
+fi
+
 ############################
 # Create installers
 ############################
 
 echo -n "Build packages for those platforms? [a/y/N]: "; read BUILD_PACKAGES
 if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-
-	if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo == PACKAGING UMUNDO FOR MacOSX =========================================================
-		cd /tmp/build-umundo
-		# rerun cmake for new cpack files
-		cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
-		make package
-		cp umundo*darwin* ${DIR}/../../installer
-		cd ${DIR}
-	fi
 
 	if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		echo Start the Linux 32Bit system named 'debian' again && read
@@ -123,6 +112,16 @@ if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		export UMUNDO_BUILD_HOST=epikur-win7-64
 		export UMUNDO_BUILD_ARCH=64
 		TERM=xterm expect package-windows.expect
+	fi
+
+	if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+		echo == PACKAGING UMUNDO FOR MacOSX =========================================================
+		cd /tmp/build-umundo
+		# rerun cmake for new cpack files
+		cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+		make package
+		cp umundo*darwin* ${DIR}/../../installer
+		cd ${DIR}
 	fi
 
 	############################

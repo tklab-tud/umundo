@@ -8,6 +8,7 @@
 
 	<target name="clean">
 		<delete dir="${bin}"/>
+		<delete dir="${protoc.gendir}"/>
 	</target>
 
 	<target name="protoc">

@@ -125,12 +125,16 @@ foreach(ANDROID_LIB ${ANDROID_LIBS})
 	# do not pack static libraries
 #	if (NOT ANDROID_LIB MATCHES ".*\\.a" AND NOT ANDROID_LIB MATCHES "\\..*")
 	if (NOT ANDROID_LIB MATCHES ".*\\.a")
-		# match android-14/armv7-a
+		# remove weird double slashes
 		STRING(REGEX REPLACE "//" "/" ANDROID_LIB ${ANDROID_LIB})
+		# take relative path
 		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" ANDROID_PATH ${ANDROID_LIB})
+    # only take first two path elements
 		STRING(REGEX MATCH "[^/]*/[^/]*" ANDROID_PATH ${ANDROID_PATH})
-		# message(STATUS "ANDROID_LIB:  ${ANDROID_LIB}")
-		# message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
+		# but remove umundo.jar from path in any case
+		STRING(REGEX REPLACE "/umundo.jar" "" ANDROID_PATH ${ANDROID_PATH})
+    # message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
+    # message(STATUS "ANDROID_LIB: ${ANDROID_LIB}")
 		install(FILES ${ANDROID_LIB} DESTINATION share/umundo/${ANDROID_PATH} COMPONENT libraryAndroid)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "libraryAndroid")
 	endif()
@@ -223,7 +227,7 @@ file(GLOB_RECURSE JAVA_SAMPLES ${PROJECT_SOURCE_DIR}/contrib/samples/java/*)
 foreach(JAVA_SAMPLES_FILE ${JAVA_SAMPLES})
 	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/contrib/samples" "" REL_PATH ${JAVA_SAMPLES_FILE})
 	get_filename_component(REL_PATH ${REL_PATH} PATH)
-	install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+	install(FILES ${JAVA_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 endforeach()
 
 list (APPEND UMUNDO_CPACK_COMPONENTS "samples")

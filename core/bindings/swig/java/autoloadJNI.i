@@ -54,7 +54,7 @@ import java.io.InputStream;
 			final URL location = c.getProtectionDomain().getCodeSource().getLocation();
 
 			// jars are just zip files, get the input stream for the lib
-			ZipFile zf = new ZipFile(location.getPath());
+			ZipFile zf = new ZipFile(new File(location.toURI()));
 			
 			fullLibName = osPrefix + libName + bitWidth + debugPrefix + osSuffix;
 			System.out.println("Trying to load " + fullLibName);

@@ -21,8 +21,9 @@
 #ifndef DISCOVERER_H_94LKA4M1
 #define DISCOVERER_H_94LKA4M1
 
-
+extern "C" {
 #include "dns_sd.h"
+}
 
 /**
  * Keep in mind that the bonjour concept of service differs from umundo's. Bonjour services are

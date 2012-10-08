@@ -98,7 +98,7 @@ to allow custom builds to load the debug JNI library.
 
 #### Maven Repository
 
-We maintain a maven repository for the desktop umundocore JAR file with everything included for MacOSX, Linux 32/64-Bit and Windows.
+We maintain a maven repository for the desktop umundocore JAR file with everything included for MacOSX, Linux 32/64-Bit and Windows 32/64-Bit.
 In your <tt>pom.xml</tt> add a new repository and include the umundocore dependency:
 
     <repositories>
@@ -115,7 +115,7 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
       <dependency>
         <groupId>org.umundo</groupId>
         <artifactId>umundocore</artifactId>
-        <version>0.0.4</version>
+        <version>0.1.1</version>
       </dependency>
     </dependencies>
 

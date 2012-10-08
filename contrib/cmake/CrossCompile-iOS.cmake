@@ -3,6 +3,8 @@
 
 SET(CMAKE_SYSTEM_NAME Generic)
 if ("$ENV{IOS_SDK_VERSION}" STREQUAL "")
+  SET(CMAKE_SYSTEM_VERSION 5.1)
+else()
 	SET(CMAKE_SYSTEM_VERSION $ENV{IOS_SDK_VERSION})
 endif()
 SET(CMAKE_SYSTEM_PROCESSOR arm)
@@ -29,6 +31,11 @@ if(EXISTS ${XCODE_SELECT})
 	endif()
 else()
 	SET(DEVROOT "/Developer/Platforms/iPhoneOS.platform/Developer")
+endif()
+
+# no armv6 support in ios6
+if (${CMAKE_SYSTEM_VERSION} VERSION_EQUAL "6.0" OR ${CMAKE_SYSTEM_VERSION} VERSION_GREATER "6.0")
+  SET(ARCHS "-arch armv7 -arch armv7s")
 endif()
 
 SET(SDKROOT "${DEVROOT}/SDKs/iPhoneOS${CMAKE_SYSTEM_VERSION}.sdk")

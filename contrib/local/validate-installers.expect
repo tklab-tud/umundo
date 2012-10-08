@@ -47,29 +47,29 @@ proc checkArchive {listCommand label listOfFiles} {
 }
 
 set reqFilesCSharpProject {
-	"templates/csharp/umundo-pingpong.sln"
-	"templates/csharp/umundo-pingpong.suo"
-	"templates/csharp/umundo-pingpong/Program.cs"
-	"templates/csharp/umundo-pingpong/umundo-pingpong.csproj"
-	"templates/csharp/umundo-pingpong/umundo-pingpong.csproj.user"
-	"templates/csharp/umundo-pingpong/Properties/AssemblyInfo.cs"
+	"samples/csharp/umundo-pingpong.sln"
+	"samples/csharp/umundo-pingpong.suo"
+	"samples/csharp/umundo-pingpong/Program.cs"
+	"samples/csharp/umundo-pingpong/umundo-pingpong.csproj"
+	"samples/csharp/umundo-pingpong/umundo-pingpong.csproj.user"
+	"samples/csharp/umundo-pingpong/Properties/AssemblyInfo.cs"
 }
 
 set reqFilesXCodeProject {
-	"templates/ios/umundo-pingpong/AppDelegate.h"
-	"templates/ios/umundo-pingpong/AppDelegate.mm"
-	"templates/ios/umundo-pingpong/main.m"
-	"templates/ios/umundo-pingpong/umundo-pingpong-Info.plist"
-	"templates/ios/umundo-pingpong/ViewController.h"
-	"templates/ios/umundo-pingpong/ViewController.m"
-	"templates/ios/umundo-pingpong.xcodeproj/project.pbxproj"
-	"templates/ios/umundo-pingpong.xcodeproj/project.xcworkspace"
+	"samples/ios/umundo-pingpong/AppDelegate.h"
+	"samples/ios/umundo-pingpong/AppDelegate.mm"
+	"samples/ios/umundo-pingpong/main.m"
+	"samples/ios/umundo-pingpong/umundo-pingpong-Info.plist"
+	"samples/ios/umundo-pingpong/ViewController.h"
+	"samples/ios/umundo-pingpong/ViewController.m"
+	"samples/ios/umundo-pingpong.xcodeproj/project.pbxproj"
+	"samples/ios/umundo-pingpong.xcodeproj/project.xcworkspace"
 }
 
 set reqFilesAndroidProject {
-	"templates/android/umundo-pingpong/AndroidManifest.xml"
-	"templates/android/umundo-pingpong/project.properties"
-	"templates/android/umundo-pingpong/src/org/umundo/samples/UMundoAndroidActivity.java"
+	"samples/android/umundo-pingpong/AndroidManifest.xml"
+	"samples/android/umundo-pingpong/project.properties"
+	"samples/android/umundo-pingpong/src/org/umundo/samples/UMundoAndroidActivity.java"
 }
 
 set reqFilesDesktopCommonUnix {
@@ -83,8 +83,23 @@ set reqFilesDesktopCommonUnix {
 set reqFilesAndroid {
 	"/share/umundo/android-.*/armv.*/libumundoNativeJava.so"
 	"/share/umundo/android-.*/armv.*/libumundoNativeJava_d.so"
-
+	"/share/umundo/android-.*/umundo.jar"
 }
+
+set reqFilesJavaSamples {
+  "samples/java/core/chat/build.properties"
+  "samples/java/core/chat/build.xml"
+  "samples/java/core/chat/src/org/umundo/Chat.java"
+  "samples/java/rpc/chat/build.properties"
+  "samples/java/rpc/chat/build.xml"
+  "samples/java/rpc/chat/proto/ChatS11N.proto"
+  "samples/java/rpc/chat/src/org/umundo/Chat.java"
+  "samples/java/s11n/chat/build.properties"
+  "samples/java/s11n/chat/build.xml"
+  "samples/java/s11n/chat/proto/ChatS11N.proto"
+  "samples/java/s11n/chat/src/org/umundo/Chat.java"
+}
+
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.a"
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.so"
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.a"
@@ -141,9 +156,9 @@ set reqFilesMac {
 	"/usr/local/lib/libumundoNativeJava64_d.jnilib"
 }
 
-set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS $reqFilesDesktopCommonUnix $reqFilesXCodeProject $reqFilesAndroidProject]
+set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS $reqFilesDesktopCommonUnix $reqFilesXCodeProject $reqFilesAndroidProject $reqFilesJavaSamples]
 set reqFilesMac [lsort $reqFilesMac]
-checkArchive "tar tzf ../../installer/umundo-darwin-*.tar.gz" Mac $reqFilesMac
+#checkArchive "tar tzf ../../installer/umundo-darwin-*.tar.gz" Mac $reqFilesMac
 
 #############################
 # Validate Linux32 installers
@@ -173,7 +188,7 @@ set reqFilesLinux32 {
 
 	"/usr/local/share/umundo/lib/umundo.jar"
 }
-set reqFilesLinux32 [concat $reqFilesLinux32 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject]
+set reqFilesLinux32 [concat $reqFilesLinux32 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples]
 set reqFilesLinux32 [lsort $reqFilesLinux32]
 checkArchive "tar tzf ../../installer/umundo-linux-i686-*.tar.gz" Linux32 $reqFilesLinux32
 
@@ -205,7 +220,7 @@ set reqFilesLinux64 {
 
 	"/usr/local/share/umundo/lib/umundo.jar"
 }
-set reqFilesLinux64 [concat $reqFilesLinux64 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject]
+set reqFilesLinux64 [concat $reqFilesLinux64 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples]
 set reqFilesLinux64 [lsort $reqFilesLinux64]
 checkArchive "tar tzf ../../installer/umundo-linux-x86_64-*.tar.gz" Linux64 $reqFilesLinux64
 
@@ -237,7 +252,7 @@ set reqFilesWin32 {
 	"/lib/umundoNativeJava.dll"
 	"/lib/umundoNativeJava_d.dll"
 }
-set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject]
+set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples]
 set reqFilesWin32 [lsort $reqFilesWin32]
 checkArchive "unzip -l ../../installer/umundo-windows-x86-*.zip" Win32 $reqFilesWin32
 
@@ -269,7 +284,7 @@ set reqFilesWin64 {
 	"/lib/umundoNativeJava64.dll"
 	"/lib/umundoNativeJava64_d.dll"
 }
-set reqFilesWin64 [concat $reqFilesWin64 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject]
+set reqFilesWin64 [concat $reqFilesWin64 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples]
 set reqFilesWin64 [lsort $reqFilesWin64]
 checkArchive "unzip -l ../../installer/umundo-windows-x86_64-*.zip" Win64 $reqFilesWin64
 

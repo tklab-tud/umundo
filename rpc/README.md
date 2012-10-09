@@ -7,7 +7,7 @@ services. For now, we only support RPC with Googles ProtoBuf via protoc plugins.
 
 Using umundo.s11n, we already have object (de-)serialization working and can use
 it together with some meta-fields to marshall and unmarshall rpc calls. At the
-moment, all services in uMundo are *stateless* that is, several instances will
+moment, all services in uMundo are *stateless* that is, several clients will
 potentially use the same remote service object. Every service instance has a
 <tt>TypedPublisher</tt> and a <tt>TypedSubscriber</tt> registered to a unique
 channel. It is assumed that the individual channels are distinct or you will
@@ -33,12 +33,13 @@ are send when querying other ServiceManagers for services. Each tuple in a filte
 is used to match the pattern against the target value for the given key from the
 ServiceDescription. If the result of the match is in the given relation to the
 given value, it is considered matching. If all of a filters tuples match a description,
-the filter is considered to match the description and he description is returned.
+the filter is considered to match the description and the description is returned.
 
 1. Connect a ServiceManager instance to a Node.
 <pre>
     Node* node = new Node();
     ServiceManager* svcMgr = new ServiceManager();
+    node->connect(svcMgr);
 </pre>
 2. Add any local Services with their ServiceDescription to the ServiceManager.
 <pre>
@@ -61,15 +62,17 @@ the filter is considered to match the description and he description is returned
 	2. Or (recommended) via <tt>ServiceManager.startQuery()</tt>:
 <pre>
 	void added(shared_ptr<ServiceDescription> desc) {
-        PingServiceStub* pingSvcStub = new PingServiceStub(pingSvcDesc);
-        pingSvcStub->ping();
+    &nbsp;&nbsp;PingServiceStub* pingSvcStub = new PingServiceStub(pingSvcDesc);
+    &nbsp;&nbsp;pingSvcStub->ping();
 	}
 	ServiceFilter* pingSvcFilter = new ServiceFilter("PingService");
 	ServiceDescription* pingSvcDesc = svcMgr->startQuery(pingSvcFilter, this);
 </pre>
 
 To know about the Stub classes, you will need to run the umundo protoc plugin
-on the <tt>.proto</tt> file.
+on the <tt>.proto</tt> file. There is an example for Java in the
+[build.xml](https://github.com/tklab-tud/umundo/blob/master/contrib/samples/java/rpc/chat/build.xml)
+of the RPC chat sample.
 
 ## Message Layout
 

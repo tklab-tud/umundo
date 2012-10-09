@@ -1,0 +1,15 @@
+option java_package = "org.umundo.protobuf";
+
+message ChatMsg {
+	required string username = 1;
+	optional string message = 2;
+}
+
+message Void {
+}
+
+service ChatService {
+	rpc receive (ChatMsg) returns (Void);
+	rpc join (ChatMsg) returns (Void);
+	rpc leave (ChatMsg) returns (Void);
+}

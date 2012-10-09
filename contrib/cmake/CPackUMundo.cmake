@@ -87,6 +87,13 @@ endforeach()
 # endforeach()
 
 ########################################
+# CMake Modules for clients
+########################################
+
+install(FILES ${PROJECT_SOURCE_DIR}/contrib/cmake/FindUMundo.cmake DESTINATION share/umundo/cmake COMPONENT library)
+install(FILES ${PROJECT_SOURCE_DIR}/contrib/cmake/UseUMundo.cmake DESTINATION share/umundo/cmake COMPONENT library)
+
+########################################
 # Target languages
 ########################################
 

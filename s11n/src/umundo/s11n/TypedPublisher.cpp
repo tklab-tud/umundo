@@ -31,6 +31,7 @@
 namespace umundo {
 
 TypedPublisher::TypedPublisher(string channelName) : Publisher(channelName) {
+  _greeterWrapper = NULL;
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBSerializer();
@@ -48,9 +49,6 @@ TypedPublisher::~TypedPublisher() {
 Message* TypedPublisher::prepareMsg(const string& type, void* obj) {
 	Message* msg = new Message();
 	string buffer = _impl->serialize(type, obj);
-  if (buffer.length() == 0) {
-    LOG_ERR("Something went wrong when serializing %s", type.c_str());
-  }
 	msg->setData(buffer);
 	msg->putMeta("um.s11n.type", type);
 	return msg;
@@ -62,15 +60,33 @@ void TypedPublisher::sendObj(const string& type, void* obj) {
 	delete msg;
 }
 
-// void TypedPublisher::sendObj(void* obj) {
-// 	Message* msg = new Message();
-// 	string buffer(_impl->serialize(obj));
-// 	msg->setData(buffer);
-// 	send(msg);
-// }
+void TypedPublisher::setGreeter(TypedGreeter* greeter) {
+	if (_greeterWrapper == NULL) {
+		_greeterWrapper = new TypedPublisher::GreeterWrapper(greeter, this);
+    Publisher::setGreeter(_greeterWrapper);
+	} else {
+    _greeterWrapper->_typedGreeter = greeter;
+  }
+}
 
 void TypedPublisher::registerType(const string& type, void* serializer) {
 	_impl->registerType(type, serializer);
+}
+
+TypedPublisher::GreeterWrapper::GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub) : _typedGreeter(typedGreeter), _typedPub(typedPub) {}
+
+TypedPublisher::GreeterWrapper::~GreeterWrapper() {}
+
+void TypedPublisher::GreeterWrapper::welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId) {
+  if (_typedGreeter != NULL) {
+    _typedGreeter->welcome(_typedPub, nodeId, subId);
+  }
+}
+
+void TypedPublisher::GreeterWrapper::farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId) {
+  if (_typedGreeter != NULL) {
+    _typedGreeter->farewell(_typedPub, nodeId, subId);
+  }
 }
 
 }

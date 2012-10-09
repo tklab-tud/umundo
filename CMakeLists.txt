@@ -509,7 +509,7 @@ if(NOT BUILD_SHARED)
 	if (IOS)
 		set(LIPO_INPUT_FILES "")
 		foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
-			message("ARCH: ${ARCH}")
+#			message("ARCH: ${ARCH}")
 			# @TODO: we should only depend on targets that are actually being built
 			ADD_CUSTOM_COMMAND(
 				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a

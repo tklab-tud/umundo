@@ -49,8 +49,8 @@ public:
 	}
 
 	// Greeter Interface
-	void welcome(Publisher*, const string nodeId, const string subId);
-	void farewell(Publisher*, const string nodeId, const string subId);
+	void welcome(Publisher*, const string& nodeId, const string& subId);
+	void farewell(Publisher*, const string& nodeId, const string& subId);
 
 	void receive(Message* msg);
 

@@ -50,7 +50,7 @@ std::set<umundo::Subscriber*> ServiceManager::getSubscribers() {
  *
  * Send all local continuous queries.
  */
-void ServiceManager::welcome(Publisher*, const string nodeId, const string subId) {
+void ServiceManager::welcome(Publisher*, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
 	LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
 	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp>::iterator queryIter = _localQueries.begin();
@@ -76,7 +76,7 @@ void ServiceManager::welcome(Publisher*, const string nodeId, const string subId
 /**
  * A ServiceManager was removed.
  */
-void ServiceManager::farewell(Publisher*, const string nodeId, const string subId) {
+void ServiceManager::farewell(Publisher*, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
 	LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 

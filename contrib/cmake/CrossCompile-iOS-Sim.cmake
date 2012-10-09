@@ -34,12 +34,24 @@ else()
 	SET(DEVROOT "/Developer/Platforms/iPhoneSimulator.platform/Developer")
 endif()
 
+if (${CMAKE_SYSTEM_VERSION} VERSION_EQUAL "6.0" OR ${CMAKE_SYSTEM_VERSION} VERSION_GREATER "6.0")
+  set(IOS6_OR_LATER ON)
+else()
+  set(IOS6_OR_LATER OFF)
+endif()
+
+if (IOS6_OR_LATER)
+  # we have to use clang - llvm will choke on those __has_feature macros?
+  SET (CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+  SET (CMAKE_CXX_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")
+else()
+  SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")
+  SET (CMAKE_CXX_COMPILER "${DEVROOT}/usr/bin/g++")
+endif()
+
 SET(SDKROOT "${DEVROOT}/SDKs/iPhoneSimulator${CMAKE_SYSTEM_VERSION}.sdk")
 SET(CMAKE_OSX_SYSROOT "${SDKROOT}")
 
-
-SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")
-SET (CMAKE_CXX_COMPILER "${DEVROOT}/usr/bin/g++")
 
 # force compiler and linker flags
 SET(CMAKE_C_LINK_FLAGS ${ARCHS})

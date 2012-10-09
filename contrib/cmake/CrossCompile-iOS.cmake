@@ -8,9 +8,7 @@ else()
 	SET(CMAKE_SYSTEM_VERSION $ENV{IOS_SDK_VERSION})
 endif()
 SET(CMAKE_SYSTEM_PROCESSOR arm)
-SET(CMAKE_OSX_ARCHITECTURES "armv6" "armv7")
 
-SET(ARCHS "-arch armv6 -arch armv7")
 SET(CMAKE_CROSSCOMPILING_TARGET IOS)
 SET(IOS ON)
 SET(UNIX ON)
@@ -33,16 +31,32 @@ else()
 	SET(DEVROOT "/Developer/Platforms/iPhoneOS.platform/Developer")
 endif()
 
-# no armv6 support in ios6
 if (${CMAKE_SYSTEM_VERSION} VERSION_EQUAL "6.0" OR ${CMAKE_SYSTEM_VERSION} VERSION_GREATER "6.0")
-  SET(ARCHS "-arch armv7 -arch armv7s")
+  set(IOS6_OR_LATER ON)
+else()
+  set(IOS6_OR_LATER OFF)
+endif()
+
+if (IOS6_OR_LATER)
+  # no armv6 support in ios6 - armv7s was added, but did no compile our dependencies for it
+  SET(CMAKE_OSX_ARCHITECTURES "armv7")
+  SET(ARCHS "-arch armv7")
+
+  # we have to use clang - llvm will choke on those __has_feature macros?
+  SET (CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+  SET (CMAKE_CXX_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")
+
+else()
+  SET(CMAKE_OSX_ARCHITECTURES "armv6" "armv7")
+  SET(ARCHS "-arch armv6 -arch armv7")
+
+  SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")
+  SET (CMAKE_CXX_COMPILER "${DEVROOT}/usr/bin/g++")
+
 endif()
 
 SET(SDKROOT "${DEVROOT}/SDKs/iPhoneOS${CMAKE_SYSTEM_VERSION}.sdk")
 SET(CMAKE_OSX_SYSROOT "${SDKROOT}")
-
-SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")
-SET (CMAKE_CXX_COMPILER "${DEVROOT}/usr/bin/g++")
 
 # force compiler and linker flags
 SET(CMAKE_C_LINK_FLAGS ${ARCHS})

@@ -82,6 +82,9 @@ and simulator respectively.
 <b>Note:</b> There is no _convinience_ library including all of umundo and the
 dependent libraries. You will have to link them individually with your application
 in Xcode.
+<b>Update:</b> Yes there is. For iOS we link al static libraries together into a
+big <tt>libumundo.ios.a</tt>.
+
 
 ## Android
 

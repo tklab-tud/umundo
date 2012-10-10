@@ -32,13 +32,13 @@ public:
 int main(int argc, char** argv) {
 	Node* n = new Node();
 	ServiceManager* svcMgr= new ServiceManager();
-  
-  // set some random properties to query for
-  ServiceDescription* echoSvcDesc = new ServiceDescription();
-  echoSvcDesc->setProperty("host", Host::getHostId());
-  echoSvcDesc->setProperty("someString", "this is some random string with 123 numbers inside");
-  echoSvcDesc->setProperty("someNumber", "1");
-  
+
+	// set some random properties to query for
+	ServiceDescription* echoSvcDesc = new ServiceDescription();
+	echoSvcDesc->setProperty("host", Host::getHostId());
+	echoSvcDesc->setProperty("someString", "this is some random string with 123 numbers inside");
+	echoSvcDesc->setProperty("someNumber", "1");
+
 	EchoService* echoSvc = new EchoService();
 	svcMgr->addService(echoSvc, echoSvcDesc);
 

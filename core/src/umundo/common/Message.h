@@ -116,13 +116,13 @@ public:
 		return keys;
 	}
 
-  void setQueued(bool isQueued) {
-    _isQueued = isQueued;
-  }
-  bool isQueued() {
-    return _isQueued;
-  }
-  
+	void setQueued(bool isQueued) {
+		_isQueued = isQueued;
+	}
+	bool isQueued() {
+		return _isQueued;
+	}
+
 	void setReceiver(const string& uuid) {
 		putMeta("um.sub", uuid);
 	}

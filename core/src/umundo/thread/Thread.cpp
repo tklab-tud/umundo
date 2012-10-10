@@ -37,53 +37,53 @@ Thread::Thread() {
 }
 
 Thread::~Thread() {
-  if (_thread) {
-    if (_isStarted) {
-      stop();
-      join();
-    }
-    delete _thread;
-  }
+	if (_thread) {
+		if (_isStarted) {
+			stop();
+			join();
+		}
+		delete _thread;
+	}
 }
 
 void Thread::join() {
-  if (_thread)
-    _thread->join();
-  _isStarted = false;
+	if (_thread)
+		_thread->join();
+	_isStarted = false;
 }
 
 int Thread::getThreadId() {
-  std::stringstream ssThreadId;
-  ssThreadId << tthread::this_thread::get_id();
-  int threadId;
-  ssThreadId >> threadId;
-  return threadId;
+	std::stringstream ssThreadId;
+	ssThreadId << tthread::this_thread::get_id();
+	int threadId;
+	ssThreadId >> threadId;
+	return threadId;
 }
 
 void Thread::start() {
 	if (_isStarted)
 		return;
 	_isStarted = true;
-  _thread = new tthread::thread(runWrapper, this);
+	_thread = new tthread::thread(runWrapper, this);
 }
 
 void Thread::stop() {
-  if (_isStarted)
-    _isStarted = false;
+	if (_isStarted)
+		_isStarted = false;
 }
 
 void Thread::runWrapper(void *obj) {
 	Thread* t = (Thread*)obj;
 	t->run();
-  t->_isStarted = false;
+	t->_isStarted = false;
 }
 
 void Thread::yield() {
-  tthread::this_thread::yield();
+	tthread::this_thread::yield();
 }
 
 void Thread::sleepMs(uint32_t ms) {
-  tthread::this_thread::sleep_for(tthread::chrono::milliseconds(ms));
+	tthread::this_thread::sleep_for(tthread::chrono::milliseconds(ms));
 }
 
 uint64_t Thread::getTimeStampMs() {
@@ -114,22 +114,22 @@ Monitor::~Monitor() {
 }
 
 void Monitor::signal() {
-  _cond.notify_one();
+	_cond.notify_one();
 }
 
 void Monitor::broadcast() {
-  _cond.notify_all();
+	_cond.notify_all();
 }
 
 void Monitor::signal(int nrThreads) {
-  while(nrThreads--)
-    _cond.notify_one();
+	while(nrThreads--)
+		_cond.notify_one();
 }
 
 void Monitor::wait(Mutex& mutex, uint32_t ms) {
-  if (ms <= 0)
-    _cond.wait(mutex);
-  _cond.wait_for(mutex, ms);
+	if (ms <= 0)
+		_cond.wait(mutex);
+	_cond.wait_for(mutex, ms);
 }
 
 #ifdef THREAD_PTHREAD

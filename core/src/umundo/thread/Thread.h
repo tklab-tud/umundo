@@ -123,7 +123,7 @@ public:
 private:
 	bool _isStarted;
 	static void runWrapper(void*);
-  tthread::thread* _thread;
+	tthread::thread* _thread;
 
 };
 
@@ -131,7 +131,7 @@ private:
  * Platform independent mutual exclusion.
  */
 typedef tthread::recursive_mutex Mutex;
-  
+
 
 /**
  * Instantiate on stack to give code in scope below exclusive access.
@@ -158,7 +158,7 @@ public:
 	void wait(Mutex& mutex, uint32_t ms);
 
 private:
-  tthread::condition_variable _cond;
+	tthread::condition_variable _cond;
 };
 
 typedef Monitor Condition;

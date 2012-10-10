@@ -31,7 +31,7 @@
 namespace umundo {
 
 TypedPublisher::TypedPublisher(string channelName) : Publisher(channelName) {
-  _greeterWrapper = NULL;
+	_greeterWrapper = NULL;
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBSerializer();
@@ -63,10 +63,10 @@ void TypedPublisher::sendObj(const string& type, void* obj) {
 void TypedPublisher::setGreeter(TypedGreeter* greeter) {
 	if (_greeterWrapper == NULL) {
 		_greeterWrapper = new TypedPublisher::GreeterWrapper(greeter, this);
-    Publisher::setGreeter(_greeterWrapper);
+		Publisher::setGreeter(_greeterWrapper);
 	} else {
-    _greeterWrapper->_typedGreeter = greeter;
-  }
+		_greeterWrapper->_typedGreeter = greeter;
+	}
 }
 
 void TypedPublisher::registerType(const string& type, void* serializer) {
@@ -78,15 +78,15 @@ TypedPublisher::GreeterWrapper::GreeterWrapper(TypedGreeter* typedGreeter, Typed
 TypedPublisher::GreeterWrapper::~GreeterWrapper() {}
 
 void TypedPublisher::GreeterWrapper::welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId) {
-  if (_typedGreeter != NULL) {
-    _typedGreeter->welcome(_typedPub, nodeId, subId);
-  }
+	if (_typedGreeter != NULL) {
+		_typedGreeter->welcome(_typedPub, nodeId, subId);
+	}
 }
 
 void TypedPublisher::GreeterWrapper::farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId) {
-  if (_typedGreeter != NULL) {
-    _typedGreeter->farewell(_typedPub, nodeId, subId);
-  }
+	if (_typedGreeter != NULL) {
+		_typedGreeter->farewell(_typedPub, nodeId, subId);
+	}
 }
 
 }

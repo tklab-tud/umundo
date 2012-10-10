@@ -146,7 +146,7 @@ void SCache::update() {
 void SCache::run() {
 	while(isStarted()) {
 		ScopeLock lock(_mutex);
-    _monitor.wait(_mutex);
+		_monitor.wait(_mutex);
 		update();
 	}
 }
@@ -158,7 +158,7 @@ void SCache::resetDistance() {
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();
 	while(itemIter != _cacheItems.end()) {
 		(*itemIter)->_distance = std::numeric_limits<int>::max();
-    (*itemIter)->_paths.clear();
+		(*itemIter)->_paths.clear();
 		itemIter++;
 	}
 
@@ -181,22 +181,22 @@ void SCache::resetDistance() {
 	while(!itemQueue.empty()) {
 		SCacheItem* item = itemQueue.front().second;
 		std::list<SCacheItem*> history = itemQueue.front().first;
-    
-    int distance = history.size();
-    
-    if (item->addPath(history) || item->_distance > distance) {
-      if (item->_distance > distance)
-        item->_distance = distance;
 
-      history.push_back(item);
+		int distance = history.size();
 
-      set<SCacheItem*> nexts = item->getNext();
-      set<SCacheItem*>::iterator nextIter = nexts.begin();
-      while(nextIter != nexts.end()) {
-        itemQueue.push_back(std::make_pair(history, (*nextIter)));
-        nextIter++;
-      }
-    }
+		if (item->addPath(history) || item->_distance > distance) {
+			if (item->_distance > distance)
+				item->_distance = distance;
+
+			history.push_back(item);
+
+			set<SCacheItem*> nexts = item->getNext();
+			set<SCacheItem*>::iterator nextIter = nexts.begin();
+			while(nextIter != nexts.end()) {
+				itemQueue.push_back(std::make_pair(history, (*nextIter)));
+				nextIter++;
+			}
+		}
 		itemQueue.pop_front();
 	}
 
@@ -224,8 +224,8 @@ void SCache::remove(SCacheItem* item) {
 		item->_cache = NULL;
 		_cacheItems.erase(item);
 	} else {
-    LOG_WARN("Cannot remove unknown item");
-  }
+		LOG_WARN("Cannot remove unknown item");
+	}
 	dirty();
 }
 

@@ -36,27 +36,28 @@ Message* ServiceFilter::toMessage() {
 	msg->putMeta("um.rpc.filter.svcName", _svcName);
 	msg->putMeta("um.rpc.filter.uuid", _uuid);
 
-  vector<Rule>::iterator ruleIter = _rules.begin();
-  int i = 0;
+	vector<Rule>::iterator ruleIter = _rules.begin();
+	int i = 0;
 	while(ruleIter != _rules.end()) {
-    std::stringstream ssValueKey;
-    std::stringstream ssPatternKey;
-    std::stringstream ssPredKey;
-    
-    ssValueKey << "um.rpc.filter.value." << i << "." << ruleIter->key;
-    msg->putMeta(ssValueKey.str(), ruleIter->value);
+		std::stringstream ssValueKey;
+		std::stringstream ssPatternKey;
+		std::stringstream ssPredKey;
 
-    ssPatternKey << "um.rpc.filter.pattern." << i << "." << ruleIter->key;
-    msg->putMeta(ssPatternKey.str(), ruleIter->pattern);
+		ssValueKey << "um.rpc.filter.value." << i << "." << ruleIter->key;
+		msg->putMeta(ssValueKey.str(), ruleIter->value);
 
-    std::stringstream ssPredValue;
-    ssPredValue << ruleIter->predicate;
-    
-    ssPredKey << "um.rpc.filter.pred." << i << "." << ruleIter->key;
-    msg->putMeta(ssPredKey.str(), ssPredValue.str());
+		ssPatternKey << "um.rpc.filter.pattern." << i << "." << ruleIter->key;
+		msg->putMeta(ssPatternKey.str(), ruleIter->pattern);
 
-    i++; ruleIter++;
-  }  
+		std::stringstream ssPredValue;
+		ssPredValue << ruleIter->predicate;
+
+		ssPredKey << "um.rpc.filter.pred." << i << "." << ruleIter->key;
+		msg->putMeta(ssPredKey.str(), ssPredValue.str());
+
+		i++;
+		ruleIter++;
+	}
 	return msg;
 }
 
@@ -70,23 +71,23 @@ ServiceFilter::ServiceFilter(Message* msg) {
 		string value = metaIter->second;
 
 		if (key.size() > 20 && key.compare(0, 20, "um.rpc.filter.value.") == 0) {
-      size_t dotPos = key.find(".", 20);
-      if (dotPos == std::string::npos)
-        continue;
+			size_t dotPos = key.find(".", 20);
+			if (dotPos == std::string::npos)
+				continue;
 
-      string indexStr(key.substr(20, dotPos - 20));
+			string indexStr(key.substr(20, dotPos - 20));
 
 			key = key.substr(20 + 1 + indexStr.length(), key.length() - (20 + indexStr.length()));
 			assert(meta.find("um.rpc.filter.pattern." + indexStr + "." + key) != meta.end());
 			assert(meta.find("um.rpc.filter.pred." + indexStr + "." + key) != meta.end());
 
-      Rule rule;
-      rule.key = key;
-      rule.value = value;
-      rule.predicate = (Predicate)atoi(meta["um.rpc.filter.pred." + indexStr + "." + key].c_str());
-      rule.pattern = meta["um.rpc.filter.pattern." + indexStr + "." + key];
+			Rule rule;
+			rule.key = key;
+			rule.value = value;
+			rule.predicate = (Predicate)atoi(meta["um.rpc.filter.pred." + indexStr + "." + key].c_str());
+			rule.pattern = meta["um.rpc.filter.pattern." + indexStr + "." + key];
 
-      _rules.push_back(rule);
+			_rules.push_back(rule);
 		}
 		metaIter++;
 	}
@@ -97,13 +98,13 @@ void ServiceFilter::addRule(const string& key, const string& value, int pred) {
 }
 
 void ServiceFilter::addRule(const string& key, const string& pattern, const string& value, int pred) {
-  // @TODO: we cannot use a map here!
-  Rule rule;
-  rule.pattern = pattern;
-  rule.key = key;
-  rule.value = value;
-  rule.predicate = pred;
-  _rules.push_back(rule);
+	// @TODO: we cannot use a map here!
+	Rule rule;
+	rule.pattern = pattern;
+	rule.key = key;
+	rule.value = value;
+	rule.predicate = pred;
+	_rules.push_back(rule);
 }
 
 void ServiceFilter::clearRules() {
@@ -123,12 +124,12 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 		 * the service description is in the relation given by the predicate to the
 		 * filter value.
 		 */
-    
+
 		string key = ruleIter->key;                     // the key for the values
-    if (!svcDesc->hasProperty(key)) {
-      ruleIter++;
-      continue;
-    }
+		if (!svcDesc->hasProperty(key)) {
+			ruleIter++;
+			continue;
+		}
 
 		string actual = svcDesc->getProperty(key);      // the actual string as it is present in the description
 		string target = ruleIter->value;                // the substring from the filter
@@ -353,20 +354,20 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 	_requests[reqId] = new Monitor();
 	_rpcPub->send(rpcReqMsg);
 	ScopeLock lock(_mutex);
-  
-  int retries = 3;
-  while(retries-- > 0) {
-    _requests[reqId]->wait(_mutex, 1000);
-    if (_responses.find(reqId) != _responses.end()) {
-      break;
-    }
-    LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());
-  }
-  
-  if (_requests.find(reqId) == _requests.end()) {
-    LOG_ERR("Did not get a reply for calling %s", name.c_str());
-  }
-  
+
+	int retries = 3;
+	while(retries-- > 0) {
+		_requests[reqId]->wait(_mutex, 1000);
+		if (_responses.find(reqId) != _responses.end()) {
+			break;
+		}
+		LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());
+	}
+
+	if (_requests.find(reqId) == _requests.end()) {
+		LOG_ERR("Did not get a reply for calling %s", name.c_str());
+	}
+
 	delete _requests[reqId];
 	_requests.erase(reqId);
 	out = _responses[reqId];

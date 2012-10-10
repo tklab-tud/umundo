@@ -213,7 +213,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	// get current thread id
 	int threadId = -1;
 //	if (useThreadId && strcmp(filename, "Thread.cpp") != 0)
-  threadId = Thread::getThreadId();
+	threadId = Thread::getThreadId();
 
 	// timestamp
 	char timeStr[9] = "        ";  // space for "HH:MM:SS\0"

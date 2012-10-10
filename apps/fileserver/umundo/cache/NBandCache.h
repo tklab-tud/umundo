@@ -45,9 +45,13 @@ public:
 	virtual uint64_t getSizeAtPressure(float pressure) = 0;
 	virtual void applyPressure(float pressure) = 0;
 
-  const string getName() { return _name; }
-  const string getBand() { return _band; }
-  
+	const string getName() {
+		return _name;
+	}
+	const string getBand() {
+		return _band;
+	}
+
 	NBandCacheItem* _left;
 	NBandCacheItem* _right;
 	NBandProxyCacheItem* _up;

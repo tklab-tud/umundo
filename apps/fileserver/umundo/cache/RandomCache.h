@@ -9,9 +9,13 @@ namespace umundo {
 class DLLEXPORT RandomCacheItem : public SCacheItem {
 public:
 	RandomCacheItem(string name);
-  ~RandomCacheItem();
-	set<SCacheItem*> getNext() { return _nexts; }
-  const string getName() { return _name; }
+	~RandomCacheItem();
+	set<SCacheItem*> getNext() {
+		return _nexts;
+	}
+	const string getName() {
+		return _name;
+	}
 	set<SCacheItem*> _nexts;
 	string _name;
 };
@@ -34,9 +38,9 @@ public:
 	virtual void insert(RandomCacheItem* item);
 	virtual void remove(RandomCacheItem* item);
 
-  void connectItems(float propability);
-  map<string, RandomCacheItem*> _items;
-  
+	void connectItems(float propability);
+	map<string, RandomCacheItem*> _items;
+
 protected:
 	NGramModel* _model;
 	friend class RandomCachePtr;

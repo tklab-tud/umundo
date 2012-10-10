@@ -61,15 +61,15 @@ SCacheItem* NBandCachePtr::getItem() {
 }
 
 const string NBandCachePtr::getBandName() {
-  if (_item != NULL)
-    return ((NBandCacheItem*)_item)->_band;
-  return "";
+	if (_item != NULL)
+		return ((NBandCacheItem*)_item)->_band;
+	return "";
 }
 
 const string NBandCachePtr::getItemName() {
-  if (_item != NULL)
-    return ((NBandCacheItem*)_item)->_name;
-  return "";
+	if (_item != NULL)
+		return ((NBandCacheItem*)_item)->_name;
+	return "";
 }
 
 const int NBandCachePtr::getElementId() {
@@ -179,18 +179,18 @@ shared_ptr<NBandCachePtr> NBandCache::getPointer(const string& band, int elemId)
 }
 
 shared_ptr<NBandCachePtr> NBandCache::getPointer(const string& band, const string& name) {
-  ScopeLock lock(_mutex);
+	ScopeLock lock(_mutex);
 	// is there such a band?
 	BandIter bandIter = _bands.find(band);
 	if (bandIter == _bands.end())
 		return shared_ptr<NBandCachePtr>();
 
-  map<string, NBandCacheItem*>::iterator itemIter = bandIter->second.find(name);
-  if (itemIter == bandIter->second.end())
+	map<string, NBandCacheItem*>::iterator itemIter = bandIter->second.find(name);
+	if (itemIter == bandIter->second.end())
 		return shared_ptr<NBandCachePtr>();
 
 	shared_ptr<NBandCachePtr> ptr = shared_ptr<NBandCachePtr>(new NBandCachePtr());
-  ptr->_item = itemIter->second;
+	ptr->_item = itemIter->second;
 
 	assert(ptr->_item != NULL);
 	ptr->_cache = this;
@@ -255,63 +255,63 @@ void NBandCache::insert(NBandCacheItem* item) {
 }
 
 void NBandCache::remove(NBandCacheItem* item) {
-  ScopeLock lock(_mutex);
-  
-  // have we been inserted before?
-  if (_bands[item->_band].find(item->_name) == _bands[item->_band].end())
-    return;
+	ScopeLock lock(_mutex);
 
-  // is someone pointing to the item?
-  set<weak_ptr<SCachePointer> >::iterator ptrIter = _cachePointers.begin();
-  while(ptrIter != _cachePointers.end()) {
-    shared_ptr<SCachePointer> ptr = ptrIter->lock();
-    if (ptr && ptr->_item == item) {
-      ptr->_item = NULL;
-    }
-    ptrIter++;
-  }
-  
-  // have we been the last item in the band?
-  if (item->_left == NULL && item->_right == NULL) {
-    // remove whole band
-    if (item->_up->_otherBand != NULL)
-      item->_up->_otherBand->_otherBand = item->_down->_otherBand;
-    if (item->_down->_otherBand != NULL)
-      item->_down->_otherBand->_otherBand = item->_up->_otherBand;
-    SCache::remove((SCacheItem*)item->_down);
-    SCache::remove((SCacheItem*)item->_up);
+	// have we been inserted before?
+	if (_bands[item->_band].find(item->_name) == _bands[item->_band].end())
+		return;
 
-    // remove item and band
-    _bands[item->_band].erase(item->_name);
-    _bands.erase(item->_band);
-  } else {
-    // adapt neighbors neightbors
-    map<string, NBandCacheItem*>::iterator itemIter = _bands[item->_band].find(item->_name);
-    if (itemIter != _bands[item->_band].begin()) {
-      // there is someone before us in the band
-      itemIter--;
-      NBandCacheItem* leftNeighbor = itemIter->second;
-      leftNeighbor->_right = item->_right; // its right neighbor is our former right member
-      itemIter++; // reset iterator
-    }
-    if (++itemIter != _bands[item->_band].end()) {
-      // there is an item after us in the band
-      NBandCacheItem* rightNeighbor = itemIter->second;
-      rightNeighbor->_left = item->_left;
-    }
-    
-    // have we been the current item?
-    if (item->_up->_currentItem == item) {
-      // prefer left neighbor
-      NBandCacheItem* newCurrent = (item->_left != NULL ? item->_left : item->_right);
-      item->_up->_currentItem = newCurrent;
-      item->_down->_currentItem = newCurrent;
-    }
+	// is someone pointing to the item?
+	set<weak_ptr<SCachePointer> >::iterator ptrIter = _cachePointers.begin();
+	while(ptrIter != _cachePointers.end()) {
+		shared_ptr<SCachePointer> ptr = ptrIter->lock();
+		if (ptr && ptr->_item == item) {
+			ptr->_item = NULL;
+		}
+		ptrIter++;
+	}
 
-    // remove item from band
-    _bands[item->_band].erase(item->_name);
-  }
-  
+	// have we been the last item in the band?
+	if (item->_left == NULL && item->_right == NULL) {
+		// remove whole band
+		if (item->_up->_otherBand != NULL)
+			item->_up->_otherBand->_otherBand = item->_down->_otherBand;
+		if (item->_down->_otherBand != NULL)
+			item->_down->_otherBand->_otherBand = item->_up->_otherBand;
+		SCache::remove((SCacheItem*)item->_down);
+		SCache::remove((SCacheItem*)item->_up);
 
-  SCache::remove((SCacheItem*)item);
+		// remove item and band
+		_bands[item->_band].erase(item->_name);
+		_bands.erase(item->_band);
+	} else {
+		// adapt neighbors neightbors
+		map<string, NBandCacheItem*>::iterator itemIter = _bands[item->_band].find(item->_name);
+		if (itemIter != _bands[item->_band].begin()) {
+			// there is someone before us in the band
+			itemIter--;
+			NBandCacheItem* leftNeighbor = itemIter->second;
+			leftNeighbor->_right = item->_right; // its right neighbor is our former right member
+			itemIter++; // reset iterator
+		}
+		if (++itemIter != _bands[item->_band].end()) {
+			// there is an item after us in the band
+			NBandCacheItem* rightNeighbor = itemIter->second;
+			rightNeighbor->_left = item->_left;
+		}
+
+		// have we been the current item?
+		if (item->_up->_currentItem == item) {
+			// prefer left neighbor
+			NBandCacheItem* newCurrent = (item->_left != NULL ? item->_left : item->_right);
+			item->_up->_currentItem = newCurrent;
+			item->_down->_currentItem = newCurrent;
+		}
+
+		// remove item from band
+		_bands[item->_band].erase(item->_name);
+	}
+
+
+	SCache::remove((SCacheItem*)item);
 }

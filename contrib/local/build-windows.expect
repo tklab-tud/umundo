@@ -33,7 +33,8 @@ expect {
 
 if {$redeploy} {
  eval spawn rm umundo-win.tar
- eval spawn tar --exclude=*\/\.* --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
+ eval spawn tar --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
+# eval spawn tar --exclude=*\/\.* --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
 	expect {
 		"a umundo/"        { exp_continue }
 		timeout            { puts "Timeout when packaging source code"; exit; }

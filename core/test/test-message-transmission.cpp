@@ -36,23 +36,23 @@ bool testMessageTransmission() {
 	for (int i = 0; i < 2; i++) {
 		nrReceptions = 0;
 		bytesRecvd = 0;
-    
+
 		Node* pubNode = new Node(hostId + "foo");
 		Publisher* pub = new Publisher("foo");
 		pubNode->addPublisher(pub);
-    
-    TestReceiver* testRecv = new TestReceiver();
+
+		TestReceiver* testRecv = new TestReceiver();
 		Node* subNode = new Node(hostId + "foo");
 		Subscriber* sub = new Subscriber("foo", testRecv);
-    sub->setReceiver(testRecv);
+		sub->setReceiver(testRecv);
 		subNode->addSubscriber(sub);
-    
+
 		pub->waitForSubscribers(1);
 		assert(pub->waitForSubscribers(0) == 1);
-    
+
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, 40, BUFFER_SIZE);
-    
+
 		for (int j = 0; j < 100; j++) {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
 			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
@@ -60,18 +60,18 @@ bool testMessageTransmission() {
 			pub->send(msg);
 			delete msg;
 		}
-    
+
 		// wait until all messages are delivered
 		Thread::sleepMs(500);
-    
+
 		// sometimes there is some weird latency
 		if (nrReceptions < 100)
 			Thread::sleepMs(2000);
-    
+
 		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == 100);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
-    
+
 		int iterations = 5;
 		while(iterations-- > 0) {
 			nrReceptions = 0;
@@ -83,7 +83,7 @@ bool testMessageTransmission() {
 				delete msg2;
 			}
 		}
-    
+
 		// test explicit sub removal
 		subNode->removeSubscriber(sub);
 		for (int k = 0; k < 8; k++) {
@@ -92,12 +92,12 @@ bool testMessageTransmission() {
 			Thread::sleepMs(50);
 		}
 		assert(pub->waitForSubscribers(0) == 0);
-    
+
 #if 0
 		// The node still tells everyone else that the subscriber unsubscribed
 		subNode->addSubscriber(sub);
 		pub->waitForSubscribers(1);
-    
+
 		// test node destruction
 		delete subNode;
 		for (int k = 0; k < 8; k++) {
@@ -108,18 +108,18 @@ bool testMessageTransmission() {
 		assert(pub->waitForSubscribers(0) == 0);
 #endif
 		pubNode->removePublisher(pub);
-    
+
 		delete pubNode;
 		delete pub;
 		delete sub;
-    
+
 	}
-  return true;
+	return true;
 }
 
 
 int main(int argc, char** argv, char** envp) {
-  if (!testMessageTransmission())
-    return EXIT_FAILURE;
-  return EXIT_SUCCESS;
+	if (!testMessageTransmission())
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }

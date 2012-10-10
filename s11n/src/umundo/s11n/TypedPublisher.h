@@ -29,7 +29,7 @@
 namespace umundo {
 
 class TypedPublisher;
-  
+
 /**
  * Base class for Type Serializer to map objects to strings.
  */
@@ -53,22 +53,22 @@ public:
  */
 class DLLEXPORT TypedPublisher : public Publisher {
 private:
-  /**
-   * Untyped greeter to wrap a TypedGreeter for a TypedPublisher.
-   */
-  class DLLEXPORT GreeterWrapper : public Greeter {
-  public:
-    GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
-    virtual ~GreeterWrapper();
-    void welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId);
-    void farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId);
-    
-  protected:
-    TypedGreeter* _typedGreeter;
-    TypedPublisher* _typedPub;
-    
-    friend class TypedPublisher;
-  };
+	/**
+	 * Untyped greeter to wrap a TypedGreeter for a TypedPublisher.
+	 */
+	class DLLEXPORT GreeterWrapper : public Greeter {
+	public:
+		GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
+		virtual ~GreeterWrapper();
+		void welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId);
+		void farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId);
+
+	protected:
+		TypedGreeter* _typedGreeter;
+		TypedPublisher* _typedPub;
+
+		friend class TypedPublisher;
+	};
 
 public:
 	TypedPublisher(string channelName);
@@ -81,7 +81,7 @@ public:
 private:
 	shared_ptr<TypeSerializerImpl> _impl;
 
-  GreeterWrapper* _greeterWrapper;
+	GreeterWrapper* _greeterWrapper;
 	static TypeSerializerImpl* _registeredPrototype; ///< The instance we registered at the factory
 };
 

@@ -139,7 +139,7 @@ bool findServices() {
 
 bool queryTests() {
 	ServiceDescription* desc = new ServiceDescription(map<string, string>());
-  desc->_svcName = "FooService";
+	desc->_svcName = "FooService";
 	desc->setProperty("foo", "the lazy brown fox 123.34");
 
 	ServiceFilter* filter = new ServiceFilter("FooService");

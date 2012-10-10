@@ -80,8 +80,8 @@ private:
 	set<string> _pendingZMQSubscriptions;
 	map<string, string> _pendingSubscriptions;
 	map<string, string> _subscriptions;
-  map<string, std::list<std::pair<uint64_t, Message*> > > _queuedMessages;
-  
+	map<string, std::list<std::pair<uint64_t, Message*> > > _queuedMessages;
+
 	Monitor _pubLock;
 	Mutex _mutex;
 

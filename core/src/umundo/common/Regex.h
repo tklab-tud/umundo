@@ -50,10 +50,10 @@ public:
 	bool hasSubMatches()                              {
 		return _subMatchIndex.size() > 0;
 	}
-	
+
 	std::string getMatch();
 	std::vector<std::string> getSubMatches();
-	
+
 protected:
 	void* _re;
 	string _pattern;

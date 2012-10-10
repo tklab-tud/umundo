@@ -68,7 +68,7 @@ bool testMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-      ScopeLock lock(testMutex);
+			ScopeLock lock(testMutex);
 			testMonitor.wait(testMutex);
 			Thread::sleepMs(10); // avoid clash with other threads
 			passedMonitor++;
@@ -78,7 +78,7 @@ bool testMonitors() {
 	TestThread thread1(0);
 	TestThread thread2(5);
 	TestThread thread3(10);
-  testMutex = Mutex();
+	testMutex = Mutex();
 	for (int i = 0; i < 10; i++) {
 		passedMonitor = 0;
 
@@ -91,15 +91,15 @@ bool testMonitors() {
 			LOG_ERR("%d threads already passed the monitor", passedMonitor);
 			assert(false);
 		}
-    {
-      UMUNDO_SIGNAL(testMonitor); // signal a single thread
-      Thread::sleepMs(40); // thread will increase passedMonitor
-      if(passedMonitor != 1) {
-        LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
-        assert(false);
-      }
-    }
-    UMUNDO_BROADCAST(testMonitor); // signal all other threads
+		{
+			UMUNDO_SIGNAL(testMonitor); // signal a single thread
+			Thread::sleepMs(40); // thread will increase passedMonitor
+			if(passedMonitor != 1) {
+				LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
+				assert(false);
+			}
+		}
+		UMUNDO_BROADCAST(testMonitor); // signal all other threads
 		Thread::sleepMs(40);
 
 		if (thread1.isStarted() || thread2.isStarted() || thread3.isStarted()) {
@@ -119,7 +119,7 @@ bool testTimedMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-      ScopeLock lock(testTimedMutex);
+			ScopeLock lock(testTimedMutex);
 			testTimedMonitor.wait(testTimedMutex, _ms);
 			passedTimedMonitor++;
 		}
@@ -130,8 +130,8 @@ bool testTimedMonitors() {
 	TestThread thread3(0); // waits forever
 	TestThread thread4(0); // waits forever
 	TestThread thread5(0); // waits forever
-  testTimedMutex = Mutex();
-  
+	testTimedMutex = Mutex();
+
 	for (int i = 0; i < 2; i++) {
 		// test waiting for a given time
 		testTimedMonitor = Monitor();

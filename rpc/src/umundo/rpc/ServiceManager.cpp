@@ -237,7 +237,7 @@ void ServiceManager::receive(Message* msg) {
 			foundMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 //			if (_svcPub->isPublishingTo(msg->getMeta("um.rpc.mgrId"))) {
-				_svcPub->send(foundMsg);
+			_svcPub->send(foundMsg);
 			// } else {
 			// 	// queue message and send in welcome
 			// 	_pendingMessages[msg->getMeta("um.rpc.mgrId")].push_back(std::make_pair(Thread::getTimeStampMs(), foundMsg));
@@ -317,14 +317,14 @@ void ServiceManager::addService(Service* service) {
 
 void ServiceManager::addService(Service* service, ServiceDescription* desc) {
 	ScopeLock lock(_mutex);
-  if (service == NULL)
+	if (service == NULL)
 		return;
 
 	intptr_t svcPtr = (intptr_t)service;
 	if (_svc.find(svcPtr) != _svc.end())
 		return;
 
-  desc->_channelName = service->getChannelName();
+	desc->_channelName = service->getChannelName();
 	desc->_svcName = service->getName();
 
 	assert(desc->_channelName.length() > 0);

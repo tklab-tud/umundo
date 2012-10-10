@@ -82,13 +82,13 @@ protected:
  */
 class DLLEXPORT ServiceFilter {
 public:
-  struct Rule {
-    string key;
-    string pattern;
-    string value;
-    int predicate;
-  };
-  
+	struct Rule {
+		string key;
+		string pattern;
+		string value;
+		int predicate;
+	};
+
 	struct filterCmp {
 		bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
 			return a->_uuid.compare(b->_uuid) < 0;

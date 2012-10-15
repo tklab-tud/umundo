@@ -74,7 +74,8 @@ public:
 	TypedPublisher(string channelName);
 	virtual ~TypedPublisher();
 
-	Message* prepareMsg(const string&, void*);
+	Message* prepareMsg(const string&, void* obj);
+	void prepareMsg(Message* msg, const string& type, void* obj);
 	void sendObj(const string& type, void* obj);
 	void registerType(const string& type, void* serializer);
 	void setGreeter(TypedGreeter* greeter);

@@ -16,6 +16,7 @@
 #include "umundo/config.h"
 #include "umundo/core.h"
 #include "umundo/s11n.h"
+#include "umundo/s11n/protobuf/PBSerializer.h"
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
@@ -65,6 +66,7 @@ std::string pathSeperator = "/";
 #endif
 
 using namespace umundo;
+using namespace std;
 
 char* channel = NULL;
 char* domain = NULL;
@@ -91,13 +93,12 @@ void printUsageAndExit() {
 	printf("\t-w <number>        : wait for given number of subscribers before publishing\n");
 	printf("\t-i                 : interactive mode (simple chat)\n");
 	printf("\t-v                 : be more verbose\n");
-	printf("\n");
 	printf("\t-p <dir>           : path with .pb.desc files for runtime reflection of protobuf messages\n");
 	exit(1);
 }
 
-class PlainDumpingReceiver : public Receiver {
-	void receive(Message* msg) {
+class PlainDumpingReceiver : public TypedReceiver {
+	void receive(void* object, Message* msg) {
 		map<string, string>::const_iterator metaIter = msg->getMeta().begin();
 		while(metaIter != msg->getMeta().end()) {
 			std::cout << metaIter->first << ": " << metaIter->second << std::endl;
@@ -107,12 +108,11 @@ class PlainDumpingReceiver : public Receiver {
 	}
 };
 
-class ProtoBufDumpingReceiver : public Receiver {
+class ProtoBufDumpingReceiver : public TypedReceiver {
 public:
-	ProtoBufDumpingReceiver(const string pbPath) {
-		_pbPath = pbPath;
+	ProtoBufDumpingReceiver() {
 	}
-	void receive(Message* msg) {
+	void receive(void* object, Message* msg) {
 		// dump meta fields in any case
 		std::map<std::string, std::string>::const_iterator metaIter = msg->getMeta().begin();
 		std::cout << "Meta Fields:" << std::endl;
@@ -121,50 +121,11 @@ public:
 			metaIter++;
 		}
 
-		string type = msg->getMeta("type");
-		if (type.length() > 0) {
-			// the following code is adapted from http://www.mail-archive.com/protobuf@googlegroups.com/msg04058.html
-			if (descriptor_pool.FindMessageTypeByName(type) == NULL) {
-				// no descriptor is known yet, try to read from file
-				string filename = _pbPath;
-				filename.append(pathSeperator);
-				filename.append(type); // This will fail if we only receive contained types
-				filename.append(".pb.desc");
-				std::ifstream desc_file(filename.c_str() ,std::ios::in|std::ios::binary);
-
-				if (desc_file.good()) {
-					google::protobuf::FileDescriptorSet f;
-					f.ParseFromIstream(&desc_file);
-					// f.PrintDebugString();
-					// std::cout << std::endl;
-
-					for (int i = 0; i < f.file_size(); ++i) {
-						descriptor_pool.BuildFile(f.file(i));
-					}
-				}
-			}
-
-			if (descriptor_pool.FindMessageTypeByName(type) != NULL) {
-				std::cout << "Protobuf Object:" << std::endl;
-				// Using the descriptor to get a Message.
-				const google::protobuf::Descriptor* descriptor = descriptor_pool.FindMessageTypeByName(type);
-				google::protobuf::DynamicMessageFactory factory;
-				google::protobuf::Message* protoMsg = factory.GetPrototype(descriptor)->New();
-
-				// Parse protobuf from umundo message
-				protoMsg->ParseFromString(std::string(msg->data(), msg->size()));
-
-				// Print out the message
-				protoMsg->PrintDebugString();
-			} else {
-				std::cout << "Raw " << type << ":" << string(msg->data(), msg->size()) << std::endl;
-			}
-		}
-		std::cout << std::flush;
+    if (object != NULL) {
+      google::protobuf::Message* pbObj = (google::protobuf::Message*)object;
+      pbObj->PrintDebugString();
+    }
 	}
-
-	google::protobuf::DescriptorPool descriptor_pool;
-	string _pbPath;
 };
 
 int main(int argc, char** argv) {
@@ -207,8 +168,8 @@ int main(int argc, char** argv) {
 		printUsageAndExit();
 
 	Node* node = NULL;
-	Publisher* pub = NULL;
-	Subscriber* sub = NULL;
+	TypedPublisher* pub = NULL;
+	TypedSubscriber* sub = NULL;
 
 	if (domain) {
 		node = new Node(domain);
@@ -221,7 +182,7 @@ int main(int argc, char** argv) {
 	 */
 	if (file) {
 		if (pub == NULL) {
-			pub = new Publisher(channel);
+			pub = new TypedPublisher(channel);
 			node->addPublisher(pub);
 			pub->waitForSubscribers(minSubs);
 		}
@@ -261,9 +222,10 @@ int main(int argc, char** argv) {
 
 	if (sub == NULL) {
 		if (protoPath != NULL) {
-			sub = new Subscriber(channel, new ProtoBufDumpingReceiver(protoPath));
+      PBSerializer::addProto(protoPath);
+			sub = new TypedSubscriber(channel, new ProtoBufDumpingReceiver());
 		} else {
-			sub = new Subscriber(channel, new PlainDumpingReceiver());
+			sub = new TypedSubscriber(channel, new PlainDumpingReceiver());
 		}
 		node->addSubscriber(sub);
 	}
@@ -273,16 +235,35 @@ int main(int argc, char** argv) {
 		 * Enter interactive mode
 		 */
 		if (pub == NULL) {
-			pub = new Publisher(channel);
+			pub = new TypedPublisher(channel);
 			node->addPublisher(pub);
 		}
-		pub->waitForSubscribers(minSubs);
+		//pub->waitForSubscribers(minSubs);
 		string line;
+
+		Message* msg = new Message();
 		while(std::cin) {
 			getline(std::cin, line);
-			line.append("\n");
-			pub->send(line.c_str(), line.length());
+			if (line.substr(0,4).compare("meta") == 0) {
+				size_t keyStart = line.find_first_not_of(" ", 4);
+				size_t keyEnd = line.find_first_of(" =", keyStart);
+				size_t valueStart = line.find_first_not_of(" =", keyEnd);
+				size_t valueEnd = line.length();
+				
+				string key = line.substr(keyStart, keyEnd - keyStart);
+				string value = line.substr(valueStart, valueEnd - valueStart);
+				cout << key << " = " << value << endl;
+				msg->putMeta(key, value);
+				continue;
+			} else {
+				line.append("\n");
+				msg->setData(line.c_str(), line.length());
+			}
+			pub->send(msg);
+			delete msg;
+			msg = new Message();
 		};
+		delete msg;
 	} else {
 		/**
 		 * Non-interactive, just let the subscriber print channel messages

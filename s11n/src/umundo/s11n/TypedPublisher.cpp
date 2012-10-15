@@ -48,11 +48,16 @@ TypedPublisher::~TypedPublisher() {
 
 Message* TypedPublisher::prepareMsg(const string& type, void* obj) {
 	Message* msg = new Message();
+	prepareMsg(msg, type, obj);
+	return msg;
+}
+
+void TypedPublisher::prepareMsg(Message* msg, const string& type, void* obj) {
 	string buffer = _impl->serialize(type, obj);
 	msg->setData(buffer);
 	msg->putMeta("um.s11n.type", type);
-	return msg;
 }
+
 
 void TypedPublisher::sendObj(const string& type, void* obj) {
 	Message* msg = prepareMsg(type, obj);

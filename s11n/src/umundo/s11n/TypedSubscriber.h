@@ -37,7 +37,7 @@ public:
  */
 class DLLEXPORT TypeDeserializerImpl : public Implementation {
 public:
-	virtual void* deserialize(const string& type, const string& data) = 0;
+	virtual void* deserialize(const string& type, Message* msg) = 0;
 	virtual void destroyObj(void* obj) = 0;
 	virtual void registerType(const string& type, void* deserializer) = 0;
 };

@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "1")
-SET(UMUNDO_VERSION_PATCH "2-pre1")
+SET(UMUNDO_VERSION_PATCH "2-pre2")
 
 # build type has to be set before the project definition
 SET(BUILD_TYPE_HELP "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug, Release, RelWithDebInfo, MinSizeRel.")

@@ -77,7 +77,7 @@ set reqFilesDesktopCommonUnix {
 	"/usr/local/bin/protoc-umundo-java-rpc"
 	"/usr/local/bin/umundo-pingpong"
 	"/usr/local/bin/umundo-monitor"
-	"/usr/local/share/umundo/lib/umundo.jar"
+	"/usr/local/share/umundo/java/umundo.jar"
 }
 
 set reqFilesAndroid {
@@ -100,6 +100,20 @@ set reqFilesJavaSamples {
   "samples/java/s11n/chat/src/org/umundo/Chat.java"
 }
 
+set reqFilesCPPSamples {
+  "samples/cpp/core/chat/CMakeLists.txt"
+  "samples/cpp/core/chat/src/Chat.cpp"
+  "samples/cpp/core/chat/src/Chat.h"
+  "samples/cpp/rpc/chat/CMakeLists.txt"
+  "samples/cpp/rpc/chat/proto/ChatS11N.proto"
+  "samples/cpp/rpc/chat/src/Chat.cpp"
+  "samples/cpp/rpc/chat/src/Chat.h"
+  "samples/cpp/s11n/chat/CMakeLists.txt"
+  "samples/cpp/s11n/chat/proto/ChatS11N.proto"
+  "samples/cpp/s11n/chat/src/Chat.cpp"
+  "samples/cpp/s11n/chat/src/Chat.h"
+}
+
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.a"
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded.so"
 # "/share/umundo/prebuilt/android/arm-linux-androideabi/libmDNSEmbedded_d.a"
@@ -116,13 +130,13 @@ set reqFilesIOS {
 	"/usr/local/share/umundo/ios-.*/libumundo.ios.a"
 	"/usr/local/share/umundo/ios-.*/libumundo_d.ios.a"
 
-	"/usr/local/share/umundo/prebuilt/ios/.*/libpcreposix.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libpcrecpp.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libpcre.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libprotobuf-lite.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libprotobuf.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libprotoc.a"
-	"/usr/local/share/umundo/prebuilt/ios/.*/libzmq.a"
+	"/usr/local/share/umundo/deps/ios/.*/libpcreposix.a"
+	"/usr/local/share/umundo/deps/ios/.*/libpcrecpp.a"
+	"/usr/local/share/umundo/deps/ios/.*/libpcre.a"
+	"/usr/local/share/umundo/deps/ios/.*/libprotobuf-lite.a"
+	"/usr/local/share/umundo/deps/ios/.*/libprotobuf.a"
+	"/usr/local/share/umundo/deps/ios/.*/libprotoc.a"
+	"/usr/local/share/umundo/deps/ios/.*/libzmq.a"
 }
 
 # "/usr/local/share/umundo/ios-.*/libumundocore.ios.a"
@@ -156,7 +170,7 @@ set reqFilesMac {
 	"/usr/local/lib/libumundoNativeJava64_d.jnilib"
 }
 
-set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS $reqFilesDesktopCommonUnix $reqFilesXCodeProject $reqFilesAndroidProject $reqFilesJavaSamples]
+set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS $reqFilesDesktopCommonUnix $reqFilesXCodeProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesMac [lsort $reqFilesMac]
 checkArchive "tar tzf ../../installer/umundo-darwin-*.tar.gz" Mac $reqFilesMac
 
@@ -186,9 +200,9 @@ set reqFilesLinux32 {
 	"/usr/local/lib/libumundoNativeJava.so"
 	"/usr/local/lib/libumundoNativeJava_d.so"
 
-	"/usr/local/share/umundo/lib/umundo.jar"
+	"/usr/local/share/umundo/java/umundo.jar"
 }
-set reqFilesLinux32 [concat $reqFilesLinux32 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples]
+set reqFilesLinux32 [concat $reqFilesLinux32 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesLinux32 [lsort $reqFilesLinux32]
 checkArchive "tar tzf ../../installer/umundo-linux-i686-*.tar.gz" Linux32 $reqFilesLinux32
 
@@ -218,9 +232,9 @@ set reqFilesLinux64 {
 	"/usr/local/lib/libumundoNativeJava64.so"
 	"/usr/local/lib/libumundoNativeJava64_d.so"
 
-	"/usr/local/share/umundo/lib/umundo.jar"
+	"/usr/local/share/umundo/java/umundo.jar"
 }
-set reqFilesLinux64 [concat $reqFilesLinux64 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples]
+set reqFilesLinux64 [concat $reqFilesLinux64 $reqFilesDesktopCommonUnix $reqFilesAndroid $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesLinux64 [lsort $reqFilesLinux64]
 checkArchive "tar tzf ../../installer/umundo-linux-x86_64-*.tar.gz" Linux64 $reqFilesLinux64
 
@@ -252,7 +266,7 @@ set reqFilesWin32 {
 	"/lib/umundoNativeJava.dll"
 	"/lib/umundoNativeJava_d.dll"
 }
-set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples]
+set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesWin32 [lsort $reqFilesWin32]
 checkArchive "unzip -l ../../installer/umundo-windows-x86-*.zip" Win32 $reqFilesWin32
 
@@ -284,7 +298,7 @@ set reqFilesWin64 {
 	"/lib/umundoNativeJava64.dll"
 	"/lib/umundoNativeJava64_d.dll"
 }
-set reqFilesWin64 [concat $reqFilesWin64 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples]
+set reqFilesWin64 [concat $reqFilesWin64 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesWin64 [lsort $reqFilesWin64]
 checkArchive "unzip -l ../../installer/umundo-windows-x86_64-*.zip" Win64 $reqFilesWin64
 

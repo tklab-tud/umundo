@@ -23,10 +23,17 @@
 
 #include "umundo/s11n/TypedPublisher.h"
 #include <google/protobuf/message_lite.h>
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/dynamic_message.h>
+#include <google/protobuf/compiler/importer.h>
 
 using google::protobuf::MessageLite;
+using google::protobuf::DescriptorPool;
+using google::protobuf::DynamicMessageFactory;
 
 namespace umundo {
+
+class PBErrorReporter;
 
 /**
  * TypeSerializerImpl implementor with ProtoBuf.
@@ -44,9 +51,31 @@ public:
 //		virtual string serialize(void* obj);
 	virtual void registerType(const string& type, void* serializer);
 
+  static void addProto(const std::string& dirOrFile);
+  static const google::protobuf::Message* getProto(const std::string& type);
+  
 private:
+  static void addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer);
+	static bool isDir(const std::string& dirOrFile);
+
 	map<string, MessageLite*> _serializers;
+	static std::map<std::string, const google::protobuf::Descriptor*> descs;
+	static std::map<std::string, google::protobuf::compiler::Importer*> descImporters;
+  static DynamicMessageFactory* descFactory;
+  static DescriptorPool* descPool;
+	static PBErrorReporter* errorReporter;
+	static google::protobuf::compiler::DiskSourceTree* sourceTree;
+
+	static Mutex protoMutex;
 };
+
+class DLLEXPORT PBErrorReporter : public google::protobuf::compiler::MultiFileErrorCollector {
+public:
+	PBErrorReporter() {}
+	virtual ~PBErrorReporter() {}
+	virtual void AddError(const string & filename, int line, int column, const string & message);
+};
+
 
 }
 

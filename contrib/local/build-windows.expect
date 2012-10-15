@@ -21,7 +21,7 @@ eval cd ~/Documents/TK/Code/
 
 # check age of archive against modification date
 eval spawn find ./umundo -newer umundo-win.tar
-set redeploy 1;
+set redeploy 0;
 expect {
 	"find:*No such file"     { set redeploy 1; }
 	-re ".cpp\r\n"           { set redeploy 1; }
@@ -30,18 +30,21 @@ expect {
 	-re "CMakeLists.txt\r\n" { set redeploy 1; }
 	-re $local_prompt        { }
 }
+#set redeploy 0;
 
 if {$redeploy} {
- eval spawn rm umundo-win.tar
- eval spawn tar --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
-# eval spawn tar --exclude=*\/\.* --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/contrib/samples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
+# eval spawn rm umundo-win.tar
+# eval spawn tar --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/examples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
+eval spawn rm umundo-win.zip
+eval spawn zip -r umundo-win.zip umundo/ --exclude __\* umundo/contrib/prebuilt/darwin\* umundo/contrib/prebuilt/ios\* umundo/contrib/prebuilt/linux\* umundo/docs/html\* umundo/examples/ios umundo/contrib/archives\* umundo/.git/\* umundo/build\* umundo/installer/uMundo* umundo/contrib/prebuilt/linux*
 	expect {
 		"a umundo/"        { exp_continue }
 		timeout            { puts "Timeout when packaging source code"; exit; }
 		-re $local_prompt  { }
 	}
 
-	eval spawn scp -4 umundo-win.tar sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.tar
+#	eval spawn scp -4 umundo-win.tar sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.tar
+	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.zip
 	expect {
 		"ETA"              { exp_continue }
 		"The authenticity" { send "yes\n"; exp_continue; }
@@ -69,7 +72,8 @@ if {$redeploy} {
 	send "rmdir \/S \/Q umundo\r"
 	expect -re $remote_prompt
 
-	send "tar xf umundo-win.tar\r"
+#	send "tar xf umundo-win.tar\r"
+	send "unzip umundo-win.zip\r"
 	expect "umundo/"          { exp_continue } \
 	       -re $remote_prompt { }
 
@@ -163,33 +167,34 @@ expect {
   -re $remote_prompt { puts "Continuing";  }
 }
 
+send "cd ..\r"
+expect -re $remote_prompt
+
+if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
+  send "zip -r win-package-x86.zip umundo\\package\\windows-x86\r"
+} else {
+  send "zip -r win-package-x86_64.zip umundo\\package\\windows-x86_64\r"
+}
+
 send "exit\r"
 expect -re $local_prompt
-
 eval cd ~/Documents/TK/Code/
 
 if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	eval spawn "scp -r epikur-win7.local:umundo\\\\package\\\\windows-x86 umundo/package/"
-	expect -re $local_prompt
-	eval spawn "mv umundo/package/umundo\\\\package\\\\windows-x86/ umundo/package/windows-x86/"
-	expect -re $local_prompt
+  eval spawn "scp epikur-win7.local:win-package-x86.zip ."
+  expect -re $local_prompt
+  eval spawn "unzip -o win-package-x86.zip"
+  expect -re $local_prompt
+  eval spawn "rm win-package-x86.zip"
+  expect -re $local_prompt
+
 } else {
-	eval spawn "scp -r epikur-win7-64.local:umundo\\\\package\\\\windows-x86_64 umundo/package/"
-	expect -re $local_prompt
-	eval spawn "mv umundo/package/umundo\\\\package\\\\windows-x86_64/ umundo/package/windows-x86_64/"
-	expect -re $local_prompt
-
+  eval spawn "scp epikur-win7-64.local:win-package-x86_64.zip ."
+  expect -re $local_prompt
+  eval spawn "unzip -o win-package-x86_64.zip"
+  expect -re $local_prompt
+  eval spawn "rm win-package-x86_64.zip"
+  expect -re $local_prompt
 }
+
 exit
-
-# send "ctest -D Experimental\n"
-# expect -re $cmd_prompt
-
-#set timeout 150
-
-send "nmake package\n\r"
-expect {
-	-re $remote_prompt {}
-	"Built target"  { exp_continue; }
-	"CPack"  { exp_continue; }
-}

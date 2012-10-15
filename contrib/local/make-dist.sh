@@ -13,6 +13,8 @@ export COPYFILE_DISABLE=1
 
 cd ${DIR}
 
+./remove-dsstore-files.sh
+
 echo -n "Build umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32
 if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ]; then
 	echo "Start the Linux 32Bit system named 'debian' and press return" && read
@@ -83,6 +85,8 @@ fi
 
 echo -n "Build packages for those platforms? [a/y/N]: "; read BUILD_PACKAGES
 if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+
+	cd ${DIR}
 
 	if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		echo Start the Linux 32Bit system named 'debian' again && read

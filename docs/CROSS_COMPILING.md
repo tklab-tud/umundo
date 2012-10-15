@@ -119,7 +119,7 @@ with the default target. After building, the libraries are available in <tt>lib/
 
 The static library <tt>libumundocore.a</tt> is included into the <tt>libumundoNativeJava.so</tt>
 library along with some JNI code and not needed when deploying. Have a look at the sample
-[Eclipse project for Android](https://github.com/tklab-tud/umundo/tree/master/contrib/samples/android) to continue.
+[Eclipse project for Android](https://github.com/tklab-tud/umundo/tree/master/examples/android) to continue.
 
 <b>Note:</b> Make sure your <tt>JAVA_HOME</tt> points to a JVM installation that
 will run on the device.

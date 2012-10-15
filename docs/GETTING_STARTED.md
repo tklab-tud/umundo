@@ -78,7 +78,7 @@ one pair of nodes within the same domain.
 
 ### Using Java Bindings
 
-For umundo.core there is a [sample Eclipse project](https://github.com/tklab-tud/umundo/tree/master/contrib/samples/java). The API
+For umundo.core there is a [sample Eclipse project](https://github.com/tklab-tud/umundo/tree/master/examples/java). The API
 is the same as in C++, but there are some caveats:
 
 1. You have to subclass <tt>org.core.umundo.Receiver</tt> and override receive(Message msg) to receive messages from a Subscriber.

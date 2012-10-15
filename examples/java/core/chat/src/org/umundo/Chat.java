@@ -26,8 +26,6 @@ public class Chat {
 	public Node chatNode;
 	public Subscriber chatSub;
 	public Publisher chatPub;
-	public ChatGreeter chatGreeter;
-	public ChatReceiver chatRcv;
 	
 	public String userName;
 	public HashMap<String, String> participants = new HashMap<String, String>();
@@ -35,8 +33,7 @@ public class Chat {
 
 	public Chat() {
 		chatNode = new Node();
-		chatRcv = new ChatReceiver();
-		chatSub = new Subscriber("coreChat", chatRcv);
+		chatSub = new Subscriber("coreChat", new ChatReceiver());
 		chatPub = new Publisher("coreChat");
 		
 		System.out.println("Username:");
@@ -46,10 +43,7 @@ public class Chat {
 			e.printStackTrace();
 		}
 		
-		ChatGreeter greeter = new ChatGreeter();
-		greeter.userName = userName;
-		chatPub.setGreeter(greeter);
-		
+		chatPub.setGreeter(new ChatGreeter(userName));
 		chatNode.addPublisher(chatPub);
 		chatNode.addSubscriber(chatSub);
 	}
@@ -71,6 +65,10 @@ public class Chat {
 
 	class ChatGreeter extends Greeter {
 		public String userName;
+
+		public ChatGreeter(String userName) {
+			this.userName = userName;
+		}
 
 		@Override
 		public void welcome(Publisher pub, String nodeId, String subId) {

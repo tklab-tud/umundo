@@ -1,18 +1,96 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Cwd 'abs_path';      # abs_path
 use Cwd;                 # getcwd
 use File::Spec;          # abs2rel
-use Data::Dumper;        # recusrively dump data structures via Dumper($foo)
+use Data::Dumper;        # recursively dump data structures via Dumper($foo)
 use File::Path;          # make_path
 use File::Path qw(make_path);
 use File::Temp qw/ tempfile tempdir /;
+use File::Basename;
 
+my $script_dir = dirname(abs_path($0));
 my $orig_cwd = getcwd;
+
+# get last version where we bumped the version string (ignoring pre, rc, beta ..)
+my $cmake_edits = `git log --follow -p $script_dir/../../CMakeLists.txt`;
+my $commit_hash;
+foreach my $line (split("\n", $cmake_edits)) {
+	if ($line =~ /^commit ([\dabcdef]+)/) {
+		$commit_hash = $1;
+	}
+	last if ($commit_hash and $line =~ /\+SET\(UMUNDO_VERSION_PATCH \"\d+\"\)/);
+}
+my $change_log = `git log --pretty=format:"%H %h @@@ %ar: %s ### %b" $commit_hash..`;
+# remove empty bodies
+$change_log =~ s/\n\n/\n/g;
+# link to commit on github
+$change_log =~ s/([\dabcdef]+) ([\dabcdef]+) @@@/<a href="https:\/\/github\.com\/tklab-tud\/umundo\/commit\/$1">$2<\/a>/g;
+# put body below commit message
+$change_log =~ s/###\W\n/\n/g;
+$change_log =~ s/###\W/\n/g;
+
+
 my $installer_dir = shift or die("Expected directory as first argument\n");
 if (!File::Spec->file_name_is_absolute($installer_dir)) {
 	$installer_dir = File::Spec->rel2abs($installer_dir, getcwd);
 }
+
+my $descriptions = {
+	'./bin/protoc-umundo-cpp-rpc.*' => 'ProtoBuf RPC plugin for C++',
+	'./bin/protoc-umundo-java-rpc.*' => 'ProtoBuf RPC plugin for Java',
+	'./bin/umundo-monitor.*' => 'Diagnosis tool (somewhat unmaintained)',
+	'./bin/umundo-pingpong.*' => 'Test deployments (i=incoming, o=outgoing)',
+	'./include/umundo/core.h' => 'C++ headers for core layer',
+	'./include/umundo/rpc.h' => 'C++ headers for remote procedure calls',
+	'./include/umundo/s11n.h' => 'C++ headers for object serialization',
+	'./include/umundo/util.h' => 'C++ headers for utilities',
+	'./lib' => 'Pure C++ libraries',
+	'./lib/libumundoNativeJava[\.6].*' => 'SWIG generated JNI wrapper (included in JAR)',
+	'./lib/libumundocore[\.6].*' => 'C++ library for core',
+	'./lib/libumundorpc[\.6].*' => 'C++ library for remote procedure calls',
+	'./lib/libumundoserial[\.6].*' => 'C++ library for serialization',
+	'./lib/libumundoutil[\.6].*' => 'C++ library with utilities',
+	'./lib/umundo-monitor.lib' => 'not sure',
+	'./lib/umundo-pingpong.lib' => 'not sure',
+	'./lib/umundoNativeCSharp[\.6].*' => 'SWIG generated C# backend for DLLInvoke',
+	'./share/umundo/android-8' => 'Cross compiled binaries for Android',
+	'./share/umundo/android-8/armv5te/libumundoNativeJava.so' => 'SWIG generated JNI wrapper',
+	'./share/umundo/android-8/umundo.jar' => 'JAR for Android (without JNI inside)',
+	'./share/umundo/lib/umundo.jar' => 'JAR for desktops (auto-loading JNI code inside)',
+	'./share/umundo/lib/umundoCSharp.dll' => 'C# library with managed code',
+	'./share/umundo/prebuilt' => 'Prebuilt libraries in case we forgot something',
+	'./share/umundo/samples' => 'Sample programs and IDE templates',
+	'./share/umundo/samples/android' => 'Sample programs for Android',
+	'./share/umundo/samples/android/umundo-pingpong/libs' => 'These are just placehoders!',
+	'./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava.so' => 'Replace with real library from above!',
+	'./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava_d.so' => 'Replace with real library from above!',
+	'./share/umundo/samples/android/umundo-pingpong/libs/umundo.jar' => 'Replace with real library from above!',
+	'./share/umundo/samples/csharp' => 'Sample programs for C#',
+	'./share/umundo/samples/csharp/umundo-pingpong' => 'The simplest umundo program in C#',
+	'./share/umundo/samples/csharp/umundo-s11ndemo' => 'Serialization in C# (Dirk is working on it)',
+	'./share/umundo/samples/csharp/umundo.s11n' => 'My initial attempts at serialization with C# (deprecated)',
+	'./share/umundo/samples/ios' => 'Sample programs for iOS',
+	'./share/umundo/samples/ios/umundo-pingpong' => 'The simplest umundo program for iOS',
+	'./share/umundo/samples/java' => 'Sample programs for Java',
+	'./share/umundo/samples/java/core/chat' => 'Chat using the core layer',
+	'./share/umundo/samples/java/core/chat/build.properties' => 'Adapt these for your system',
+	'./share/umundo/samples/java/rpc/chat' => 'Chat using the RPC layer',
+	'./share/umundo/samples/java/rpc/chat/build.properties' => 'Adapt these for your system',
+	'./share/umundo/samples/java/rpc/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat services',
+	'./share/umundo/samples/java/s11n/chat' => 'Chat using the serialization layer',
+	'./share/umundo/samples/java/s11n/chat/build.properties' => 'Adapt these for your system',
+	'./share/umundo/samples/java/s11n/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat message objects',
+	'./share/umundo/samples/cpp' => 'Sample programs for C++',
+	'./share/umundo/samples/cpp/core/chat' => 'Chat using the core layer',
+	'./share/umundo/samples/cpp/rpc/chat' => 'Chat using the RPC layer',
+	'./share/umundo/samples/cpp/s11n/chat' => 'Chat using the serialization layer',
+	'./share/umundo/samples/cpp/s11n/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat message objects',
+	'./share/umundo/samples/cpp/rpc/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat services',
+	'./share/umundo/cmake/FindUMundo.cmake' => 'CMake module to find umundo once it is installed',
+	'./share/umundo/cmake/UseUMundo.cmake' => 'CMake macros for protobuf',
+};
 
 my ($mac_archive, $linux32_archive, $linux64_archive, $win32_archive, $win64_archive);
 my ($mac_files, $linux32_files, $linux64_files, $win32_files, $win64_files);
@@ -89,57 +167,14 @@ chdir "content/" or die($!);
 my $tree_list = `tree -a -h --noreport --charset ISO-8859-1`;
 my $flat_list = `find -s .`;
 
-#print STDERR $flat_list;
-
-my $descriptions = {
-	'./bin/protoc-umundo-cpp-rpc.*' => 'ProtoBuf RPC plugin for C++',
-	'./bin/protoc-umundo-java-rpc.*' => 'ProtoBuf RPC plugin for Java',
-	'./bin/umundo-monitor.*' => 'Diagnosis tool (somewhat unmaintained)',
-	'./bin/umundo-pingpong.*' => 'Test deployments (i=incoming, o=outgoing)',
-	'./include/umundo/core.h' => 'C++ headers for core layer',
-	'./include/umundo/rpc.h' => 'C++ headers for remote procedure calls',
-	'./include/umundo/s11n.h' => 'C++ headers for object serialization',
-	'./include/umundo/util.h' => 'C++ headers for utilities',
-	'./lib' => 'Pure C++ libraries',
-	'./lib/libumundoNativeJava[\.6].*' => 'SWIG generated JNI wrapper',
-	'./lib/libumundocore[\.6].*' => 'C++ library for core',
-	'./lib/libumundorpc[\.6].*' => 'C++ library for remote procedure calls',
-	'./lib/libumundoserial[\.6].*' => 'C++ library for serialization',
-	'./lib/libumundoutil[\.6].*' => 'C++ library with utilities',
-	'./lib/umundo-monitor.lib' => 'not sure',
-	'./lib/umundo-pingpong.lib' => 'not sure',
-	'./lib/umundoNativeCSharp[\.6].*' => 'SWIG generated C# backend for DLLInvoke',
-	'./share/umundo/android-8' => 'Cross compiled binaries for Android',
-	'./share/umundo/android-8/armv5te/libumundoNativeJava.so' => 'SWIG generated JNI wrapper',
-	'./share/umundo/android-8/umundo.jar' => 'JAR for Android (without JNI inside)',
-	'./share/umundo/lib/umundo.jar' => 'JAR for desktops (JNI inside)',
-	'./share/umundo/lib/umundoCSharp.dll' => 'C# library with managed code',
-	'./share/umundo/prebuilt' => 'Prebuilt libraries in case we forgot something',
-	'./share/umundo/samples' => 'Sample programs and IDE templates',
-	'./share/umundo/samples/android' => 'Sample programs for Android',
-	'./share/umundo/samples/android/umundo-pingpong/libs' => 'These are just placehoders!',
-	'./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava.so' => 'Replace with real library from above!',
-	'./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava_d.so' => 'Replace with real library from above!',
-	'./share/umundo/samples/android/umundo-pingpong/libs/umundo.jar' => 'Replace with real library from above!',
-	'./share/umundo/samples/csharp' => 'Sample programs for C#',
-	'./share/umundo/samples/csharp/umundo-pingpong' => 'The simplest umundo program in C#',
-	'./share/umundo/samples/csharp/umundo-s11ndemo' => 'Serialization in C# (Dirk is working on it)',
-	'./share/umundo/samples/csharp/umundo.s11n' => 'My initial attempts at serialization with C# (deprecated)',
-	'./share/umundo/samples/ios' => 'Sample programs for iOS',
-	'./share/umundo/samples/ios/umundo-pingpong' => 'The simplest umundo program for iOS',
-	'./share/umundo/samples/java' => 'Sample programs for Java',
-	'./share/umundo/samples/java/core/chat' => 'Chat using the core layer',
-	'./share/umundo/samples/java/core/chat/build.properties' => 'Adapt these for your system',
-	'./share/umundo/samples/java/rpc/chat' => 'Chat using the rpc layer',
-	'./share/umundo/samples/java/rpc/chat/build.properties' => 'Adapt these for your system',
-	'./share/umundo/samples/java/rpc/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat services',
-	'./share/umundo/samples/java/s11n/chat' => 'Chat using the serialization layer',
-	'./share/umundo/samples/java/s11n/chat/build.properties' => 'Adapt these for your system',
-	'./share/umundo/samples/java/s11n/chat/proto/ChatS11N.proto' => 'ProtoBuf file for chat message objects',
-};
-
 print '<html><body>'."\n";
-print '<h1>Contents of '.$version.' Package</h1>';
+
+print '<h1>Changelog</h1>'."\n";
+print '<pre>'."\n";
+print $change_log;
+print '</pre>'."\n";
+
+print '<h1>Contents</h1>';
 print <<EOF;
 <p>The following table is an excerpt of all the files in the individual installer 
 packages (detailled C++ headers are not shown). All the different archives/installers 
@@ -154,31 +189,13 @@ suffix is for 64Bit builds and the Windows libraries have no <tt>lib</tt> prefix
 
 EOF
 print '<table>'."\n";
-print '<tr><th align="left">Description</th><th align="left">Availability</th><th align="left">Filename</th></tr>';
+print '<tr><th align="left">Availability</th><th align="left">Filename</th><th align="left">Description</th></tr>';
 print '<tr><td valign="top">'."\n";
 print '<pre>'."\n";
 
 foreach my $file (split("\n", $flat_list)) {
-	my $has_description = 0;
-	foreach my $desc (keys %{$descriptions}) {
-		if ($file =~ /^$desc$/) {
-			print $descriptions->{$desc}."\n";
-			delete $descriptions->{$desc};
-			$has_description = 1;
-		}
-	}
-	if (!$has_description) {
-		print "\n";
-	}
-}
-
-print '</pre>'."\n";
-print '</td><td valign="top">'."\n";
-print '<pre>'."\n";
-
-foreach my $file (split("\n", $flat_list)) {
 	if ($file eq '.') {
-		print "MAC|L32|L64|W32|W64\n";
+		print '<font bgcolor="#ccc">MAC</font>|L32|L64|W32|W64'."\n";
 		next;
 	}
 	if (-d $file) {
@@ -200,6 +217,24 @@ print '</td><td valign="top">'."\n";
 print '<pre>'."\n";
 
 print $tree_list;
+
+print '</pre>'."\n";
+print '</td><td valign="top">'."\n";
+print '<pre>'."\n";
+
+foreach my $file (split("\n", $flat_list)) {
+	my $has_description = 0;
+	foreach my $desc (keys %{$descriptions}) {
+		if ($file =~ /^$desc$/) {
+			print $descriptions->{$desc}."\n";
+			delete $descriptions->{$desc};
+			$has_description = 1;
+		}
+	}
+	if (!$has_description) {
+		print "\n";
+	}
+}
 
 print '</pre>'."\n";
 print '</td></tr>'."\n";

@@ -17,16 +17,17 @@ import android.widget.TextView;
 /**
  * Getting it to run:
  * 
- * 1. Copy the umundo.jar into the libs folder and add it to the classpath. Make sure
- * to take the umundo.jar for Android, as you are not allowed to have JNI code within
- * and the desktop umundo.jar includes all supported JNI libraries.
+ * 1. Replace the umundo.jar in the libs folder by the one from the intaller and 
+ * add it to the classpath. Make sure to take the umundo.jar for Android, as you 
+ * are not allowed to have JNI code within and the desktop umundo.jar includes all 
+ * supported JNI libraries.
  * 
- * 2. Copy the JNI library libumundoNativeJava.so (or the debug variant) into libs/armeabi/
+ * 2. Replace the JNI library libumundoNativeJava.so (or the debug variant) into libs/armeabi/
  * 
  * 3. Make sure System.loadLibrary() loads the correct variant.
  * 
  * 4. Make sure you have set the correct permissions:
- * 	    <uses-permission android:name="android.permission.INTERNET"/>
+ * 	  <uses-permission android:name="android.permission.INTERNET"/>
  *		<uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
  *   	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
  * 

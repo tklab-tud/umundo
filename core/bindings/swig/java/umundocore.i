@@ -33,14 +33,6 @@ typedef std::list list;
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
 
-#if 0
-jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-	using umundo::Debug;
-//	LOG_ERR("This is mundo.core speaking!");
-	return JNI_VERSION_1_2;
-}
-#endif
-
 #ifdef ANDROID
 // google forgot imaxdiv in the android ndk r7 libc?!
 #ifndef imaxdiv
@@ -110,22 +102,57 @@ using namespace umundo;
 // this is helpful:
 // http://stackoverflow.com/questions/9817516/swig-java-retaining-class-information-of-the-objects-bouncing-from-c
 
-# # hold a reference to the receiver in the subscriber
-# %ignore umundo::Subscriber::Subscriber(string, Receiver*);
-# %typemap(javacode) umundo::Subscriber %{
-#   private Receiver _receiver;
-#
-#   public Subscriber(String channelName, Receiver receiver) {
-#     this(umundoNativeJavaJNI.new_Subscriber(channelName), true);
-# 		setReceiver(receiver);
-#   }
-#
-#   protected void setReceiver(Receiver receiver) {
-# 		_receiver = receiver;
-#     umundoNativeJavaJNI.Subscriber_setReceiver(swigCPtr, this, Receiver.getCPtr(receiver), receiver);
-#   }
-# %}
-# //%typemap(javain, pre="    _receiver = $javainput;") umundo::Receiver* "$javainput"
+// The Java GC will eat receivers and greeters as the wrapper code never
+// holds a reference to their Java objects.
+
+//***************
+// Save the receiver in the subscriber
+
+// Do not generate this constructor - substitute by the one in the javacode typemap below
+%ignore umundo::Subscriber::Subscriber(string, Receiver*);
+
+// hide this constructor to enforce the one below
+%javamethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
+
+// rename setter an wrap by setter in javacode typemap below
+%rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
+%javamethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
+
+%typemap(javacode) umundo::Subscriber %{
+  // keep receiver as a reference to prevent premature GC
+  private Receiver _receiver;
+
+  public Subscriber(String channelName, Receiver receiver) {
+    this(umundoNativeJavaJNI.new_Subscriber(channelName), true);
+    setReceiver(receiver);
+  }
+
+  protected void setReceiver(Receiver receiver) {
+    // it is important to keep the reference, otherwise the Java GC will eat it!
+    _receiver = receiver;
+    setReceiverNative(receiver);
+  }
+%}
+
+//***************
+// Save the greeter in the publisher (same approach as above)
+
+%rename(setGreeterNative) umundo::Publisher::setGreeter(Greeter*);
+%javamethodmodifiers umundo::Publisher::setGreeter(Greeter* greeter) "private";
+
+%typemap(javacode) umundo::Publisher %{
+  // keep receiver as a reference to prevent premature GC
+  private Greeter _greeter;
+
+  public void setGreeter(Greeter greeter) {
+    // it is important to keep the reference, otherwise the Java GC will eat it!
+    _greeter = greeter;
+    setGreeterNative(greeter);
+  }
+%}
+
+//***************
+// Always copy messages into the JVM
 
 # messages are destroyed upon return, always pass copies to Java
 %typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
@@ -224,13 +251,6 @@ import java.util.HashMap;
   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
 }
 
-
-//******************************
-// Beautify Publisher class
-//******************************
-
-%javamethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
-%javamethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "protected";
 
 
 //******************************

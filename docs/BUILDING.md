@@ -434,7 +434,7 @@ umundoNativeJava.dll   # The JNI library for System.load()
 
 The Java archive contains generated wrappers for the umundo.core C++ code in
 umundoNativeJava.dll and hand-written implementations of the layers on top. See the
-[Eclipse sample project](https://github.com/tklab-tud/umundo/tree/master/contrib/samples/java)
+[Eclipse sample projects](https://github.com/tklab-tud/umundo/tree/master/examples/java)
 to get an idea on how to use the API.
 
 #### CSharp
@@ -448,7 +448,7 @@ umundoNativeCSharp.dll # The native C++ code used via DLLInvoke
 Here again, the umundoCSharp.dll contains all generated wrappers for the umundo.core
 C++ code in umundocoreCSharp.dll. Other C# functionality for the umundo layers
 on top will also eventually find its way into this dll. There is also a sample
-[Visual Studio solution](https://github.com/tklab-tud/umundo/tree/master/contrib/samples/csharp),
+[Visual Studio solution](https://github.com/tklab-tud/umundo/tree/master/examples/csharp),
 illustrating how to use umundo.core with C#.
 
 ## Cross Compiling

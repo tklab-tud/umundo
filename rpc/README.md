@@ -71,7 +71,7 @@ the filter is considered to match the description and the description is returne
 
 To know about the Stub classes, you will need to run the umundo protoc plugin
 on the <tt>.proto</tt> file. There is an example for Java in the
-[build.xml](https://github.com/tklab-tud/umundo/blob/master/contrib/samples/java/rpc/chat/build.xml)
+[build.xml](https://github.com/tklab-tud/umundo/blob/master/examples/java/rpc/chat/build.xml)
 of the RPC chat sample.
 
 ## Message Layout

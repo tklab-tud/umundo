@@ -22,14 +22,15 @@ foreach my $line (split("\n", $cmake_edits)) {
 	}
 	last if ($commit_hash and $line =~ /\+SET\(UMUNDO_VERSION_PATCH \"\d+\"\)/);
 }
-my $change_log = `git log --pretty=format:"%H %h @@@ %ar: %s ### %b" $commit_hash..`;
+my $change_log = `git log --pretty=format:"%H %h @@@ %ai: %s ### %b" $commit_hash..`;
 # remove empty bodies
-$change_log =~ s/\n\n/\n/g;
+#$change_log =~ s/\n\n/\n/g;
 # link to commit on github
 $change_log =~ s/([\dabcdef]+) ([\dabcdef]+) @@@/<a href="https:\/\/github\.com\/tklab-tud\/umundo\/commit\/$1">$2<\/a>/g;
 # put body below commit message
-$change_log =~ s/###\W\n/\n/g;
-$change_log =~ s/###\W/\n/g;
+$change_log =~ s/###\s\n/\n/g;
+$change_log =~ s/###\s/\n\n    /g;
+$change_log =~ s/\n([^<])/\n    $1/g;
 
 
 my $installer_dir = shift or die("Expected directory as first argument\n");

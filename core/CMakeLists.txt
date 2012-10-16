@@ -42,6 +42,10 @@ list(APPEND UMUNDOCORE_FILES
 	${TREAD_FILES}
 )
 
+if (ANDROID) # android gcc complains about boost 1.51
+  SET_SOURCE_FILES_PROPERTIES(src/umundo/common/UUID.cpp PROPERTIES COMPILE_FLAGS -Wno-uninitialized)
+endif()
+
 ###########################################
 # ZeroMQ
 ###########################################

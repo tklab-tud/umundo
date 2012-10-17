@@ -609,8 +609,7 @@ message(STATUS "  Binaries will end up in ........ : " ${REL_CMAKE_RUNTIME_OUTPU
 ############################################################
 
 if (NOT CMAKE_CROSSCOMPILING)
-	# tools moved down here as some depend on s11n (move to apps?)
-	add_subdirectory(core/tools)
+	add_subdirectory(apps/tools)
 endif()
 
 if(BUILD_TESTS)

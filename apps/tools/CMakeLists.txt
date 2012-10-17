@@ -25,3 +25,12 @@ INSTALL_EXECUTABLE(
 	TARGETS umundo-pingpong
 	COMPONENT tools 
 )
+
+add_executable(umundo-echo-service umundo-echo-service.cpp)
+target_link_libraries(umundo-echo-service ${UMUNDOCORE_LIBRARIES} ${UMUNDOS11N_LIBRARIES} ${UMUNDORPC_LIBRARIES})
+set_target_properties(umundo-echo-service PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-echo-service
+	COMPONENT tools 
+)

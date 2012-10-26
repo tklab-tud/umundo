@@ -79,13 +79,6 @@ using namespace umundo;
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
 
-%typemap(ctype) char *data "char*"
-%typemap(imtype) char *data "byte[]"
-%typemap(cstype) char* data "byte[]"
-%typemap(csout) char* data {
-  return $imcall;
-}
-
 # %typemap(out) char *data {
 #   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
 #   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);

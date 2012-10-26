@@ -175,7 +175,7 @@ void ServiceGeneratorCPP::writeServiceHeader(io::Printer &printer, const Service
 
 		printer.Print(
 		    "protected:\n"
-		    "\tvoid callMethod(string&, void*, const string&, void*&, const string&);\n"
+		    "\tvoid callMethod(string&, void*, string&, void*&, string&);\n"
 		    "\tvoid cleanUpObjects(string&, void*, void*);\n"
 		);
 	}
@@ -255,7 +255,7 @@ void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, cons
 void ServiceGeneratorCPP::writeServiceImplDispatcher(io::Printer& printer, const ServiceDescriptor* svcDesc) const {
 
 	printer.Print(
-	    "void $className$Base::callMethod(string& methodName, void* in, const string& inType, void* &out, const string& outType) {\n"
+	    "void $className$Base::callMethod(string& methodName, void* in, string& inType, void* &out, string& outType) {\n"
 	    "\tif (false) {\n",
 	    "className", svcDesc->name()
 	);
@@ -265,7 +265,10 @@ void ServiceGeneratorCPP::writeServiceImplDispatcher(io::Printer& printer, const
 			const MethodDescriptor* methodDesc = svcDesc->method(i);
 			printer.Print(
 			    "\t} else if (methodName.compare(\"$methodName$\") == 0) {\n"
+			    "\t\tif (outType.length() == 0) { outType = \"$outType$\"; }\n"
+			    "\t\tif (inType.length() == 0) { inType = \"$inType$\"; }\n"
 			    "\t\tout = (void*)$methodName$(($inType$*)in);\n",
+			    "outType", methodDesc->output_type()->name(),
 			    "inType", methodDesc->input_type()->name(),
 			    "methodName", methodDesc->name()
 			);

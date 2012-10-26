@@ -452,11 +452,15 @@ if(NOT BUILD_SHARED)
 	# @Todo: We could use dynamic variable names and a foreach with the components.
 	#
 	set(UMUNDO_STATIC_LIBRARIES_TMP "")
-	set(_UMUNDO_COMP_NAMES "CORE;S11N;RPC;UTIL")
+	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
 	foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
 		string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
 		GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
+		#message("${_UMUNDO_COMP_NAME}: ${UMUNDOCOMP_LOCATION}")
  		if (UMUNDOCOMP_LOCATION)
+			if (_UMUNDO_COMP_NAME STREQUAL "SERIAL")
+				set(_UMUNDO_COMP_NAME S11N)
+			endif()
 			list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDO${_UMUNDO_COMP_NAME}_LIBRARIES})
 			# cmake does not add the CMAKE_LIBRARY_POSTFIX to the location
 			# see: http://www.itk.org/Bug/print_bug_page.php?bug_id=7868
@@ -493,7 +497,7 @@ if(NOT BUILD_SHARED)
 
 	list(SORT UMUNDO_STATIC_LIBRARIES)
 	list(REMOVE_DUPLICATES UMUNDO_STATIC_LIBRARIES)
-#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
+	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
 
 	if (IOS OR APPLE)
 		set(LIPO_INPUT_FILES "")
@@ -521,14 +525,18 @@ if(NOT BUILD_SHARED)
 		endforeach()
 		STRING(REGEX REPLACE "/" "\\\\" _LIBEXE_ARGS ${_LIBEXE_ARGS})
 		# message("output: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib")
-		# message("args  : ${_LIBEXE_ARGS}")
+		message("args  : ${_LIBEXE_ARGS}")
 		ADD_CUSTOM_COMMAND(
 			OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
 			COMMAND   lib.exe
-			ARGS      //${_LIBEXE_ARGS}
+			ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
 			DEPENDS   umundocore umundoserial umundorpc
 			COMMENT   "Running lib.exe on static libraries"
 		)
+		ADD_CUSTOM_TARGET(umundo ALL
+			DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
+			COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
+		
 	endif()
 endif()
 

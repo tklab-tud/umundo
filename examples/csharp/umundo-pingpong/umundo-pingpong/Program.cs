@@ -42,7 +42,7 @@ namespace umundo_pingpong
         	/*
         	 * Make sure this path contains the umundoNativeCSharp.dll!
         	 */
-            SetDllDirectory("C:\\Users\\Piri\\Documents\\Entwicklung\\tu-darmstadt\\umundo\\build\\lib");
+            SetDllDirectory("C:\\Program Files\\uMundo\\lib");
             org.umundo.core.Node node = new org.umundo.core.Node();
             Publisher pub = new Publisher("pingpong");
             PingReceiver recv = new PingReceiver();

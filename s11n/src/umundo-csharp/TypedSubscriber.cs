@@ -37,7 +37,10 @@ namespace org.umundo.s11n
 
             public override void receive(Message msg) {
                 String typename = msg.getMeta("um.s11n.type");
-                byte[] data = msg.getData();
+                string str = msg.getData();
+                char[] buffer = new char[str.Length];
+                str.CopyTo(0, buffer, 0, buffer.Length);
+                byte[] data = Array.ConvertAll(buffer, x => (byte)x);
                 Type type = Type.GetType(typename);
                 Stream source = new MemoryStream(data);
                 Object o = RuntimeTypeModel.Default.Deserialize(source, null, type);

@@ -329,7 +329,7 @@ set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "swig2.0, protobuf-compiler")
 # Configuration for RPM packages
 #
 set(CPACK_RPM_PACKAGE_NAME "umundo")
-set(CPACK_RPM_PACKAGE_LICENSE "CDDL")
+set(CPACK_RPM_PACKAGE_LICENSE "Simplified BSD")
 
 
 ########################################

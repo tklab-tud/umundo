@@ -193,8 +193,8 @@ If CMake does not find your JDK location, make sure JAVA_HOME is set:
 	$ echo $JAVA_HOME
 	/usr/lib/jvm/java-7-openjdk-i386
 
-<b>64 bit Note:</b> We do not include 64 bit binaries for ZeroMQ, you will have to compile
-and install [ZeroMQ 3.2](http://download.zeromq.org/zeromq-3.2.0-rc1.tar.gz) by yourself.
+<b>Note:</b> If you are still not able to generate the Java bindings, double check that your JAVA_HOME directory actually 
+contains an include directory with the JNI header files.
 
 ### Preparing *yum based* distributions
 
@@ -211,9 +211,6 @@ needed for other distributions.
 
 	# umundo optional dependencies - SWIG and the Java Developer Kit
 	$ sudo yum install swig java-openjdk ant
-
-<b>64 bit Note:</b> Same problem as noted above.
-
 
 ### Console / Make
 

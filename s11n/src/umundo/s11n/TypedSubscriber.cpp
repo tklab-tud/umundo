@@ -82,8 +82,8 @@ void TypedSubscriber::receive(Message* msg) {
 		_recv->receive(obj, msg);
 //    _impl->destroyObj(obj);
 	} else {
-		// self describing message
-		//_recv->receive(_impl->deserialize(msg->getData()), msg);
+		// just pass the raw message
+		_recv->receive(NULL, msg);
 	}
 }
 

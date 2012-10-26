@@ -38,7 +38,8 @@ namespace org.umundo.s11n
             {
                 Serializer.Serialize(stream, o);
                 byte[] buffer = stream.ToArray();
-                msg.setData(buffer, (uint)buffer.Length);
+                string str = new string(Array.ConvertAll(buffer, x => (char)x));
+                msg.setData(str, (uint)buffer.Length);
             }
             msg.putMeta("um.s11n.type", type);	
             return msg;
@@ -51,7 +52,8 @@ namespace org.umundo.s11n
             {
                 Serializer.Serialize(stream, o);
                 byte[] buffer = stream.ToArray();
-                msg.setData(buffer, (uint)buffer.Length);
+                string str = new string(Array.ConvertAll(buffer, x => (char)x));
+                msg.setData(str, (uint)buffer.Length);
             }
             msg.putMeta("um.s11n.type", type);
             return msg;

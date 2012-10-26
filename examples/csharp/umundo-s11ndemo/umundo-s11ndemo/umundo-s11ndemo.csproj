@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="protobuf-net">
-      <HintPath>..\..\..\..\csharp\protobuf-net-r580\Full\net30\protobuf-net.dll</HintPath>
+      <HintPath>..\..\..\..\contrib\csharp\protobuf-net-r580\Full\net30\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

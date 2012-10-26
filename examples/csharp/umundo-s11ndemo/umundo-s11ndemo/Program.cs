@@ -35,6 +35,9 @@ namespace umundo_s11ndemo
             TestTypedReceiver ttr = new TestTypedReceiver();
             TypedSubscriber sub = new TypedSubscriber("s11ndemo", ttr);
             node.addSubscriber(sub);
+            Console.WriteLine("Waiting for subsrcibers...");
+            int subs = pub.waitForSubscribers(2);
+            Console.WriteLine(subs + " subscribers");
             AMessage msg = new AMessage();
             Console.WriteLine("s: " + msg);
             pub.sendObject("AMessage", msg);

@@ -153,10 +153,11 @@ public:
 
 	virtual void receive(void* object, Message* msg);
 
+	void callStubMethod(const string&, void*, const string&, void*&, const string&);
+
 protected:
 	ServiceStub() {};
 
-	void callStubMethod(const string&, void*, const string&, void*&, const string&);
 
 	string _channelName;
 	string _serviceName;
@@ -182,13 +183,13 @@ public:
 	virtual void receive(void* object, Message* msg);
 
 protected:
-	virtual void callMethod(string& methodName, void* in, const string& inType, void*& out, const string& outType) = 0;
+	virtual void callMethod(string& methodName, void* in, string& inType, void*& out, string& outType) = 0;
 	/**< Generated classes overwrite this function for demarshalling.
 		@param methodName The method someone is calling on a connected ServiceStub.
 		@param in The argument, only one argument is allowed (Just use a compound object).
-		@param inType The name of the type of the in argument from umundo.s11n.
+		@param inType The name of the type of the in argument from umundo.s11n - will be set if empty.
 		@param out This is where we are expecting the reply.
-		@param outType The name of the return type from umundo.s11n.
+		@param outType The name of the return type from umundo.s11n - will be set if empty.
 		@sa ServiceGeneratorCPP
 	*/
 

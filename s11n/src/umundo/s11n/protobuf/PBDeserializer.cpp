@@ -34,7 +34,8 @@ shared_ptr<Implementation> PBDeserializer::create(void*) {
 
 void* PBDeserializer::deserialize(const string& type, Message* msg) {
   const string data(msg->data(), msg->size());
-	if (_deserializers.find(type) != _deserializers.end()) {
+  
+  if (_deserializers.find(type) != _deserializers.end()) {
     // we have an explicit deserializer type registered
     MessageLite* pbObj = _deserializers[type]->New();
     if(!pbObj->ParseFromString(data)) {

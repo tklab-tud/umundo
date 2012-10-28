@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 2.8.4)
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "1")
 SET(UMUNDO_VERSION_PATCH "2-pre2")
+SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
 SET(BUILD_TYPE_HELP "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug, Release, RelWithDebInfo, MinSizeRel.")
@@ -140,7 +141,7 @@ include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
 include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
 # some compiler flags
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
 	# best practices from scott meyers
@@ -148,6 +149,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
 	# all warnings
 	add_definitions(-Wall)
+
+	# both needed for boost 1.51
+	add_definitions(-Wno-attributes)
+	add_definitions(-Wno-uninitialized)
 
 	# we cannot tread warning as error with the "narrowing problem"
 	# add_definitions(-Werror)
@@ -174,13 +179,15 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	else()
 		add_definitions(-rdynamic)
 	endif()
-elseif (MSVC)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_definitions("-DZMQ_STATIC")
 	add_definitions("-DPCRE_STATIC")
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	# SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB")
 	# SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRTD.lib")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	add_definitions("-Wno-parentheses-equality")
 endif()
 
 # build type as macro to strip logging in release builds
@@ -438,7 +445,7 @@ endif()
 # Convenience libraries
 ############################################################
 
-if(NOT BUILD_SHARED)
+if(NOT BUILD_SHARED_LIBS)
 	# Build one huge static library (not implemented for all platforms)
 	set(UMUNDO_STATIC_LIBRARIES "")
 	set(UMUNDO_STATIC_LIBRARIES_SUFFIX)
@@ -497,12 +504,12 @@ if(NOT BUILD_SHARED)
 
 	list(SORT UMUNDO_STATIC_LIBRARIES)
 	list(REMOVE_DUPLICATES UMUNDO_STATIC_LIBRARIES)
-	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
+#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
 
-	if (IOS OR APPLE)
+	if (IOS)
 		set(LIPO_INPUT_FILES "")
 		foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
-#			message("ARCH: ${ARCH}")
+			message("ARCH: ${ARCH}")
 			# @TODO: we should only depend on targets that are actually being built
 			ADD_CUSTOM_COMMAND(
 				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a
@@ -525,7 +532,7 @@ if(NOT BUILD_SHARED)
 		endforeach()
 		STRING(REGEX REPLACE "/" "\\\\" _LIBEXE_ARGS ${_LIBEXE_ARGS})
 		# message("output: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib")
-		message("args  : ${_LIBEXE_ARGS}")
+		# message("args  : ${_LIBEXE_ARGS}")
 		ADD_CUSTOM_COMMAND(
 			OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
 			COMMAND   lib.exe
@@ -536,8 +543,24 @@ if(NOT BUILD_SHARED)
 		ADD_CUSTOM_TARGET(umundo ALL
 			DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
 			COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
-		
 	endif()
+	
+else()
+
+	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
+	set(_UMUNDO_COMP_BUILD)
+	foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
+		string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
+		GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
+		if (UMUNDOCOMP_LOCATION)
+			list(APPEND _UMUNDO_COMP_BUILD "umundo${_UMUNDO_COMP_NAME_LC}")
+		endif()
+	endforeach()
+	
+	add_library(umundo "core/src/umundo/common/Debug.cpp")
+	target_link_libraries(umundo ${_UMUNDO_COMP_BUILD})
+	INSTALL_LIBRARY(TARGETS umundo COMPONENT libraryCore)
+	set_target_properties(umundo PROPERTIES FOLDER "Libraries")
 endif()
 
 ############################################################

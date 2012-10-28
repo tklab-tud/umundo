@@ -31,6 +31,7 @@ freely, subject to the following restrictions:
 #include <process.h>
 #endif
 
+namespace umundo {
 
 namespace tthread {
 
@@ -281,5 +282,5 @@ thread::id this_thread::get_id() {
 	return _pthread_t_to_ID(pthread_self());
 #endif
 }
-
+}
 }

@@ -151,6 +151,7 @@ freely, subject to the following restrictions:
 /// This namespace is more or less equivalent to the @c std namespace for the
 /// C++11 thread classes. For instance, the tthread::mutex class corresponds to
 /// the std::mutex class.
+namespace umundo {
 namespace tthread {
 
 /// Mutex class.
@@ -707,7 +708,7 @@ template <class _Rep, class _Period> void sleep_for(const chrono::duration<_Rep,
 }
 
 }
-
+}
 // Define/macro cleanup
 #undef _TTHREAD_DISABLE_ASSIGNMENT
 

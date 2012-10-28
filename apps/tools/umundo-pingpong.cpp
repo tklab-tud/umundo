@@ -13,6 +13,7 @@
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
  */
 
+#include "umundo/config.h"
 #include "umundo/core.h"
 #include <iostream>
 #include <string.h>
@@ -28,6 +29,7 @@ public:
 };
 
 int main(int argc, char** argv) {
+	printf("umundo-pingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	TestReceiver* testRecv = new TestReceiver();
 	Publisher* pubFoo = new Publisher("pingpong");
 	Subscriber* subFoo = new Subscriber("pingpong", testRecv);

@@ -41,6 +41,7 @@ namespace org.umundo.s11n
                 string str = new string(Array.ConvertAll(buffer, x => (char)x));
                 msg.setData(str, (uint)buffer.Length);
             }
+            Console.WriteLine("*** sending type: " + type);
             msg.putMeta("um.s11n.type", type);	
             return msg;
         }
@@ -55,6 +56,7 @@ namespace org.umundo.s11n
                 string str = new string(Array.ConvertAll(buffer, x => (char)x));
                 msg.setData(str, (uint)buffer.Length);
             }
+            Console.WriteLine("*** sending type: " + type);
             msg.putMeta("um.s11n.type", type);
             return msg;
         }

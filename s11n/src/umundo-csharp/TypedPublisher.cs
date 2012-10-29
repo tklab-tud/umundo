@@ -37,11 +37,11 @@ namespace org.umundo.s11n
             using (MemoryStream stream = new MemoryStream())
             {
                 Serializer.Serialize(stream, o);
-                byte[] buffer = stream.ToArray();
-                string str = new string(Array.ConvertAll(buffer, x => (char)x));
-                msg.setData(str, (uint)buffer.Length);
+                stream.Position = 0;
+                StreamReader reader = new StreamReader(stream);
+                string buffer = reader.ReadToEnd();
+                msg.setData(buffer, (uint)buffer.Length);
             }
-            Console.WriteLine("*** sending type: " + type);
             msg.putMeta("um.s11n.type", type);	
             return msg;
         }
@@ -51,12 +51,13 @@ namespace org.umundo.s11n
             Message msg = new Message();
             using (MemoryStream stream = new MemoryStream())
             {
+                Console.WriteLine(o.GetType());
                 Serializer.Serialize(stream, o);
-                byte[] buffer = stream.ToArray();
-                string str = new string(Array.ConvertAll(buffer, x => (char)x));
-                msg.setData(str, (uint)buffer.Length);
+                stream.Position = 0;
+                StreamReader reader = new StreamReader(stream);
+                string buffer = reader.ReadToEnd();
+                msg.setData(buffer, (uint)stream.Position);
             }
-            Console.WriteLine("*** sending type: " + type);
             msg.putMeta("um.s11n.type", type);
             return msg;
         }

@@ -20,6 +20,7 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using org.umundo.core;
 using ProtoBuf.Meta;
 
@@ -29,7 +30,10 @@ namespace org.umundo.s11n
     {
         class RawReceiver : Receiver {
 
+            private Dictionary<string, Type> types;
+
             public RawReceiver(ITypedReceiver rcv) {
+                types = new Dictionary<string, Type>();
                 TypedReceiver = rcv;
             }
 
@@ -41,10 +45,23 @@ namespace org.umundo.s11n
                 char[] buffer = new char[str.Length];
                 str.CopyTo(0, buffer, 0, buffer.Length);
                 byte[] data = Array.ConvertAll(buffer, x => (byte)x);
-                Type type = Type.GetType(typename);
+                Type type;
+                if (types.ContainsKey(typename))
+                {
+                    type = types[typename];
+                }
+                else
+                {
+                    type = Type.GetType(typename);
+                }
                 Stream source = new MemoryStream(data);
                 Object o = RuntimeTypeModel.Default.Deserialize(source, null, type);
                 TypedReceiver.receiveObject(o, msg);
+            }
+
+            public void RegisterType(string typename, Type type)
+            {
+                types.Add(typename, type);
             }
         }
 
@@ -56,5 +73,10 @@ namespace org.umundo.s11n
         }
 
         private RawReceiver Receiver { get; set; }
+
+        public void RegisterType(string typename, Type type)
+        {
+            Receiver.RegisterType(typename, type);
+        }
     }
 }

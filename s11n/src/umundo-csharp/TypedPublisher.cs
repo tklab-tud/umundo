@@ -26,12 +26,19 @@ using ProtoBuf;
 
 namespace org.umundo.s11n
 {
+    /// <summary>
+    /// A typed publsiher is able to serialize objects and send the over umundo.
+    /// </summary>
     public class TypedPublisher : Publisher
     {
+        /// <summary>
+        /// Constructs a new publisher for the given channel name.
+        /// </summary>
+        /// <param name="channel">name of the channel</param>
         public TypedPublisher(String channel) : base(channel) { 
         }
 
-        public Message prepareMessage(String type, ISerializable o)
+        private Message prepareMessage(String type, ISerializable o)
         {
             Message msg = new Message();
             using (MemoryStream stream = new MemoryStream())
@@ -46,30 +53,41 @@ namespace org.umundo.s11n
             return msg;
         }
 
-        public Message prepareMessage(String type, IExtensible o)
+        private Message prepareMessage(String type, IExtensible o)
         {
             Message msg = new Message();
             using (MemoryStream stream = new MemoryStream())
             {
-                Console.WriteLine(o.GetType());
                 Serializer.Serialize(stream, o);
                 stream.Position = 0;
                 StreamReader reader = new StreamReader(stream);
                 string buffer = reader.ReadToEnd();
-                msg.setData(buffer, (uint)stream.Position);
+                msg.setData(buffer, (uint)buffer.Length);
             }
             msg.putMeta("um.s11n.type", type);
             return msg;
         }
 
+        /// <summary>
+        /// Sends the serializable object. This method is being called from umundo.
+        /// </summary>
+        /// <param name="type">type of the object to send</param>
+        /// <param name="o">the object to send</param>
         public void sendObject(String type, ISerializable o)
         {
-            send(prepareMessage(type, o));
+            Message message = prepareMessage(type, o);
+            send(message);
         }
 
+        /// <summary>
+        /// Sends the protobuf serializable object. This method is being called from umundo.
+        /// </summary>
+        /// <param name="type">type of the object to send</param>
+        /// <param name="o">the object to send</param>
         public void sendObject(String type, IExtensible o)
         {
-            send(prepareMessage(type, o));
+            Message message = prepareMessage(type, o);
+            send(message);
         }
     }
 }

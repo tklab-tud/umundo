@@ -82,7 +82,7 @@ class PublisherMonitor : public NET_PUB_IMPL {};
 class SubscriberMonitor : public NET_SUB_IMPL {};
 
 void printUsageAndExit() {
-	printf("umundo-monitor version 0.0.2\n");
+	printf("umundo-monitor version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-monitor -c channel [-iv] [-d domain] [-f file] [-p dir]\n");
 	printf("\n");

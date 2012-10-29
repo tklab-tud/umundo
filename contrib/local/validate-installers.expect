@@ -158,6 +158,8 @@ set reqFilesMac {
 	"/usr/local/include/umundo/rpc.h"
 	"/usr/local/include/umundo/util.h"
 
+	"/usr/local/lib/libumundo64.dylib"
+	"/usr/local/lib/libumundo64_d.dylib"
 	"/usr/local/lib/libumundocore64.dylib"
 	"/usr/local/lib/libumundocore64_d.dylib"
 	"/usr/local/lib/libumundoserial64.dylib"
@@ -189,6 +191,8 @@ set reqFilesLinux32 {
 	"/usr/local/include/umundo/rpc.h"
 	"/usr/local/include/umundo/util.h"
 
+	"/usr/local/lib/libumundo.so"
+	"/usr/local/lib/libumundo_d.so"
 	"/usr/local/lib/libumundocore.so"
 	"/usr/local/lib/libumundocore_d.so"
 	"/usr/local/lib/libumundoserial.so"
@@ -221,6 +225,8 @@ set reqFilesLinux64 {
 	"/usr/local/include/umundo/rpc.h"
 	"/usr/local/include/umundo/util.h"
 
+	"/usr/local/lib/libumundo64.so"
+	"/usr/local/lib/libumundo64_d.so"
 	"/usr/local/lib/libumundocore64.so"
 	"/usr/local/lib/libumundocore64_d.so"
 	"/usr/local/lib/libumundoserial64.so"
@@ -253,6 +259,8 @@ set reqFilesWin32 {
 	"/include/umundo/rpc.h"
 	"/include/umundo/util.h"
 
+	"/lib/umundo.lib"
+	"/lib/umundo_d.lib"
 	"/lib/umundocore.lib"
 	"/lib/umundocore_d.lib"
 	"/lib/umundoserial.lib"
@@ -285,6 +293,8 @@ set reqFilesWin64 {
 	"/include/umundo/rpc.h"
 	"/include/umundo/util.h"
 
+	"/lib/umundo64.lib"
+	"/lib/umundo64_d.lib"
 	"/lib/umundocore64.lib"
 	"/lib/umundocore64_d.lib"
 	"/lib/umundoserial64.lib"

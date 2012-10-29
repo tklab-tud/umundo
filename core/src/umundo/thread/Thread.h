@@ -20,9 +20,8 @@
 
 #ifndef PTHREAD_H_KU2YWI3W
 #define PTHREAD_H_KU2YWI3W
-
-#include "umundo/thread/tinythread.h"
 #include "umundo/common/Common.h"
+#include "umundo/thread/tinythread.h"
 
 // this is a hack until we get a compiler firewall per Pimpl
 #ifdef _WIN32

@@ -74,6 +74,11 @@ namespace org.umundo.s11n
 
         private RawReceiver Receiver { get; set; }
 
+        /// <summary>
+        /// Registers the given type name so that it can be instantiated once it is received.
+        /// </summary>
+        /// <param name="typename">fully qualified type name</param>
+        /// <param name="type">associated type</param>
         public void RegisterType(string typename, Type type)
         {
             Receiver.RegisterType(typename, type);

@@ -140,8 +140,10 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
 include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
 include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
+message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+
 # some compiler flags
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
 	# best practices from scott meyers
@@ -179,15 +181,18 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	else()
 		add_definitions(-rdynamic)
 	endif()
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+	message("asdfdfagsdfg")
 	add_definitions("-DZMQ_STATIC")
 	add_definitions("-DPCRE_STATIC")
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	# SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB")
 	# SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRTD.lib")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 	add_definitions("-Wno-parentheses-equality")
+else()
+	message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
 # build type as macro to strip logging in release builds

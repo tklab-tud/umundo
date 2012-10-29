@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 
-set timeout 150
+set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
 

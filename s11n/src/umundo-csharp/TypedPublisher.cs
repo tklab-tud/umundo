@@ -83,13 +83,13 @@ namespace org.umundo.s11n
         }
 
         /// <summary>
-        /// Sends the serializable object with a fully qualified name.
+        /// Sends the serializable object and autmatically determine the name.
         /// </summary>
         /// <param name="o">the object to send</param>
         public void SendObject(ISerializable o)
         {
             string buffer = Serialize(o);
-            string type = o.GetType().FullName;
+            string type = o.GetType().Name;
             Message message = PrepareMessage(type, buffer);
             send(message);
         }
@@ -107,13 +107,13 @@ namespace org.umundo.s11n
         }
 
         /// <summary>
-        /// Sends the protobuf serializable object with a fully qualified name.
+        /// Sends the protobuf serializable object autmatically determine the name.
         /// </summary>
         /// <param name="type">type of the object to send</param>
         public void SendObject(IExtensible o)
         {
             string buffer = Serialize(o);
-            string type = o.GetType().FullName;
+            string type = o.GetType().Name;
             Message message = PrepareMessage(type, buffer);
             send(message);
         }

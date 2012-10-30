@@ -28,45 +28,45 @@ namespace org.umundo.s11n
 {
     /// <summary>
     /// A typed publsiher is able to serialize objects and send the over umundo.
-    /// </summary>
+    /// </summary>   
     public class TypedPublisher : Publisher
     {
         /// <summary>
         /// Constructs a new publisher for the given channel name.
         /// </summary>
-        /// <param name="channel">name of the channel</param>
+        /// <param name="channel">name of the channel</param>        
         public TypedPublisher(String channel) : base(channel) { 
         }
 
-        private Message prepareMessage(String type, ISerializable o)
+        private string Serialize(ISerializable serializable)
         {
-            Message msg = new Message();
             using (MemoryStream stream = new MemoryStream())
             {
-                Serializer.Serialize(stream, o);
-                stream.Position = 0;
-                StreamReader reader = new StreamReader(stream);
-                string buffer = reader.ReadToEnd();
-                msg.setData(buffer, (uint)buffer.Length);
+                Serializer.Serialize(stream, serializable);
+                byte[] buffer = stream.ToArray();
+                return new string(Array.ConvertAll(buffer, x => (char)x));
             }
+        }
+
+
+        private string Serialize(IExtensible extensible)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                Serializer.Serialize(stream, extensible);
+                byte[] buffer = stream.ToArray();
+                return new string(Array.ConvertAll(buffer, x => (char)x));
+            }
+        }
+
+        private Message PrepareMessage(String type, string buffer)
+        {
+            Message msg = new Message();
+            msg.setData(buffer, (uint)buffer.Length);
             msg.putMeta("um.s11n.type", type);	
             return msg;
         }
 
-        private Message prepareMessage(String type, IExtensible o)
-        {
-            Message msg = new Message();
-            using (MemoryStream stream = new MemoryStream())
-            {
-                Serializer.Serialize(stream, o);
-                stream.Position = 0;
-                StreamReader reader = new StreamReader(stream);
-                string buffer = reader.ReadToEnd();
-                msg.setData(buffer, (uint)buffer.Length);
-            }
-            msg.putMeta("um.s11n.type", type);
-            return msg;
-        }
 
         /// <summary>
         /// Sends the serializable object. This method is being called from umundo.
@@ -75,7 +75,8 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void sendObject(String type, ISerializable o)
         {
-            Message message = prepareMessage(type, o);
+            string buffer = Serialize(o);
+            Message message = PrepareMessage(type, buffer);
             send(message);
         }
 
@@ -86,7 +87,8 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void sendObject(String type, IExtensible o)
         {
-            Message message = prepareMessage(type, o);
+            string buffer = Serialize(o);
+            Message message = PrepareMessage(type, buffer);
             send(message);
         }
     }

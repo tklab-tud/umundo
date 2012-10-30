@@ -30,7 +30,7 @@ namespace org.umundo.s11n.demo
             /*
              * Make sure this path contains the umundoNativeCSharp.dll!
              */
-            SetDllDirectory("C:\\Users\\Piri\\Documents\\Entwicklung\\tu-darmstadt\\umundo\\build\\lib");
+            SetDllDirectory("C:\\Program Files\\uMundo\\lib");
             org.umundo.core.Node node = new org.umundo.core.Node();
             TypedPublisher pub = new TypedPublisher("s11ndemo");
             node.addPublisher(pub);
@@ -49,7 +49,7 @@ namespace org.umundo.s11n.demo
             while (true)
             {
                 Console.WriteLine("s: " + msg);
-                pub.sendObject(msg.GetType().FullName, msg);
+                pub.SendObject(msg);
                 System.Threading.Thread.Sleep(1000);
             }
         }

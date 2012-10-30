@@ -2,6 +2,7 @@
  *  @file
  *  @brief      Subscriber for serialized objects
  *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @author     2012 Dirk Schnelle-Walka
  *  @copyright  Simplified BSD
  *
  *  @cond
@@ -19,10 +20,10 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using org.umundo.core;
 using ProtoBuf.Meta;
-using System.Collections.Generic;
 
 namespace org.umundo.s11n
 {

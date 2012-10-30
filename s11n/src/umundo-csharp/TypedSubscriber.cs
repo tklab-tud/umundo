@@ -66,6 +66,11 @@ namespace org.umundo.s11n
                 TypedReceiver.receiveObject(o, msg);
             }
 
+            /// <summary>
+            /// Registers the given type name so that it can be instantiated once it is received.
+            /// </summary>
+            /// <param name="typename">fully qualified type name</param>
+            /// <param name="type">associated type</param>
             public void RegisterType(string typename, Type type)
             {
                 types.Add(typename, type);
@@ -89,6 +94,16 @@ namespace org.umundo.s11n
         public void RegisterType(string typename, Type type)
         {
             Receiver.RegisterType(typename, type);
+        }
+
+        /// <summary>
+        /// Registers the given type name so that it can be instantiated once it is received.
+        /// </summary>
+        /// <param name="o">the object to register</param>
+        public void RegisterType(object o)
+        {
+            Type type = o.GetType();
+            Receiver.RegisterType(type.FullName, type);
         }
     }
 }

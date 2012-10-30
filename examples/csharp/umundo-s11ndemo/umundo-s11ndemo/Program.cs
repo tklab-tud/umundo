@@ -6,7 +6,7 @@ using System.Text;
 using org.umundo;
 using org.umundo.s11n;
 
-namespace umundo_s11ndemo
+namespace org.umundo.s11n.demo
 {
     using org.umundo.core;
 
@@ -14,7 +14,9 @@ namespace umundo_s11ndemo
     {
         public void receiveObject(object o, Message msg)
         {
-            Console.WriteLine("r: " + o);
+            AMessage rcvmsg = (AMessage)o;
+            Console.WriteLine("r: " + rcvmsg.a);
+            Console.WriteLine("r: " + rcvmsg.b);
         }
     }
 
@@ -35,13 +37,21 @@ namespace umundo_s11ndemo
             TestTypedReceiver ttr = new TestTypedReceiver();
             TypedSubscriber sub = new TypedSubscriber("s11ndemo", ttr);
             node.addSubscriber(sub);
-            Console.WriteLine("Waiting for subsrcibers...");
-            int subs = pub.waitForSubscribers(2);
-            Console.WriteLine(subs + " subscribers");
+            // Currently not working in C#
+            //Console.WriteLine("Waiting for subsrcibers...");
+            //int subs = pub.waitForSubscribers(2);
+            //Console.WriteLine(subs + " subscribers");
             AMessage msg = new AMessage();
-            Console.WriteLine("s: " + msg);
-            pub.sendObject("AMessage", msg);
-            System.Threading.Thread.Sleep(1000);
+            msg.a = 42;
+            msg.b = 43;
+            Console.WriteLine(msg.GetType().FullName);
+            sub.RegisterType(msg);
+            while (true)
+            {
+                Console.WriteLine("s: " + msg);
+                pub.sendObject(msg.GetType().FullName, msg);
+                System.Threading.Thread.Sleep(1000);
+            }
         }
     }
 }

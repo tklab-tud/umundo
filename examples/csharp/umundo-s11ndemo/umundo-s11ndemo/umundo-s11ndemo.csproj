@@ -8,7 +8,7 @@
     <ProjectGuid>{8B270C68-9A29-4A7F-9D85-9B536F2AD4F5}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>umundo_s11ndemo</RootNamespace>
+    <RootNamespace>org.umundo.s11n.demo</RootNamespace>
     <AssemblyName>umundo-s11ndemo</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>

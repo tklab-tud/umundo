@@ -35,7 +35,8 @@ namespace org.umundo.s11n
         /// Constructs a new publisher for the given channel name.
         /// </summary>
         /// <param name="channel">name of the channel</param>        
-        public TypedPublisher(String channel) : base(channel) { 
+        public TypedPublisher(String channel)
+            : base(channel) { 
         }
 
         private string Serialize(ISerializable serializable)

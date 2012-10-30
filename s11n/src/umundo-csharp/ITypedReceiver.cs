@@ -3,6 +3,9 @@ using org.umundo.core;
 
 namespace org.umundo.s11n
 {
+    /// <summary>
+    /// Objects implementing this interface will be notified, once an object has been received by a typed subscriber.
+    /// </summary>
     public interface ITypedReceiver
     {
         /// <summary>

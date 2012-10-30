@@ -79,6 +79,51 @@ using namespace umundo;
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
 
+
+//******************************
+// Lets hope this will work some day
+//******************************
+# %typemap(cstype)  (char *STRING, size_t LENGTH) "byte[]"
+
+# %typemap(ctype)   (char *STRING, size_t LENGTH) "byte[]"
+# %typemap(imtype)  (char *STRING, size_t LENGTH) (IntPtr, size_t)
+# %typemap(csin)  (char *STRING, size_t LENGTH) "wergwerg"
+
+# %typemap(in)      (char *STRING, size_t LENGTH) {
+# 	$1 = pointer($input);
+# }
+
+# %typemap(in)      (char *STRING, size_t LENGTH) {
+# 	$1 = pointer($input);
+# 	$2 = pointer($input);
+# 	$3 = pointer($input);
+# 	$4 = size($input);
+# }
+
+# %typemap(csin, pre="    _receiver = $csinput;") (char *STRING, size_t LENGTH) "asdf"
+
+# %typemap(csvarin)      (char *STRING, size_t LENGTH) {
+#     typemap csvarin
+# }
+
+
+# %typemap(cstype)  (char *STRING, size_t LENGTH) "byte[]"
+# %typemap(ctype)   (char *STRING, size_t LENGTH) "byte[]"
+# %typemap(imtype)  (char *STRING, size_t LENGTH) "IntPtr"
+# %typemap(in)      (char *STRING, size_t LENGTH) {
+#     $1 = (char *) JCALL2(GetByteArrayElements, jenv, $input, 0);
+#     $2 = (size_t) JCALL1(GetArrayLength,       jenv, $input);
+# }
+
+# %typemap(freearg) (char *STRING, size_t LENGTH) ""
+# %typemap(argout)  (char *STRING, size_t LENGTH) {
+#     JCALL3(ReleaseByteArrayElements, jenv, $input, (jbyte *)$1, 0);
+# }
+
+// enable conversion from char*, int to byte[]
+# %apply (char *STRING, int LENGTH) { (const char* data, size_t length) };
+
+
 # %typemap(cstype) char *data "byte[]" 
 # %typemap(imtype) char *data "IntPtr" 
 # %typemap(csout) char *data %{
@@ -94,6 +139,9 @@ using namespace umundo;
 #   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
 #   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
 # }
+
+//******************************
+//******************************
 
 
 //******************************

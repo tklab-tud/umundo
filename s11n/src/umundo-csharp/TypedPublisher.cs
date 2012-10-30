@@ -2,6 +2,7 @@
  *  @file
  *  @brief      Publisher for serialized objects
  *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @author     2012 Dirk Schnelle-Walka
  *  @copyright  Simplified BSD
  *
  *  @cond
@@ -70,11 +71,11 @@ namespace org.umundo.s11n
 
 
         /// <summary>
-        /// Sends the serializable object. This method is being called from umundo.
+        /// Sends the serializable object.
         /// </summary>
         /// <param name="type">type of the object to send</param>
         /// <param name="o">the object to send</param>
-        public void sendObject(String type, ISerializable o)
+        public void SendObject(String type, ISerializable o)
         {
             string buffer = Serialize(o);
             Message message = PrepareMessage(type, buffer);
@@ -82,13 +83,37 @@ namespace org.umundo.s11n
         }
 
         /// <summary>
-        /// Sends the protobuf serializable object. This method is being called from umundo.
+        /// Sends the serializable object with a fully qualified name.
+        /// </summary>
+        /// <param name="o">the object to send</param>
+        public void SendObject(ISerializable o)
+        {
+            string buffer = Serialize(o);
+            string type = o.GetType().FullName;
+            Message message = PrepareMessage(type, buffer);
+            send(message);
+        }
+
+        /// <summary>
+        /// Sends the protobuf serializable object.
         /// </summary>
         /// <param name="type">type of the object to send</param>
         /// <param name="o">the object to send</param>
-        public void sendObject(String type, IExtensible o)
+        public void SendObject(String type, IExtensible o)
         {
             string buffer = Serialize(o);
+            Message message = PrepareMessage(type, buffer);
+            send(message);
+        }
+
+        /// <summary>
+        /// Sends the protobuf serializable object with a fully qualified name.
+        /// </summary>
+        /// <param name="type">type of the object to send</param>
+        public void SendObject(IExtensible o)
+        {
+            string buffer = Serialize(o);
+            string type = o.GetType().FullName;
             Message message = PrepareMessage(type, buffer);
             send(message);
         }

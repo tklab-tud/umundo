@@ -104,7 +104,16 @@ namespace org.umundo.s11n
         public void RegisterType(object o)
         {
             Type type = o.GetType();
-            Receiver.RegisterType(type.FullName, type);
+            Receiver.RegisterType(type.Name, type);
+        }
+
+        /// <summary>
+        /// Registers the given type name so that it can be instantiated once it is received.
+        /// </summary>
+        /// <param name="type">the type to register</param>
+        public void RegisterType(Type type)
+        {
+            Receiver.RegisterType(type.Name, type);
         }
     }
 }

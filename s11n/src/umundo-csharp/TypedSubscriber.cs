@@ -20,20 +20,27 @@
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using org.umundo.core;
 using ProtoBuf.Meta;
+using System.Collections.Generic;
 
 namespace org.umundo.s11n
 {
+    /// <summary>
+    /// A typed subscriber is able to receive objects that have been sent over umundo.
+    /// </summary>
     public class TypedSubscriber : Subscriber
     {
-        class RawReceiver : Receiver {
-
+        class RawReceiver : Receiver
+        {
             private Dictionary<string, Type> types;
 
+            /// <summary>
+            /// Constructs a new publisher for the given channel name.
+            /// </summary>
+            /// <param name="channel">name of the channel</param>
             public RawReceiver(ITypedReceiver rcv) {
-                types = new Dictionary<string, Type>();
+                types = new Dictionary<string, Type>(); 
                 TypedReceiver = rcv;
             }
 

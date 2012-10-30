@@ -15,8 +15,7 @@ namespace org.umundo.s11n.demo
         public void receiveObject(object o, Message msg)
         {
             AMessage rcvmsg = (AMessage)o;
-            Console.WriteLine("r: " + rcvmsg.a);
-            Console.WriteLine("r: " + rcvmsg.b);
+            Console.WriteLine("r: " + rcvmsg.a + ", " + rcvmsg.b);
         }
     }
 
@@ -48,7 +47,7 @@ namespace org.umundo.s11n.demo
             sub.RegisterType(msg);
             while (true)
             {
-                Console.WriteLine("s: " + msg);
+                Console.WriteLine("s: " + msg.a + ", " + msg.b);
                 pub.SendObject(msg);
                 System.Threading.Thread.Sleep(1000);
             }

@@ -75,73 +75,42 @@ using namespace umundo;
 //%ignore umundo::Message::Message(const Message&);
 %ignore umundo::Message::setData(string const &);
 %ignore umundo::Message::Message(string);
-%ignore umundo::Message::Message(string);
+%ignore umundo::Message::Message(const char*, size_t);
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
 
 
 //******************************
-// Lets hope this will work some day
+// byte[] signature for get/setData
 //******************************
-# %typemap(cstype)  (char *STRING, size_t LENGTH) "byte[]"
 
-# %typemap(ctype)   (char *STRING, size_t LENGTH) "byte[]"
-# %typemap(imtype)  (char *STRING, size_t LENGTH) (IntPtr, size_t)
-# %typemap(csin)  (char *STRING, size_t LENGTH) "wergwerg"
+// see http://permalink.gmane.org/gmane.comp.programming.swig/5804
+%typemap(imtype, out="IntPtr") const char *data "byte[]"
+%typemap(cstype) const char *data "byte[]"
+%typemap(in) const char *data %{ $1 = ($1_ltype)$input; %}
+%typemap(csin) const char *data "$csinput"
 
-# %typemap(in)      (char *STRING, size_t LENGTH) {
-# 	$1 = pointer($input);
-# }
+%typemap(csout) const char *data %{
+	{
+    byte[] ret = new byte[this.getSize()]; 
+    IntPtr data = $imcall;
+    System.Runtime.InteropServices.Marshal.Copy(data, ret, 0, (int)this.getSize());
+    return ret; 
+  } 
+%} 
 
-# %typemap(in)      (char *STRING, size_t LENGTH) {
-# 	$1 = pointer($input);
-# 	$2 = pointer($input);
-# 	$3 = pointer($input);
-# 	$4 = size($input);
-# }
+%typemap(cscode) umundo::Message %{
+   public void setData(byte[] buffer) {
+     setData(buffer, (uint)buffer.Length);
+   }
+%}
 
-# %typemap(csin, pre="    _receiver = $csinput;") (char *STRING, size_t LENGTH) "asdf"
+// make sure we do not get the default with SWIG_csharp_string_callback
+%typemap(out) const char *data {
+  $result = (char *)result;
+}
 
-# %typemap(csvarin)      (char *STRING, size_t LENGTH) {
-#     typemap csvarin
-# }
-
-
-# %typemap(cstype)  (char *STRING, size_t LENGTH) "byte[]"
-# %typemap(ctype)   (char *STRING, size_t LENGTH) "byte[]"
-# %typemap(imtype)  (char *STRING, size_t LENGTH) "IntPtr"
-# %typemap(in)      (char *STRING, size_t LENGTH) {
-#     $1 = (char *) JCALL2(GetByteArrayElements, jenv, $input, 0);
-#     $2 = (size_t) JCALL1(GetArrayLength,       jenv, $input);
-# }
-
-# %typemap(freearg) (char *STRING, size_t LENGTH) ""
-# %typemap(argout)  (char *STRING, size_t LENGTH) {
-#     JCALL3(ReleaseByteArrayElements, jenv, $input, (jbyte *)$1, 0);
-# }
-
-// enable conversion from char*, int to byte[]
-# %apply (char *STRING, int LENGTH) { (const char* data, size_t length) };
-
-
-# %typemap(cstype) char *data "byte[]" 
-# %typemap(imtype) char *data "IntPtr" 
-# %typemap(csout) char *data %{
-# 	{
-#     byte[] ret = new byte[this.getSize()]; 
-#     IntPtr data = $imcall; 
-#     System.Runtime.InteropServices.Marshal.Copy(data, ret, 0, this.getSize());
-#     return ret; 
-#   } 
-# %} 
-
-# %typemap(out) char *data {
-#   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
-#   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
-# }
-
-//******************************
-//******************************
+%csmethodmodifiers setData(const char *data, size_t length) "private"
 
 
 //******************************

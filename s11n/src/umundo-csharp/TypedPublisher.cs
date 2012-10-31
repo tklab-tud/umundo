@@ -40,31 +40,37 @@ namespace org.umundo.s11n
             : base(channel) { 
         }
 
-        private string Serialize(ISerializable serializable)
+        private string GetString(byte[] bytes)
+        {
+            int offset = bytes.Length % 2 == 0 ? 0 : 1;
+            char[] chars = new char[bytes.Length / sizeof(char) + offset];
+            System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
+            return new string(chars);
+        }
+
+        private byte[] Serialize(ISerializable serializable)
         {
             using (MemoryStream stream = new MemoryStream())
             {
                 Serializer.Serialize(stream, serializable);
-                byte[] buffer = stream.ToArray();
-                return new string(Array.ConvertAll(buffer, x => (char)x));
+                return stream.ToArray();
             }
         }
 
 
-        private string Serialize(IExtensible extensible)
+        private byte[] Serialize(IExtensible extensible)
         {
             using (MemoryStream stream = new MemoryStream())
             {
                 Serializer.Serialize(stream, extensible);
-                byte[] buffer = stream.ToArray();
-                return new string(Array.ConvertAll(buffer, x => (char)x));
+                return stream.ToArray();
             }
         }
 
-        private Message PrepareMessage(String type, string buffer)
+        private Message PrepareMessage(String type, byte[] buffer)
         {
             Message msg = new Message();
-            msg.setData(buffer, (uint)buffer.Length);
+            msg.setData(buffer);
             msg.putMeta("um.s11n.type", type);	
             return msg;
         }
@@ -77,7 +83,7 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void SendObject(String type, ISerializable o)
         {
-            string buffer = Serialize(o);
+            byte[] buffer = Serialize(o);
             Message message = PrepareMessage(type, buffer);
             send(message);
         }
@@ -88,7 +94,7 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void SendObject(ISerializable o)
         {
-            string buffer = Serialize(o);
+            byte[] buffer = Serialize(o);
             string type = o.GetType().Name;
             Message message = PrepareMessage(type, buffer);
             send(message);
@@ -101,7 +107,7 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void SendObject(String type, IExtensible o)
         {
-            string buffer = Serialize(o);
+            byte[] buffer = Serialize(o);
             Message message = PrepareMessage(type, buffer);
             send(message);
         }
@@ -112,7 +118,7 @@ namespace org.umundo.s11n
         /// <param name="type">type of the object to send</param>
         public void SendObject(IExtensible o)
         {
-            string buffer = Serialize(o);
+            byte[] buffer = Serialize(o);
             string type = o.GetType().Name;
             Message message = PrepareMessage(type, buffer);
             send(message);

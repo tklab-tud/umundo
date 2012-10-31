@@ -47,12 +47,17 @@ namespace org.umundo.s11n
 
             internal ITypedReceiver TypedReceiver { get; private set; }
 
+            private byte[] GetBytes(string str)
+            {
+                byte[] bytes = new byte[str.Length * sizeof(char)];
+                System.Buffer.BlockCopy(str.ToCharArray(), 0, bytes, 0, bytes.Length);
+                return bytes;
+            }
+
             public override void receive(Message msg) {
                 String typename = msg.getMeta("um.s11n.type");
-                string str = msg.getData();
-                char[] buffer = new char[str.Length];
-                str.CopyTo(0, buffer, 0, buffer.Length);
-                byte[] data = Array.ConvertAll(buffer, x => (byte)x);
+                
+                byte[] data = msg.getData();
                 Type type;
                 if (types.ContainsKey(typename))
                 {

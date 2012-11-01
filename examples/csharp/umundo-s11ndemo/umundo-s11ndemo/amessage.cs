@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 
 // Generated from: amessage.proto
-namespace umundo_s11ndemo
+namespace org.umundo.s11n.demo
 {
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"AMessage")]
   public partial class AMessage : global::ProtoBuf.IExtensible

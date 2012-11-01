@@ -19,6 +19,12 @@ namespace org.umundo.s11n.demo
         }
     }
 
+    struct foo
+    {
+        int length;
+        char[] buffer;
+    }
+
     class Program
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
@@ -43,8 +49,7 @@ namespace org.umundo.s11n.demo
             AMessage msg = new AMessage();
             msg.a = 42;
             msg.b = 43;
-            Console.WriteLine(msg.GetType().FullName);
-            sub.RegisterType(msg);
+            sub.RegisterType(msg.GetType().Name, msg.GetType());
             while (true)
             {
                 Console.WriteLine("s: " + msg.a + ", " + msg.b);

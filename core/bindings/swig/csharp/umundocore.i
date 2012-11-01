@@ -75,25 +75,42 @@ using namespace umundo;
 //%ignore umundo::Message::Message(const Message&);
 %ignore umundo::Message::setData(string const &);
 %ignore umundo::Message::Message(string);
-%ignore umundo::Message::Message(string);
+%ignore umundo::Message::Message(const char*, size_t);
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
 
-# %typemap(cstype) char *data "byte[]" 
-# %typemap(imtype) char *data "IntPtr" 
-# %typemap(csout) char *data %{
-# 	{
-#     byte[] ret = new byte[this.getSize()]; 
-#     IntPtr data = $imcall; 
-#     System.Runtime.InteropServices.Marshal.Copy(data, ret, 0, this.getSize());
-#     return ret; 
-#   } 
-# %} 
 
-# %typemap(out) char *data {
-#   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
-#   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
-# }
+//******************************
+// byte[] signature for get/setData
+//******************************
+
+// see http://permalink.gmane.org/gmane.comp.programming.swig/5804
+%typemap(imtype, out="IntPtr") const char *data "byte[]"
+%typemap(cstype) const char *data "byte[]"
+%typemap(in) const char *data %{ $1 = ($1_ltype)$input; %}
+%typemap(csin) const char *data "$csinput"
+
+%typemap(csout) const char *data %{
+	{
+    byte[] ret = new byte[this.getSize()]; 
+    IntPtr data = $imcall;
+    System.Runtime.InteropServices.Marshal.Copy(data, ret, 0, (int)this.getSize());
+    return ret; 
+  } 
+%} 
+
+%typemap(cscode) umundo::Message %{
+   public void setData(byte[] buffer) {
+     setData(buffer, (uint)buffer.Length);
+   }
+%}
+
+// make sure we do not get the default with SWIG_csharp_string_callback
+%typemap(out) const char *data {
+  $result = (char *)result;
+}
+
+%csmethodmodifiers setData(const char *data, size_t length) "private"
 
 
 //******************************

@@ -140,8 +140,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
 include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
 include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
-message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
-
 # some compiler flags
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
@@ -182,7 +180,6 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		add_definitions(-rdynamic)
 	endif()
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-	message("asdfdfagsdfg")
 	add_definitions("-DZMQ_STATIC")
 	add_definitions("-DPCRE_STATIC")
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")

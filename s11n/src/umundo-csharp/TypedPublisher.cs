@@ -40,14 +40,6 @@ namespace org.umundo.s11n
             : base(channel) { 
         }
 
-        private string GetString(byte[] bytes)
-        {
-            int offset = bytes.Length % 2 == 0 ? 0 : 1;
-            char[] chars = new char[bytes.Length / sizeof(char) + offset];
-            System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-            return new string(chars);
-        }
-
         private byte[] Serialize(ISerializable serializable)
         {
             using (MemoryStream stream = new MemoryStream())

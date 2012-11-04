@@ -23,8 +23,8 @@ freely, subject to the following restrictions:
     distribution.
 */
 
-#ifndef _TINYTHREAD_H_
-#define _TINYTHREAD_H_
+#ifndef _UMUMDO_TINYTHREAD_H_
+#define _UMUMDO_TINYTHREAD_H_
 
 /// @file
 /// @mainpage TinyThread++ API Reference
@@ -712,4 +712,4 @@ template <class _Rep, class _Period> void sleep_for(const chrono::duration<_Rep,
 // Define/macro cleanup
 #undef _TTHREAD_DISABLE_ASSIGNMENT
 
-#endif // _TINYTHREAD_H_
+#endif // _UMUMDO_TINYTHREAD_H_

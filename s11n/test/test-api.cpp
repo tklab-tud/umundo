@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 	TypedPublisher* tPub = new TypedPublisher("fooChannel");
 	TypedSubscriber* tSub = new TypedSubscriber("fooChannel", tts);
 
-  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/build/xcode/protobuf/generated");
+  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
 	
   tSub->registerType("Test1Msg", new Test1Msg());
 	tPub->registerType("Test1Msg", new Test1Msg());
@@ -37,7 +37,6 @@ int main(int argc, char** argv) {
 
 	// try a typed message for atomic types
 	Test1Msg* tMsg1 = new Test1Msg();
-	Test2Msg* tMsg2 = new Test2Msg();
   tPub->waitForSubscribers(1);
   
   int iterations = 10;
@@ -46,9 +45,6 @@ int main(int argc, char** argv) {
     tMsg1->set_doubletype(iterations);
     tMsg1->set_stringtype("foo");
 		tPub->sendObj("Test1Msg", tMsg1);
-    tMsg2->set_doubletype(iterations);
-    tMsg2->set_stringtype("foo");
-		tPub->sendObj("Test2Msg", tMsg2);
 	}
   
 //  mainNode->removePublisher(tPub);

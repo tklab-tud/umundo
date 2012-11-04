@@ -99,9 +99,9 @@ public class TypedSubscriber extends Subscriber {
 					return;
 				}
 				r.receiveObject(o, msg);
-			} else if (TypedSubscriber.protoMsgDesc.containsKey(type)) {
+			} else if (TypedPublisher.protoDescForMessage(type) != null) {
 				try {
-					DynamicMessage _protoMsg = DynamicMessage.getDefaultInstance(TypedSubscriber.protoMsgDesc.get(type));
+					DynamicMessage _protoMsg = DynamicMessage.getDefaultInstance(TypedPublisher.protoDescForMessage(type));
 					Builder builder = _protoMsg.toBuilder(); 
 					builder.mergeFrom(data);
 					r.receiveObject(builder.build(), msg);
@@ -147,55 +147,6 @@ public class TypedSubscriber extends Subscriber {
 		this.autoRegisterTypes = autoRegisterTypes;
 	}
 
-	public static Descriptor protoDescForMessage(String typeName) {
-		return protoMsgDesc.get(typeName);
-	}
-
-	public static ServiceDescriptor protoDescForService(String typeName) {
-		return protoSvcDesc.get(typeName);
-	}
-
-	public static void addProtoDesc(File dirOrFile) throws IOException {
-		if (dirOrFile.isDirectory()) {
-			for (File file : dirOrFile.listFiles()) {
-				addProtoDesc(file);
-			}
-			return;
-		}
-		if (dirOrFile.isFile()) {
-			final FileInputStream fin = new FileInputStream(dirOrFile);
-			final FileDescriptorSet fdSet = FileDescriptorSet.parseFrom(fin);
-			for (FileDescriptorProto fdProto : fdSet.getFileList()) {
-				FileDescriptor[] fds = new FileDescriptor[fdProto.getDependencyCount()];
-				for (int i = 0; i < fdProto.getDependencyCount(); i++) {
-					String depProto = fdProto.getDependency(i);
-					if (!protoFile.containsKey(depProto)) {
-						addProtoDesc(new File(depProto));
-					}
-					fds[i] = protoFile.get(depProto);
-				}
-
-				try {
-					FileDescriptor fileDescriptor = FileDescriptor.buildFrom(fdProto, fds);
-					protoFile.put(fileDescriptor.getName(), fileDescriptor);
-
-					for (Descriptor desc : fileDescriptor.getMessageTypes()) {
-						protoMsgDesc.put(desc.getName(), desc);
-					}
-					for (ServiceDescriptor desc : fileDescriptor.getServices()) {
-						protoSvcDesc.put(desc.getName(), desc);
-					}
-				} catch (DescriptorValidationException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
-	private static Map<String, FileDescriptor> protoFile = new HashMap<String, FileDescriptor>();
-	private static Map<String, Descriptor> protoMsgDesc = new HashMap<String, Descriptor>();
-	private static Map<String, Builder> protoMsgBuilders = new HashMap<String, Builder>();
-	private static Map<String, ServiceDescriptor> protoSvcDesc = new HashMap<String, ServiceDescriptor>();
 
 	private Map<String, Method> deserializerMethods = new HashMap<String, Method>();
 	private DeserializingReceiverDecorator decoratedReceiver;

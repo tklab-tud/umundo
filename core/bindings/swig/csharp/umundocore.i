@@ -104,13 +104,13 @@ using namespace umundo;
      setData(buffer, (uint)buffer.Length);
    }
 %}
+%csmethodmodifiers setData(const char *data, size_t length) "private"
 
 // make sure we do not get the default with SWIG_csharp_string_callback
 %typemap(out) const char *data {
   $result = (char *)result;
 }
 
-%csmethodmodifiers setData(const char *data, size_t length) "private"
 
 
 //******************************

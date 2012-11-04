@@ -127,9 +127,11 @@ void Monitor::signal(int nrThreads) {
 }
 
 void Monitor::wait(Mutex& mutex, uint32_t ms) {
-	if (ms <= 0)
+	if (ms <= 0) {
 		_cond.wait(mutex);
-	_cond.wait_for(mutex, ms);
+	} else {
+		_cond.wait_for(mutex, ms);
+	}
 }
 
 #ifdef THREAD_PTHREAD

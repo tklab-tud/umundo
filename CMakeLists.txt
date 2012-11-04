@@ -528,23 +528,20 @@ if(NOT BUILD_SHARED_LIBS)
 			COMMENT "Building libumundo${CMAKE_LIBRARY_POSTFIX}.a convenience library")
 
 	elseif(WIN32)
-		set(_LIBEXE_ARGS "OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib")
-		foreach(UMUNDO_STATIC_LIBRARY ${UMUNDO_STATIC_LIBRARIES})
-			set(_LIBEXE_ARGS "${_LIBEXE_ARGS} ${UMUNDO_STATIC_LIBRARY}")
-		endforeach()
-		STRING(REGEX REPLACE "/" "\\\\" _LIBEXE_ARGS ${_LIBEXE_ARGS})
-		# message("output: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib")
-		# message("args  : ${_LIBEXE_ARGS}")
-		ADD_CUSTOM_COMMAND(
-			OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
-			COMMAND   lib.exe
-			ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
-			DEPENDS   umundocore umundoserial umundorpc
-			COMMENT   "Running lib.exe on static libraries"
-		)
-		ADD_CUSTOM_TARGET(umundo ALL
-			DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
-			COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
+		if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
+			message(STATUS "Not building convenience umundo.lib as we do not know the build type at configure time")
+		else()
+			ADD_CUSTOM_COMMAND(
+				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
+				COMMAND   lib.exe
+				ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
+				DEPENDS   umundocore umundoserial umundorpc
+				COMMENT   "Running lib.exe on static libraries"
+			)
+			ADD_CUSTOM_TARGET(umundo ALL
+				DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
+				COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
+		endif()
 	endif()
 	
 else()

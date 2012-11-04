@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 
 #include <exception>
 #include "tinythread.h"
+#include "umundo/common/Debug.h"
 
 #if defined(_TTHREAD_POSIX_)
 #include <unistd.h>
@@ -77,6 +78,9 @@ void condition_variable::_wait(unsigned int ms) {
 	// Wait for either event to become signaled due to notify_one() or
 	// notify_all() being called
 	int result = WaitForMultipleObjects(2, mEvents, FALSE, ms);
+	if (result == WAIT_FAILED) {
+		LOG_ERR("%d", GetLastError());
+	}
 
 	// Check if we are the last waiter
 	EnterCriticalSection(&mWaitersCountLock);

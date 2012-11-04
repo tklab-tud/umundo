@@ -134,7 +134,6 @@ bool testTimedMonitors() {
 
 	for (int i = 0; i < 2; i++) {
 		// test waiting for a given time
-		testTimedMonitor = Monitor();
 		passedTimedMonitor = 0;
 
 		thread1.start(); // wait for 100ms at mutex before resuming
@@ -146,7 +145,6 @@ bool testTimedMonitors() {
 
 		// test signalling a set of threads
 		passedTimedMonitor = 0;
-		testTimedMonitor = Monitor();
 
 		thread2.start();
 		thread3.start();
@@ -166,7 +164,6 @@ bool testTimedMonitors() {
 
 		// test timed and unlimited waiting
 		passedTimedMonitor = 0;
-		testTimedMonitor = Monitor();
 
 		thread1.start();
 		thread2.start(); // with another thread

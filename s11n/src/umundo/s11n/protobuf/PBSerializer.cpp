@@ -111,7 +111,7 @@ void PBSerializer::addProto(const std::string& dirOrFile) {
     dirRoot = dirOrFile;
     relDirOrFile = "";
   } else {
-    if ((lastPathSep = dirOrFile.find_last_of(PATH_SEPERATOR) != std::string::npos)) {
+    if ((lastPathSep = dirOrFile.find_last_of(PATH_SEPERATOR)) != std::string::npos) {
       relDirOrFile = dirOrFile.substr(lastPathSep, dirOrFile.length() - lastPathSep);
       dirRoot = dirOrFile.substr(0, lastPathSep);
     }
@@ -200,7 +200,7 @@ bool PBSerializer::isDir(const std::string& dirOrFile) {
     LOG_ERR("Cannot open %s: %s", dirOrFile.c_str(), strerror(errno));
     return false;
   }
-  return(S_ISDIR (dirStat.st_mode));
+  return((bool)(S_ISDIR (dirStat.st_mode)));
 }
   
 void PBErrorReporter::AddError(const string & filename, int line, int column, const string & message) {

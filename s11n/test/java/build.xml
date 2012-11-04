@@ -1,0 +1,51 @@
+<project name="java.s11n.tests" default="protoc">
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+	  <classpath>
+	  	<pathelement location="../../../contrib/java/lib/ant-contrib-0.6.jar"/>
+	  </classpath>
+	</taskdef>
+
+	<property name="protoc.bin" location="/opt/local/bin/protoc"/>
+	<property name="proto.dir" location="../proto"/>
+	<property name="proto.gen" location="types"/>
+
+	<target name="clean">
+		<delete dir="${proto.gen}"/>
+	</target>
+
+	<target name="protoc" depends="clean">
+		<mkdir dir="${proto.gen}" />
+	    <for param="file">
+	        <path>
+	            <fileset dir="${proto.dir}">
+	                <include name="**/*.proto"/>
+	            </fileset>
+	        </path>
+	        <sequential>
+	        	<local name="fileName"/>
+	        	<basename property="fileName" file="@{file}" />
+	        	<echo message="@{file} -> ${fileName}"/>
+	        	<!-- include imports -->
+	        	<exec executable="${protoc.bin}">
+	        		<arg line="-I${proto.dir} --include_imports -o${proto.gen}/${fileName}.imp.desc @{file}" />
+	        	</exec>
+	        	<!-- do not include imports -->
+	        	<exec executable="${protoc.bin}">
+	        		<arg line="-I${proto.dir} -o${proto.gen}/${fileName}.desc @{file}" />
+	        	</exec>
+			</sequential>
+		</for>
+		<!-- Make one desc with all types -->
+		<fileset id="protoFilesId" dir="${proto.dir}">
+			<include name="**/*.proto"/>
+		</fileset>
+		<pathconvert property="protoFiles" refid="protoFilesId" pathsep=" " />
+		
+		<mkdir dir="${proto.gen}" />
+		<exec executable="${protoc.bin}">
+			<arg line="-I${proto.dir} --include_imports -o${proto.gen}/all.desc ${protoFiles}" />
+		</exec>
+
+	</target>
+</project>

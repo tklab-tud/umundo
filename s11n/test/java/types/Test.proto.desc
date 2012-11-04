@@ -1,0 +1,52 @@
+
+É
+
+Test.proto"Ó
+AllTypes
+
+doubleType (
+	floatType (
+	int32Type (
+	int64Type (
+
+uint32Type (
+
+uint64Type (
+
+sint32Type (
+
+sint64Type (
+fixed32Type	 (
+fixed64Type
+ (
+sfixed32Type (
+sfixed64Type (
+boolType (
+
+stringType (	
+	bytesType (
+allTypes (2	.AllTypes"ä
+RepeatedTypes
+
+doubleType (
+	floatType (
+	int32Type (
+	int64Type (
+
+uint32Type (
+
+uint64Type (
+
+sint32Type (
+
+sint64Type (
+fixed32Type	 (
+fixed64Type
+ (
+sfixed32Type (
+sfixed64Type (
+boolType (
+
+stringType (	
+	bytesType ('
+repeatedMessage (2.RepeatedTypes

@@ -100,7 +100,6 @@ protected:
 	ZeroMQNode();
 
 	void run(); ///< see Thread
-	void join(); ///< Overridden to unblock zmq_recv_msg in run()
 
 	/** @name Control message handling */
 	//@{

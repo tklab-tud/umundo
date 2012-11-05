@@ -535,7 +535,7 @@ if(NOT BUILD_SHARED_LIBS)
 				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
 				COMMAND   lib.exe
 				ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
-				DEPENDS   umundocore umundoserial umundorpc
+				DEPENDS   umundocore umundoserial umundorpc umundoutil
 				COMMENT   "Running lib.exe on static libraries"
 			)
 			ADD_CUSTOM_TARGET(umundo ALL

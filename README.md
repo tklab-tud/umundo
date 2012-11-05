@@ -71,7 +71,7 @@ various stages of maturity:
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
 			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
-			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">C#</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>

@@ -126,12 +126,20 @@ if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		make package
 		cp umundo*darwin* ${DIR}/../../installer
 		cd ${DIR}
-	fi
+	fi	
+fi
 
-	############################
-	# Validate installers
-	############################
+############################
+# Validate installers
+############################
 
-	expect validate-installers.expect
+expect validate-installers.expect
 
+############################
+# Create ReadMe.html
+############################
+
+echo -n "Create ReadMe.html? [y/N]: "; read CREATE_README
+if [ "$CREATE_README" == "y" ]; then
+	./make-installer-html-table.pl ${DIR}/../../installer > ${DIR}/../../installer/ReadMe.html
 fi

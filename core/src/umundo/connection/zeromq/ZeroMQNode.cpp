@@ -40,7 +40,6 @@ namespace umundo {
 ZeroMQNode::~ZeroMQNode() {
 	Discovery::unbrowse(_nodeQuery);
 	stop();
-	join();
 
 	// close connection to all remote publishers
 	map<string, void*>::iterator sockIter;
@@ -50,37 +49,14 @@ ZeroMQNode::~ZeroMQNode() {
 			Thread::sleepMs(50);
 		}
 	}
+
+	join();
+
 	// close node socket
 	while(zmq_close(_responder) != 0) {
 		LOG_WARN("zmq_close: %s - retrying", zmq_strerror(errno));
 		Thread::sleepMs(50);
 	}
-}
-
-/**
- * Overwrite join to unblock zmq_recvmsg.
- *
- * We connect to our node socket and send a simple packet to unblock zmq_recvmsg
- * after having stopped the thread.
- */
-void ZeroMQNode::join() {
-	void* closer;
-	(closer = zmq_socket(getZeroMQContext(), ZMQ_DEALER)) || LOG_ERR("zmq_socket: %s",zmq_strerror(errno));
-	std::stringstream ss;
-	ss << _transport << "://127.0.0.1:" << _port;
-	zmq_connect(closer, ss.str().c_str()) && LOG_WARN("zmq_connect at %s: %s", ss.str().c_str(), zmq_strerror(errno));
-	zmq_msg_t msg;
-	ZMQ_PREPARE_STRING(msg, "quit", 4);
-
-	zmq_sendmsg(closer, &msg, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-
-	while(zmq_close(closer) != 0) {
-		LOG_WARN("zmq_close: %s - retrying", zmq_strerror(errno));
-		Thread::sleepMs(50);
-	}
-
-	Thread::join();
 }
 
 /**
@@ -157,7 +133,9 @@ void ZeroMQNode::init(shared_ptr<Configuration> config) {
 #endif
 
 	(_responder = zmq_socket(getZeroMQContext(), ZMQ_ROUTER))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-	_port = bindToFreePort(_responder, _transport, "*");;
+	int rcvTimeOut = 50;
+	zmq_setsockopt(_responder, ZMQ_RCVTIMEO, &rcvTimeOut, sizeof(rcvTimeOut));
+	_port = bindToFreePort(_responder, _transport, "*");
 	LOG_INFO("Node %s listening on port %d", SHORT_UUID(_uuid).c_str(), _port);
 
 	start();
@@ -264,14 +242,14 @@ void ZeroMQNode::run() {
 			zmq_msg_t message;
 			zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
-			while (zmq_recvmsg(_responder, &message, 0) < 0)
-				if (errno != EINTR)
+			// receive timeout is set via setsockopt - keep in mind that we do not hold a mutex
+			while (zmq_recvmsg(_responder, &message, 0) < 0) {
+				if (!isStarted()) {
+					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+					return;
+				}
+				if (errno != EINTR && errno != EAGAIN)
 					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
-
-			// we will stop the thread by sending an empty packet to unblock in our destructor
-			if (!isStarted()) {
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-				return;
 			}
 
 			int msgSize = zmq_msg_size(&message);
@@ -624,7 +602,6 @@ void ZeroMQNode::removed(shared_ptr<NodeStub> node) {
 		zmq_close(_sockets[node->getUUID()]) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 		_sockets.erase(node->getUUID());               // delete socket
-		_nodes.erase(node->getUUID());            // remove all references to remote nodes pubs
 		_subscriptions.erase(node->getUUID());            // remove all references to remote nodes subs
 		_nodes.erase(node->getUUID());                 // remove node itself
 		_pendingRemotePubs.erase(node->getUUID());   // I don't know whether this is needed, but it cant be wrong
@@ -941,6 +918,7 @@ bool ZeroMQNode::validateState() {
 	map<string, shared_ptr<NodeStub> >::iterator nodeStubIter;
 	for (nodeStubIter = _nodes.begin(); nodeStubIter != _nodes.end(); nodeStubIter++) {
 		assert(_sockets.find(nodeStubIter->first) != _sockets.end());
+//		LOG_DEBUG("Known node at %s", nodeStubIter->second->getIP().c_str());
 	}
 	assert(_nodes.size() == _sockets.size());
 

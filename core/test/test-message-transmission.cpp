@@ -20,11 +20,14 @@ class TestReceiver : public Receiver {
 		// std::cout << "equals: " << msg->getMeta("md5").compare(md5(msg->data(), msg->size())) << std::endl;
 		if (msg->size() > 0)
 			assert(msg->getMeta("md5").compare(md5(msg->data(), msg->size())) == 0);
-		if (nrReceptions + nrMissing == strTo<int>(msg->getMeta("seq")))
+		if (nrReceptions + nrMissing == strTo<int>(msg->getMeta("seq"))) {
 			std::cout << ".";
+		} else {
+			std::cout << "R" << strTo<int>(msg->getMeta("seq"));
+		}
 		while (nrReceptions + nrMissing < strTo<int>(msg->getMeta("seq"))) {
 			nrMissing++;
-			std::cout << "F" << nrReceptions + nrMissing << std::endl;
+			std::cout << "F" << nrReceptions + nrMissing;
 		}
 		nrReceptions++;
 		bytesRecvd += msg->size();
@@ -35,6 +38,7 @@ bool testMessageTransmission() {
 	hostId = Host::getHostId();
 	for (int i = 0; i < 2; i++) {
 		nrReceptions = 0;
+		nrMissing = 0;
 		bytesRecvd = 0;
 
 		Node* pubNode = new Node(hostId + "foo");
@@ -65,48 +69,16 @@ bool testMessageTransmission() {
 		Thread::sleepMs(500);
 
 		// sometimes there is some weird latency
-		if (nrReceptions < 100)
-			Thread::sleepMs(2000);
+		for (int i = 0; i < 5; i++) {
+			if (nrReceptions < 100)
+				Thread::sleepMs(2000);
+		}
 
 		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == 100);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
 
-		int iterations = 5;
-		while(iterations-- > 0) {
-			nrReceptions = 0;
-			uint64_t now = Thread::getTimeStampMs();
-			while (now > Thread::getTimeStampMs() - 10) {
-				Message* msg2 = new Message();
-				pub->send(msg2);
-				Thread::yield();
-				delete msg2;
-			}
-		}
-
-		// test explicit sub removal
 		subNode->removeSubscriber(sub);
-		for (int k = 0; k < 8; k++) {
-			if (pub->waitForSubscribers(0) == 0)
-				break;
-			Thread::sleepMs(50);
-		}
-		assert(pub->waitForSubscribers(0) == 0);
-
-#if 0
-		// The node still tells everyone else that the subscriber unsubscribed
-		subNode->addSubscriber(sub);
-		pub->waitForSubscribers(1);
-
-		// test node destruction
-		delete subNode;
-		for (int k = 0; k < 8; k++) {
-			if (pub->waitForSubscribers(0) == 0)
-				break;
-			Thread::sleepMs(50);
-		}
-		assert(pub->waitForSubscribers(0) == 0);
-#endif
 		pubNode->removePublisher(pub);
 
 		delete pubNode;

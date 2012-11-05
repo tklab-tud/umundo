@@ -129,7 +129,7 @@ void ZeroMQPublisher::run() {
 	while(isStarted()) {
 		zmq_msg_t message;
 		zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
-		int rv;
+		int rv = -1;
 		{
 			ScopeLock lock(_mutex);
 			while ((rv = zmq_recvmsg(_socket, &message, ZMQ_DONTWAIT)) < 0) {
@@ -159,7 +159,10 @@ void ZeroMQPublisher::run() {
 					LOG_INFO("%s received ZMQ unsubscription from %s", _channelName.c_str(), subId);
 				}
 			}
+			// this will cause a heap corruption on windows?
+#ifndef WIN32
 			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+#endif
 		} else {
 			Thread::sleepMs(50);
 		}

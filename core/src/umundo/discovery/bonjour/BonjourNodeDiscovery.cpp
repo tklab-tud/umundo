@@ -304,13 +304,11 @@ void BonjourNodeDiscovery::add(shared_ptr<NodeImpl> node) {
 
 void BonjourNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
 	LOG_INFO("Removing node %s", SHORT_UUID(node->getUUID()).c_str());
-
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 
 	intptr_t address = (intptr_t)(node.get());
 	if (_localNodes.find(address) == _localNodes.end()) {
 		LOG_WARN("Ignoring removal of unregistered node from discovery");
-		UMUNDO_UNLOCK(_mutex);
 		assert(validateState());
 		return;
 	}
@@ -326,7 +324,6 @@ void BonjourNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
 	_localNodes.erase(address);
 
 	assert(validateState());
-	UMUNDO_UNLOCK(_mutex);
 }
 
 
@@ -407,12 +404,11 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
 	LOG_INFO("Removing query %p for nodes in %s", query.get(), query->getDomain().c_str());
 
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 	intptr_t address = (intptr_t)(query.get());
 
 	if (_queries.find(address) == _queries.end()) {
 		LOG_WARN("Unbrowsing query that was never added");
-		UMUNDO_UNLOCK(_mutex);
 		assert(validateState());
 		return;
 	}
@@ -450,7 +446,6 @@ void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
 	_queryClients.erase(address);
 
 	assert(validateState());
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void BonjourNodeDiscovery::forgetRemoteNodesFDs(shared_ptr<BonjourNodeStub> node) {
@@ -783,9 +778,17 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 		if (address && address->sa_family == AF_INET) {
 			const unsigned char *b = (const unsigned char *) &((struct sockaddr_in *)address)->sin_addr;
 			asprintf(&addr, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
-			node->_interfacesIPv4[interfaceIndex] = addr;
-			LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV4", context, hostname, addr, interfaceIndex);
-
+#ifdef DISC_BONJOUR_EMBED
+			// Bonjour reports weird ip addresses after we found the first one
+			if (node->_interfacesIPv4.find(interfaceIndex) != node->_interfacesIPv4.end()) {
+				LOG_DEBUG("addrInfoReply: %p reported IP address change from %s to %s - ignoring", context, node->_interfacesIPv4[interfaceIndex].c_str(), addr);
+			} else {
+#endif
+				node->_interfacesIPv4[interfaceIndex] = addr;
+				LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV4", context, hostname, addr, interfaceIndex);
+#ifdef DISC_BONJOUR_EMBED
+			}
+#endif
 			free(addr);
 		}	else if (address && address->sa_family == AF_INET6) {
 			const struct sockaddr_in6 *s6 = (const struct sockaddr_in6 *)address;
@@ -829,6 +832,8 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 	}
 	// is this node sufficiently resolved?
 	if (node->_interfacesIPv4.begin() != node->_interfacesIPv4.end()) {
+		// set ip of endpoint class
+//		node->setIP(node->_interfacesIPv4.begin()->second);
 		map<int, string>::const_iterator ifIter = node->_interfacesIPv4.begin();
 		while(ifIter != node->_interfacesIPv4.end()) {
 			if (ifIter->second.length() > 0)

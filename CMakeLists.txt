@@ -44,9 +44,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
 # 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
 # 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
-	if(CMAKE_COMPILER_IS_GNUCXX)
-		add_definitions("-fPIC") # only required with 64Bit builds?
-	endif()
 endif()
 
 # We use the toolchain file from http://code.google.com/p/android-cmake/
@@ -147,6 +144,8 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	# best practices from scott meyers
 	#	add_definitions(-Weffc++)
 
+	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fPIC")
+
 	# all warnings
 	add_definitions(-Wall)
 
@@ -188,6 +187,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	# SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRTD.lib")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 	add_definitions("-Wno-parentheses-equality")
+	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fPIC")
 else()
 	message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

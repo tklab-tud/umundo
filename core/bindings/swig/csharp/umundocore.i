@@ -99,19 +99,34 @@ using namespace umundo;
   } 
 %} 
 
-%typemap(cscode) umundo::Message %{
-   public void setData(byte[] buffer) {
-     setData(buffer, (uint)buffer.Length);
-   }
-%}
-%csmethodmodifiers setData(const char *data, size_t length) "private"
-
 // make sure we do not get the default with SWIG_csharp_string_callback
 %typemap(out) const char *data {
   $result = (char *)result;
 }
 
 
+// import java.util.HashMap
+// %typemap(csimports) umundo::Message %{
+// using System.Collections.Generic.Dictionary;
+// %}
+
+// provide convinience methods within Message C# class for meta keys
+%typemap(cscode) umundo::Message %{
+
+	public void setData(byte[] buffer) {
+  	setData(buffer, (uint)buffer.Length);
+	}
+
+	public System.Collections.Generic.Dictionary<string, string> getMeta() {
+		System.Collections.Generic.Dictionary<string, string> keys = new System.Collections.Generic.Dictionary<string, string>();
+		foreach (string key in getKeys()) {
+			keys[key] = getMeta(key);
+		}
+		return keys;
+	}
+%}
+
+%csmethodmodifiers setData(const char *data, size_t length) "private"
 
 //******************************
 // Ignore whole C++ classes

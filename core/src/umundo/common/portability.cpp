@@ -20,7 +20,7 @@
 #include "umundo/common/portability.h"
 #include "umundo/config.h"
 
-#ifdef NO_STRNDUP
+#if defined(NO_STRNDUP) || defined(APPLE)
 char* strndup (const char *s, size_t n) {
 	char *result;
 	size_t len = strlen (s);

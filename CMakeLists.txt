@@ -192,6 +192,23 @@ else()
 	message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
+# see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
+if (APPLE)
+	set(CMAKE_OSX_ARCHITECTURES "x86_64;i386")
+	# support leopard and above
+	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+	foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+			set(${FLAGS} "${${FLAGS}} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endforeach()
+endif()
+
+if (IOS)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET 4.3)
+	foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+			set(${FLAGS} "${${FLAGS}} -miphoneos-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endforeach()
+endif()
+
 # build type as macro to strip logging in release builds
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 add_definitions("-DBUILD_${BUILD_TYPE}")

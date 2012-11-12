@@ -74,7 +74,7 @@ if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
 	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
 	make -j2
 	make -j2 java	
-	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
 	make -j2
 	make -j2 java	
 fi
@@ -122,7 +122,7 @@ if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		echo == PACKAGING UMUNDO FOR MacOSX =========================================================
 		cd /tmp/build-umundo
 		# rerun cmake for new cpack files
-		cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+		cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
 		make package
 		cp umundo*darwin* ${DIR}/../../installer
 		cd ${DIR}

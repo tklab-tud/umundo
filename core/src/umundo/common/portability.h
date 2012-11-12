@@ -23,7 +23,7 @@
 
 #include "umundo/common/Common.h"
 
-#ifdef NO_STRNDUP
+#if defined(NO_STRNDUP) || defined(APPLE)
 char* strndup (const char *s, size_t n);
 #endif
 

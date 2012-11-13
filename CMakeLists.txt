@@ -144,7 +144,9 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	# best practices from scott meyers
 	#	add_definitions(-Weffc++)
 
-	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fPIC")
+	if (NOT ANDROID)
+		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fPIC")
+	endif()
 
 	# all warnings
 	add_definitions(-Wall)

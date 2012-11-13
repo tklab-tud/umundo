@@ -30,6 +30,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "umundo/common/Message.h"
+#include "umundo/common/Regex.h"
 #include "umundo/discovery/Discovery.h"
 #include "umundo/discovery/NodeQuery.h"
 #include "umundo/connection/zeromq/ZeroMQPublisher.h"
@@ -660,7 +661,9 @@ void ZeroMQNode::addRemotePubToLocalSubs(const char* remoteId, shared_ptr<Publis
 				shared_ptr<ZeroMQSubscriber> zSub = boost::static_pointer_cast<ZeroMQSubscriber>(subIter->second);
 				assert(zSub.get());
 
-				if (zSub->getChannelName().compare(pubIter->second->getChannelName()) == 0) {
+				// todo: use regex here
+				Regex channelRe(zSub->getChannelName());
+				if (channelRe.matches(pubIter->second->getChannelName())) {
 					zSub->added(pubIter->second);
 					notifyOfSubscription(nodeSocket, zSub, pubIter->second);
 				}

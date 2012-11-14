@@ -150,25 +150,27 @@ const vector<Interface> Host::getInterfaces() {
 			LOG_ERR("ioctl: %s", strerror(errno));
 		}
 # endif
-
-		int family = ifa->ifa_addr->sa_family;
-		switch (family) {
-		case AF_INET:
-			currIfc.ipv4.insert(string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
-			break;
-		case AF_INET6:
-			currIfc.ipv4.insert(string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
-			break;
+		if (ifa->ifa_addr != NULL)
+		{
+			int family = ifa->ifa_addr->sa_family;
+			switch (family) {
+			case AF_INET:
+				currIfc.ipv4.insert(string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
+				break;
+			case AF_INET6:
+				currIfc.ipv4.insert(string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
+				break;
 # ifdef LLADDR
-		case AF_LINK:
-			struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
-			if (sdl->sdl_alen == 6) {
-				currIfc.mac = string(LLADDR(sdl), sdl->sdl_alen);
-			}
-			break;
+			case AF_LINK:
+				struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+				if (sdl->sdl_alen == 6) {
+					currIfc.mac = string(LLADDR(sdl), sdl->sdl_alen);
+				}
+				break;
 # endif
+			}
+			ifcs.push_back(currIfc);
 		}
-		ifcs.push_back(currIfc);
 	}
 	freeifaddrs(ifaddr);
 #endif

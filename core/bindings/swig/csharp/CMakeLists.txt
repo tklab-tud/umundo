@@ -1,7 +1,3 @@
-if (NOT WIN32)
-	return()
-endif()
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if (MSVC)
 	# MSVC does not include inttypes.h but SWIG needs it

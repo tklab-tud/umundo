@@ -34,3 +34,12 @@ INSTALL_EXECUTABLE(
 	TARGETS umundo-echo-service
 	COMPONENT tools 
 )
+
+add_executable(umundo-bridge umundo-bridge.cpp)
+target_link_libraries(umundo-bridge ${UMUNDOCORE_LIBRARIES})
+set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-bridge
+	COMPONENT tools 
+)

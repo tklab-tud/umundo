@@ -661,7 +661,6 @@ void ZeroMQNode::addRemotePubToLocalSubs(const char* remoteId, shared_ptr<Publis
 				shared_ptr<ZeroMQSubscriber> zSub = boost::static_pointer_cast<ZeroMQSubscriber>(subIter->second);
 				assert(zSub.get());
 
-				// todo: use regex here
 				Regex channelRe(zSub->getChannelName());
 				if (channelRe.matches(pubIter->second->getChannelName())) {
 					zSub->added(pubIter->second);

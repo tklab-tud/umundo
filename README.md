@@ -1,6 +1,6 @@
 # uMundo ReadMe
 
-uMundo is a lightweight refactoring of the Mundo publish/subscribe middleware to deliver byte
+uMundo is a lightweight refactoring of the distributed Mundo publish/subscribe middleware to deliver byte
 arrays and objects on channels from publishers to subscribers. With lightweight, we do not necessarily
 refer to runtime behavior or memory footprint (though we work hard to keep it sane) but to the amount
 of code we have to maintain in order to arrive at a working system. It runs on Windows, Linux, Mac OSX,

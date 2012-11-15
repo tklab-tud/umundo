@@ -15,6 +15,9 @@ if (WIN32)
 endif()
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
 
+FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH )
+FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH )
+
 if (NOT IOS)
 	find_package(SWIG)
 	if (SWIG_FOUND)
@@ -22,7 +25,7 @@ if (NOT IOS)
 			MARK_AS_ADVANCED(SWIG_DIR SWIG_EXECUTABLE SWIG_VERSION)
 			INCLUDE(${SWIG_USE_FILE})
 			add_subdirectory(swig/java)
-			if (WIN32)
+			if (DMCS_EXECUTABLE OR CSC_EXECUTABLE)
 				add_subdirectory(swig/csharp)
 			endif()
 		else()
@@ -147,7 +150,6 @@ endif()
 
 GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
 if (UMUNDONATIVECSHARP_LOCATION)
-	FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH )
 	if (CSC_EXECUTABLE)
 		# package everything into a DLL
 #		ADD_CUSTOM_TARGET(csharp_build_dll ALL
@@ -164,13 +166,39 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
-			COMMENT "Creating the dll for C# ...")
+			COMMENT "Creating the library for C# ...")
    add_dependencies(csharp umundoNativeCSharp)
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS csharp)
 		endif()
 		set_target_properties(csharp PROPERTIES FOLDER "Bindings")
 	else()
-		message(STATUS "Could not find csc binary - will not build CSharp dll")
+		if (WIN32)
+			message(STATUS "Could not find csc csharp compiler - will not build CSharp bindings")
+		endif()
 	endif()
+	
+	if (DMCS_EXECUTABLE)
+		ADD_CUSTOM_TARGET(mono
+			# COMMAND ${CMAKE_COMMAND} -E 
+			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedPublisher.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			# COMMAND ${CMAKE_COMMAND} -E 
+			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			# COMMAND ${CMAKE_COMMAND} -E 
+			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${DMCS_EXECUTABLE}
+				-target:library
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono.so
+				*.cs
+				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMENT "Creating the library for Mono ...")
+   add_dependencies(mono umundoNativeCSharp)
+		if (BUILD_TESTS)
+			add_dependencies(ALL_TESTS mono)
+		endif()
+		set_target_properties(mono PROPERTIES FOLDER "Bindings")
+	else()
+		message(STATUS "Could not find dmcs mono compiler - will not build Mono bindings")
+	endif()
+	
 endif()

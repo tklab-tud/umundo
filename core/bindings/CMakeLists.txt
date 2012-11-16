@@ -182,15 +182,16 @@ if (UMUNDONATIVECSHARP_LOCATION)
 	
 	if (DMCS_EXECUTABLE)
 		ADD_CUSTOM_TARGET(mono
-			# COMMAND ${CMAKE_COMMAND} -E 
-			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedPublisher.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
-			# COMMAND ${CMAKE_COMMAND} -E 
-			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
-			# COMMAND ${CMAKE_COMMAND} -E 
-			# 	copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedPublisher.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${DMCS_EXECUTABLE}
 				-target:library
-				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono.so
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono.dll
+				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMENT "Creating the library for Mono ...")

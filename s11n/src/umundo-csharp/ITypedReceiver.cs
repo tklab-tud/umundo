@@ -18,7 +18,7 @@
  *  @endcond
  */
 
-
+using System;
 using org.umundo.core;
 
 namespace org.umundo.s11n

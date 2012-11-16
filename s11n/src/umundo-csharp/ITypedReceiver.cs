@@ -35,6 +35,6 @@ namespace org.umundo.s11n
         /// </summary>
         /// <param name="o">the deserialized object contained in the message. Needs to be cast to its actual type to do something.</param>
         /// <param name="msg">the original message, mainly to access meta information</param>
-	    void receiveObject(Object o, Message msg);
+	    void ReceiveObject(Object o, Message msg);
     }
 }

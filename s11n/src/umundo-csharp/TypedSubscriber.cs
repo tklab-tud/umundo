@@ -62,7 +62,7 @@ namespace org.umundo.s11n
                 }
                 Stream source = new MemoryStream(data);
                 Object o = RuntimeTypeModel.Default.Deserialize(source, null, type);
-                TypedReceiver.receiveObject(o, msg);
+                TypedReceiver.ReceiveObject(o, msg);
             }
 
             /// <summary>

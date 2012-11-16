@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 /**
  * In order to get this sample running in Visual Studio 2010:

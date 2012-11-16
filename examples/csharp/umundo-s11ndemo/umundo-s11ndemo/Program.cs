@@ -12,7 +12,7 @@ namespace org.umundo.s11n.demo
 
     class TestTypedReceiver : ITypedReceiver
     {
-        public void receiveObject(object o, Message msg)
+        public void ReceiveObject(object o, Message msg)
         {
             AMessage rcvmsg = (AMessage)o;
             Console.WriteLine("r: " + rcvmsg.a + ", " + rcvmsg.b);

@@ -29,7 +29,7 @@ namespace org.umundo.s11n.demo
             /*
              * Make sure this path contains the umundoNativeCSharp.dll!
              */
-            //SetDllDirectory("C:\\Program Files\\uMundo\\lib");
+            SetDllDirectory("C:\\Program Files\\uMundo\\lib");
             org.umundo.core.Node node = new org.umundo.core.Node();
             TypedPublisher pub = new TypedPublisher("s11ndemo");
             node.addPublisher(pub);

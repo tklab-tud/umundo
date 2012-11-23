@@ -73,7 +73,7 @@ int main(int argc, char** argv, char** envp) {
 	Node* node = new Node();
 	ServiceManager* svcMgr = new ServiceManager();
 	PatternMatchingDirectoryListingService* dirListSvc = new PatternMatchingDirectoryListingService(dir, re);
-	ServiceDescription* svcDesc = new ServiceDescription("DirectoryListingService");
+	ServiceDescription* svcDesc = new ServiceDescription();
 	svcDesc->setProperty("dir", dir);
 	svcDesc->setProperty("pattern", re.getPattern());
 	svcDesc->setProperty("hostId", Host::getHostId());

@@ -24,7 +24,7 @@ class DirectoryCacheItem : public NBandCacheItem {
 class CacheInsertingDirectoryEntryMonitor : public ResultSet<DirectoryEntry> {
 public:
 	CacheInsertingDirectoryEntryMonitor(boost::shared_ptr<ServiceDescription> svcDesc) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		_bandName = svcDesc->getChannelName();
 		_client = new DirectoryListingClient(svcDesc.get(), this);
 		std::vector<boost::shared_ptr<DirectoryEntry> > files = _client->list(".*");
@@ -36,18 +36,18 @@ public:
 	}
 
 	void added(boost::shared_ptr<DirectoryEntry> dirEntry) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 
 		cout << "Added " << dirEntry->name() << endl;
 	}
 
 	void removed(boost::shared_ptr<DirectoryEntry> dirEntry) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		cout << "Removed " << dirEntry->name() << endl;
 	}
 
 	void changed(boost::shared_ptr<DirectoryEntry> dirEntry) {
-		ScopeLock lock(&_mutex);
+		ScopeLock lock(_mutex);
 		cout << "Changed " << dirEntry->name() << endl;
 	}
 

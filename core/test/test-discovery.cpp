@@ -13,16 +13,16 @@ class TestDiscoverer : public ResultSet<NodeStub> {
 public:
 	TestDiscoverer() {
 	}
-	void added(shared_ptr<NodeStub> node) {
+	void added(NodeStub node) {
 		printf("node added!\n");
-		assert(node->getIP().size() >= 7);
+		assert(node.getIP().size() >= 7);
 		receives++;
 		UMUNDO_SIGNAL(monitor);
 	}
-	void removed(shared_ptr<NodeStub> node) {
+	void removed(NodeStub node) {
 
 	}
-	void changed(shared_ptr<NodeStub> node) {
+	void changed(NodeStub node) {
 
 	}
 };
@@ -52,67 +52,58 @@ bool testNodeDiscovery() {
 bool testPubSubConnections() {
 	// test node / publisher / subscriber churn
 	for (int i = 0; i < 2; i++) {
-		Node* node1 = new Node(hostId);
-		Node* node2 = new Node(hostId);
+		Node node1(hostId);
+		Node node2(hostId);
 		for (int j = 0; j < 2; j++) {
-			Subscriber* sub1 = new Subscriber("foo", NULL);
-			Subscriber* sub2 = new Subscriber("foo", NULL);
-			Subscriber* sub3 = new Subscriber("foo", NULL);
-			Publisher* pub = new Publisher("foo");
+			Subscriber sub1("foo", NULL);
+			Subscriber sub2("foo", NULL);
+			Subscriber sub3("foo", NULL);
+			Publisher pub("foo");
 
 			int subs = 0;
 			(void)subs;
-			node1->addPublisher(pub);
-			subs = pub->waitForSubscribers(0);
+			node1.addPublisher(pub);
+			subs = pub.waitForSubscribers(0);
 			assert(subs == 0);
 
-			node2->addSubscriber(sub1);
+			node2.addSubscriber(sub1);
 			std::cout << "Waiting for 1st subscriber" << std::endl;
-			subs = pub->waitForSubscribers(1);
+			subs = pub.waitForSubscribers(1);
 			assert(subs == 1);
 
-			node2->addSubscriber(sub2);
+			node2.addSubscriber(sub2);
 			std::cout << "Waiting for 2nd subscriber" << std::endl;
-			subs = pub->waitForSubscribers(2);
+			subs = pub.waitForSubscribers(2);
 			assert(subs == 2);
 
-			node2->addSubscriber(sub3);
+			node2.addSubscriber(sub3);
 			std::cout << "Waiting for 3rd subscriber" << std::endl;
-			subs = pub->waitForSubscribers(3);
+			subs = pub.waitForSubscribers(3);
 			assert(subs == 3);
 
-			node2->removeSubscriber(sub1);
+			node2.removeSubscriber(sub1);
 			Thread::sleepMs(50);
 			std::cout << "Removed 1st subscriber" << std::endl;
-			subs = pub->waitForSubscribers(0);
+			subs = pub.waitForSubscribers(0);
 			assert(subs == 2);
 
-			node2->removeSubscriber(sub2);
+			node2.removeSubscriber(sub2);
 			std::cout << "Removed 2nd subscriber" << std::endl;
 			Thread::sleepMs(50);
-			subs = pub->waitForSubscribers(0);
+			subs = pub.waitForSubscribers(0);
 			assert(subs == 1);
 
-			node2->removeSubscriber(sub3);
+			node2.removeSubscriber(sub3);
 			std::cout << "Removed 3rd subscriber" << std::endl;
 			Thread::sleepMs(50);
-			subs = pub->waitForSubscribers(0);
+			subs = pub.waitForSubscribers(0);
 			assert(subs == 0);
 
 			std::cout << "Successfully connected subscribers to publishers" << std::endl;
 
-			node2->removeSubscriber(sub1);
-			node2->removeSubscriber(sub2);
-			node2->removeSubscriber(sub3);
-			node1->removePublisher(pub);
+			node1.removePublisher(pub);
 
-			delete sub1;
-			delete sub2;
-			delete sub3;
-			delete pub;
 		}
-		delete node1;
-		delete node2;
 	}
 	return true;
 }

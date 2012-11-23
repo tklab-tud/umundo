@@ -167,25 +167,16 @@ int main(int argc, char** argv) {
 	if (!channel)
 		printUsageAndExit();
 
-	Node* node = NULL;
-	TypedPublisher* pub = NULL;
-	TypedSubscriber* sub = NULL;
-
-	if (domain) {
-		node = new Node(domain);
-	} else {
-		node = new Node();
-	}
+	Node node(domain);
+	TypedPublisher pub(channel);
+	TypedSubscriber sub(channel);
 
 	/**
 	 * Send file content
 	 */
 	if (file) {
-		if (pub == NULL) {
-			pub = new TypedPublisher(channel);
-			node->addPublisher(pub);
-			pub->waitForSubscribers(minSubs);
-		}
+		node.addPublisher(pub);
+		pub.waitForSubscribers(minSubs);
 
 		FILE *fp;
 		fp = fopen(file, "r");
@@ -208,7 +199,7 @@ int main(int argc, char** argv) {
 			if (lastread <= 0)
 				break;
 
-			pub->send(readBuffer, lastread);
+			pub.send(readBuffer, lastread);
 			read += lastread;
 
 			if (feof(fp))
@@ -220,24 +211,20 @@ int main(int argc, char** argv) {
 			exit(0);
 	}
 
-	if (sub == NULL) {
-		if (protoPath != NULL) {
-      PBSerializer::addProto(protoPath);
-			sub = new TypedSubscriber(channel, new ProtoBufDumpingReceiver());
-		} else {
-			sub = new TypedSubscriber(channel, new PlainDumpingReceiver());
-		}
-		node->addSubscriber(sub);
+	if (protoPath != NULL) {
+    PBSerializer::addProto(protoPath);
+		sub.setReceiver(new ProtoBufDumpingReceiver());
+	} else {
+		sub.setReceiver(new PlainDumpingReceiver());
 	}
+	node.addSubscriber(sub);
 
 	if (interactive) {
 		/**
 		 * Enter interactive mode
 		 */
-		if (pub == NULL) {
-			pub = new TypedPublisher(channel);
-			node->addPublisher(pub);
-		}
+		node.addPublisher(pub);
+
 		//pub->waitForSubscribers(minSubs);
 		string line;
 
@@ -259,7 +246,7 @@ int main(int argc, char** argv) {
 				line.append("\n");
 				msg->setData(line.c_str(), line.length());
 			}
-			pub->send(msg);
+			pub.send(msg);
 			delete msg;
 			msg = new Message();
 		};

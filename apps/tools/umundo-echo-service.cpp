@@ -19,15 +19,15 @@ public:
 };
 
 int main(int argc, char** argv) {
-	Node* n = new Node();
-	ServiceManager* svcMgr= new ServiceManager();
+	Node n;
+	ServiceManager svcMgr;
 
-	ServiceDescription* echoSvcDesc = new ServiceDescription();
+	ServiceDescription echoSvcDesc;
 
 	EchoService* echoSvc = new EchoService();
-	svcMgr->addService(echoSvc, echoSvcDesc);
+	svcMgr.addService(echoSvc, echoSvcDesc);
 
-	n->connect(svcMgr);
+	n.connect(&svcMgr);
 	while(true)
 		Thread::sleepMs(1000);
 }

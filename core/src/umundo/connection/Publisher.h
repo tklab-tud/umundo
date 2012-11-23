@@ -40,8 +40,8 @@ class Publisher;
 class DLLEXPORT Greeter {
 public:
 	virtual ~Greeter() {};
-	virtual void welcome(Publisher*, const string& nodeId, const string& subId) = 0;
-	virtual void farewell(Publisher*, const string& nodeId, const string& subId) = 0;
+	virtual void welcome(Publisher, const string& nodeId, const string& subId) = 0;
+	virtual void farewell(Publisher, const string& nodeId, const string& subId) = 0;
 };
 
 class DLLEXPORT PublisherConfig : public Configuration {
@@ -54,56 +54,34 @@ public:
 	uint16_t port;
 };
 
-/**
- * Representation of a remote Publisher.
- */
-class DLLEXPORT PublisherStub : public EndPoint {
+class PublisherStubImpl : public EndPointImpl {
 public:
-	PublisherStub() {}
-	virtual ~PublisherStub() {}
-
-	/** @name Functionality of local *and* remote Publishers */
-	//@{
-	virtual const string& getChannelName() const      {
+	virtual std::string getChannelName() const            {
 		return _channelName;
 	}
-	virtual void setChannelName(string channelName)   {
+	virtual void setChannelName(const std::string& channelName) {
 		_channelName = channelName;
 	}
-	virtual const string& getHost() const             {
-		return _host;
-	}
-	virtual void setHost(string host)                 {
-		_host = host;
-	}
-	virtual const string& getDomain() const           {
-		return _domain;
-	}
-	virtual void setDomain(string domain)             {
-		_domain = domain;
-	}
-	virtual const string& getUUID() const             {
+
+	virtual std::string getUUID() const            {
 		return _uuid;
 	}
-	virtual void setUUID(string uuid)                 {
+	virtual void setUUID(const std::string& uuid) {
 		_uuid = uuid;
 	}
-	//@}
 
 protected:
-	string _channelName;
-	string _host;
-	string _domain;
-	string _uuid;
+	std::string _channelName;
+	std::string _uuid;
 };
 
 /**
  * Publisher implementor basis class (bridge pattern)
  */
-class DLLEXPORT PublisherImpl : public Implementation, public PublisherStub {
+class DLLEXPORT PublisherImpl : public PublisherStubImpl, public Implementation {
 public:
-	PublisherImpl() : _greeter(NULL) {}
-	virtual ~PublisherImpl();
+	PublisherImpl();
+  virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
 	void putMeta(const string& key, const string& value) {
@@ -124,6 +102,8 @@ public:
 
 	//@}
 
+  static int instances;
+
 protected:
 	/** @name Optional subscriber awareness */
 	//@{
@@ -139,6 +119,46 @@ protected:
 	std::set<string> _subUUIDs;
 	Greeter* _greeter;
 	friend class Publisher;
+
+};
+
+/**
+ * Representation of a remote Publisher.
+ */
+class DLLEXPORT PublisherStub : public EndPoint {
+public:
+	PublisherStub() : _impl() { }
+  PublisherStub(boost::shared_ptr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+  PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
+
+  operator bool() const { return _impl; }
+  bool operator< (const PublisherStub& other) const { return _impl < other._impl; }
+  bool operator==(const PublisherStub& other) const { return _impl == other._impl; }
+  bool operator!=(const PublisherStub& other) const { return _impl != other._impl; }
+
+  PublisherStub& operator=(const PublisherStub& other) 
+  {
+    _impl = other._impl;
+    EndPoint::_impl = _impl;
+    return *this;
+  } // operator=
+
+	boost::shared_ptr<PublisherStubImpl> getImpl() {
+		return _impl;
+	}
+
+	/** @name Functionality of local *and* remote Publishers */
+	//@{
+	virtual const std::string getChannelName() const      {
+		return _impl->getChannelName();
+	}
+	virtual const std::string getUUID() const             {
+		return _impl->getUUID();
+	}
+	//@}
+
+protected:
+	boost::shared_ptr<PublisherStubImpl> _impl;
 };
 
 /**
@@ -148,8 +168,24 @@ protected:
  */
 class DLLEXPORT Publisher : public PublisherStub {
 public:
-	Publisher(const string& channelName);
+	Publisher() : _impl() {}
+	Publisher(const std::string& channelName);
+  Publisher(boost::shared_ptr<PublisherImpl> const impl) : PublisherStub(impl), _impl(impl) { }
+  Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
+
+  operator bool() const { return _impl; }
+  bool operator< (const Publisher& other) const { return _impl < other._impl; }
+  bool operator==(const Publisher& other) const { return _impl == other._impl; }
+  bool operator!=(const Publisher& other) const { return _impl != other._impl; }
+
+  Publisher& operator=(const Publisher& other) 
+  {
+    _impl = other._impl;
+    PublisherStub::_impl = _impl;
+    EndPoint::_impl = _impl;
+    return *this;
+  } // operator=
 
 	/** @name Functionality of local Publishers */
 	//@{
@@ -172,65 +208,23 @@ public:
 	bool isPublishingTo(const string& uuid) {
 		return _impl->getSubscriberUUIDs().find(uuid) != _impl->getSubscriberUUIDs().end();
 	}
-
 	//@}
 
-	/** @name Overwrite PublisherStub */
-	//@{
-	virtual const string& getChannelName() const      {
-		return _impl->getChannelName();
+	void suspend() {
+		return _impl->suspend();
 	}
-	virtual void setChannelName(string channelName)   {
-		_impl->setChannelName(channelName);
+	void resume() {
+		return _impl->resume();
 	}
-	//@}
 
-	/** @name Overwrite EndPoint */
-	virtual const string& getIP() const         {
-		return _impl->getIP();
-	}
-	virtual void setIP(string ip)               {
-		_impl->setIP(ip);
-	}
-	virtual const string& getTransport() const  {
-		return _impl->getTransport();
-	}
-	virtual void setTransport(string transport) {
-		_impl->setTransport(transport);
-	}
-	virtual uint16_t getPort() const            {
-		return _impl->getPort();
-	}
-	virtual void setPort(uint16_t port)         {
-		_impl->setPort(port);
-	}
-	virtual bool isRemote() const               {
-		return _impl->isRemote();
-	}
-	virtual void setRemote(bool remote)         {
-		_impl->setRemote(remote);
-	}
-	virtual const string& getHost() const       {
-		return _impl->getHost();
-	}
-	virtual void setHost(string host)           {
-		_impl->setHost(host);
-	}
-	virtual const string& getDomain() const     {
-		return _impl->getDomain();
-	}
-	virtual void setDomain(string domain)       {
-		_impl->setDomain(domain);
-	}
-	//@{
-
-protected:
 	void addedSubscriber(const string nodeId, const string subId)   {
 		_impl->addedSubscriber(nodeId, subId);
 	}
 	void removedSubscriber(const string nodeId, const string subId) {
 		_impl->removedSubscriber(nodeId, subId);
 	}
+
+protected:
 	shared_ptr<PublisherImpl> _impl;
 	shared_ptr<PublisherConfig> _config;
 	friend class Node;

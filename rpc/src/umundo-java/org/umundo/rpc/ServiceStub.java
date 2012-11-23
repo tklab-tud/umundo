@@ -23,7 +23,7 @@ import org.umundo.core.Connectable;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
 import org.umundo.core.PublisherSet;
-import org.umundo.core.SubcriberSet;
+import org.umundo.core.SubscriberSet;
 import org.umundo.s11n.ITypedReceiver;
 import org.umundo.s11n.TypedPublisher;
 import org.umundo.s11n.TypedSubscriber;
@@ -118,8 +118,8 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 	}
 
 	@Override
-	public SubcriberSet getSubscribers() {
-		SubcriberSet subs = new SubcriberSet();
+	public SubscriberSet getSubscribers() {
+		SubscriberSet subs = new SubscriberSet();
 		subs.insert(_rpcSub);
 		return subs;
 	}

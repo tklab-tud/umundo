@@ -30,23 +30,23 @@ public:
 };
 
 int main(int argc, char** argv) {
-	Node* n = new Node();
-	ServiceManager* svcMgr= new ServiceManager();
+	Node n;
+	ServiceManager svcMgr;
 
 	// set some random properties to query for
-	ServiceDescription* echoSvcDesc = new ServiceDescription();
-	echoSvcDesc->setProperty("host", Host::getHostId());
-	echoSvcDesc->setProperty("someString", "this is some random string with 123 numbers inside");
-	echoSvcDesc->setProperty("someNumber", "1");
+	ServiceDescription echoSvcDesc;
+	echoSvcDesc.setProperty("host", Host::getHostId());
+	echoSvcDesc.setProperty("someString", "this is some random string with 123 numbers inside");
+	echoSvcDesc.setProperty("someNumber", "1");
 
 	EchoService* echoSvc = new EchoService();
-	svcMgr->addService(echoSvc, echoSvcDesc);
+	svcMgr.addService(echoSvc, echoSvcDesc);
 
 	PingService* pingSvc = new PingService();
-	svcMgr->addService(pingSvc);
+	svcMgr.addService(pingSvc);
 
 
-	n->connect(svcMgr);
+	n.connect(&svcMgr);
 	while(true)
 		Thread::sleepMs(1000);
 }

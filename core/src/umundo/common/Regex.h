@@ -39,6 +39,7 @@ using std::string;
 class DLLEXPORT Regex {
 public:
 	Regex(const string&);
+	~Regex();
 
 	bool hasError();
 	bool matches(const string&);

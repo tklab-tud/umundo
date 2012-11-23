@@ -40,11 +40,11 @@
 }
 
 - (void)addPublisher:(UMPublisher*)pub {
-  _cppNode->addPublisher(pub->_cppPub.get());
+  _cppNode->addPublisher(*(pub->_cppPub.get()));
 }
 
 - (void)addSubscriber:(UMSubscriber*)sub {
-  _cppNode->addSubscriber(sub->_cppSub.get());
+  _cppNode->addSubscriber(*(sub->_cppSub.get()));
 }
 
 @end

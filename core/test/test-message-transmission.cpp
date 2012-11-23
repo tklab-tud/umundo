@@ -41,18 +41,18 @@ bool testMessageTransmission() {
 		nrMissing = 0;
 		bytesRecvd = 0;
 
-		Node* pubNode = new Node(hostId + "foo");
-		Publisher* pub = new Publisher("foo");
-		pubNode->addPublisher(pub);
+		Node pubNode(hostId + "foo");
+		Publisher pub("foo");
+		pubNode.addPublisher(pub);
 
 		TestReceiver* testRecv = new TestReceiver();
-		Node* subNode = new Node(hostId + "foo");
-		Subscriber* sub = new Subscriber("foo", testRecv);
-		sub->setReceiver(testRecv);
-		subNode->addSubscriber(sub);
+		Node subNode(hostId + "foo");
+		Subscriber sub("foo", testRecv);
+		sub.setReceiver(testRecv);
+		subNode.addSubscriber(sub);
 
-		pub->waitForSubscribers(1);
-		assert(pub->waitForSubscribers(0) == 1);
+		pub.waitForSubscribers(1);
+		assert(pub.waitForSubscribers(0) == 1);
 
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, 40, BUFFER_SIZE);
@@ -61,7 +61,7 @@ bool testMessageTransmission() {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
 			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
 			msg->putMeta("seq",toStr(j));
-			pub->send(msg);
+			pub.send(msg);
 			delete msg;
 		}
 
@@ -78,12 +78,8 @@ bool testMessageTransmission() {
 		assert(nrReceptions == 100);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
 
-		subNode->removeSubscriber(sub);
-		pubNode->removePublisher(pub);
-
-		delete pubNode;
-		delete pub;
-		delete sub;
+		subNode.removeSubscriber(sub);
+		pubNode.removePublisher(pub);
 
 	}
 	return true;

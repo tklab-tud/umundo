@@ -29,7 +29,7 @@ import org.umundo.core.Node;
 import org.umundo.core.Publisher;
 import org.umundo.core.PublisherSet;
 import org.umundo.core.Receiver;
-import org.umundo.core.SubcriberSet;
+import org.umundo.core.SubscriberSet;
 import org.umundo.core.Subscriber;
 
 public class ServiceManager extends Connectable {
@@ -301,8 +301,8 @@ public class ServiceManager extends Connectable {
 	}
 
 	@Override
-	public SubcriberSet getSubscribers() {
-		SubcriberSet subs = new SubcriberSet();
+	public SubscriberSet getSubscribers() {
+		SubscriberSet subs = new SubscriberSet();
 		subs.insert(_svcSub);
 		return subs;
 	}

@@ -48,7 +48,7 @@ BonjourNodeStub::BonjourNodeStub() {
 BonjourNodeStub::~BonjourNodeStub() {
 }
 
-const string& BonjourNodeStub::getIP() const {
+const std::string BonjourNodeStub::getIP() const {
 	// just return the first ip address that is not empty
 	assert(_interfacesIPv4.size() > 0);
 	map<int, string>::const_iterator ifIter = _interfacesIPv4.begin();

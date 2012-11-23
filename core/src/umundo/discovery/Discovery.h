@@ -22,6 +22,7 @@
 #define DISCOVERY_H_PWR3M1QA
 
 #include "umundo/common/Implementation.h"
+#include "umundo/connection/Node.h"
 
 namespace umundo {
 
@@ -40,8 +41,8 @@ class DLLEXPORT DiscoveryConfig : public Configuration {
 class DLLEXPORT DiscoveryImpl : public Implementation {
 public:
 
-	virtual void add(shared_ptr<NodeImpl> node) = 0;
-	virtual void remove(shared_ptr<NodeImpl> node) = 0;
+	virtual void add(NodeImpl* node) = 0;
+	virtual void remove(NodeImpl* node) = 0;
 
 	virtual void browse(shared_ptr<NodeQuery> discovery) = 0;
 	virtual void unbrowse(shared_ptr<NodeQuery> discovery) = 0;
@@ -75,13 +76,20 @@ public:
 
 	/** @name Node management */
 	//@{
-	static void add(Node* node);    /**< Add a Node to multicast domain discovery.
+	static void add(NodeImpl* node);    /**< Add a Node to multicast domain discovery.
 		@param node Node to be added.
 	*/
+  static void add(Node* node) {
+    add(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+  }
 
-	static void remove(Node* node); /**< Remove a Node from multicast domain discovery.
+	static void remove(NodeImpl* node); /**< Remove a Node from multicast domain discovery.
 		@param node Previously added Node to be removed.
 	*/
+  static void remove(Node* node) {
+    remove(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+  }
+
 	//@}
 
 	/** @name Query for nodes */

@@ -88,40 +88,35 @@ Factory::Factory() {
 
 shared_ptr<Configuration> Factory::config(string name) {
 	Factory* factory = getInstance();
-	UMUNDO_LOCK(factory->_mutex);
+	ScopeLock lock(factory->_mutex);
 	if (factory->_configures.find(name) == factory->_configures.end()) {
 		LOG_WARN("No configuration registered for %s", name.c_str());
-		UMUNDO_UNLOCK(factory->_mutex);
 		return shared_ptr<Configuration>();
 	}
 	shared_ptr<Configuration> config = factory->_configures[name]->create();
-	UMUNDO_UNLOCK(factory->_mutex);
 	return config;
 }
 
 shared_ptr<Implementation> Factory::create(string name, void* facade) {
 	Factory* factory = getInstance();
-	UMUNDO_LOCK(factory->_mutex);
+	ScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) == factory->_prototypes.end()) {
 		LOG_WARN("No prototype registered for %s", name.c_str());
-		UMUNDO_UNLOCK(factory->_mutex);
 		return shared_ptr<Implementation>();
 	}
 	shared_ptr<Implementation> implementation = factory->_prototypes[name]->create(facade);
 	factory->_implementations.push_back(implementation);
-	UMUNDO_UNLOCK(factory->_mutex);
 	return implementation;
 }
 
 void Factory::registerPrototype(string name, Implementation* prototype, Configuration* config) {
 	Factory* factory = getInstance();
-	UMUNDO_LOCK(factory->_mutex);
+	ScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) != factory->_prototypes.end()) {
 		LOG_WARN("Overwriting existing prototype for %s", name.c_str());
 	}
 	factory->_prototypes[name] = prototype;
 	factory->_configures[name] = config;
-	UMUNDO_UNLOCK(factory->_mutex);
 }
 
 /**

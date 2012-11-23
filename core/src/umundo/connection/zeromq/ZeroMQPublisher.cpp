@@ -59,6 +59,8 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 
 	int hwm = NET_ZEROMQ_SND_HWM;
 	zmq_setsockopt(_socket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+	int rcvTimeOut = 50;
+	zmq_setsockopt(_socket, ZMQ_RCVTIMEO, &rcvTimeOut, sizeof(rcvTimeOut));
 
 	std::stringstream ssInProc;
 	ssInProc << "inproc://" << _uuid;
@@ -68,7 +70,7 @@ void ZeroMQPublisher::init(shared_ptr<Configuration> config) {
 #ifndef PUBPORT_SHARING
 	_port = ZeroMQNode::bindToFreePort(_socket, _transport, "*");
 	LOG_INFO("creating publisher for %s on port %d", _channelName.c_str(), _port);
-	start();
+//	start();
 #else
 
 	_port = ZeroMQNode::_sharedPubPort;
@@ -83,8 +85,8 @@ ZeroMQPublisher::ZeroMQPublisher() {
 ZeroMQPublisher::~ZeroMQPublisher() {
 	LOG_INFO("deleting publisher for %s", _channelName.c_str());
 
-	stop();
-	join();
+//	stop();
+//	join();
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 	// clean up pending messages
@@ -100,19 +102,12 @@ ZeroMQPublisher::~ZeroMQPublisher() {
 
 }
 
-void ZeroMQPublisher::join() {
-	Thread::join();
-}
-
 void ZeroMQPublisher::suspend() {
 	if (_isSuspended)
 		return;
 	ScopeLock lock(_mutex);
 
 	_isSuspended = true;
-
-	stop();
-	join();
 
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
@@ -124,9 +119,9 @@ void ZeroMQPublisher::resume() {
 	init(_config);
 }
 
-void ZeroMQPublisher::run() {
+void ZeroMQPublisher::runOnce() {
 	// read subscription requests from the pub socket
-	while(isStarted()) {
+	if(!_isSuspended) {
 		zmq_msg_t message;
 		zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
 		int rv = -1;
@@ -135,8 +130,10 @@ void ZeroMQPublisher::run() {
 			while ((rv = zmq_recvmsg(_socket, &message, ZMQ_DONTWAIT)) < 0) {
 				if (errno == EAGAIN) // no messages available at the moment
 					break;
-				if (errno != EINTR)
+				if (errno != EINTR) {
 					LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+          break;
+        }
 			}
 		}
 
@@ -163,8 +160,6 @@ void ZeroMQPublisher::run() {
 #ifndef WIN32
 			zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
 #endif
-		} else {
-			Thread::sleepMs(50);
 		}
 
 		// try to send pending messages
@@ -241,7 +236,7 @@ void ZeroMQPublisher::addedSubscriber(const string remoteId, const string subId)
 	_subUUIDs.insert(subId);
 
 	if (_greeter != NULL)
-		_greeter->welcome((Publisher*)_facade, _pendingSubscriptions[subId], subId);
+		_greeter->welcome(Publisher(shared_from_this()), _pendingSubscriptions[subId], subId);
 	UMUNDO_SIGNAL(_pubLock);
 }
 
@@ -255,7 +250,7 @@ void ZeroMQPublisher::removedSubscriber(const string remoteId, const string subI
 	_subUUIDs.erase(subId);
 
 	if (_greeter != NULL)
-		_greeter->farewell((Publisher*)_facade, _pendingSubscriptions[subId], subId);
+		_greeter->farewell(Publisher(shared_from_this()), _pendingSubscriptions[subId], subId);
 	UMUNDO_SIGNAL(_pubLock);
 }
 

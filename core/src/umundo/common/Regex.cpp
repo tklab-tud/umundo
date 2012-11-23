@@ -22,8 +22,14 @@
 
 namespace umundo {
 
-Regex::Regex(const string& pattern) {
+Regex::Regex(const string& pattern) : _re(NULL) {
 	setPattern(pattern);
+}
+
+Regex::~Regex() {
+	if (_re != NULL) {
+		free(_re);
+	}
 }
 
 void Regex::setPattern(const string& pattern) {

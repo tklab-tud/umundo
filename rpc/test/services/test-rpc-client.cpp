@@ -11,9 +11,9 @@ using namespace umundo;
 static string hostId;
 
 bool testEchoClient() {
-	Node* n = new Node();
-	ServiceManager* svcMgr= new ServiceManager();
-	n->connect(svcMgr);
+	Node n;
+	ServiceManager svcMgr;
+	n.connect(&svcMgr);
 
 	Regex re("(\\d+)");
 	if (re.matches("this is some random string with 123 numbers inside")) {
@@ -24,13 +24,13 @@ bool testEchoClient() {
 		}
 	}
 
-	ServiceFilter* echoSvcFilter = new ServiceFilter("EchoService");
-	echoSvcFilter->addRule("someString", "(\\d+)", "200", ServiceFilter::OP_LESS);
-	echoSvcFilter->addRule("someString", "(\\d+)", "123", ServiceFilter::OP_EQUALS);
-	echoSvcFilter->addRule("someString", "this is some", ServiceFilter::OP_STARTS_WITH);
+	ServiceFilter echoSvcFilter("EchoService");
+	echoSvcFilter.addRule("someString", "(\\d+)", "200", ServiceFilter::OP_LESS);
+	echoSvcFilter.addRule("someString", "(\\d+)", "123", ServiceFilter::OP_EQUALS);
+	echoSvcFilter.addRule("someString", "this is some", ServiceFilter::OP_STARTS_WITH);
 
-	ServiceDescription* echSvcDesc = svcMgr->find(echoSvcFilter);
-	if (echSvcDesc != NULL) {
+	ServiceDescription echSvcDesc = svcMgr.find(echoSvcFilter);
+	if (echSvcDesc) {
 		EchoServiceStub* echoSvc = new EchoServiceStub(echSvcDesc);
 		int iterations = 100;
 		while(iterations-- > 0) {

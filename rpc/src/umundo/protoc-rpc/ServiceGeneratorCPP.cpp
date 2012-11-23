@@ -138,7 +138,7 @@ void ServiceGeneratorCPP::writeServiceStubHeader(io::Printer& printer, const Ser
 	printer.Print(
 	    "class $svcName$Stub : public ServiceStub {\n"
 	    "public:\n"
-	    "\t$svcName$Stub(ServiceDescription*);\n",
+	    "\t$svcName$Stub(const ServiceDescription&);\n",
 	    "svcName", svcDesc->name()
 	);
 
@@ -207,7 +207,7 @@ void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, cons
 	}
 
 	printer.Print(
-	    "$className$Stub::$className$Stub(ServiceDescription* svcDesc) : ServiceStub(svcDesc)  {\n"
+	    "$className$Stub::$className$Stub(const ServiceDescription& svcDesc) : ServiceStub(svcDesc)  {\n"
 	    "\t_serviceName = \"$className$\";\n",
 	    "className", svcDesc->name()
 	);
@@ -215,13 +215,13 @@ void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, cons
 	// register intypes at publisher for stub, outtypes at subscriber
 	for (inTypeIter = inTypes.begin(); inTypeIter != inTypes.end(); inTypeIter++) {
 		printer.Print(
-		    "\t_rpcPub->registerType(\"$inType$\", new $inType$());\n",
+		    "\t_rpcPub.registerType(\"$inType$\", new $inType$());\n",
 		    "inType", (*inTypeIter)
 		);
 	}
 	for (outTypeIter = outTypes.begin(); outTypeIter != outTypes.end(); outTypeIter++) {
 		printer.Print(
-		    "\t_rpcSub->registerType(\"$outType$\", new $outType$());\n",
+		    "\t_rpcSub.registerType(\"$outType$\", new $outType$());\n",
 		    "outType", (*outTypeIter)
 		);
 	}
@@ -237,13 +237,13 @@ void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, cons
 	// register intypes at sublisher for impl, outtypes at publisher
 	for (inTypeIter = inTypes.begin(); inTypeIter != inTypes.end(); inTypeIter++) {
 		printer.Print(
-		    "\t_rpcSub->registerType(\"$inType$\", new $inType$());\n",
+		    "\t_rpcSub.registerType(\"$inType$\", new $inType$());\n",
 		    "inType", (*inTypeIter)
 		);
 	}
 	for (outTypeIter = outTypes.begin(); outTypeIter != outTypes.end(); outTypeIter++) {
 		printer.Print(
-		    "\t_rpcPub->registerType(\"$outType$\", new $outType$());\n",
+		    "\t_rpcPub.registerType(\"$outType$\", new $outType$());\n",
 		    "outType", (*outTypeIter)
 		);
 	}

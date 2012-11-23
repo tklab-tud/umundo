@@ -33,13 +33,21 @@ Discovery::Discovery() {
 Discovery::~Discovery() {
 }
 
-void Discovery::add(Node* node) {
-	boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->add(node->_impl);
+void Discovery::add(NodeImpl* node) {
+	boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->add(node);
 }
 
-void Discovery::remove(Node* node) {
-	boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->remove(node->_impl);
+//void Discovery::add(NodeImpl* node) {
+//  boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->add(boost::shared_ptr<NodeImpl>(node));
+//}
+
+void Discovery::remove(NodeImpl* node) {
+  boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->remove(node);
 }
+
+//void Discovery::remove(NodeImpl* node) {
+//  boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->remove(boost::shared_ptr<NodeImpl>(node));
+//}
 
 void Discovery::browse(shared_ptr<NodeQuery> query) {
 	boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->browse(query);

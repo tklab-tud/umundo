@@ -31,13 +31,13 @@ namespace umundo {
 /**
  * Concrete nodestub implementor for bonjour.
  */
-class DLLEXPORT BonjourNodeStub : public NodeStub {
+class DLLEXPORT BonjourNodeStub : public NodeStubImpl {
 public:
 	BonjourNodeStub();
 	virtual ~BonjourNodeStub();
 
 	/// Overwritten from EndPoint.
-	const string& getIP() const;
+	virtual const std::string getIP() const;
 
 private:
 	bool _isAdded;

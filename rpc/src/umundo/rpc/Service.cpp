@@ -31,12 +31,12 @@ ServiceFilter::ServiceFilter(const string& svcName) {
 	_uuid = UUID::getUUID();
 }
 
-Message* ServiceFilter::toMessage() {
+Message* ServiceFilter::toMessage() const  {
 	Message* msg = new Message();
 	msg->putMeta("um.rpc.filter.svcName", _svcName);
 	msg->putMeta("um.rpc.filter.uuid", _uuid);
 
-	vector<Rule>::iterator ruleIter = _rules.begin();
+	vector<Rule>::const_iterator ruleIter = _rules.begin();
 	int i = 0;
 	while(ruleIter != _rules.end()) {
 		std::stringstream ssValueKey;
@@ -111,13 +111,13 @@ void ServiceFilter::clearRules() {
 	_rules.clear();
 }
 
-bool ServiceFilter::matches(ServiceDescription* svcDesc) {
+bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 	// service name has to be the same
-	if (_svcName.compare(svcDesc->getName()) != 0)
+	if (_svcName.compare(svcDesc.getName()) != 0)
 		return false;
 
 	// check filter
-	vector<Rule>::iterator ruleIter = _rules.begin();
+	vector<Rule>::const_iterator ruleIter = _rules.begin();
 	while(ruleIter != _rules.end()) {
 
 		/* A condition is true, if the matched substring from the value for key of
@@ -126,12 +126,12 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 		 */
 
 		string key = ruleIter->key;                     // the key for the values
-		if (!svcDesc->hasProperty(key)) {
+		if (!svcDesc.hasProperty(key)) {
 			ruleIter++;
 			continue;
 		}
 
-		string actual = svcDesc->getProperty(key);      // the actual string as it is present in the description
+		string actual = svcDesc.getProperty(key);      // the actual string as it is present in the description
 		string target = ruleIter->value;                // the substring from the filter
 		string pattern = ruleIter->pattern;             // the pattern that will transform the actual string into a substring
 		int pred = ruleIter->predicate;                 // the relation between filter and description sting
@@ -239,7 +239,7 @@ bool ServiceFilter::matches(ServiceDescription* svcDesc) {
 	return true;
 }
 
-bool ServiceFilter::isNumeric(const string& test) {
+bool ServiceFilter::isNumeric(const string& test) const {
 	string::const_iterator sIter = test.begin();
 	for(; sIter != test.end(); sIter++) {
 		if (isdigit(*sIter))
@@ -253,7 +253,7 @@ bool ServiceFilter::isNumeric(const string& test) {
 	return true;
 }
 
-double ServiceFilter::toNumber(const string& numberString) {
+double ServiceFilter::toNumber(const string& numberString) const {
 	std::istringstream os(numberString);
 	double d;
 	os >> d;
@@ -284,7 +284,7 @@ ServiceDescription::ServiceDescription(Message* msg) {
 	}
 }
 
-Message* ServiceDescription::toMessage() {
+Message* ServiceDescription::toMessage() const {
 	Message* msg = new Message();
 	map<string, string>::const_iterator propIter = _properties.begin();
 	while(propIter != _properties.end()) {
@@ -298,40 +298,38 @@ Message* ServiceDescription::toMessage() {
 	return msg;
 }
 
-ServiceStub::ServiceStub(ServiceDescription* svcDesc) {
-	_channelName = svcDesc->getChannelName();
-	_rpcPub = new TypedPublisher(_channelName);
-	_rpcSub = new TypedSubscriber(_channelName, this);
+ServiceStub::ServiceStub(const ServiceDescription& svcDesc) {
+	_channelName = svcDesc.getChannelName();
+	_rpcPub = TypedPublisher(_channelName);
+	_rpcSub = TypedSubscriber(_channelName, this);
 
-	set<Node*> nodes = svcDesc->getServiceManager()->getNodes();
-	set<Node*>::iterator nodeIter = nodes.begin();
+	set<Node> nodes = svcDesc.getServiceManager()->getNodes();
+	set<Node>::iterator nodeIter = nodes.begin();
 	while(nodeIter != nodes.end()) {
-		(*nodeIter)->connect(this);
+		((Node)*nodeIter).connect(this);
 		nodeIter++;
 	}
-	_rpcPub->waitForSubscribers(1);
+	_rpcPub.waitForSubscribers(1);
 }
 
 ServiceStub::ServiceStub(const string& channelName) {
 	_channelName = channelName;
-	_rpcPub = new TypedPublisher(_channelName);
-	_rpcSub = new TypedSubscriber(_channelName, this);
-	_rpcPub->waitForSubscribers(1);
+	_rpcPub = TypedPublisher(_channelName);
+	_rpcSub = TypedSubscriber(_channelName, this);
+	_rpcPub.waitForSubscribers(1);
 
 }
 
 ServiceStub::~ServiceStub() {
-	delete _rpcPub;
-	delete _rpcSub;
 }
 
-std::set<umundo::Publisher*> ServiceStub::getPublishers() {
-	set<Publisher*> pubs;
+std::set<umundo::Publisher> ServiceStub::getPublishers() {
+	set<Publisher> pubs;
 	pubs.insert(_rpcPub);
 	return pubs;
 }
-std::set<umundo::Subscriber*> ServiceStub::getSubscribers() {
-	set<Subscriber*> subs;
+std::set<umundo::Subscriber> ServiceStub::getSubscribers() {
+	set<Subscriber> subs;
 	subs.insert(_rpcSub);
 	return subs;
 }
@@ -345,17 +343,17 @@ const string& ServiceStub::getName() {
 }
 
 void ServiceStub::callStubMethod(const string& name, void* in, const string& inType, void* &out, const string& outType) {
-	Message* rpcReqMsg = _rpcPub->prepareMsg(inType, in);
+	Message* rpcReqMsg = _rpcPub.prepareMsg(inType, in);
 	string reqId = UUID::getUUID();
 	rpcReqMsg->putMeta("um.rpc.reqId", reqId);
 	rpcReqMsg->putMeta("um.rpc.method", name);
 	rpcReqMsg->putMeta("um.rpc.outType", outType);
 	assert(_requests.find(reqId) == _requests.end());
 	_requests[reqId] = new Monitor();
-	_rpcPub->send(rpcReqMsg);
+	_rpcPub.send(rpcReqMsg);
 	ScopeLock lock(_mutex);
 
-	int retries = 3;
+	int retries = 5;
 	while(retries-- > 0) {
 		_requests[reqId]->wait(_mutex, 1000);
 		if (_responses.find(reqId) != _responses.end()) {
@@ -390,8 +388,8 @@ void ServiceStub::receive(void* obj, Message* msg) {
 
 Service::Service() {
 	_channelName = UUID::getUUID();
-	_rpcPub = new TypedPublisher(_channelName);
-	_rpcSub = new TypedSubscriber(_channelName, this);
+	_rpcPub = TypedPublisher(_channelName);
+	_rpcSub = TypedSubscriber(_channelName, this);
 }
 
 Service::~Service() {
@@ -407,9 +405,9 @@ void Service::receive(void* obj, Message* msg) {
 		void* out = NULL;
 		callMethod(methodName, obj, inType, out, outType);
 		if (out != NULL) {
-			Message* rpcReplMsg = _rpcPub->prepareMsg(outType, out);
+			Message* rpcReplMsg = _rpcPub.prepareMsg(outType, out);
 			rpcReplMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
-			_rpcPub->send(rpcReplMsg);
+			_rpcPub.send(rpcReplMsg);
 			delete rpcReplMsg;
 		}
 		cleanUpObjects(methodName, obj, out);

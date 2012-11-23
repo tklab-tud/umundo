@@ -29,7 +29,7 @@ AvahiNodeStub::AvahiNodeStub() {
 AvahiNodeStub::~AvahiNodeStub() {
 }
 
-const string& AvahiNodeStub::getIP() const {
+const std::string AvahiNodeStub::getIP() const {
 	return (_interfacesIPv4.begin())->second;
 }
 

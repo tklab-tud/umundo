@@ -44,8 +44,8 @@ public:
  */
 class DLLEXPORT TypedGreeter {
 public:
-	virtual void welcome(TypedPublisher* atPub, const std::string& nodeId, const std::string& subId) = 0;
-	virtual void farewell(TypedPublisher* fromPub, const std::string& nodeId, const std::string& subId) = 0;
+	virtual void welcome(TypedPublisher atPub, const std::string& nodeId, const std::string& subId) = 0;
+	virtual void farewell(TypedPublisher fromPub, const std::string& nodeId, const std::string& subId) = 0;
 };
 
 /**
@@ -60,8 +60,8 @@ private:
 	public:
 		GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
 		virtual ~GreeterWrapper();
-		void welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId);
-		void farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId);
+		void welcome(Publisher atPub, const std::string& nodeId, const std::string& subId);
+		void farewell(Publisher fromPub, const std::string& nodeId, const std::string& subId);
 
 	protected:
 		TypedGreeter* _typedGreeter;
@@ -71,8 +71,23 @@ private:
 	};
 
 public:
-	TypedPublisher(string channelName);
+	TypedPublisher() : _impl() {}
+	TypedPublisher(const std::string& channelName);
+  TypedPublisher(boost::shared_ptr<TypeSerializerImpl> const impl) :  _impl(impl) { }
+  TypedPublisher(const TypedPublisher& other) : _impl(other._impl) { }
 	virtual ~TypedPublisher();
+  
+  operator bool() const { return _impl; }
+  bool operator< (const TypedPublisher& other) const { return _impl < other._impl; }
+  bool operator==(const TypedPublisher& other) const { return _impl == other._impl; }
+  bool operator!=(const TypedPublisher& other) const { return _impl != other._impl; }
+
+
+	TypedPublisher& operator=(const TypedPublisher& other) {   
+	  Publisher::operator=(other);
+		_impl = other._impl;
+		return *this;
+	} // operator=
 
 	Message* prepareMsg(const string&, void* obj);
 	void prepareMsg(Message* msg, const string& type, void* obj);

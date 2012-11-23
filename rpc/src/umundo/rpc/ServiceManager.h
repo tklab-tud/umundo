@@ -36,38 +36,38 @@ public:
 	virtual ~ServiceManager();
 
 	void addService(Service*);
-	void addService(Service*, ServiceDescription*);
+	void addService(Service*, ServiceDescription&);
 	void removeService(Service*);
 
 	// Connectable interface
-	std::set<umundo::Publisher*> getPublishers();
-	std::set<umundo::Subscriber*> getSubscribers();
-	void addedToNode(Node* node);
-	void removedFromNode(Node* node);
-	std::set<Node*> getNodes() {
+	std::set<umundo::Publisher> getPublishers();
+	std::set<umundo::Subscriber> getSubscribers();
+	void addedToNode(Node& node);
+	void removedFromNode(Node& node);
+	std::set<Node> getNodes() {
 		return _nodes;
 	}
 
 	// Greeter Interface
-	void welcome(Publisher*, const string& nodeId, const string& subId);
-	void farewell(Publisher*, const string& nodeId, const string& subId);
+	void welcome(Publisher, const string& nodeId, const string& subId);
+	void farewell(Publisher, const string& nodeId, const string& subId);
 
 	void receive(Message* msg);
 
-	ServiceDescription* find(ServiceFilter*);
-	std::set<ServiceDescription*> findLocal(ServiceFilter*);
-	void startQuery(ServiceFilter*, ResultSet<ServiceDescription>*);
-	void stopQuery(ServiceFilter*);
+	ServiceDescription find(const ServiceFilter&);
+	std::set<ServiceDescription> findLocal(const ServiceFilter&);
+	void startQuery(const ServiceFilter&, ResultSet<ServiceDescription>*);
+	void stopQuery(const ServiceFilter&);
 
 	map<string, Monitor*> _findRequests;
 	map<string, Message*> _findResponses;
 	map<intptr_t, Service*> _svc; ///< Instances of local services
-	map<intptr_t, ServiceDescription*> _localSvcDesc; ///< Descriptions of local services
-	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp> _localQueries; ///< filters for local continuous service queries
+	map<intptr_t, ServiceDescription> _localSvcDesc; ///< Descriptions of local services
+	map<ServiceFilter, ResultSet<ServiceDescription>*> _localQueries; ///< filters for local continuous service queries
 
-	std::set<Node*> _nodes; ///< all the nodes we were added to
-	std::map<string, ServiceFilter*> _remoteQueries; ///< UUID to remote continuous query
-	map<string, map<string, shared_ptr<ServiceDescription> > > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
+	std::set<Node> _nodes; ///< all the nodes we were added to
+	std::map<string, ServiceFilter> _remoteQueries; ///< UUID to remote continuous query
+	map<string, map<string, ServiceDescription> > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
 	Mutex _mutex;

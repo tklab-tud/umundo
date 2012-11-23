@@ -4,72 +4,68 @@ using namespace umundo;
 
 bool testDiscoveryStress() {
 
-	Node* n = new Node();
-	Publisher* p = new Publisher("foo");
-	n->addPublisher(p);
+	Node n;
+	Publisher p("foo");
+	n.addPublisher(p);
 
+  assert(NodeImpl::instances == 1);
+  
 	for(int i = 1; i < 10; i++) {
 		std::cout << "--- " << i << std::endl;
-		set<Node*> nodes;
-		set<Subscriber*> subs;
-		for (int j = 0; j < i; j++) {
-			Node* n2 = new Node();
-			Subscriber* s = new Subscriber("foo", NULL);
-			n2->addSubscriber(s);
-			nodes.insert(n2);
-			subs.insert(s);
-		}
-		assert(p->waitForSubscribers(i) == i);
+    Node n2;
+    assert(NodeImpl::instances == 2);
 
-		set<Node*>::iterator nodeIter = nodes.begin();
-		while(nodeIter != nodes.end()) {
-			delete *nodeIter;
-			nodeIter++;
+		for (int j = 0; j < i + 20; j++) {
+			Subscriber s("foo", NULL);
+      std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
+      assert(SubscriberImpl::instances == j + 1);
+			n2.addSubscriber(s);
+      std::cout << "\tSubscribers: " << p.waitForSubscribers(0) << std::endl;
+      assert(p.waitForSubscribers(j + 1) == j + 1);
 		}
-
-		set<Subscriber*>::iterator subIter = subs.begin();
-		while(subIter != subs.end()) {
-			delete *subIter;
-			subIter++;
-		}
-
+		assert(p.waitForSubscribers(i + 20) == i + 20);
+    std::map<std::string, Subscriber> subs = n2.getSubscribers();
+    std::map<std::string, Subscriber>::iterator subIter = subs.begin();
+    while(subIter != subs.end()) {
+      n2.removeSubscriber(subIter->second);
+      subIter++;
+    }
 	}
-
-	delete n;
-	delete p;
 
 	return true;
 }
 
 bool testSubscriberStress() {
 
-	Node* n = new Node();
-	Node* n2 = new Node();
-	Publisher* p = new Publisher("foo");
-	n->addPublisher(p);
+	Node n;
+	Node n2;
+  assert(NodeImpl::instances == 2);
+	Publisher p("foo");
+	n.addPublisher(p);
 
 	for(int i = 20; i < 40; i++) {
 		std::cout << "--- " << i << std::endl;
-		set<Subscriber*> subs;
+		set<Subscriber> subs;
 		for (int j = 0; j < i; j++) {
-			Subscriber* s = new Subscriber("foo", NULL);
-			n2->addSubscriber(s);
+			Subscriber s("foo", NULL);
+			n2.addSubscriber(s);
 			subs.insert(s);
+      std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
+      assert(SubscriberImpl::instances == j + 1);
 		}
-		assert(p->waitForSubscribers(i) == i);
+    std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
+    assert(SubscriberImpl::instances == i);
+		assert(p.waitForSubscribers(i) == i);
 
-		set<Subscriber*>::iterator subIter = subs.begin();
+		set<Subscriber>::iterator subIter = subs.begin();
 		while(subIter != subs.end()) {
-			n2->removeSubscriber(*subIter);
-			delete *subIter;
+			n2.removeSubscriber(*subIter);
 			subIter++;
 		}
+    subs.clear();
+    assert(SubscriberImpl::instances == 0);
 
 	}
-
-	delete n;
-	delete n2;
-	delete p;
 
 	return true;
 }
@@ -79,5 +75,6 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	if (!testSubscriberStress())
 		return EXIT_FAILURE;
+  assert(NodeImpl::instances == 0);
 	return EXIT_SUCCESS;
 }

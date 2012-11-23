@@ -2,8 +2,9 @@
 // import swig typemaps
 %include <arrays_csharp.i>
 %include <stl.i>
+%include <std_map.i>
 %include <inttypes.i>
-//%include "boost_shared_ptr.i"
+%include "stl_set.i"
 
 // macros from cmake
 %import "umundo/config.h"
@@ -15,6 +16,12 @@
 typedef std::string string;
 typedef std::vector vector;
 typedef std::set set;
+
+%rename(Equals) operator==; 
+%rename(IsValid) operator bool;
+%ignore operator!=;
+%ignore operator<;
+%ignore operator=;
 
 %csconst(1);
 
@@ -41,6 +48,11 @@ using namespace umundo;
 
 // Provide a nicer CSharp interface to STL containers
 %template(StringVector) std::vector<std::string>;
+%template(StringSet)    std::set<std::string>;
+%template(PublisherSet) std::set<umundo::Publisher>;
+%template(SubscriberSet) std::set<umundo::Subscriber>;
+%template(PublisherStubSet) std::set<umundo::PublisherStub>;
+%template(SubscriberStubSet) std::set<umundo::SubscriberStub>;
 
 // allow CSharp classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
@@ -56,6 +68,8 @@ using namespace umundo;
 %ignore setRemote(bool);
 %ignore setHost(string);
 %ignore setDomain(string);
+%ignore getImpl();
+%ignore getImpl() const;
 
 // ignore class specific functions
 %ignore operator!=(NodeStub* n) const;
@@ -137,15 +151,44 @@ using namespace umundo;
 %ignore NodeConfig;
 %ignore PublisherConfig;
 %ignore SubscriberConfig;
+%ignore EndPointImpl;
 %ignore NodeImpl;
+%ignore NodeStubImpl;
+%ignore NodeStubBaseImpl;
 %ignore PublisherImpl;
+%ignore PublisherStubImpl;
 %ignore SubscriberImpl;
+%ignore SubscriberStubImpl;
+%ignore EndPointImpl;
 %ignore Mutex;
 %ignore Thread;
 %ignore Monitor;
 %ignore MemoryBuffer;
 %ignore ScopeLock;
 
+//******************************
+// Ignore PIMPL Constructors
+//******************************
+
+%ignore Node(const boost::shared_ptr<NodeImpl>);
+%ignore Node(const Node&);
+%ignore NodeStub(const boost::shared_ptr<NodeStubImpl>);
+%ignore NodeStub(const NodeStub&);
+%ignore NodeStubBase(const boost::shared_ptr<NodeStubBaseImpl>);
+%ignore NodeStubBase(const NodeStubBase&);
+
+%ignore EndPoint(const boost::shared_ptr<EndPointImpl>);
+%ignore EndPoint(const EndPoint&);
+
+%ignore Publisher(const boost::shared_ptr<PublisherImpl>);
+%ignore Publisher(const Publisher&);
+%ignore PublisherStub(const boost::shared_ptr<PublisherStubImpl>);
+%ignore PublisherStub(const PublisherStub&);
+
+%ignore Subscriber(const boost::shared_ptr<SubscriberImpl>);
+%ignore Subscriber(const Subscriber&);
+%ignore SubscriberStub(const boost::shared_ptr<SubscriberStubImpl>);
+%ignore SubscriberStub(const SubscriberStub&);
 
 //***********************************************
 // Parse the header file to generate wrappers

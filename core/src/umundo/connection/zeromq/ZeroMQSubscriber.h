@@ -22,8 +22,6 @@
 #ifndef ZEROMQSUBSCRIBER_H_6DV3QJUH
 #define ZEROMQSUBSCRIBER_H_6DV3QJUH
 
-#include <boost/enable_shared_from_this.hpp>
-
 #include "umundo/common/Common.h"
 #include "umundo/common/ResultSet.h"
 #include "umundo/connection/Subscriber.h"
@@ -35,7 +33,7 @@ class PublisherStub;
 /**
  * Concrete subscriber implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl, public ResultSet<PublisherStub>, public boost::enable_shared_from_this<ZeroMQSubscriber> {
+class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl {
 public:
 	shared_ptr<Implementation> create(void*);
 	void destroy();
@@ -47,9 +45,9 @@ public:
 	virtual Message* getNextMsg();
 	virtual Message* peekNextMsg();
 
-	void added(shared_ptr<PublisherStub>);
-	void removed(shared_ptr<PublisherStub>);
-	void changed(shared_ptr<PublisherStub>);
+	void added(PublisherStub);
+	void removed(PublisherStub);
+	void changed(PublisherStub);
 
 	// Thread
 	void run();
@@ -63,6 +61,7 @@ protected:
 
 	set<string> _connections;
 	void* _socket;
+	void* _breaker; ///< unblock poll
 	void* _zeroMQCtx;
 	Mutex _mutex;
 

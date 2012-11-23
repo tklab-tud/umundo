@@ -25,6 +25,7 @@
 
 namespace umundo {
 class Configuration;
+
 /**
  * Abstract base class for concrete implementations (bridge pattern).
  *

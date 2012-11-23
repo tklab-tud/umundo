@@ -106,9 +106,9 @@ void BonjourNodeDiscovery::suspend() {
 
 	// remove all nodes from discovery
 	_suspendedNodes = _localNodes;
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator nodeIter = _localNodes.begin();
+	map<intptr_t, NodeImpl* >::iterator nodeIter = _localNodes.begin();
 	while(nodeIter != _localNodes.end()) {
-		shared_ptr<NodeImpl> node = nodeIter->second;
+		NodeImpl* node = nodeIter->second;
 		nodeIter++;
 		remove(node);
 	}
@@ -130,9 +130,9 @@ void BonjourNodeDiscovery::resume() {
 	}
 	_isSuspended = false;
 
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator nodeIter = _suspendedNodes.begin();
+	map<intptr_t, NodeImpl* >::iterator nodeIter = _suspendedNodes.begin();
 	while(nodeIter != _suspendedNodes.end()) {
-		shared_ptr<NodeImpl> node = nodeIter->second;
+		NodeImpl* node = nodeIter->second;
 		nodeIter++;
 		// make sure advertised nodes are initialized
 		node->resume();
@@ -213,7 +213,7 @@ void BonjourNodeDiscovery::run() {
 /**
  * Add a node to be discoverable by other nodes.
  */
-void BonjourNodeDiscovery::add(shared_ptr<NodeImpl> node) {
+void BonjourNodeDiscovery::add(NodeImpl* node) {
 	LOG_INFO("Adding node %s", SHORT_UUID(node->getUUID()).c_str());
 	assert(node->getUUID().length() > 0);
 
@@ -221,7 +221,7 @@ void BonjourNodeDiscovery::add(shared_ptr<NodeImpl> node) {
 
 	DNSServiceErrorType err;
 	DNSServiceRef registerClient;
-	intptr_t address = (intptr_t)(node.get());
+	intptr_t address = (intptr_t)node;
 
 	if (_localNodes.find(address) != _localNodes.end()) {
 		// there has to be a register client if we know the node
@@ -302,11 +302,11 @@ void BonjourNodeDiscovery::add(shared_ptr<NodeImpl> node) {
 }
 
 
-void BonjourNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
+void BonjourNodeDiscovery::remove(NodeImpl* node) {
 	LOG_INFO("Removing node %s", SHORT_UUID(node->getUUID()).c_str());
 	ScopeLock lock(_mutex);
 
-	intptr_t address = (intptr_t)(node.get());
+	intptr_t address = (intptr_t)node;
 	if (_localNodes.find(address) == _localNodes.end()) {
 		LOG_WARN("Ignoring removal of unregistered node from discovery");
 		assert(validateState());
@@ -536,7 +536,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 			node->_isRemote = true;
 
 			// is this a "in-process" node?
-			map<intptr_t, shared_ptr<NodeImpl> >::iterator localNodeIter = getInstance()->_localNodes.begin();
+			map<intptr_t, NodeImpl* >::iterator localNodeIter = getInstance()->_localNodes.begin();
 			while(localNodeIter != getInstance()->_localNodes.end()) {
 				if (localNodeIter->second->getUUID().compare(replyName) == 0) {
 					node->setInProcess(true);
@@ -566,7 +566,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		if (node->_interfaceIndices.empty()) {
 			// last interface was removed, node vanished
 			LOG_INFO("Query %p vanished node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
-			query->removed(boost::static_pointer_cast<NodeStub>(node));
+			query->removed(NodeStub(node));
 			getInstance()->forgetRemoteNodesFDs(node);
 			assert(getInstance()->_nodeToQuery.find((intptr_t)node.get()) != getInstance()->_nodeToQuery.end());
 			getInstance()->_nodeToQuery.erase((intptr_t)node.get());
@@ -837,7 +837,7 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 		map<int, string>::const_iterator ifIter = node->_interfacesIPv4.begin();
 		while(ifIter != node->_interfacesIPv4.end()) {
 			if (ifIter->second.length() > 0)
-				query->found(boost::static_pointer_cast<NodeStub>(node));
+				query->found(NodeStub(node));
 			ifIter++;
 		}
 //      node->_interfaceIndices.size() == node->_interfacesIPv6.size()) {
@@ -876,7 +876,7 @@ void DNSSD_API BonjourNodeDiscovery::registerReply(
 	switch (errorCode) {
 	case kDNSServiceErr_NoError: {
 		// update local node with information from registration
-		shared_ptr<NodeImpl> node = getInstance()->_localNodes[(intptr_t)context];
+		NodeImpl* node = getInstance()->_localNodes[(intptr_t)context];
 		assert(node != NULL);
 		assert(name != NULL);
 		assert(domain != NULL);
@@ -899,7 +899,7 @@ void DNSSD_API BonjourNodeDiscovery::registerReply(
 bool BonjourNodeDiscovery::validateState() {
 	UMUNDO_LOCK(_mutex);
 	map<int, DNSServiceRef>::iterator activeFDIter;
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator localNodeIter;
+	map<intptr_t, NodeImpl* >::iterator localNodeIter;
 	map<intptr_t, DNSServiceRef>::iterator registerClientIter;
 	map<intptr_t, shared_ptr<NodeQuery> >::iterator queryIter;
 	map<intptr_t, DNSServiceRef>::iterator queryClientIter;
@@ -924,7 +924,10 @@ bool BonjourNodeDiscovery::validateState() {
 		// assume that we have a dns register client
 		assert(_registerClients.find(localNodeIter->first) != _registerClients.end());
 	}
-	assert(_registerClients.size() == _localNodes.size());
+  if (_registerClients.size() != _localNodes.size()) {
+    LOG_ERR("Found %d register clients but %d nodes", _registerClients.size(), _localNodes.size());
+    assert(_registerClients.size() == _localNodes.size());
+  }
 
 	// test register clients
 	for (registerClientIter = _registerClients.begin(); registerClientIter != _registerClients.end(); registerClientIter++) {

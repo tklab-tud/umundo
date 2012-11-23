@@ -20,6 +20,7 @@
 #include "umundo/common/portability.h"
 #include "umundo/config.h"
 
+// there is no no strndup in Mac OSX 10.5
 #if defined(NO_STRNDUP) || defined(APPLE)
 char* strndup (const char *s, size_t n) {
 	char *result;

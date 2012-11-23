@@ -38,30 +38,30 @@ bool findServices() {
 
 	for (int i = 0; i < 2; i++) {
 		LOG_INFO("Instantiating nodes");
-		Node* node1 = new Node(hostId);
-		Node* node2 = new Node(hostId);
+		Node node1(hostId);
+		Node node2(hostId);
 
 		LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
 		PingService* localPingService = new PingService();
 
 		LOG_INFO("Connecting ServiceManagers");
-		ServiceManager* svcMgr1 = new ServiceManager();
-		node1->connect(svcMgr1);
+		ServiceManager svcMgr1;
+		node1.connect(&svcMgr1);
 
-		ServiceManager* svcMgr2 = new ServiceManager();
-		node2->connect(svcMgr2);
+		ServiceManager svcMgr2;
+		node2.connect(&svcMgr2);
 
 		LOG_INFO("Adding Services to ServiceManager1");
-		svcMgr1->addService(localEchoService);
-		svcMgr1->addService(localPingService);
+		svcMgr1.addService(localEchoService);
+		svcMgr1.addService(localPingService);
 
 		LOG_INFO("Querying from ServiceManager2 for a PingService");
-		ServiceFilter* pingSvcFilter = new ServiceFilter("PingService");
-		ServiceDescription* pingSvcDesc = svcMgr2->find(pingSvcFilter);
+		ServiceFilter pingSvcFilter("PingService");
+		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter);
 		assert(pingSvcDesc);
+    
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
-		delete pingSvcFilter;
 
 		int iterations = 5;
 		int sends = 0;
@@ -75,6 +75,7 @@ bool findServices() {
 			PingRequest* pingReq = new PingRequest();
 			pingReq->set_name("ping");
 			PingReply* pingRep = pingSvc->ping(pingReq);
+			assert(pingRep != NULL);
 			assert(pingRep->name().compare("pong") == 0);
 
 			sends++;
@@ -94,8 +95,9 @@ bool findServices() {
 		iterations = 5;
 		sends = 0;
 
-		ServiceFilter* echoSvcFilter = new ServiceFilter("EchoService");
-		EchoServiceStub* echoSvc = new EchoServiceStub(svcMgr2->find(echoSvcFilter));
+		ServiceFilter echoSvcFilter("EchoService");
+    ServiceDescription echoSvcDesc = svcMgr2.find(echoSvcFilter);
+		EchoServiceStub* echoSvc = new EchoServiceStub(echoSvcDesc);
 		time(&start);
 		while (iterations > 0) {
 			EchoRequest* echoReq = new EchoRequest();
@@ -120,213 +122,208 @@ bool findServices() {
 			delete echoRep;
 		}
 
-		svcMgr1->removeService(localEchoService);
-		svcMgr1->removeService(localPingService);
+		svcMgr1.removeService(localEchoService);
+		svcMgr1.removeService(localPingService);
 		delete localEchoService;
 		delete localPingService;
 
-		node1->disconnect(svcMgr1);
-		node2->disconnect(svcMgr2);
-		delete svcMgr1;
-		delete svcMgr2;
-
-		delete node1;
-		delete node2;
+		node1.disconnect(&svcMgr1);
+		node2.disconnect(&svcMgr2);
 
 	}
 	return true;
 }
 
 bool queryTests() {
-	ServiceDescription* desc = new ServiceDescription(map<string, string>());
-	desc->_svcName = "FooService";
-	desc->setProperty("foo", "the lazy brown fox 123.34");
+	ServiceDescription desc;
+	desc._svcName = "FooService";
+	desc.setProperty("foo", "the lazy brown fox 123.34");
 
-	ServiceFilter* filter = new ServiceFilter("FooService");
+	ServiceFilter filter("FooService");
 
 	// whole value is target string
-	filter->addRule("foo", "the lazy brown fox 123.34");
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the lazy brown fox 123.34");
+	assert(filter.matches(desc));
 
 	// Numbers / OP_EQUALS ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123.34", ServiceFilter::OP_EQUALS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123.34", ServiceFilter::OP_EQUALS);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23", ServiceFilter::OP_EQUALS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23", ServiceFilter::OP_EQUALS);
+	assert(!filter.matches(desc));
 
 	// Numbers / OP_GREATER ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23.34", ServiceFilter::OP_GREATER);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23.34", ServiceFilter::OP_GREATER);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "23.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323", ServiceFilter::OP_GREATER);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323", ServiceFilter::OP_GREATER);
+	assert(!filter.matches(desc));
 
 	// Numbers / OP_LESS ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323.34", ServiceFilter::OP_LESS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323.34", ServiceFilter::OP_LESS);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "323.34", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123", ServiceFilter::OP_LESS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown fox (\\d+(\\.\\d+)?)", "123", ServiceFilter::OP_LESS);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_EQUALS ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy)", "lazy", ServiceFilter::OP_EQUALS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy)", "lazy", ServiceFilter::OP_EQUALS);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy)", "lazy", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy)", "lazy", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "brown (fox)", "dog", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "brown (fox)", "dog", ServiceFilter::MOD_NOT | ServiceFilter::OP_EQUALS);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "brown (fox)", "dog", ServiceFilter::OP_EQUALS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "brown (fox)", "dog", ServiceFilter::OP_EQUALS);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_STARTS_WITH ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "lazy", ServiceFilter::OP_STARTS_WITH);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "lazy", ServiceFilter::OP_STARTS_WITH);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy brown)", "lazy", ServiceFilter::MOD_NOT | ServiceFilter::OP_STARTS_WITH);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "lazy", ServiceFilter::MOD_NOT | ServiceFilter::OP_STARTS_WITH);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "clever", ServiceFilter::MOD_NOT | ServiceFilter::OP_STARTS_WITH);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "clever", ServiceFilter::MOD_NOT | ServiceFilter::OP_STARTS_WITH);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "the (lazy brown)", "clever", ServiceFilter::OP_STARTS_WITH);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "clever", ServiceFilter::OP_STARTS_WITH);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_ENDS_WITH ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "brown", ServiceFilter::OP_ENDS_WITH);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "brown", ServiceFilter::OP_ENDS_WITH);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy brown)", "brown", ServiceFilter::MOD_NOT | ServiceFilter::OP_ENDS_WITH);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "brown", ServiceFilter::MOD_NOT | ServiceFilter::OP_ENDS_WITH);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "black", ServiceFilter::MOD_NOT | ServiceFilter::OP_ENDS_WITH);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "black", ServiceFilter::MOD_NOT | ServiceFilter::OP_ENDS_WITH);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "the (lazy brown)", "black", ServiceFilter::OP_ENDS_WITH);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "black", ServiceFilter::OP_ENDS_WITH);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_CONTAINS ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "y b", ServiceFilter::OP_CONTAINS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "y b", ServiceFilter::OP_CONTAINS);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy brown)", "y b", ServiceFilter::MOD_NOT | ServiceFilter::OP_CONTAINS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "y b", ServiceFilter::MOD_NOT | ServiceFilter::OP_CONTAINS);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "z b", ServiceFilter::MOD_NOT | ServiceFilter::OP_CONTAINS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "z b", ServiceFilter::MOD_NOT | ServiceFilter::OP_CONTAINS);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "the (lazy brown)", "z b", ServiceFilter::OP_CONTAINS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "z b", ServiceFilter::OP_CONTAINS);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_GREATER ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "k", ServiceFilter::OP_GREATER);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "k", ServiceFilter::OP_GREATER);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy brown)", "k", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "k", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "m", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "m", ServiceFilter::MOD_NOT | ServiceFilter::OP_GREATER);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "the (lazy brown)", "m", ServiceFilter::OP_GREATER);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "m", ServiceFilter::OP_GREATER);
+	assert(!filter.matches(desc));
 
 	// Strings / OP_LESS ------------------------------------
-	filter->clearRules();
+	filter.clearRules();
 	// equal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "m", ServiceFilter::OP_LESS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "m", ServiceFilter::OP_LESS);
+	assert(filter.matches(desc));
 
 	// equal but not supposed to be
-	filter->addRule("foo", "the (lazy brown)", "m", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "m", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
+	assert(!filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal and supposed to be
-	filter->addRule("foo", "the (lazy brown)", "k", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
-	assert(filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "k", ServiceFilter::MOD_NOT | ServiceFilter::OP_LESS);
+	assert(filter.matches(desc));
 
-	filter->clearRules();
+	filter.clearRules();
 	// unequal but supposed to be
-	filter->addRule("foo", "the (lazy brown)", "k", ServiceFilter::OP_LESS);
-	assert(!filter->matches(desc));
+	filter.addRule("foo", "the (lazy brown)", "k", ServiceFilter::OP_LESS);
+	assert(!filter.matches(desc));
 
 	return true;
 }
@@ -335,25 +332,25 @@ class ServiceListener : public ResultSet<ServiceDescription> {
 public:
 	virtual ~ServiceListener() {}
 
-	virtual void added(shared_ptr<ServiceDescription> desc) {
+	virtual void added(ServiceDescription desc) {
 		std::cout << "Found Service" << std::endl;
 		_instances.insert(desc);
 	}
 
-	virtual void removed(shared_ptr<ServiceDescription> desc) {
+	virtual void removed(ServiceDescription desc) {
 		std::cout << "Lost Service" << std::endl;
 		_instances.erase(desc);
 	}
 
-	virtual void changed(shared_ptr<ServiceDescription> desc) {}
+	virtual void changed(ServiceDescription desc) {}
 
-	set<shared_ptr<ServiceDescription> > _instances;
+	set<ServiceDescription> _instances;
 };
 
 bool continuousQueries() {
 	int iterations = 5;
-	Node* hostNode = new Node(hostId);
-	Node* queryNode = new Node(hostId);
+	Node hostNode(hostId);
+	Node queryNode(hostId);
 
 	while (iterations) {
 		std::cout << "Starting continuous query test" << std::endl;
@@ -362,17 +359,17 @@ bool continuousQueries() {
 		PingService* localPingService2 = new PingService();
 		PingService* localPingService3 = new PingService();
 
-		ServiceManager* hostMgr = new ServiceManager();
-		hostNode->connect(hostMgr);
-		hostMgr->addService(localPingService1);
+		ServiceManager hostMgr;
+		hostNode.connect(&hostMgr);
+		hostMgr.addService(localPingService1);
 
 		// service query with a late arriving service manager -> greeter welcome
-		ServiceFilter* pingSvcFilter = new ServiceFilter("PingService");
+		ServiceFilter pingSvcFilter("PingService");
 		ServiceListener* svcListener = new ServiceListener();
 
-		ServiceManager* queryMgr = new ServiceManager();
-		queryNode->connect(queryMgr);
-		queryMgr->startQuery(pingSvcFilter, svcListener);
+		ServiceManager queryMgr;
+		queryNode.connect(&queryMgr);
+		queryMgr.startQuery(pingSvcFilter, svcListener);
 		std::cout << "\tDone Setup nodes and services" << std::endl;
 
 		Thread::sleepMs(2000);
@@ -380,72 +377,68 @@ bool continuousQueries() {
 		std::cout << "\tFound first service" << std::endl;
 
 		// adding another matching service
-		hostMgr->addService(localPingService2);
+		hostMgr.addService(localPingService2);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tFound second service" << std::endl;
 
 		// adding the same service ought to be ignored
-		hostMgr->addService(localPingService2);
+		hostMgr.addService(localPingService2);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tNo change with duplicate service" << std::endl;
 
 		// adding another matching service
-		hostMgr->addService(localPingService3);
+		hostMgr.addService(localPingService3);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 3);
 		std::cout << "\tFound third service" << std::endl;
 
 		// remove matching services
-		hostMgr->removeService(localPingService1);
+		hostMgr.removeService(localPingService1);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tService removed sucessfully" << std::endl;
 
 		// removing same service ought to do nothing
-		hostMgr->removeService(localPingService1);
+		hostMgr.removeService(localPingService1);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tNo change with duplicate removal" << std::endl;
 
-		hostMgr->removeService(localPingService2);
+		hostMgr.removeService(localPingService2);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 1);
 		std::cout << "\tService removed sucessfully" << std::endl;
 
 		// add service again
-		hostMgr->addService(localPingService2);
+		hostMgr.addService(localPingService2);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tFound second service again" << std::endl;
 
 		// stop query - listener should know nothing
-		queryMgr->stopQuery(pingSvcFilter);
+		queryMgr.stopQuery(pingSvcFilter);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tQuery removed" << std::endl;
 
-		queryMgr->startQuery(pingSvcFilter, svcListener);
+		queryMgr.startQuery(pingSvcFilter, svcListener);
 		Thread::sleepMs(200);
 		assert(svcListener->_instances.size() == 2);
 		std::cout << "\tQuery restarted" << std::endl;
 
-		hostNode->disconnect(hostMgr);
+		hostNode.disconnect(&hostMgr);
 		Thread::sleepMs(400);
 		assert(svcListener->_instances.size() == 0);
 		std::cout << "\tService Managers disconnected" << std::endl;
 
-		queryNode->disconnect(queryMgr);
+		queryNode.disconnect(&queryMgr);
 		delete svcListener;
-
-		delete queryMgr;
-		delete hostMgr;
 
 		delete localPingService1;
 		delete localPingService2;
 
-		delete pingSvcFilter;
 		std::cout << "\tInstances deleted" << std::endl;
 
 		iterations--;
@@ -453,12 +446,73 @@ bool continuousQueries() {
 	return true;
 }
 
+bool stlContainerTests() {
+  {
+    // single item in container
+    NodeQuery n("foo", NULL);
+    std::set<NodeQuery> nodeQuerySet;
+    nodeQuerySet.insert(n);
+    assert(nodeQuerySet.find(n) != nodeQuerySet.end());
+    nodeQuerySet.erase(n);
+    assert(nodeQuerySet.size() == 0);
+    // copy of item ought to be identical
+    NodeQuery n2 = n;
+    assert(n == n2);
+    assert(!(n != n2));
+    nodeQuerySet.insert(n2);
+    assert(nodeQuerySet.find(n) != nodeQuerySet.end());
+    assert(nodeQuerySet.find(n2) != nodeQuerySet.end());
+    nodeQuerySet.erase(n);
+    assert(nodeQuerySet.size() == 0);
+  }
+  {
+    // single item in container
+    ServiceFilter sf("foo");
+    std::set<ServiceFilter> serviceFilterSet;
+    serviceFilterSet.insert(sf);
+    assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
+    serviceFilterSet.erase(sf);
+    assert(serviceFilterSet.size() == 0);
+    // copy of item ought to be identical
+    ServiceFilter sf2 = sf;
+    assert(sf == sf2);
+    assert(!(sf != sf2));
+    serviceFilterSet.insert(sf2);
+    assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
+    assert(serviceFilterSet.find(sf2) != serviceFilterSet.end());
+    serviceFilterSet.erase(sf);
+    assert(serviceFilterSet.size() == 0);
+  }
+  {
+    // single item in container
+    ServiceDescription sd;
+    std::set<ServiceDescription> serviceDescSet;
+    serviceDescSet.insert(sd);
+    assert(serviceDescSet.find(sd) != serviceDescSet.end());
+    serviceDescSet.erase(sd);
+    assert(serviceDescSet.size() == 0);
+    // copy of item ought to be identical
+    ServiceDescription sd2 = sd;
+    assert(sd == sd2);
+    assert(!(sd != sd2));
+    serviceDescSet.insert(sd2);
+    assert(serviceDescSet.find(sd) != serviceDescSet.end());
+    assert(serviceDescSet.find(sd2) != serviceDescSet.end());
+    serviceDescSet.erase(sd);
+    assert(serviceDescSet.size() == 0);
+  }
+
+  return true;
+}
+
 int main(int argc, char** argv) {
 	hostId = Host::getHostId();
-	if (!findServices())
+	if (!stlContainerTests())
 		return EXIT_FAILURE;
-	if (!queryTests())
-		return EXIT_FAILURE;
+//	if (!queryTests())
+//		return EXIT_FAILURE;
+//	if (!findServices())
+//		return EXIT_FAILURE;
 	if (!continuousQueries())
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

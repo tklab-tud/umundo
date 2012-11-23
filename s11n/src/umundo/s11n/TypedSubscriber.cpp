@@ -30,7 +30,23 @@
 
 namespace umundo {
 
-TypedSubscriber::TypedSubscriber(string channelName) : Subscriber(channelName) {
+TypeDeserializerImpl::~TypeDeserializerImpl() {
+  std::cout << "GONE!" << std::endl;
+}
+
+void TypeDeserializerImpl::receive(Message* msg) {
+  if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+    // explicit type given
+    void* obj = deserialize(msg->getMeta("um.s11n.type"), msg);
+    _recv->receive(obj, msg);
+    //    _impl->destroyObj(obj);
+  } else {
+    // just pass the raw message
+    _recv->receive(NULL, msg);
+  }
+}
+
+TypedSubscriber::TypedSubscriber(const string& channelName) : Subscriber(channelName) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();
@@ -41,20 +57,22 @@ TypedSubscriber::TypedSubscriber(string channelName) : Subscriber(channelName) {
 	assert(_impl != NULL);
 }
 
-TypedSubscriber::TypedSubscriber(string channelName, TypedReceiver* recv) : Subscriber(channelName, this) {
+TypedSubscriber::TypedSubscriber(const string& channelName, TypedReceiver* recv) : Subscriber(channelName) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();
 #endif
 		Factory::registerPrototype("typeDeserializer", _registeredPrototype, NULL);
 	}
-	_recv = recv;
 	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
+  _impl->setReceiver(recv);
+  Subscriber::setReceiver(_impl.get());
 	assert(_impl != NULL);
 }
 TypeDeserializerImpl* TypedSubscriber::_registeredPrototype = NULL;
 
 TypedSubscriber::~TypedSubscriber() {
+//  Subscriber::setReceiver(NULL);
 }
 
 void TypedSubscriber::registerType(const string& type, void* deserializer) {
@@ -73,18 +91,6 @@ void* TypedSubscriber::deserialize(Message* msg) {
 		return _impl->deserialize(msg->getMeta("um.s11n.type"), msg);
 	}
 	return NULL;
-}
-
-void TypedSubscriber::receive(Message* msg) {
-	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
-		// explicit type given
-		void* obj = _impl->deserialize(msg->getMeta("um.s11n.type"), msg);
-		_recv->receive(obj, msg);
-//    _impl->destroyObj(obj);
-	} else {
-		// just pass the raw message
-		_recv->receive(NULL, msg);
-	}
 }
 
 }

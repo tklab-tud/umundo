@@ -43,15 +43,36 @@ class DLLEXPORT NodeQuery : public boost::enable_shared_from_this<NodeQuery> {
 public:
 	NodeQuery(string domain, ResultSet<NodeStub>*);
 	virtual ~NodeQuery();
+  
+  bool operator< (const NodeQuery& other) const {
+    return !(operator==(other)) && (_domain < other._domain ||
+                                    _transport < other._transport ||
+                                    _listener < other._listener);
+  }
+  bool operator==(const NodeQuery& other) const {
+    return
+      _domain == other._domain &&
+      _transport == other._transport &&
+      _listener == other._listener;
+  }
+  bool operator!=(const NodeQuery& other) const { return !(operator==(other)); }
+//  
+//  Subscriber& operator=(const Subscriber& other)
+//  {
+//    _impl = other._impl;
+//    SubscriberStub::_impl = _impl;
+//    return *this;
+//  } // operator=
 
-	virtual void found(shared_ptr<NodeStub>);
-	virtual void removed(shared_ptr<NodeStub>);
+  
+	virtual void found(const NodeStub& node);
+	virtual void removed(const NodeStub& node);
 
 	virtual const string& getDomain();
 	virtual void setTransport(string);
 	virtual const string& getTransport();
 
-	map<string, shared_ptr<NodeStub> >& getNodes() {
+	map<string, NodeStub>& getNodes() {
 		return _nodes;
 	}
 
@@ -62,13 +83,13 @@ protected:
 	bool _notifyImmediately;
 	string _domain;
 	string _transport;
-	map<string, shared_ptr<NodeStub> > _nodes;
+	map<string, NodeStub> _nodes;
 	ResultSet<NodeStub>* _listener;
 
 	Mutex _mutex;
 
-	set<shared_ptr<NodeStub> > _pendingRemovals;
-	set<shared_ptr<NodeStub> > _pendingFinds;
+	set<NodeStub> _pendingRemovals;
+	set<NodeStub> _pendingFinds;
 
 	friend class DiscoveryImpl;
 };

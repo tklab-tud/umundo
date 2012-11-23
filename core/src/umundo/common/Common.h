@@ -25,6 +25,13 @@
 // Happens on STL member variables which are not public therefore is ok?
 //#pragma warning (disable : 4251)
 
+// see 
+// http://support.microsoft.com/default.aspx?scid=kb;EN-US;Q172396
+// http://support.microsoft.com/default.aspx?scid=kb;EN-US;Q168958
+// http://www.unknownroad.com/rtfm/VisualStudio/warningC4251.html
+// http://stackoverflow.com/questions/1881494/how-to-expose-stl-list-over-dll-boundary
+// http://stackoverflow.com/questions/5661738/common-practice-in-dealing-with-warning-c4251-class-needs-to-have-dll-inter/
+
 #if defined(_MSC_VER)
 // disable signed / unsigned comparison warnings
 #pragma warning (disable : 4018)

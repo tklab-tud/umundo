@@ -36,7 +36,7 @@ class ZeroMQNode;
 /**
  * Concrete publisher implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public Thread, public boost::enable_shared_from_this<ZeroMQPublisher>  {
+class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public boost::enable_shared_from_this<ZeroMQPublisher>  {
 public:
 	virtual ~ZeroMQPublisher();
 
@@ -64,8 +64,7 @@ private:
 	// }
 
 	// read subscription requests from publisher socket
-	void run();
-	void join();
+	void runOnce();
 
 	void* _socket;
 	void* _zeroMQCtx;

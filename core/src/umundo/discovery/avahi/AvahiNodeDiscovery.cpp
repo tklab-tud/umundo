@@ -68,9 +68,9 @@ void AvahiNodeDiscovery::suspend() {
 
 	// remove all nodes from discovery
 	_suspendedNodes = _nodes;
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator nodeIter = _nodes.begin();
+	map<intptr_t, NodeImpl* >::iterator nodeIter = _nodes.begin();
 	while(nodeIter != _nodes.end()) {
-		shared_ptr<NodeImpl> node = nodeIter->second;
+		NodeImpl* node = nodeIter->second;
 		nodeIter++;
 		remove(node);
 	}
@@ -92,9 +92,9 @@ void AvahiNodeDiscovery::resume() {
 	}
 	_isSuspended = false;
 
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator nodeIter = _suspendedNodes.begin();
+	map<intptr_t, NodeImpl* >::iterator nodeIter = _suspendedNodes.begin();
 	while(nodeIter != _suspendedNodes.end()) {
-		shared_ptr<NodeImpl> node = nodeIter->second;
+		NodeImpl* node = nodeIter->second;
 		nodeIter++;
 		// make sure advertised nodes are initialized
 		node->resume();
@@ -109,10 +109,10 @@ AvahiNodeDiscovery::~AvahiNodeDiscovery() {
 	join();
 }
 
-void AvahiNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
+void AvahiNodeDiscovery::remove(NodeImpl* node) {
 	UMUNDO_LOCK(_mutex);
 	LOG_INFO("Removing node %s", SHORT_UUID(node->getUUID()).c_str());
-	intptr_t address = (intptr_t)(node.get());
+	intptr_t address = (intptr_t)node;
 	if(_avahiClients.find(address) == _avahiClients.end()) {
 		LOG_WARN("Ignoring removal of unregistered node from discovery");
 		UMUNDO_UNLOCK(_mutex);
@@ -130,11 +130,11 @@ void AvahiNodeDiscovery::remove(shared_ptr<NodeImpl> node) {
 	UMUNDO_UNLOCK(_mutex);
 }
 
-void AvahiNodeDiscovery::add(shared_ptr<NodeImpl> node) {
+void AvahiNodeDiscovery::add(NodeImpl* node) {
 	UMUNDO_LOCK(_mutex);
 	LOG_INFO("Adding node %s", SHORT_UUID(node->getUUID()).c_str());
 	int err;
-	intptr_t address = (intptr_t)(node.get());
+	intptr_t address = (intptr_t)node;
 
 	if (_nodes.find(address) != _nodes.end()) {
 		// there has to be a register client if we know the node
@@ -355,7 +355,7 @@ void AvahiNodeDiscovery::browseCallback(
 			node->_interfaceIndices.erase(interface);
 		if (node->_interfaceIndices.empty()) {
 			LOG_INFO("Query %p vanished node %s", userdata, SHORT_UUID(node->getUUID()).c_str());
-			query->removed(node);
+			query->removed(NodeStub(node));
 			myself->_queryNodes[query].erase(name);
 		}
 		// TODO: remove from query nodes
@@ -469,7 +469,7 @@ void AvahiNodeDiscovery::resolveCallback(
 		avahi_free(t);
 
 		if (node->_interfacesIPv4.begin() != node->_interfacesIPv4.end()) {
-			query->found(node);
+			query->found(NodeStub(node));
 		}
 		break;
 	}
@@ -538,11 +538,11 @@ void AvahiNodeDiscovery::clientCallback(AvahiClient* c, AvahiClientState state, 
 	int err;
 	shared_ptr<AvahiNodeDiscovery> myself = getInstance();
 
-	shared_ptr<NodeImpl> node;
+	NodeImpl* node;
 	if (myself->_nodes.find((intptr_t)nodeAddr) != myself->_nodes.end())
 		node = myself->_nodes[(intptr_t)nodeAddr];
 
-	assert(node.get() != NULL);
+	assert(node);
 	AvahiEntryGroup* group = NULL;
 	if (myself->_avahiGroups.find((intptr_t)nodeAddr) != myself->_avahiGroups.end()) {
 		group = myself->_avahiGroups[(intptr_t)nodeAddr];
@@ -630,8 +630,8 @@ void AvahiNodeDiscovery::run() {
 bool AvahiNodeDiscovery::validateState() {
 #if 0
 	map<intptr_t, shared_ptr<NodeQuery> > _browsers;       ///< memory addresses of queries for static callbacks
-	map<intptr_t, shared_ptr<NodeImpl> > _nodes;	         ///< memory addresses of local nodes for static callbacks
-	map<intptr_t, shared_ptr<NodeImpl> > _suspendedNodes;	 ///< memory addresses of suspended local nodes
+	map<intptr_t, NodeImpl* > _nodes;	         ///< memory addresses of local nodes for static callbacks
+	map<intptr_t, NodeImpl* > _suspendedNodes;	 ///< memory addresses of suspended local nodes
 	map<intptr_t, AvahiClient* > _avahiClients;            ///< memory addresses of local nodes to avahi clients
 	map<intptr_t, AvahiEntryGroup* > _avahiGroups;         ///< memory addresses of local nodes to avahi groups
 	map<intptr_t, AvahiServiceBrowser* > _avahiBrowsers;   ///< memory addresses of local nodes to avahi service browsers
@@ -649,7 +649,7 @@ bool AvahiNodeDiscovery::validateState() {
 	assert(_avahiBrowsers.size() == _browsers.size());
 
 	// every node has an avahi client
-	map<intptr_t, shared_ptr<NodeImpl> >::iterator nodeIter = _nodes.begin();
+	map<intptr_t, NodeImpl* >::iterator nodeIter = _nodes.begin();
 	while(nodeIter != _nodes.end()) {
 		assert(_avahiClients.find(nodeIter->first) != _avahiClients.end());
 		nodeIter++;

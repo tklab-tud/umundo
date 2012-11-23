@@ -1,3 +1,4 @@
+#define protected public
 #include "umundo/core.h"
 #include <iostream>
 #include <stdio.h>
@@ -26,69 +27,59 @@ public:
 };
 
 void testDifferentDomain() {
-	Node* fooNode = new Node(hostId + "foo");
-	Node* barNode = new Node(hostId + "bar");
-	printf("%d\n", Node::instances);
-	assert(Node::instances == 2);
+	Node fooNode(hostId + "foo");
+	Node barNode(hostId + "bar");
+	printf("%d\n", NodeImpl::instances);
+	assert(NodeImpl::instances == 2);
 
-	Subscriber* sub = new Subscriber("test1", new TestReceiver("test1"));
-	Publisher* pub = new Publisher("test1");
+  // this will leak memory as none deletes the receiver
+	Subscriber sub("test1", new TestReceiver("test1"));
+	Publisher pub("test1");
 
-	fooNode->addPublisher(pub);
-	barNode->addSubscriber(sub);
+	fooNode.addPublisher(pub);
+	barNode.addSubscriber(sub);
 	Thread::sleepMs(1000);
-	assert(pub->waitForSubscribers(0) == 0);
+	assert(pub.waitForSubscribers(0) == 0);
 
-	delete(fooNode);
-	delete(barNode);
-
-	delete(sub);
-	delete(pub);
 }
 
 void testSameDomain() {
-	Node* fooNode = new Node(hostId + "foo");
-	Node* barNode = new Node(hostId + "foo");
-	assert(Node::instances == 2);
+	Node fooNode(hostId + "foo");
+	Node barNode(hostId + "foo");
+	assert(NodeImpl::instances == 2);
 
-	Subscriber* sub = new Subscriber("test1", new TestReceiver("test1"));
-	Publisher* pub = new Publisher("test1");
+	Subscriber sub("test1", new TestReceiver("test1"));
+	Publisher pub("test1");
 
-	fooNode->addPublisher(pub);
-	barNode->addSubscriber(sub);
-	assert(pub->waitForSubscribers(1) >= 1);
-
-	delete(fooNode);
-	delete(barNode);
-
-	delete(sub);
-	delete(pub);
+	fooNode.addPublisher(pub);
+	barNode.addSubscriber(sub);
+	assert(pub.waitForSubscribers(1) >= 1);
 }
 
 void testDomainReception() {
-	Node* fooNode1 = new Node(hostId + "foo");
-	Node* fooNode2 = new Node(hostId + "foo");
-	Node* barNode = new Node(hostId + "bar");
-	assert(Node::instances == 3);
+	Node fooNode1(hostId + "foo");
+	Node fooNode2(hostId + "foo");
+	Node barNode(hostId + "bar");
+	assert(NodeImpl::instances == 3);
 
-	Subscriber* sub = new Subscriber("test1", new TestReceiver("test1"));
-	Publisher* pub = new Publisher("test1");
+	Subscriber sub("test1", new TestReceiver("test1"));
+	Publisher pub("test1");
 
-	fooNode1->addPublisher(pub);
-	fooNode2->addPublisher(pub);
-	barNode->addPublisher(pub);
+	fooNode1.addPublisher(pub);
+	fooNode2.addPublisher(pub);
+	barNode.addPublisher(pub);
 
-	fooNode1->addSubscriber(sub);
-	fooNode2->addSubscriber(sub);
-	barNode->addSubscriber(sub);
+	fooNode1.addSubscriber(sub);
+	fooNode2.addSubscriber(sub);
+	barNode.addSubscriber(sub);
 
 	char buffer[BUFFER_SIZE];
 	for (int i = 0; i < BUFFER_SIZE; i++) {
 		buffer[i] = (char)i%255;
 	}
 
-	pub->waitForSubscribers(1);
-	assert(pub->waitForSubscribers(1) >= 1);
+	pub.waitForSubscribers(1);
+	assert(pub.waitForSubscribers(1) >= 1);
 	Thread::sleepMs(100);
 
 	int iterations = 10; // this has to be less or equal to the high water mark / 3
@@ -97,20 +88,13 @@ void testDomainReception() {
 		Message* msg = new Message();
 		msg->setData(buffer, BUFFER_SIZE);
 		msg->putMeta("type", "foo!");
-		pub->send(msg);
+		pub.send(msg);
 		delete(msg);
 	}
 
 	Thread::sleepMs(200);
 	std::cout << "Received " << receives << " messages, expected " << iterations << " messages" << std::endl;
 //  assert(receives == iterations);
-
-	delete(fooNode1);
-	delete(fooNode2);
-	delete(barNode);
-
-	delete(sub);
-	delete(pub);
 
 }
 
@@ -125,10 +109,10 @@ int main(int argc, char** argv, char** envp) {
 //		assert(Node::instances == 0);
 		printf("##### testSameDomain ##########################################\n");
 		testSameDomain();
-		assert(Node::instances == 0);
+		assert(NodeImpl::instances == 0);
 		printf("##### testDomainReception #####################################\n");
 		testDomainReception();
-		assert(Node::instances == 0);
+		assert(NodeImpl::instances == 0);
 	}
 	return EXIT_SUCCESS;
 }

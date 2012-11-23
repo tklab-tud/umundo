@@ -22,6 +22,8 @@
 #define SUBSCRIBER_H_J64J09SP
 
 #include "umundo/common/Common.h"
+#include "umundo/connection/Publisher.h"
+#include "umundo/common/ResultSet.h"
 #include "umundo/common/Implementation.h"
 #include "umundo/thread/Thread.h"
 
@@ -29,8 +31,8 @@
 
 namespace umundo {
 
-class DLLEXPORT Message;
-class DLLEXPORT SubscriberImpl;
+class Message;
+class SubscriberImpl;
 
 /**
  * Interface for client classes to get byte-arrays from subscribers.
@@ -48,7 +50,52 @@ public:
 	shared_ptr<Configuration> create();
 	string channelName;
 	string uuid;
-	Receiver* receiver;
+};
+
+class DLLEXPORT SubscriberStubImpl : public Implementation {
+public:
+	virtual ~SubscriberStubImpl() {}
+	std::string getChannelName() const {
+		return _channelName;
+	}
+	std::string getUUID() const {
+		return _uuid;
+	}
+	
+protected:
+	std::string _channelName;
+	std::string _uuid;
+};
+
+/**
+ * Subscriber implementor basis class (bridge pattern).
+ */
+class DLLEXPORT SubscriberImpl : public Thread, public SubscriberStubImpl, public ResultSet<PublisherStub> {
+public:
+	SubscriberImpl();
+  virtual ~SubscriberImpl();
+  
+	virtual Receiver* getReceiver()             {
+		return _receiver;
+	}
+	virtual void setReceiver(Receiver* receiver)      {
+		_receiver = receiver;
+	}
+	std::set<string> getPublisherUUIDs()             {
+		return _pubUUIDs;
+	}
+	virtual void setChannelName(const std::string& channelName) {
+		_channelName = channelName;
+	}
+
+	virtual Message* getNextMsg() = 0;
+	virtual Message* peekNextMsg() = 0;
+
+  static int instances;
+
+protected:
+	Receiver* _receiver;
+	std::set<string> _pubUUIDs;
 };
 
 /**
@@ -56,53 +103,37 @@ public:
  */
 class DLLEXPORT SubscriberStub {
 public:
-	virtual ~SubscriberStub() {}
-	virtual const string& getChannelName()           {
-		return _channelName;
+  virtual ~SubscriberStub() {}
+	SubscriberStub() : _impl() { }
+  SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : _impl(impl) { }
+  SubscriberStub(const SubscriberStub& other) : _impl(other._impl) { }
+
+  operator bool() const { return _impl; }
+  bool operator< (const SubscriberStub& other) const { return _impl < other._impl; }
+  bool operator==(const SubscriberStub& other) const { return _impl == other._impl; }
+  bool operator!=(const SubscriberStub& other) const { return _impl != other._impl; }
+
+  SubscriberStub& operator=(const SubscriberStub& other) 
+  {
+    _impl = other._impl;
+    return *this;
+  } // operator=
+
+	virtual const std::string getChannelName() const     {
+		return _impl->getChannelName();
 	}
-	virtual void setChannelName(string channelName)  {
-		_channelName = channelName;
+	virtual const std::string getUUID() const            {
+		return _impl->getUUID();
 	}
-	virtual const string& getUUID()                  {
-		return _uuid;
-	}
-	virtual void setUUID(string uuid)                {
-		_uuid = uuid;
-	}
+
+  virtual const shared_ptr<SubscriberStubImpl> getImpl() const {
+    return _impl;
+  }
 
 protected:
-	string _channelName;
-	string _uuid;
+	shared_ptr<SubscriberStubImpl> _impl;
 };
 
-
-
-/**
- * Subscriber implementor basis class (bridge pattern).
- */
-class DLLEXPORT SubscriberImpl : public Thread, public Implementation, public SubscriberStub {
-public:
-	SubscriberImpl()                                 {
-		_receiver = NULL;
-	}
-
-	virtual const Receiver* getReceiver()            {
-		return _receiver;
-	}
-	virtual void setReceiver(Receiver* receiver)     {
-		_receiver = receiver;
-	}
-	std::set<string> getPublisherUUIDs()             {
-		return _pubUUIDs;
-	}
-
-	virtual Message* getNextMsg() = 0;
-	virtual Message* peekNextMsg() = 0;
-
-protected:
-	Receiver* _receiver;
-	std::set<string> _pubUUIDs;
-};
 
 /**
  * Subscriber abstraction (bridge pattern).
@@ -112,23 +143,33 @@ protected:
  * constructor without a receiver and the setReceiver method are required for Java as we cannot
  * inherit publishers while being its receiver at the same time as is used for the TypedSubscriber.
  */
-class DLLEXPORT Subscriber : public SubscriberStub {
+class DLLEXPORT Subscriber : public SubscriberStub, public ResultSet<PublisherStub> {
 public:
-	Subscriber(string channelName);
-	Subscriber(string channelName, Receiver* receiver);
+	Subscriber() : _impl() {}
+	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
+	Subscriber(const std::string& channelName);
+	Subscriber(const std::string& channelName, Receiver* receiver);
+  Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
+  Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
 
-	void setReceiver(Receiver* receiver);
+  operator bool() const { return _impl; }
+  bool operator< (const Subscriber& other) const { return _impl < other._impl; }
+  bool operator==(const Subscriber& other) const { return _impl == other._impl; }
+  bool operator!=(const Subscriber& other) const { return _impl != other._impl; }
 
-	virtual const string& getChannelName()           {
-		return _impl->getChannelName();
+  Subscriber& operator=(const Subscriber& other) 
+  {
+    _impl = other._impl;
+    SubscriberStub::_impl = _impl;
+    return *this;
+  } // operator=
+
+	void setReceiver(Receiver* receiver) {
+		_impl->setReceiver(receiver);
 	}
 
-	virtual const string& getUUID()           {
-		return _impl->getUUID();
-	}
-
-	virtual void setChannelName(string channelName)  {
+	virtual void setChannelName(const std::string& channelName)  {
 		_impl->setChannelName(channelName);
 	}
 
@@ -145,6 +186,23 @@ public:
 	}
 	bool isSubscribedTo(const string& uuid) {
 		return _impl->getPublisherUUIDs().find(uuid) != _impl->getPublisherUUIDs().end();
+	}
+
+	void added(PublisherStub pub) {
+		_impl->added(pub);
+	}
+	void changed(PublisherStub pub) {
+		_impl->changed(pub);
+	}
+	void removed(PublisherStub pub) {
+		_impl->removed(pub);
+	}
+
+	void suspend() {
+		return _impl->suspend();
+	}
+	void resume() {
+		return _impl->resume();
 	}
 
 protected:

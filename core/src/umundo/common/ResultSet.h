@@ -27,15 +27,14 @@
 namespace umundo {
 
 template<class T>
-
 /**
  * Templated interface to be notified about addition, removal or changes of objects.
  */
 class DLLEXPORT ResultSet {
 public:
-	virtual void added(shared_ptr<T>) = 0;
-	virtual void removed(shared_ptr<T>) = 0;
-	virtual void changed(shared_ptr<T>) = 0;
+	virtual void added(T) = 0;
+	virtual void removed(T) = 0;
+	virtual void changed(T) = 0;
 };
 }
 

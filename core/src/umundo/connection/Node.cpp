@@ -27,137 +27,72 @@
 
 namespace umundo {
 
+int NodeImpl::instances = -1;
+
 shared_ptr<Configuration> NodeConfig::create() {
 	return shared_ptr<Configuration>(new NodeConfig());
 }
 
 NodeImpl::NodeImpl() {
 	_uuid = UUID::getUUID();
+  instances++;
 }
 
-
-void NodeStub::addSubscriber(shared_ptr<SubscriberStub> sub) {
-	_subs[sub->getUUID()] = sub;
+NodeImpl::~NodeImpl() {
+  instances--;
 }
-
-void NodeStub::removeSubscriber(shared_ptr<SubscriberStub> sub) {
-	_subs.erase(sub->getUUID());
-}
-
-void NodeStub::addPublisher(shared_ptr<PublisherStub> pub) {
-	_pubs[pub->getUUID()] = pub;
-}
-
-void NodeStub::removePublisher(shared_ptr<PublisherStub> pub) {
-	_pubs.erase(pub->getUUID());
-}
-
-bool NodeStub::hasSubscriber(const string& uuid) {
-	if (isInProcess() || isRemote())
-		LOG_WARN("Querying remote node for subscribers, which we do not track!");
-	return (_subs.find(uuid) != _subs.end());
-}
-
-shared_ptr<SubscriberStub> NodeStub::getSubscriber(const string& uuid) {
-	shared_ptr<SubscriberStub> sub;
-	if (hasSubscriber(uuid))
-		sub = _subs[uuid];
-
-	return sub;
-}
-
-bool NodeStub::hasPublisher(const string& uuid) {
-	return (_pubs.find(uuid) != _pubs.end());
-}
-
-shared_ptr<PublisherStub> NodeStub::getPublisher(const string& uuid) {
-	shared_ptr<PublisherStub> pub;
-	if (hasPublisher(uuid))
-		pub = _pubs[uuid];
-
-	return pub;
-}
-
-
-
-int Node::instances = 0;
+  
 Node::Node() {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
+  NodeStubBase::_impl = _impl;
+  EndPoint::_impl = _impl;
 	shared_ptr<Configuration> config = Factory::config("node");
 	_impl->init(config);
-	// add our node query
-	Discovery::add(this);
-	instances++;
 }
 
 Node::Node(string domain) {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
+  NodeStubBase::_impl = _impl;
+  EndPoint::_impl = _impl;
 	shared_ptr<Configuration> config = Factory::config("node");
 	_impl->setDomain(domain);
 	_impl->init(config);
-	Discovery::add(this);
-	instances++;
+	// add our node query
 }
 
 Node::~Node() {
-	Discovery::remove(this);
-	instances--;
-}
-
-void Node::addSubscriber(Subscriber* sub) {
-	_impl->addSubscriber(sub->_impl);
-}
-
-void Node::removeSubscriber(Subscriber* sub) {
-	_impl->removeSubscriber(sub->_impl);
-}
-
-void Node::addPublisher(Publisher* pub) {
-	_impl->addPublisher(pub->_impl);
-}
-
-void Node::removePublisher(Publisher* pub) {
-	_impl->removePublisher(pub->_impl);
 }
 
 void Node::connect(Connectable* conn) {
-	set<Subscriber*> subs = conn->getSubscribers();
-	set<Subscriber*>::iterator subIter = subs.begin();
+	set<Subscriber> subs = conn->getSubscribers();
+	set<Subscriber>::iterator subIter = subs.begin();
 	while(subIter != subs.end()) {
-		_impl->addSubscriber((*subIter)->_impl);
+		addSubscriber(*subIter);
 		subIter++;
 	}
-	set<Publisher*> pubs = conn->getPublishers();
-	set<Publisher*>::iterator pubIter = pubs.begin();
+	set<Publisher> pubs = conn->getPublishers();
+	set<Publisher>::iterator pubIter = pubs.begin();
 	while(pubIter != pubs.end()) {
-		_impl->addPublisher((*pubIter)->_impl);
+		addPublisher(*pubIter);
 		pubIter++;
 	}
-	conn->addedToNode(this);
+	conn->addedToNode(*this);
 }
 
 void Node::disconnect(Connectable* conn) {
-	set<Publisher*> pubs = conn->getPublishers();
-	set<Publisher*>::iterator pubIter = pubs.begin();
+	set<Publisher> pubs = conn->getPublishers();
+	set<Publisher>::iterator pubIter = pubs.begin();
 	while(pubIter != pubs.end()) {
-		_impl->removePublisher((*pubIter)->_impl);
+		removePublisher(*pubIter);
 		pubIter++;
 	}
-	set<Subscriber*> subs = conn->getSubscribers();
-	set<Subscriber*>::iterator subIter = subs.begin();
+	set<Subscriber> subs = conn->getSubscribers();
+	set<Subscriber>::iterator subIter = subs.begin();
 	while(subIter != subs.end()) {
-		_impl->removeSubscriber((*subIter)->_impl);
+		removeSubscriber(*subIter);
 		subIter++;
 	}
-	conn->removedFromNode(this);
-}
-
-void Node::suspend() {
-	_impl->suspend();
-}
-
-void Node::resume() {
-	_impl->resume();
+	conn->removedFromNode(*this);
 }
 
 std::ostream& operator<<(std::ostream &out, const NodeStub* n) {

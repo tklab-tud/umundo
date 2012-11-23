@@ -142,7 +142,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
 	# best practices from scott meyers
-	#	add_definitions(-Weffc++)
+	#add_definitions(-Weffc++)
 
 	if (NOT ANDROID)
 		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fPIC")

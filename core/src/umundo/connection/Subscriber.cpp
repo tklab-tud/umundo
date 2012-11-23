@@ -22,12 +22,23 @@
 
 namespace umundo {
 
+int SubscriberImpl::instances = -1;
+  
+SubscriberImpl::SubscriberImpl() : _receiver(NULL) {
+  instances++;
+}
+
+SubscriberImpl::~SubscriberImpl() {
+  instances--;
+}
+
 shared_ptr<Configuration> SubscriberConfig::create() {
 	return shared_ptr<SubscriberConfig>(new SubscriberConfig());
 }
 
-Subscriber::Subscriber(string channelName, Receiver* receiver) {
+Subscriber::Subscriber(const string& channelName, Receiver* receiver) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber", this));
+  SubscriberStub::_impl = _impl;
 	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
@@ -39,18 +50,14 @@ Subscriber::Subscriber(string channelName, Receiver* receiver) {
 Subscriber::~Subscriber() {
 }
 
-Subscriber::Subscriber(string channelName) {
+Subscriber::Subscriber(const std::string& channelName) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber", this));
+  SubscriberStub::_impl = _impl;
+  _config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
 	_impl->setChannelName(channelName);
 	_impl->init(_config);
-}
-
-void Subscriber::setReceiver(Receiver* receiver) {
-	_impl->setReceiver(receiver);
-// _config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
-// _impl->init(_config);
 }
 
 }

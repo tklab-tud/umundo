@@ -31,19 +31,19 @@ public:
 int main(int argc, char** argv) {
 	printf("umundo-pingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	TestReceiver* testRecv = new TestReceiver();
-	Publisher* pubFoo = new Publisher("pingpong");
-	Subscriber* subFoo = new Subscriber("pingpong", testRecv);
+	Publisher pubFoo("pingpong");
+	Subscriber subFoo("pingpong", testRecv);
 
-	Node* mainNode = new Node();
-	mainNode->addPublisher(pubFoo);
-	mainNode->addSubscriber(subFoo);
+	Node node;
+	node.addPublisher(pubFoo);
+	node.addSubscriber(subFoo);
 
 	while(1) {
 		Thread::sleepMs(1000);
 		Message* msg = new Message();
 		msg->setData("ping");
 		std::cout << "o" << std::flush;
-		pubFoo->send(msg);
+		pubFoo.send(msg);
 		delete(msg);
 	}
 }

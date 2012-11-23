@@ -39,34 +39,42 @@ public:
 	ServiceDescription(map<string, string>);
 	ServiceDescription();
 
-	const string getName()                           {
+  operator bool() const { return _channelName.length() > 0; }
+  bool operator< (const ServiceDescription& other) const { return _channelName < other._channelName; }
+  bool operator==(const ServiceDescription& other) const { return _channelName == other._channelName; }
+  bool operator!=(const ServiceDescription& other) const { return _channelName != other._channelName; }
+  
+	const string getName() const                      {
 		return _svcName;
 	}
-	const string getChannelName()                    {
+	const string getChannelName() const               {
 		return _channelName;
 	}
-	const map<string, string>& getProperties()       {
+	const map<string, string>& getProperties() const  {
 		return _properties;
 	}
-	const bool hasProperty(const string& key)      {
+	const bool hasProperty(const string& key) const   {
 		return _properties.find(key) != _properties.end();
 	}
-	const string getProperty(const string& key)      {
-		return _properties[key];
+	const string getProperty(const string& key) const {
+    std::map<string, string>::const_iterator iter = _properties.find(key);
+    if (iter != _properties.end())
+      return iter->second;
+		return "";
 	}
 	void setProperty(const string& key, const string& value)   {
 		_properties[key] = value;
 	}
 
 	///< We need the ServiceManagers nodes in several Services
-	ServiceManager* getServiceManager() {
+	ServiceManager* getServiceManager() const {
 		return _svcManager;
 	}
 
 protected:
 	ServiceDescription(Message*);
 
-	Message* toMessage();
+	Message* toMessage() const;
 
 	string _svcName;
 	string _channelName;
@@ -89,11 +97,9 @@ public:
 		int predicate;
 	};
 
-	struct filterCmp {
-		bool operator()(const ServiceFilter* a, const ServiceFilter* b) {
-			return a->_uuid.compare(b->_uuid) < 0;
-		}
-	};
+  bool operator< (const ServiceFilter& other) const { return _uuid < other._uuid; }
+  bool operator==(const ServiceFilter& other) const { return _uuid == other._uuid; }
+  bool operator!=(const ServiceFilter& other) const { return _uuid != other._uuid; }
 
 	enum Predicate {
 	    OP_EQUALS       = 0x0001,
@@ -110,17 +116,17 @@ public:
 	ServiceFilter(const string&);
 	ServiceFilter(Message* msg);
 
-	Message* toMessage();
+	Message* toMessage() const;
 
 	void addRule(const string& key, const string& value, int pred = OP_EQUALS);
 	void addRule(const string& key, const string& pattern, const string& value, int pred = OP_EQUALS);
 	void clearRules();
-	bool matches(ServiceDescription*);
+	bool matches(const ServiceDescription&) const;
 
-	const string& getServiceName() {
+	const string& getServiceName() const {
 		return _svcName;
 	}
-	const string& getUUID() {
+	const string& getUUID() const {
 		return _uuid;
 	}
 
@@ -130,9 +136,12 @@ private:
 	string _uuid;
 	string _svcName;
 
-	bool isNumeric(const string& test);
-	double toNumber(const string& numberString);
+  ServiceFilter() {};
 
+	bool isNumeric(const string& test) const;
+	double toNumber(const string& numberString) const;
+
+	friend class std::map<string, ServiceFilter>;
 	friend class ServiceManager;
 };
 
@@ -142,14 +151,14 @@ private:
 class DLLEXPORT ServiceStub : public TypedReceiver, public Connectable {
 public:
 	ServiceStub(const string& channel);
-	ServiceStub(ServiceDescription* svcDesc);
+	ServiceStub(const ServiceDescription& svcDesc);
 	virtual ~ServiceStub();
 	virtual const string& getName();
 	virtual const string& getChannelName();
 
 	// Connectable interface
-	virtual std::set<umundo::Publisher*> getPublishers();
-	virtual std::set<umundo::Subscriber*> getSubscribers();
+	virtual std::set<umundo::Publisher> getPublishers();
+	virtual std::set<umundo::Subscriber> getSubscribers();
 
 	virtual void receive(void* object, Message* msg);
 
@@ -161,8 +170,8 @@ protected:
 
 	string _channelName;
 	string _serviceName;
-	TypedPublisher* _rpcPub;
-	TypedSubscriber* _rpcSub;
+	TypedPublisher _rpcPub;
+	TypedSubscriber _rpcSub;
 
 	map<string, Monitor*> _requests;
 	map<string, void*> _responses;

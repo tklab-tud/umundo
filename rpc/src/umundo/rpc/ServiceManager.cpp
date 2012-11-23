@@ -34,14 +34,14 @@ ServiceManager::~ServiceManager() {
 	delete _svcSub;
 }
 
-std::set<umundo::Publisher*> ServiceManager::getPublishers() {
-	set<Publisher*> pubs;
-	pubs.insert(_svcPub);
+std::set<umundo::Publisher> ServiceManager::getPublishers() {
+	set<Publisher> pubs;
+	pubs.insert(*_svcPub);
 	return pubs;
 }
-std::set<umundo::Subscriber*> ServiceManager::getSubscribers() {
-	set<Subscriber*> subs;
-	subs.insert(_svcSub);
+std::set<umundo::Subscriber> ServiceManager::getSubscribers() {
+	set<Subscriber> subs;
+	subs.insert(*_svcSub);
 	return subs;
 }
 
@@ -50,12 +50,12 @@ std::set<umundo::Subscriber*> ServiceManager::getSubscribers() {
  *
  * Send all local continuous queries.
  */
-void ServiceManager::welcome(Publisher*, const string& nodeId, const string& subId) {
+void ServiceManager::welcome(Publisher pub, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
 	LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
-	map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp>::iterator queryIter = _localQueries.begin();
+	map<ServiceFilter, ResultSet<ServiceDescription>*>::iterator queryIter = _localQueries.begin();
 	while (queryIter != _localQueries.end()) {
-		Message* queryMsg = queryIter->first->toMessage();
+		Message* queryMsg = queryIter->first.toMessage();
 		queryMsg->putMeta("um.rpc.type", "startDiscovery");
 		queryMsg->putMeta("um.sub", subId);
 		queryMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
@@ -76,7 +76,7 @@ void ServiceManager::welcome(Publisher*, const string& nodeId, const string& sub
 /**
  * A ServiceManager was removed.
  */
-void ServiceManager::farewell(Publisher*, const string& nodeId, const string& subId) {
+void ServiceManager::farewell(Publisher pub, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
 	LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 
@@ -84,12 +84,12 @@ void ServiceManager::farewell(Publisher*, const string& nodeId, const string& su
 	if (_remoteSvcDesc.find(subId) != _remoteSvcDesc.end()) {
 
 		// check all local queries if the remote services matched and notify about removal
-		map<ServiceFilter*, ResultSet<ServiceDescription>*, ServiceFilter::filterCmp >::iterator queryIter = _localQueries.begin();
+		map<ServiceFilter, ResultSet<ServiceDescription>*>::iterator queryIter = _localQueries.begin();
 		while(queryIter != _localQueries.end()) {
 
-			map<string, shared_ptr<ServiceDescription> >::iterator remoteSvcIter = _remoteSvcDesc[subId].begin();
+			map<string, ServiceDescription>::iterator remoteSvcIter = _remoteSvcDesc[subId].begin();
 			while(remoteSvcIter != _remoteSvcDesc[subId].end()) {
-				if (queryIter->first->matches(remoteSvcIter->second.get())) {
+				if (queryIter->first.matches(remoteSvcIter->second)) {
 					queryIter->second->removed(remoteSvcIter->second);
 				}
 				remoteSvcIter++;
@@ -101,24 +101,24 @@ void ServiceManager::farewell(Publisher*, const string& nodeId, const string& su
 }
 
 
-void ServiceManager::addedToNode(Node* node) {
+void ServiceManager::addedToNode(Node& node) {
 	ScopeLock lock(_mutex);
 	map<intptr_t, Service*>::iterator svcIter = _svc.begin();
 	while(svcIter != _svc.end()) {
-		node->connect(svcIter->second);
+		node.connect(svcIter->second);
 		svcIter++;
 	}
 	_nodes.insert(node);
 }
 
-void ServiceManager::removedFromNode(Node* node) {
+void ServiceManager::removedFromNode(Node& node) {
 	ScopeLock lock(_mutex);
 	if (_nodes.find(node) == _nodes.end())
 		return;
 
 	map<intptr_t, Service*>::iterator svcIter = _svc.begin();
 	while(svcIter != _svc.end()) {
-		node->disconnect(svcIter->second);
+		node.disconnect(svcIter->second);
 		svcIter++;
 	}
 	_nodes.erase(node);
@@ -129,10 +129,10 @@ void ServiceManager::removedFromNode(Node* node) {
  *
  * Remember service filter and send query to all connected ServiceManagers.
  */
-void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescription>* listener) {
+void ServiceManager::startQuery(const ServiceFilter& filter, ResultSet<ServiceDescription>* listener) {
 	ScopeLock lock(_mutex);
 	_localQueries[filter] = listener;
-	Message* queryMsg = filter->toMessage();
+	Message* queryMsg = filter.toMessage();
 	queryMsg->putMeta("um.rpc.type", "startDiscovery");
 	queryMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 
@@ -141,10 +141,10 @@ void ServiceManager::startQuery(ServiceFilter* filter, ResultSet<ServiceDescript
 	delete queryMsg;
 }
 
-void ServiceManager::stopQuery(ServiceFilter* filter) {
+void ServiceManager::stopQuery(const ServiceFilter& filter) {
 	ScopeLock lock(_mutex);
 	if (_localQueries.find(filter) != _localQueries.end()) {
-		Message* unqueryMsg = filter->toMessage();
+		Message* unqueryMsg = filter.toMessage();
 		unqueryMsg->putMeta("um.rpc.type", "stopDiscovery");
 		unqueryMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 		_svcPub->send(unqueryMsg);
@@ -153,14 +153,14 @@ void ServiceManager::stopQuery(ServiceFilter* filter) {
 	}
 }
 
-ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
+ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter) {
 	if(_svcPub->waitForSubscribers(1, 3000) < 1) {
 		// there is no other ServiceManager yet
 		LOG_INFO("Failed to find another ServiceManager");
-		return NULL;
+		return ServiceDescription();
 	}
 
-	Message* findMsg = svcFilter->toMessage();
+	Message* findMsg = svcFilter.toMessage();
 	string reqId = UUID::getUUID();
 	findMsg->putMeta("um.rpc.type", "discover");
 	findMsg->putMeta("um.rpc.reqId", reqId.c_str());
@@ -174,12 +174,12 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 	delete findMsg;
 
 	ScopeLock lock(_mutex);
-	_findRequests[reqId]->wait(_mutex, 3000);
+	_findRequests[reqId]->wait(_mutex, 5000);
 	delete _findRequests[reqId];
 	_findRequests.erase(reqId);
 
 	if (_findResponses.find(reqId) == _findResponses.end()) {
-		LOG_INFO("Failed to find %s", svcFilter->getServiceName().c_str());
+		LOG_INFO("Failed to find %s", svcFilter.getServiceName().c_str());
 		return NULL;
 	}
 
@@ -187,8 +187,8 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 
 	Message* foundMsg = _findResponses[reqId];
 	assert(foundMsg != NULL);
-	ServiceDescription* svcDesc = new ServiceDescription(foundMsg);
-	svcDesc->_svcManager = this;
+	ServiceDescription svcDesc(foundMsg);
+	svcDesc._svcManager = this;
 	_findResponses.erase(reqId);
 	delete foundMsg;
 	return svcDesc;
@@ -198,13 +198,13 @@ ServiceDescription* ServiceManager::find(ServiceFilter* svcFilter) {
 /**
  * Find local service matching filter.
  */
-std::set<ServiceDescription*> ServiceManager::findLocal(ServiceFilter* svcFilter) {
-	std::set<ServiceDescription*> foundSvcs;
-	map<intptr_t, ServiceDescription*>::iterator svcDescIter = _localSvcDesc.begin();
+std::set<ServiceDescription> ServiceManager::findLocal(const ServiceFilter& svcFilter) {
+	std::set<ServiceDescription> foundSvcs;
+	map<intptr_t, ServiceDescription>::iterator svcDescIter = _localSvcDesc.begin();
 	while(svcDescIter != _localSvcDesc.end()) {
-		if (svcFilter->matches(svcDescIter->second)) {
+		if (svcFilter.matches(svcDescIter->second)) {
 			foundSvcs.insert(svcDescIter->second);
-			LOG_INFO("we have a match for %s", svcFilter->getServiceName().c_str());
+			LOG_INFO("we have a match for %s", svcFilter.getServiceName().c_str());
 		}
 		svcDescIter++;
 	}
@@ -226,13 +226,12 @@ void ServiceManager::receive(Message* msg) {
 	// is someone simply asking for a service via find?
 	if (msg->getMeta().find("um.rpc.type") != msg->getMeta().end() &&
 	        msg->getMeta("um.rpc.type").compare("discover") == 0) {
-		ServiceFilter* filter = new ServiceFilter(msg);
-		std::set<ServiceDescription*> foundSvcs = findLocal(filter);
-		delete filter;
+		ServiceFilter filter(msg);
+		std::set<ServiceDescription> foundSvcs = findLocal(filter);
 
 		if (foundSvcs.size() > 0) {
-			ServiceDescription* svcDesc = (*(foundSvcs.begin()));
-			Message* foundMsg = svcDesc->toMessage();
+			ServiceDescription svcDesc = (*(foundSvcs.begin()));
+			Message* foundMsg = svcDesc.toMessage();
 			foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
 			foundMsg->putMeta("um.rpc.respId", msg->getMeta("um.rpc.reqId"));
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
@@ -249,18 +248,18 @@ void ServiceManager::receive(Message* msg) {
 	// is this the start of a continuous query?
 	if (msg->getMeta().find("um.rpc.type") != msg->getMeta().end() &&
 	        msg->getMeta("um.rpc.type").compare("startDiscovery") == 0) {
-		ServiceFilter* filter = new ServiceFilter(msg);
-		_remoteQueries[filter->_uuid] = filter;
+		ServiceFilter filter(msg);
+		_remoteQueries[filter.getUUID()] = filter;
 
-		LOG_INFO("Received query for '%s'", filter->_svcName.c_str());
+		LOG_INFO("Received query for '%s'", filter._svcName.c_str());
 
 		// do we have such a service?
-		std::set<ServiceDescription*> foundSvcs = findLocal(filter);
-		std::set<ServiceDescription*>::iterator svcDescIter = foundSvcs.begin();
+		std::set<ServiceDescription> foundSvcs = findLocal(filter);
+		std::set<ServiceDescription>::iterator svcDescIter = foundSvcs.begin();
 		while(svcDescIter != foundSvcs.end()) {
-			Message* foundMsg = (*svcDescIter)->toMessage();
+			Message* foundMsg = svcDescIter->toMessage();
 			foundMsg->setReceiver(msg->getMeta("um.rpc.mgrId"));
-			foundMsg->putMeta("um.rpc.filterId", filter->_uuid);
+			foundMsg->putMeta("um.rpc.filterId", filter.getUUID());
 			foundMsg->putMeta("um.rpc.type", "discovered");
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 			_svcPub->send(foundMsg);
@@ -272,12 +271,10 @@ void ServiceManager::receive(Message* msg) {
 	// is this the end of a continuous query?
 	if (msg->getMeta().find("um.rpc.type") != msg->getMeta().end() &&
 	        msg->getMeta("um.rpc.type").compare("stopDiscovery") == 0) {
-		ServiceFilter* filter = new ServiceFilter(msg);
-		if (_remoteQueries.find(filter->_uuid) != _remoteQueries.end()) {
-			delete _remoteQueries[filter->_uuid];
-			_remoteQueries.erase(filter->_uuid);
+		ServiceFilter filter(msg);
+		if (_remoteQueries.find(filter.getUUID()) != _remoteQueries.end()) {
+			_remoteQueries.erase(filter.getUUID());
 		}
-		delete filter;
 	}
 
 	// is this a reply to a continuous service query?
@@ -285,8 +282,8 @@ void ServiceManager::receive(Message* msg) {
 	        (msg->getMeta("um.rpc.type").compare("discovered") == 0 ||
 	         msg->getMeta("um.rpc.type").compare("vanished") == 0)) {
 		// _svcQueries comparator uses filter uuid
-		ServiceFilter* keyFilter = new ServiceFilter("");
-		keyFilter->_uuid = msg->getMeta("um.rpc.filterId");
+		ServiceFilter keyFilter("");
+		keyFilter._uuid = msg->getMeta("um.rpc.filterId");
 		if (_localQueries.find(keyFilter) != _localQueries.end()) {
 			ResultSet<ServiceDescription>* listener = _localQueries[keyFilter];
 			assert(msg->getMeta("um.rpc.desc.channel").size() > 0);
@@ -294,12 +291,11 @@ void ServiceManager::receive(Message* msg) {
 			string svcChannel = msg->getMeta("um.rpc.desc.channel");
 			string managerId = msg->getMeta("um.rpc.mgrId");
 			if (_remoteSvcDesc.find(managerId) == _remoteSvcDesc.end() || _remoteSvcDesc[managerId].find(svcChannel) == _remoteSvcDesc[managerId].end()) {
-				_remoteSvcDesc[managerId][svcChannel] = shared_ptr<ServiceDescription>(new ServiceDescription(msg));
-				_remoteSvcDesc[managerId][svcChannel]->_svcManager = this;
+				_remoteSvcDesc[managerId][svcChannel] = ServiceDescription(msg);
+				_remoteSvcDesc[managerId][svcChannel]._svcManager = this;
 			}
 			assert(_remoteSvcDesc.find(managerId) != _remoteSvcDesc.end());
 			assert(_remoteSvcDesc[managerId].find(svcChannel) != _remoteSvcDesc[managerId].end());
-			assert(_remoteSvcDesc[managerId][svcChannel].get() != NULL);
 			if (msg->getMeta("um.rpc.type").compare("discovered") == 0) {
 				listener->added(_remoteSvcDesc[managerId][svcChannel]);
 			} else {
@@ -307,15 +303,15 @@ void ServiceManager::receive(Message* msg) {
 				_remoteSvcDesc[managerId].erase(svcChannel);
 			}
 		}
-		delete keyFilter;
 	}
 }
 
 void ServiceManager::addService(Service* service) {
-	addService(service, new ServiceDescription(map<string, string>()));
+  ServiceDescription desc;
+	addService(service, desc);
 }
 
-void ServiceManager::addService(Service* service, ServiceDescription* desc) {
+void ServiceManager::addService(Service* service, ServiceDescription& desc) {
 	ScopeLock lock(_mutex);
 	if (service == NULL)
 		return;
@@ -324,29 +320,30 @@ void ServiceManager::addService(Service* service, ServiceDescription* desc) {
 	if (_svc.find(svcPtr) != _svc.end())
 		return;
 
-	desc->_channelName = service->getChannelName();
-	desc->_svcName = service->getName();
+	desc._channelName = service->getChannelName();
+	desc._svcName = service->getName();
 
-	assert(desc->_channelName.length() > 0);
+	assert(desc._channelName.length() > 0);
 
 	_svc[svcPtr] = service;
 	_localSvcDesc[svcPtr] = desc;
 
 	// connect service to all nodes the manager is connected to
-	std::set<Node*>::iterator nodeIter;
+	std::set<Node>::iterator nodeIter;
 	nodeIter = _nodes.begin();
 	while(nodeIter != _nodes.end()) {
-		(*nodeIter++)->connect(service);
+		((Node)*nodeIter).connect(service);
+		nodeIter++;
 	}
 
 	// iterate continuous queries and notify other service managers about matches.
-	std::map<string, ServiceFilter*>::iterator filterIter = _remoteQueries.begin();
+	std::map<string, ServiceFilter>::iterator filterIter = _remoteQueries.begin();
 	while(filterIter != _remoteQueries.end()) {
-		if (filterIter->second->matches(desc)) {
-			Message* foundMsg = desc->toMessage();
-			foundMsg->putMeta("um.rpc.filterId", filterIter->second->_uuid);
+		if (filterIter->second.matches(desc)) {
+			Message* foundMsg = desc.toMessage();
+			foundMsg->putMeta("um.rpc.filterId", filterIter->second._uuid);
 			foundMsg->putMeta("um.rpc.type", "discovered");
-			foundMsg->putMeta("um.rpc.channel", desc->getChannelName());
+			foundMsg->putMeta("um.rpc.channel", desc.getChannelName());
 			foundMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 			_svcPub->send(foundMsg);
 			delete foundMsg;
@@ -365,22 +362,23 @@ void ServiceManager::removeService(Service* service) {
 	if (_svc.find(svcPtr) == _svc.end())
 		return;
 
-	std::set<Node*>::iterator nodeIter = _nodes.begin();
+	std::set<Node>::iterator nodeIter = _nodes.begin();
 	while(nodeIter != _nodes.end()) {
-		(*nodeIter++)->disconnect(service);
+		((Node)*nodeIter).disconnect(service);
+		nodeIter++;
 	}
 
 	assert(_localSvcDesc.find(svcPtr)!= _localSvcDesc.end());
-	ServiceDescription* desc = _localSvcDesc[svcPtr];
+	ServiceDescription desc = _localSvcDesc[svcPtr];
 
 	// iterate continuous queries and notify other service managers about removals.
-	std::map<string, ServiceFilter*>::iterator filterIter = _remoteQueries.begin();
+	std::map<string, ServiceFilter>::iterator filterIter = _remoteQueries.begin();
 	while(filterIter != _remoteQueries.end()) {
-		if (filterIter->second->matches(desc)) {
-			Message* removeMsg = desc->toMessage();
-			removeMsg->putMeta("um.rpc.filterId", filterIter->second->_uuid);
+		if (filterIter->second.matches(desc)) {
+			Message* removeMsg = desc.toMessage();
+			removeMsg->putMeta("um.rpc.filterId", filterIter->second._uuid);
 			removeMsg->putMeta("um.rpc.type", "vanished");
-			removeMsg->putMeta("um.rpc.channel", desc->getChannelName());
+			removeMsg->putMeta("um.rpc.channel", desc.getChannelName());
 			removeMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 			_svcPub->send(removeMsg);
 			delete removeMsg;

@@ -31,6 +31,16 @@
 #include <stdio.h> // snprintf
 #endif
 
+#if 0
+#define UNBLOCK_ZMQ_RECV \
+zmq_msg_t unblockMsg; \
+ZMQ_PREPARE_STRING(unblockMsg, _uuid.c_str(), _uuid.size()); \
+zmq_sendmsg(_breaker, &unblockMsg, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&unblockMsg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+#else
+#define UNBLOCK_ZMQ_RECV 
+#endif
+
 namespace umundo {
 
 shared_ptr<Implementation> ZeroMQSubscriber::create(void*) {
@@ -50,6 +60,7 @@ ZeroMQSubscriber::~ZeroMQSubscriber() {
 	stop();
 	join();
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+	zmq_close(_breaker) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
 
 void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
@@ -62,10 +73,12 @@ void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
 
 	assert(_channelName.size() > 0);
 	int hwm = NET_ZEROMQ_RCV_HWM;
+	int rcvTimeOut = 50;
+	zmq_setsockopt(_socket, ZMQ_RCVTIMEO, &rcvTimeOut, sizeof(rcvTimeOut));
 	zmq_setsockopt(_socket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_socket, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_socket, ZMQ_SUBSCRIBE, _channelName.c_str(), _channelName.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-	LOG_DEBUG("Subscribing to %s", _channelName.c_str());
+	LOG_INFO("Subscribing to %s", _channelName.c_str());
 	zmq_setsockopt(_socket, ZMQ_SUBSCRIBE, _uuid.c_str(), _uuid.size()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	LOG_DEBUG("Subscribing to %s", SHORT_UUID(_uuid).c_str());
 
@@ -75,7 +88,16 @@ void ZeroMQSubscriber::init(shared_ptr<Configuration> config) {
 	zmq_setsockopt (_socket, ZMQ_RECONNECT_IVL, &reconnect_ivl_min, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt (_socket, ZMQ_RECONNECT_IVL_MAX, &reconnect_ivl_max, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
-	LOG_INFO("creating subscriber for %s", _channelName.c_str());
+  // socket to unblock poll when we need the mutex
+  (_breaker = zmq_socket(ctx, ZMQ_PUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
+	zmq_setsockopt(_breaker, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+
+  // bind to inproc address
+  std::stringstream ssInProc;
+	ssInProc << "inproc://" << _uuid << ":unblock";
+	zmq_bind(_breaker, ssInProc.str().c_str()) && LOG_WARN("zmq_bind: %s",zmq_strerror(errno));
+	zmq_connect(_socket, ssInProc.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
+
 	start();
 }
 
@@ -91,6 +113,7 @@ void ZeroMQSubscriber::suspend() {
 
 	_connections.clear();
 	zmq_close(_socket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+	zmq_close(_breaker) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 	UMUNDO_UNLOCK(_mutex);
 }
@@ -111,16 +134,19 @@ void ZeroMQSubscriber::run() {
 	int32_t more;
 	size_t more_size = sizeof(more);
 
-	zmq_pollitem_t pollItem;
-	pollItem.socket = _socket;
-	pollItem.events = ZMQ_POLLIN | ZMQ_POLLOUT;
+	zmq_pollitem_t pollItem[1];
+	pollItem[0].socket = _socket;
+	pollItem[0].events = ZMQ_POLLIN | ZMQ_POLLOUT;
 
 	while(isStarted()) {
 		int rc = 0;
 		{
 			ScopeLock lock(_mutex);
-			rc = zmq_poll(&pollItem, 1, 30);
+			rc = zmq_poll(pollItem, 1, 10);
 		}
+    if (!isStarted())
+      return;
+    
 		if (rc < 0) {
 			// an error occurred
 			switch(rc) {
@@ -150,14 +176,21 @@ void ZeroMQSubscriber::run() {
 				zmq_msg_t message;
 				zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
-				while (zmq_recvmsg(_socket, &message, 0) < 0)
+				while (zmq_recvmsg(_socket, &message, 0) < 0) {
+          if (!isStarted()) {
+            zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+            delete msg;
+            return;
+          }
 					if (errno != EINTR)
 						LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+        }
 
 				size_t msgSize = zmq_msg_size(&message);
 
 				if (!isStarted()) {
 					zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+          delete msg;
 					return;
 				}
 
@@ -206,7 +239,8 @@ Message* ZeroMQSubscriber::getNextMsg() {
 		LOG_WARN("getNextMsg not functional when a receiver is given");
 		return NULL;
 	}
-
+  
+  UNBLOCK_ZMQ_RECV
 	ScopeLock lock(_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {
@@ -222,6 +256,7 @@ Message* ZeroMQSubscriber::peekNextMsg() {
 		return NULL;
 	}
 
+  UNBLOCK_ZMQ_RECV
 	ScopeLock lock(_msgMutex);
 	Message* msg = NULL;
 	if (_msgQueue.size() > 0) {
@@ -230,46 +265,48 @@ Message* ZeroMQSubscriber::peekNextMsg() {
 	return msg;
 }
 
-void ZeroMQSubscriber::added(shared_ptr<PublisherStub> pub) {
+void ZeroMQSubscriber::added(PublisherStub pub) {
 	std::stringstream ss;
-	if (pub->isInProcess() && false) {
-		ss << "inproc://" << pub->getUUID();
+	if (pub.isInProcess() && false) {
+		ss << "inproc://" << pub.getUUID();
 	} else {
-		ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
+		ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
 	}
 	if (_connections.find(ss.str()) != _connections.end()) {
 		LOG_INFO("Already connected to %s", ss.str().c_str());
 		return;
 	}
 
+  UNBLOCK_ZMQ_RECV
 	ScopeLock lock(_mutex);
-	_pubUUIDs.insert(pub->getUUID());
+	_pubUUIDs.insert(pub.getUUID());
 	LOG_INFO("%s subscribing at %s", _channelName.c_str(), ss.str().c_str());
 	zmq_connect(_socket, ss.str().c_str()) && LOG_WARN("zmq_connect: %s", zmq_strerror(errno));
 	_connections.insert(ss.str());
 }
 
-void ZeroMQSubscriber::removed(shared_ptr<PublisherStub> pub) {
+void ZeroMQSubscriber::removed(PublisherStub pub) {
+  UNBLOCK_ZMQ_RECV
 	ScopeLock lock(_mutex);
 	std::stringstream ss;
-	if (pub->isInProcess() && false) {
-		ss << "inproc://" << pub->getUUID();
+	if (pub.isInProcess() && false) {
+		ss << "inproc://" << pub.getUUID();
 	} else {
-		ss << pub->getTransport() << "://" << pub->getIP() << ":" << pub->getPort();
+		ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
 	}
 	if (_connections.find(ss.str()) == _connections.end()) {
 		LOG_INFO("Never connected to %s won't disconnect", ss.str().c_str());
 		return;
 	}
 
-	_pubUUIDs.erase(pub->getUUID());
+	_pubUUIDs.erase(pub.getUUID());
 
 	LOG_DEBUG("unsubscribing from %s", ss.str().c_str());
 	zmq_disconnect(_socket, ss.str().c_str()) && LOG_WARN("zmq_disconnect: %s", zmq_strerror(errno));
 	_connections.erase(ss.str());
 }
 
-void ZeroMQSubscriber::changed(shared_ptr<PublisherStub>) {
+void ZeroMQSubscriber::changed(PublisherStub pub) {
 	// never called
 }
 

@@ -76,20 +76,20 @@ int main(int argc, char** argv) {
 	 	printUsageAndExit();
 
 	std::string hostname(argv[optind]);
-	boost::shared_ptr<NodeStub> endPoint = boost::shared_ptr<NodeStub>(new NodeStub());
+	NodeStub endPoint;
 
 	size_t oldPos = 0;;
 	size_t pos = 0;;
 	if ((pos = hostname.find("://", pos)) != std::string::npos) {
-		endPoint->setTransport(hostname.substr(0, pos));
+		endPoint.getImpl()->setTransport(hostname.substr(0, pos));
 		oldPos = pos + 3;
 	} else {
-		endPoint->setTransport("tcp");
+		endPoint.getImpl()->setTransport("tcp");
 		oldPos = pos;
 	}
 
 	if ((pos = hostname.find(":", pos + 1)) != std::string::npos) {
-		endPoint->setIP(hostname.substr(oldPos, pos - oldPos));
+		endPoint.getImpl()->setIP(hostname.substr(oldPos, pos - oldPos));
 		oldPos = pos + 1;
 	} else {
 		printUsageAndExit();
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 	
 	if (pos + 1 < hostname.length()) {
 		string port(hostname.substr(oldPos));
-		endPoint->setPort(strTo<uint16_t>(port));
+		endPoint.getImpl()->setPort(strTo<uint16_t>(port));
 	} else {
 		printUsageAndExit();		
 	}

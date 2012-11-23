@@ -22,12 +22,14 @@
 #define ZEROMQDISPATCHER_H_XFMTSVLV
 
 #include <zmq.h>
-#include <boost/enable_shared_from_this.hpp>
 
 #include "umundo/common/Common.h"
 #include "umundo/thread/Thread.h"
 #include "umundo/common/ResultSet.h"
 #include "umundo/connection/Node.h"
+#include "umundo/discovery/NodeQuery.h"
+
+#include <boost/enable_shared_from_this.hpp>
 
 /// Initialize a zeromq message with a given size
 #define ZMQ_PREPARE(msg, size) \
@@ -48,7 +50,7 @@ memcpy(zmq_msg_data(&msg), data, size + 1);
 
 /// Size of a publisher info on wire
 #define PUB_INFO_SIZE(pub) \
-pub->getChannelName().length() + 1 + pub->getUUID().length() + 1 + 2
+pub.getChannelName().length() + 1 + pub.getUUID().length() + 1 + 2
 
 namespace umundo {
 
@@ -75,17 +77,17 @@ public:
 
 	/** @name Publish / Subscriber Maintenance */
 	//@{
-	void addSubscriber(shared_ptr<SubscriberImpl>);
-	void removeSubscriber(shared_ptr<SubscriberImpl>);
-	void addPublisher(shared_ptr<PublisherImpl>);
-	void removePublisher(shared_ptr<PublisherImpl>);
+	void addSubscriber(Subscriber&);
+	void removeSubscriber(Subscriber&);
+	void addPublisher(Publisher&);
+	void removePublisher(Publisher&);
 	//@}
 
 	/** @name Callbacks from Discovery */
 	//@{
-	void added(shared_ptr<NodeStub>);    ///< A node was added, connect to its router socket and list our publishers.
-	void removed(shared_ptr<NodeStub>);  ///< A node was removed, notify local subscribers and clean up.
-	void changed(shared_ptr<NodeStub>);  ///< Never happens.
+	void added(NodeStub);    ///< A node was added, connect to its router socket and list our publishers.
+	void removed(NodeStub);  ///< A node was removed, notify local subscribers and clean up.
+	void changed(NodeStub);  ///< Never happens.
 	//@}
 
 	/** @name uMundo deployment object model */
@@ -113,14 +115,14 @@ protected:
 	//@{
 	void processSubscription(const char*, zmq_msg_t);
 	void processUnsubscription(const char*, zmq_msg_t);
-	void notifyOfUnsubscription(void*, shared_ptr<ZeroMQSubscriber>, shared_ptr<PublisherStub>);
-	void notifyOfSubscription(void*, shared_ptr<ZeroMQSubscriber>, shared_ptr<PublisherStub>);
+	void notifyOfUnsubscription(void*, const Subscriber&, const PublisherStub&);
+	void notifyOfSubscription(void*, const Subscriber&, const PublisherStub&);
 	//@}
 
 	/** @name Local subscriber maintenance */
 	//@{
-	void addRemotePubToLocalSubs(const char*, shared_ptr<PublisherStub>); ///< See if we have a local Subscriber interested in the remote Publisher.
-	void removeRemotePubFromLocalSubs(const char*, shared_ptr<PublisherStub>); ///< A remote Publisher was removed, notify Subscribe%s.
+	void addRemotePubToLocalSubs(const char*, const PublisherStub&); ///< See if we have a local Subscriber interested in the remote Publisher.
+	void removeRemotePubFromLocalSubs(const char*, const PublisherStub&); ///< A remote Publisher was removed, notify Subscribe%s.
 	//@}
 
 private:
@@ -166,9 +168,9 @@ private:
 
 	/** @name Read / Write to raw byte arrays */
 	//@{
-	static char* writePubInfo(char*, shared_ptr<PublisherStub>); ///< write publisher info into given byte array
+	static char* writePubInfo(char*, const PublisherStub&); ///< write publisher info into given byte array
 	static char* readPubInfo(char*, uint16_t&, char*&, char*&); ///< read publisher from given byte array
-	static char* writeSubInfo(char*, shared_ptr<ZeroMQSubscriber>); ///< write subscriber info into given byte array
+	static char* writeSubInfo(char*, const Subscriber&); ///< write subscriber info into given byte array
 	static char* readSubInfo(char*, char*&); ///< read subscriber from given byte array
 	//@}
 
@@ -186,17 +188,17 @@ private:
 	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
 	Mutex _mutex;
 
-	map<string, shared_ptr<NodeStub> > _nodes;                                    ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
+	map<string, NodeStub> _nodes;                                    ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
 	map<string, void*> _sockets;                                                  ///< UUIDs to ZeroMQ Node Sockets.
 
-	map<string, map<string, shared_ptr<PublisherStub> > > _pendingRemotePubs;     ///< publishers of yet undiscovered nodes.
+	map<string, map<string, PublisherStub> > _pendingRemotePubs;     ///< publishers of yet undiscovered nodes.
 	map<string, map<string, set<string> > > _subscriptions;                       ///< remote node UUIDs to local publisher UUID to remote subscriber UUIDs.
 
-	map<string, shared_ptr<PublisherStub> > _suspendedLocalPubs;                  ///< suspended publishers to be resumed when we wake up again.
+	std::map<std::string, Publisher> _suspendedLocalPubs;                  ///< suspended publishers to be resumed when we wake up again.
 
 	shared_ptr<NodeConfig> _config;
 
-	static shared_ptr<ZeroMQNode> _instance; ///< Singleton instance.
+//	static shared_ptr<ZeroMQNode> _instance; ///< Singleton instance.
 
 	friend class Factory;
 	friend class ZeroMQPublisher;

@@ -24,12 +24,23 @@
 
 namespace umundo {
 
+int PublisherImpl::instances = 0;
+
+PublisherImpl::PublisherImpl() : _greeter(NULL) {
+  instances++;
+}
+
+PublisherImpl::~PublisherImpl() {
+  instances--;
+}
+  
 shared_ptr<Configuration> PublisherConfig::create() {
 	return shared_ptr<Configuration>(new PublisherConfig());
 }
 
 Publisher::Publisher(const string& channelName) {
 	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher", this));
+  PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
 	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
 	config->channelName = channelName;
@@ -43,11 +54,6 @@ void Publisher::send(const char* data, size_t length) {
 }
 
 Publisher::~Publisher() {
-}
-
-PublisherImpl::~PublisherImpl() {
-	if (_greeter != NULL)
-		delete(_greeter);
 }
 
 }

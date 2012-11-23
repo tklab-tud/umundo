@@ -30,7 +30,7 @@
 
 namespace umundo {
 
-TypedPublisher::TypedPublisher(string channelName) : Publisher(channelName) {
+TypedPublisher::TypedPublisher(const string& channelName) : Publisher(channelName) {
 	_greeterWrapper = NULL;
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
@@ -82,15 +82,15 @@ TypedPublisher::GreeterWrapper::GreeterWrapper(TypedGreeter* typedGreeter, Typed
 
 TypedPublisher::GreeterWrapper::~GreeterWrapper() {}
 
-void TypedPublisher::GreeterWrapper::welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId) {
+void TypedPublisher::GreeterWrapper::welcome(Publisher atPub, const std::string& nodeId, const std::string& subId) {
 	if (_typedGreeter != NULL) {
-		_typedGreeter->welcome(_typedPub, nodeId, subId);
+		_typedGreeter->welcome(*_typedPub, nodeId, subId);
 	}
 }
 
-void TypedPublisher::GreeterWrapper::farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId) {
+void TypedPublisher::GreeterWrapper::farewell(Publisher fromPub, const std::string& nodeId, const std::string& subId) {
 	if (_typedGreeter != NULL) {
-		_typedGreeter->farewell(_typedPub, nodeId, subId);
+		_typedGreeter->farewell(*_typedPub, nodeId, subId);
 	}
 }
 

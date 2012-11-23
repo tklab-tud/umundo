@@ -37,13 +37,13 @@ class AvahiNodeStubDiscovery;
 /**
  * Concrete nodestub implementor for avahi (bridge pattern).
  */
-class DLLEXPORT AvahiNodeStub : public NodeStub {
+class DLLEXPORT AvahiNodeStub : public NodeStubImpl {
 public:
 	AvahiNodeStub();
 	virtual ~AvahiNodeStub();
 
 	/// Overwritten from EndPoint.
-	const string& getIP() const;
+	const std::string getIP() const;
 
 private:
 	void resolve();

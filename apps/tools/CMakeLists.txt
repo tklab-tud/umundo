@@ -35,11 +35,13 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
-add_executable(umundo-bridge umundo-bridge.cpp)
-target_link_libraries(umundo-bridge ${UMUNDOCORE_LIBRARIES})
-set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
+if (NOT WIN32)
+	add_executable(umundo-bridge umundo-bridge.cpp)
+	target_link_libraries(umundo-bridge ${UMUNDOCORE_LIBRARIES})
+	set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
 
-INSTALL_EXECUTABLE(
-	TARGETS umundo-bridge
-	COMPONENT tools 
-)
+	INSTALL_EXECUTABLE(
+		TARGETS umundo-bridge
+		COMPONENT tools 
+	)
+endif()

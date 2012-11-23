@@ -21,37 +21,33 @@ class TestTypedReceiver : public TypedReceiver {
 };
 
 int main(int argc, char** argv) {
-	Node* mainNode = new Node();
-	Node* otherNode = new Node();
+	Node mainNode;
+	Node otherNode;
 	TestTypedReceiver* tts = new TestTypedReceiver();
-	TypedPublisher* tPub = new TypedPublisher("fooChannel");
-	TypedSubscriber* tSub = new TypedSubscriber("fooChannel", tts);
+	TypedPublisher tPub("fooChannel");
+	TypedSubscriber tSub("fooChannel", tts);
 
-  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
+//  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
 	
-  tSub->registerType("Test1Msg", new Test1Msg());
-	tPub->registerType("Test1Msg", new Test1Msg());
+  tSub.registerType("Test1Msg", new Test1Msg());
+	tPub.registerType("Test1Msg", new Test1Msg());
 
-	mainNode->addPublisher(tPub);
-	otherNode->addSubscriber(tSub);
+	mainNode.addPublisher(tPub);
+	otherNode.addSubscriber(tSub);
 
 	// try a typed message for atomic types
 	Test1Msg* tMsg1 = new Test1Msg();
-  tPub->waitForSubscribers(1);
+  tPub.waitForSubscribers(1);
   
   int iterations = 10;
 	while(iterations--) {
 		Thread::sleepMs(10);
     tMsg1->set_doubletype(iterations);
     tMsg1->set_stringtype("foo");
-		tPub->sendObj("Test1Msg", tMsg1);
+		tPub.sendObj("Test1Msg", tMsg1);
 	}
   
-//  mainNode->removePublisher(tPub);
-//  otherNode->removeSubscriber(tSub);
-//  
-//  delete tPub;
-//  delete tSub;
-//  delete mainNode;
-//  delete otherNode;
+  mainNode.removePublisher(tPub);
+  otherNode.removeSubscriber(tSub);
+
 }

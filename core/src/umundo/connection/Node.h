@@ -27,6 +27,8 @@
 #include "umundo/connection/Publisher.h"
 #include "umundo/connection/Subscriber.h"
 
+#include <boost/enable_shared_from_this.hpp>
+
 #define SHORT_UUID(uuid) uuid.substr(0, 8)
 
 namespace umundo {
@@ -35,13 +37,16 @@ class Connectable;
 
 class DLLEXPORT NodeStubBaseImpl : public EndPointImpl {
 public:
-	std::string& getUUID() {
+	std::string getUUID() const {
 		return _uuid;
+	}
+	virtual void setUUID(const std::string& uuid) {
+		_uuid = uuid;
 	}
 
 protected:
 	std::string _uuid;
-	
+
 };
 
 /**
@@ -68,15 +73,15 @@ public:
 
 	/** @name Remote Node */
 	//@{
-	virtual const string& getUUID() const {
+	virtual const string getUUID() const {
 		return _impl->getUUID();
 	}
 	
 	//@}
-
-	virtual boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
-		return _impl;
-	}
+    
+  boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
+    return _impl;
+  }
 
 protected:
 	boost::shared_ptr<NodeStubBaseImpl> _impl;
@@ -145,6 +150,7 @@ public:
   {
     _impl = other._impl;
     EndPoint::_impl = _impl;
+    NodeStubBase::_impl = _impl;
     return *this;
   } // operator=
   
@@ -198,7 +204,7 @@ public:
     return _impl->getPublisher(uuid);
 	}
 
-	virtual boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
+	boost::shared_ptr<NodeStubImpl> getImpl() const {
 		return _impl;
 	}
 
@@ -210,7 +216,7 @@ protected:
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
-class DLLEXPORT NodeImpl : public NodeStubBaseImpl, public Implementation {
+class DLLEXPORT NodeImpl : public NodeStubBaseImpl, public Implementation, public boost::enable_shared_from_this<NodeImpl> {
 public:
 	NodeImpl();
 	virtual ~NodeImpl();
@@ -250,8 +256,6 @@ protected:
 private:
   Publisher nullPub;
   Subscriber nullSub;
-
-
 };
 
 /**
@@ -343,6 +347,10 @@ public:
     return _impl->resume();
   }
   
+  shared_ptr<NodeImpl> getImpl() const {
+    return _impl;
+  }
+
 protected:
 	boost::shared_ptr<NodeImpl> _impl;
 	

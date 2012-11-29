@@ -36,9 +36,8 @@ public:
 	PBDeserializer() {}
 	virtual ~PBDeserializer() {}
 
-	void destroy();
 	void init(shared_ptr<Configuration>);
-	shared_ptr<Implementation> create(void*);
+	shared_ptr<Implementation> create();
 	void* deserialize(const string& type, Message* msg);
 	void destroyObj(void* obj);
 

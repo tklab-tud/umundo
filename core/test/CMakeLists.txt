@@ -25,7 +25,7 @@ add_dependencies(ALL_TESTS test-core-message-transmission)
 
 add_executable(test-core-stress test-stress.cpp)
 target_link_libraries(test-core-stress ${UMUNDOCORE_LIBRARIES})
-#add_test(test-core-stress ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-stress)
+add_test(test-core-stress ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-stress)
 set_target_properties(test-core-stress PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-core-stress)
 
@@ -34,3 +34,14 @@ target_link_libraries(test-stack-api ${UMUNDOCORE_LIBRARIES})
 add_test(test-stack-api ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-stress)
 set_target_properties(test-stack-api PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-stack-api)
+
+add_executable(test-core-greeter test-greeter.cpp)
+target_link_libraries(test-core-greeter ${UMUNDOCORE_LIBRARIES})
+add_test(test-stack-api ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-greeter)
+set_target_properties(test-core-greeter PROPERTIES FOLDER "Tests")
+add_dependencies(ALL_TESTS test-core-greeter)
+
+# add_executable(test-zeromq-layout test-zeromq-layout.cpp)
+# target_link_libraries(test-zeromq-layout ${UMUNDOCORE_LIBRARIES})
+# set_target_properties(test-zeromq-layout PROPERTIES FOLDER "Tests")
+# add_dependencies(ALL_TESTS test-zeromq-layout)

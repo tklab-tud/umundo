@@ -143,9 +143,9 @@ public:
     return *this;
   } // operator=
 
-	boost::shared_ptr<PublisherStubImpl> getImpl() {
-		return _impl;
-	}
+  boost::shared_ptr<PublisherStubImpl> getImpl() const {
+    return _impl;
+  }
 
 	/** @name Functionality of local *and* remote Publishers */
 	//@{
@@ -161,6 +161,16 @@ protected:
 	boost::shared_ptr<PublisherStubImpl> _impl;
 };
 
+#if 0
+std::ostream & operator<<(std::ostream &os, const PublisherStub& pubStub) {
+  os << "PublisherStub:" << std::endl;
+  os << "\tchannelName: " << pubStub.getChannelName() << std::endl;
+  os << "\tuuid: " << pubStub.getUUID() << std::endl;
+  os << static_cast<EndPoint>(pubStub);
+  return os;
+}
+#endif
+
 /**
  * Abstraction for publishing byte-arrays on channels (bridge pattern).
  *
@@ -170,7 +180,8 @@ class DLLEXPORT Publisher : public PublisherStub {
 public:
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
-  Publisher(boost::shared_ptr<PublisherImpl> const impl) : PublisherStub(impl), _impl(impl) { }
+	Publisher(const std::string& channelName, Greeter* greeter);
+  Publisher(boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
   Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
 
@@ -189,20 +200,20 @@ public:
 
 	/** @name Functionality of local Publishers */
 	//@{
-	void send(Message* msg)                        {
+	void send(Message* msg)                              {
 		_impl->send(msg);
 	}
 	void send(const char* data, size_t length);
-	int waitForSubscribers(int count, int timeoutMs = 0)              {
+	int waitForSubscribers(int count, int timeoutMs = 0) {
 		return _impl->waitForSubscribers(count, timeoutMs);
 	}
-	void setGreeter(Greeter* greeter)    {
+	void setGreeter(Greeter* greeter)                    {
 		return _impl->setGreeter(greeter);
 	}
 	void putMeta(const string& key, const string& value) {
 		return _impl->putMeta(key, value);
 	}
-	std::set<string> getSubscriberUUIDs()             {
+	std::set<string> getSubscriberUUIDs() const          {
 		return _impl->getSubscriberUUIDs();
 	}
 	bool isPublishingTo(const string& uuid) {
@@ -230,6 +241,22 @@ protected:
 	friend class Node;
 };
 
+#if 0
+std::ostream & operator<<(std::ostream &os, const Publisher& pub) {
+  os << "Publisher:" << std::endl;
+  os << "\tpublishing to: ";
+  std::set<string> subIds = pub.getSubscriberUUIDs();
+  std::set<string>::iterator subIdIter = subIds.begin();
+  while(subIdIter != subIds.end()) {
+    os << *subIdIter << ", ";
+    subIdIter++;
+  }
+  os << std::endl;
+  os << static_cast<PublisherStub>(pub);
+  return os;
+}
+#endif
+    
 }
 
 

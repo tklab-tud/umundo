@@ -52,14 +52,21 @@ public:
 	string uuid;
 };
 
-class DLLEXPORT SubscriberStubImpl : public Implementation {
+class DLLEXPORT SubscriberStubImpl : public EndPointImpl {
 public:
 	virtual ~SubscriberStubImpl() {}
-	std::string getChannelName() const {
+	virtual std::string getChannelName() const            {
 		return _channelName;
 	}
-	std::string getUUID() const {
+	virtual void setChannelName(const std::string& channelName) {
+		_channelName = channelName;
+	}
+  
+	virtual std::string getUUID() const            {
 		return _uuid;
+	}
+	virtual void setUUID(const std::string& uuid) {
+		_uuid = uuid;
 	}
 	
 protected:
@@ -70,18 +77,18 @@ protected:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberImpl : public Thread, public SubscriberStubImpl, public ResultSet<PublisherStub> {
+class DLLEXPORT SubscriberImpl : public SubscriberStubImpl, public Implementation, public ResultSet<PublisherStub> {
 public:
 	SubscriberImpl();
   virtual ~SubscriberImpl();
   
-	virtual Receiver* getReceiver()             {
+	virtual Receiver* getReceiver() {
 		return _receiver;
 	}
-	virtual void setReceiver(Receiver* receiver)      {
-		_receiver = receiver;
-	}
-	std::set<string> getPublisherUUIDs()             {
+
+	virtual void setReceiver(Receiver* receiver) = 0;
+  
+	std::set<string> getPublisherUUIDs() {
 		return _pubUUIDs;
 	}
 	virtual void setChannelName(const std::string& channelName) {
@@ -89,7 +96,7 @@ public:
 	}
 
 	virtual Message* getNextMsg() = 0;
-	virtual Message* peekNextMsg() = 0;
+	virtual bool hasNextMsg() = 0;
 
   static int instances;
 
@@ -126,7 +133,7 @@ public:
 		return _impl->getUUID();
 	}
 
-  virtual const shared_ptr<SubscriberStubImpl> getImpl() const {
+  shared_ptr<SubscriberStubImpl> getImpl() const {
     return _impl;
   }
 
@@ -177,8 +184,8 @@ public:
 		return _impl->getNextMsg();
 	}
 
-	virtual Message* peekNextMsg() {
-		return _impl->peekNextMsg();
+	virtual bool hasNextMsg() {
+		return _impl->hasNextMsg();
 	}
 
 	std::set<string> getPublisherUUIDs()             {
@@ -204,6 +211,10 @@ public:
 	void resume() {
 		return _impl->resume();
 	}
+
+  shared_ptr<SubscriberImpl> getImpl() const {
+    return _impl;
+  }
 
 protected:
 

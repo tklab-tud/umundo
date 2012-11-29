@@ -40,7 +40,7 @@ class Configuration;
 class DLLEXPORT Factory {
 public:
 	static Factory* getInstance();
-	static shared_ptr<Implementation> create(string, void* facade = NULL);
+	static shared_ptr<Implementation> create(string);
 	static shared_ptr<Configuration> config(string);
 
 	static void suspendInstances(); ///< Suspend all instances for device sleep

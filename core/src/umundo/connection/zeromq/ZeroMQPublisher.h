@@ -40,9 +40,8 @@ class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public boost::enable_sha
 public:
 	virtual ~ZeroMQPublisher();
 
-	shared_ptr<Implementation> create(void*);
+	shared_ptr<Implementation> create();
 	void init(shared_ptr<Configuration>);
-	void destroy();
 	void suspend();
 	void resume();
 
@@ -58,35 +57,18 @@ protected:
 	void removedSubscriber(const string, const string);
 
 private:
-	// ZeroMQPublisher(const ZeroMQPublisher &other) {}
-	// ZeroMQPublisher& operator= (const ZeroMQPublisher &other) {
-	// 	return *this;
-	// }
+	void run();
 
-	// read subscription requests from publisher socket
-	void runOnce();
-
-	void* _socket;
-	void* _zeroMQCtx;
+  void* _pubSocket;
 	shared_ptr<PublisherConfig> _config;
 
-	/**
-	 * To ensure solid subscriptions, we receive them twice,
-	 * once through the node socket and once through the
-	 * xpub socket, only when both have been received do we
-	 * we signal the greeters.
-	 */
-	set<string> _pendingZMQSubscriptions;
-	map<string, string> _pendingSubscriptions;
-	map<string, string> _subscriptions;
-	map<string, std::list<std::pair<uint64_t, Message*> > > _queuedMessages;
+  /// messages for subscribers we do not know yet
+  std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;
 
 	Monitor _pubLock;
 	Mutex _mutex;
 
 	friend class Factory;
-	friend class ZeroMQNode;
-	friend class Publisher;
 };
 
 }

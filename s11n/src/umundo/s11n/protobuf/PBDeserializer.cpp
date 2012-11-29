@@ -23,11 +23,9 @@
 
 namespace umundo {
 
-void PBDeserializer::destroy() {}
-
 void PBDeserializer::init(shared_ptr<Configuration>) {}
 
-shared_ptr<Implementation> PBDeserializer::create(void*) {
+shared_ptr<Implementation> PBDeserializer::create() {
 	shared_ptr<Implementation> instance(new PBDeserializer());
 	return instance;
 }

@@ -38,13 +38,9 @@ PBSerializer::PBSerializer() {}
 
 PBSerializer::~PBSerializer() {}
 
-shared_ptr<Implementation> PBSerializer::create(void*) {
+shared_ptr<Implementation> PBSerializer::create() {
   shared_ptr<Implementation> instance(new PBSerializer());
   return instance;
-}
-
-void PBSerializer::destroy() {
-  
 }
 
 void PBSerializer::init(shared_ptr<Configuration> config) {

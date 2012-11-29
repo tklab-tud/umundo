@@ -42,7 +42,8 @@ bool testNodeDiscovery() {
 	Discovery::browse(query);
 
 	TestDiscoverable* testDiscoverable = new TestDiscoverable(hostId + "fooDomain");
-	Discovery::add(testDiscoverable);
+  // ZeroMQNode pimpl constructor already added us to discovery
+	//Discovery::add(testDiscoverable);
 	while(receives < 1)
 		UMUNDO_WAIT(monitor, mutex);
 	std::cout << "Successfully found node via discovery" << std::endl;
@@ -51,7 +52,7 @@ bool testNodeDiscovery() {
 
 bool testPubSubConnections() {
 	// test node / publisher / subscriber churn
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 4; i++) {
 		Node node1(hostId);
 		Node node2(hostId);
 		for (int j = 0; j < 2; j++) {
@@ -99,9 +100,9 @@ bool testPubSubConnections() {
 			subs = pub.waitForSubscribers(0);
 			assert(subs == 0);
 
-			std::cout << "Successfully connected subscribers to publishers" << std::endl;
-
 			node1.removePublisher(pub);
+
+			std::cout << "--- Successfully connected subscribers to publishers" << std::endl;
 
 		}
 	}
@@ -110,8 +111,8 @@ bool testPubSubConnections() {
 
 int main(int argc, char** argv, char** envp) {
 //	setenv("UMUNDO_LOGLEVEL", "4", 1);
-// 	if (!testNodeDiscovery())
-// 		return EXIT_FAILURE;
+ 	if (!testNodeDiscovery())
+ 		return EXIT_FAILURE;
 	if (!testPubSubConnections())
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

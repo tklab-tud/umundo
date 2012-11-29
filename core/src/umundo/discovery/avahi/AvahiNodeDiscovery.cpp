@@ -30,7 +30,7 @@
 
 namespace umundo {
 
-shared_ptr<Implementation> AvahiNodeDiscovery::create(void*) {
+shared_ptr<Implementation> AvahiNodeDiscovery::create() {
 	return getInstance();
 }
 
@@ -44,9 +44,6 @@ shared_ptr<AvahiNodeDiscovery> AvahiNodeDiscovery::getInstance() {
 shared_ptr<AvahiNodeDiscovery> AvahiNodeDiscovery::_instance;
 
 AvahiNodeDiscovery::AvahiNodeDiscovery() {
-}
-
-void AvahiNodeDiscovery::destroy() {
 }
 
 void AvahiNodeDiscovery::init(shared_ptr<Configuration>) {

@@ -97,14 +97,14 @@ shared_ptr<Configuration> Factory::config(string name) {
 	return config;
 }
 
-shared_ptr<Implementation> Factory::create(string name, void* facade) {
+shared_ptr<Implementation> Factory::create(string name) {
 	Factory* factory = getInstance();
 	ScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) == factory->_prototypes.end()) {
 		LOG_WARN("No prototype registered for %s", name.c_str());
 		return shared_ptr<Implementation>();
 	}
-	shared_ptr<Implementation> implementation = factory->_prototypes[name]->create(facade);
+	shared_ptr<Implementation> implementation = factory->_prototypes[name]->create();
 	factory->_implementations.push_back(implementation);
 	return implementation;
 }

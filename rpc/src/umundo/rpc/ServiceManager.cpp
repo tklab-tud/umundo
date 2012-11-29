@@ -154,7 +154,11 @@ void ServiceManager::stopQuery(const ServiceFilter& filter) {
 }
 
 ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter) {
-	if(_svcPub->waitForSubscribers(1, 3000) < 1) {
+  return find(svcFilter, 3000);
+}
+
+ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int timeout) {
+	if(_svcPub->waitForSubscribers(1, timeout) < 1) {
 		// there is no other ServiceManager yet
 		LOG_INFO("Failed to find another ServiceManager");
 		return ServiceDescription();
@@ -174,7 +178,7 @@ ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter) {
 	delete findMsg;
 
 	ScopeLock lock(_mutex);
-	_findRequests[reqId]->wait(_mutex, 5000);
+	_findRequests[reqId]->wait(_mutex, timeout);
 	delete _findRequests[reqId];
 	_findRequests.erase(reqId);
 

@@ -40,6 +40,54 @@ bool testMessageTransmission() {
 		nrReceptions = 0;
 		nrMissing = 0;
 		bytesRecvd = 0;
+    
+		Node pubNode(hostId + "foo");
+		Publisher pub("foo");
+		pubNode.addPublisher(pub);
+    
+		TestReceiver* testRecv = new TestReceiver();
+		Node subNode(hostId + "foo");
+		Subscriber sub("foo", testRecv);
+		sub.setReceiver(testRecv);
+		subNode.addSubscriber(sub);
+    
+		pub.waitForSubscribers(1);
+		assert(pub.waitForSubscribers(0) == 1);
+    
+    int iterations = 1000;
+    
+		for (int j = 0; j < iterations; j++) {
+			Message* msg = new Message();
+			msg->putMeta("seq",toStr(j));
+			pub.send(msg);
+			delete msg;
+		}
+    
+		// wait until all messages are delivered
+		Thread::sleepMs(500);
+    
+		// sometimes there is some weird latency
+		for (int i = 0; i < 5; i++) {
+			if (nrReceptions < iterations)
+				Thread::sleepMs(2000);
+		}
+    
+		std::cout << "expected " << iterations << " messages, received " << nrReceptions << std::endl;
+		assert(nrReceptions == iterations);
+    
+		subNode.removeSubscriber(sub);
+		pubNode.removePublisher(pub);
+    
+	}
+	return true;
+}
+
+bool testDataTransmission() {
+	hostId = Host::getHostId();
+	for (int i = 0; i < 2; i++) {
+		nrReceptions = 0;
+		nrMissing = 0;
+		bytesRecvd = 0;
 
 		Node pubNode(hostId + "foo");
 		Publisher pub("foo");
@@ -57,7 +105,9 @@ bool testMessageTransmission() {
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, 40, BUFFER_SIZE);
 
-		for (int j = 0; j < 100; j++) {
+    int iterations = 1000;
+    
+		for (int j = 0; j < iterations; j++) {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
 			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
 			msg->putMeta("seq",toStr(j));
@@ -70,12 +120,12 @@ bool testMessageTransmission() {
 
 		// sometimes there is some weird latency
 		for (int i = 0; i < 5; i++) {
-			if (nrReceptions < 100)
+			if (nrReceptions < iterations)
 				Thread::sleepMs(2000);
 		}
 
-		std::cout << "expected 100 messages, received " << nrReceptions << std::endl;
-		assert(nrReceptions == 100);
+		std::cout << "expected " << iterations << " messages, received " << nrReceptions << std::endl;
+		assert(nrReceptions == iterations);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
 
 		subNode.removeSubscriber(sub);
@@ -88,6 +138,8 @@ bool testMessageTransmission() {
 
 int main(int argc, char** argv, char** envp) {
 	if (!testMessageTransmission())
+		return EXIT_FAILURE;
+	if (!testDataTransmission())
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

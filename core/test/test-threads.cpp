@@ -239,4 +239,5 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	if(!testTimedMonitors())
 		return EXIT_FAILURE;
+	return EXIT_SUCCESS;	
 }

@@ -55,10 +55,10 @@ bool findServices() {
 		LOG_INFO("Adding Services to ServiceManager1");
 		svcMgr1.addService(localEchoService);
 		svcMgr1.addService(localPingService);
-
+    
 		LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter pingSvcFilter("PingService");
-		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter);
+		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter, 0);
 		assert(pingSvcDesc);
     
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
@@ -507,13 +507,13 @@ bool stlContainerTests() {
 
 int main(int argc, char** argv) {
 	hostId = Host::getHostId();
-	if (!stlContainerTests())
-		return EXIT_FAILURE;
+//	if (!stlContainerTests())
+//		return EXIT_FAILURE;
 //	if (!queryTests())
 //		return EXIT_FAILURE;
-//	if (!findServices())
-//		return EXIT_FAILURE;
-	if (!continuousQueries())
+	if (!findServices())
 		return EXIT_FAILURE;
+//	if (!continuousQueries())
+//		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }

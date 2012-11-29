@@ -34,10 +34,9 @@ class Configuration;
  */
 class DLLEXPORT Implementation {
 public:
-	Implementation() : _isSuspended(false), _facade(NULL) {}
+	Implementation() : _isSuspended(false) {}
 	/** @name Life Cycle Management */
 	//@{
-	virtual void destroy() = 0; ///< Delegate destruction to the implementation
 	virtual void init(shared_ptr<Configuration>) = 0; ///< initialize instance after creation
 	virtual void suspend() {}; ///< Optional hook to suspend implementations
 	virtual void resume() {}; ///< Optional hook to resume implementations
@@ -45,10 +44,9 @@ public:
 
 protected:
 	bool _isSuspended;
-	void* _facade;
 
 private:
-	virtual shared_ptr<Implementation> create(void* facade) = 0; ///< Factory method called by the Factory class
+	virtual shared_ptr<Implementation> create() = 0; ///< Factory method called by the Factory class
 	friend class Factory; ///< In C++ friends can see your privates!
 };
 

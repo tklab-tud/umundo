@@ -29,7 +29,6 @@ public:
 void testDifferentDomain() {
 	Node fooNode(hostId + "foo");
 	Node barNode(hostId + "bar");
-	printf("%d\n", NodeImpl::instances);
 	assert(NodeImpl::instances == 2);
 
   // this will leak memory as none deletes the receiver
@@ -104,9 +103,9 @@ int main(int argc, char** argv, char** envp) {
 //	setenv("UMUNDO_LOGLEVEL_NET", "2", 1);
 	int i = 1;
 	while(i-- > 0) {
-//		printf("##### testDifferentDomain #####################################\n");
-//		testDifferentDomain();
-//		assert(Node::instances == 0);
+		printf("##### testDifferentDomain #####################################\n");
+		testDifferentDomain();
+		assert(NodeImpl::instances == 0);
 		printf("##### testSameDomain ##########################################\n");
 		testSameDomain();
 		assert(NodeImpl::instances == 0);

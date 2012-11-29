@@ -43,8 +43,7 @@ public:
 	PBSerializer();
 	virtual ~PBSerializer();
 
-	virtual shared_ptr<Implementation> create(void*);
-	virtual void destroy();
+	virtual shared_ptr<Implementation> create();
 	virtual void init(shared_ptr<Configuration>);
 
 	virtual string serialize(const string& type, void* obj);

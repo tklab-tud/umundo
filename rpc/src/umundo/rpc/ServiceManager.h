@@ -55,6 +55,7 @@ public:
 	void receive(Message* msg);
 
 	ServiceDescription find(const ServiceFilter&);
+	ServiceDescription find(const ServiceFilter&, int timeout);
 	std::set<ServiceDescription> findLocal(const ServiceFilter&);
 	void startQuery(const ServiceFilter&, ResultSet<ServiceDescription>*);
 	void stopQuery(const ServiceFilter&);

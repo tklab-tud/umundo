@@ -53,12 +53,8 @@ namespace umundo {
 BonjourNodeDiscovery::BonjourNodeDiscovery() {
 }
 
-shared_ptr<Implementation> BonjourNodeDiscovery::create(void*) {
+shared_ptr<Implementation> BonjourNodeDiscovery::create() {
 	return getInstance();
-}
-
-void BonjourNodeDiscovery::destroy() {
-	// do nothing?
 }
 
 void BonjourNodeDiscovery::init(shared_ptr<Configuration>) {
@@ -235,53 +231,49 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 	// keep in mind: we prevent the registration of the node with several BonjourNodeDiscoveries
 	assert(_registerClients.find(address) == _registerClients.end());
 
-	const char* name = (node->getUUID().length() ? node->getUUID().c_str() : NULL);
-	const char* transport = (node->getTransport().length() ? node->getTransport().c_str() : "tcp");
-	const char* host = (node->getHost().length() ? node->getHost().c_str() : NULL);
+	string name = (node->getUUID().length() ? node->getUUID() : "");
+	string transport = (node->getTransport().length() ? node->getTransport() : "tcp");
+	string host = (node->getHost().length() ? node->getHost() : "");
 	uint16_t port = (node->getPort() > 0 ? htons(node->getPort()) : 0);
-	const char* txtRecord = "";
+	string txtRecord = "";
 	uint16_t txtLength = 0;
 
-	char* regtype;
-	asprintf(&regtype, "_mundo._%s", transport);
+	string regtype("_mundo._" + transport + ".");
 
-	char* domain;
-	if (strstr(node->getDomain().c_str(), ".") != NULL) {
-		asprintf(&domain, "%s", node->getDomain().c_str());
+	string domain;
+	if (node->getDomain().find(".") != string::npos) {
+		domain = node->getDomain();
 	} else if (node->getDomain().length() > 0) {
-		asprintf(&domain, "%s.local.", node->getDomain().c_str());
+		domain = string(node->getDomain() + ".local.");
 	} else {
-		asprintf(&domain, "local.");
+		domain = "local.";
 	}
 
 	LOG_DEBUG("Trying to register: %s.%s as %s",
-	          (name == NULL ? "null" : strndup(name, 8)),
-	          (domain == NULL ? "null" : domain),
-	          regtype);
+		(name.length() == 0 ? "null" : name.substr(0, 8).c_str()),
+		(domain.length() == 0 ? "null" : domain.substr(0, 8).c_str()),
+		regtype.c_str());
 
 #ifdef DISC_BONJOUR_EMBED
 	LOG_DEBUG("Calling DNSServiceRegister");
 #endif
 	err = DNSServiceRegister(
-	          &registerClient,         // uninitialized DNSServiceRef
-	          0,                               // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
-	          kDNSServiceInterfaceIndexAny,    // If non-zero, specifies the interface, defaults to all interfaces
-	          name,                            // If non-NULL, specifies the service name, defaults to computer name
-	          regtype,                         // service type followed by the protocol
-	          domain,                          // If non-NULL, specifies the domain, defaults to default domain
-	          host,                            // If non-NULL, specifies the SRV target host name
-	          port,                            // port number, defaults to name-reserving/non-discoverable
-	          txtLength,                       // length of the txtRecord, in bytes
-	          txtRecord,                       // TXT record rdata: <length byte> <data> <length byte> <data> ...
-	          registerReply,                   // called when the registration completes
-	          (void*)address                   // context pointer which is passed to the callback
+	          &registerClient,                                // uninitialized DNSServiceRef
+	          0,                                              // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
+	          kDNSServiceInterfaceIndexAny,                   // If non-zero, specifies the interface, defaults to all interfaces
+	          (name.length() == 0 ? NULL : name.c_str()),     // If non-NULL, specifies the service name, defaults to computer name
+	          regtype.c_str(),                                // service type followed by the protocol
+	          (domain.length() == 0 ? NULL : domain.c_str()), // If non-NULL, specifies the domain, defaults to default domain
+	          (host.length() == 0 ? NULL : host.c_str()),     // If non-NULL, specifies the SRV target host name
+	          port,                                           // port number, defaults to name-reserving/non-discoverable
+	          0,                                              // length of the txtRecord, in bytes
+	          NULL,                                           // TXT record rdata: <length byte> <data> <length byte> <data> ...
+	          registerReply,                                  // called when the registration completes
+	          (void*)address                                  // context pointer which is passed to the callback
 	      );
 #ifdef DISC_BONJOUR_EMBED
 	LOG_DEBUG("DNSServiceRegister returned");
 #endif
-
-	free(regtype);
-	free(domain);
 
 	if(registerClient && err == 0) {
 		// everything is fine, add FD to query set, remember query and node
@@ -338,30 +330,52 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 	DNSServiceErrorType err;
 	DNSServiceRef queryClient = NULL;
 
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 	intptr_t address = (intptr_t)(query.get());
 
 	if (_queries.find(address) != _queries.end()) {
 		LOG_WARN("Already browsing for given query");
-		UMUNDO_UNLOCK(_mutex);
 		assert(validateState());
 		return;
 	}
 	assert(_queryClients.find(address) == _queryClients.end());
+  
+	string transport = (query->getTransport().length() ? query->getTransport().c_str() : "tcp");
+	string regtype("_mundo._" + transport + ".");
 
-	char* regtype;
-	const char* transport = (query->getTransport().length() ? query->getTransport().c_str() : "tcp");
-	asprintf(&regtype, "_mundo._%s", transport);
-
-	char* domain;
-	if (strstr(query->getDomain().c_str(), ".") != NULL) {
-		asprintf(&domain, "%s", query->getDomain().c_str());
+  string domain;
+	if (query->getDomain().find(".") != string::npos) {
+		domain = query->getDomain();
 	} else if (query->getDomain().length() > 0) {
-		asprintf(&domain, "%s.local.", query->getDomain().c_str());
+		domain = string(query->getDomain() + ".local.");
 	} else {
-		asprintf(&domain, "local.");
+		domain = "local.";
 	}
 
+  // report matching local nodes immediately!
+  map<intptr_t, NodeImpl* >::iterator localNodeIter = _localNodes.begin();
+  while(localNodeIter != _localNodes.end()) {
+    if (localNodeIter->second->getDomain().compare(query->getDomain()) == 0) {
+      shared_ptr<BonjourNodeStub> node = shared_ptr<BonjourNodeStub>(new BonjourNodeStub());
+      node->setInProcess(true);
+      node->setRemote(false);
+      node->setTransport(localNodeIter->second->getTransport());
+      node->setUUID(localNodeIter->second->getUUID());
+      node->setDomain(domain);
+      node->_regType = regtype;
+      node->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
+      
+      _queryToNodes[query][localNodeIter->second->getUUID()] = node;
+			_nodeToQuery[(intptr_t)node.get()] = query;
+      
+      query->found(NodeStub(node));
+    }
+    
+    localNodeIter++;
+  }
+
+  
+  
 #ifdef DISC_BONJOUR_EMBED
 	LOG_DEBUG("Calling DNSServiceBrowse");
 #endif
@@ -369,8 +383,8 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 	          &queryClient,                  // uninitialized DNSServiceRef
 	          0,                             // Currently ignored, reserved for future use
 	          kDNSServiceInterfaceIndexAny,  // non-zero, specifies the interface
-	          regtype,                       // service type being browsed
-	          domain,                        // non-NULL, specifies the domain
+	          regtype.c_str(),               // service type being browsed
+	          domain.c_str(),                // non-NULL, specifies the domain
 	          browseReply,                   // called when a service is found
 	          (void*)address
 	      );
@@ -394,11 +408,7 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 		LOG_WARN("DNSServiceBrowse returned error %d", err);
 	}
 
-	free(regtype);
-	free(domain);
 	assert(validateState());
-
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
@@ -586,10 +596,9 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 			assert(node.get() != NULL);
 
 			intptr_t address = (intptr_t)(node.get());
-			char* regtype;
 			assert(node->getTransport().length() > 0);
-			asprintf(&regtype, "_mundo._%s", node->getTransport().c_str());
-			const char* name = (node->getUUID().length() ? node->getUUID().c_str() : NULL);
+      string regtype("_mundo._" + node->getTransport() + ".");
+			string name = (node->getUUID().length() ? node->getUUID() : "");
 
 			std::set<string>::iterator domainIter;
 			for (domainIter = node->_domains.begin(); domainIter != node->_domains.end(); domainIter++) {
@@ -603,8 +612,8 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 				              &serviceResolveClient,
 				              0,
 				              kDNSServiceInterfaceIndexAny,
-				              name,
-				              regtype,
+				              name.c_str(),
+				              regtype.c_str(),
 				              domainIter->c_str(),
 				              serviceResolveReply,
 				              (void*)address // address of node
@@ -622,8 +631,6 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 					LOG_WARN("DNSServiceResolve returned error %d", err);
 				}
 			}
-
-			free(regtype);
 		}
 	}
 	assert(myself->validateState());
@@ -657,6 +664,7 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 
 	if(errorCode == kDNSServiceErr_NoError) {
 		shared_ptr<NodeQuery> query = getInstance()->_nodeToQuery[(intptr_t)context];
+    assert(query);
 		shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
 		assert(node.get() != NULL);
 

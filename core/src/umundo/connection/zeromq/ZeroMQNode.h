@@ -29,8 +29,6 @@
 #include "umundo/connection/Node.h"
 #include "umundo/discovery/NodeQuery.h"
 
-#include <boost/enable_shared_from_this.hpp>
-
 /// Initialize a zeromq message with a given size
 #define ZMQ_PREPARE(msg, size) \
 zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
@@ -52,6 +50,21 @@ memcpy(zmq_msg_data(&msg), data, size + 1);
 #define PUB_INFO_SIZE(pub) \
 pub.getChannelName().length() + 1 + pub.getUUID().length() + 1 + 2
 
+/// Size of a subcriber info on wire
+#define SUB_INFO_SIZE(sub) \
+sub.getChannelName().length() + 1 + sub.getUUID().length() + 1
+
+/// send a message to break a zmq_poll and alter some socket
+#define ZMQ_INTERNAL_SEND(command, parameter) \
+zmq_msg_t socketOp; \
+ZMQ_PREPARE_STRING(socketOp, command, strlen(command)); \
+zmq_sendmsg(_writeOpSocket, &socketOp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&socketOp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno)); \
+zmq_msg_t endPointOp; \
+ZMQ_PREPARE_STRING(endPointOp, parameter, strlen(parameter)); \
+zmq_sendmsg(_writeOpSocket, &endPointOp, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&endPointOp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+
 namespace umundo {
 
 class PublisherStub;
@@ -62,14 +75,13 @@ class NodeQuery;
 /**
  * Concrete node implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQNode : public Thread, public ResultSet<NodeStub>, public NodeImpl, public boost::enable_shared_from_this<ZeroMQNode> {
+class DLLEXPORT ZeroMQNode : public Thread, public ResultSet<NodeStub>, public NodeImpl {
 public:
 	virtual ~ZeroMQNode();
 
 	/** @name Implementor */
 	//@{
-	shared_ptr<Implementation> create(void*);
-	void destroy();
+	shared_ptr<Implementation> create();
 	void init(shared_ptr<Configuration>);
 	void suspend();
 	void resume();
@@ -95,7 +107,7 @@ public:
 //	set<NodeStub*> getAllNodes();
 	//@}
 
-	static uint16_t bindToFreePort(void* socket, const string& transport, const string& address);
+  static uint16_t bindToFreePort(void* socket, const std::string& transport, const std::string& address);
 	static void* getZeroMQContext();
 
 protected:
@@ -103,105 +115,56 @@ protected:
 
 	void run(); ///< see Thread
 
-	/** @name Control message handling */
+	/** @name Remote publisher / subscriber maintenance */
 	//@{
-	zmq_msg_t msgPubList();
-	void processPubAdded(const char*, zmq_msg_t);
-	void processPubRemoved(const char*, zmq_msg_t);
+  void sendPubRemoved(void* socket, const umundo::Publisher& pub, bool hasMore);
+  void sendPubAdded(void* socket, const umundo::Publisher& pub, bool hasMore);
+  void sendSubAdded(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
+  void sendSubRemoved(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
+
+  void processNodeCommPubAdded(const std::string& nodeUUID, const umundo::PublisherStub& pubStub);
+  void processNodeCommPubRemoval(const std::string& nodeUUID, const umundo::PublisherStub& pubStub);
+  void confirmPubAdded(umundo::NodeStub& nodeStub, const umundo::PublisherStub& pubStub);
+
+  void processZMQCommSubscriptions(const std::string channel);
+  void processNodeCommSubscriptions(const umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
+  void processNodeCommUnsubscriptions(umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
+  bool confirmSubscription(const umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
 	//@}
 
-
-	/** @name Remote subscriber maintenance */
+  /** @name Read / Write to raw byte arrays */
 	//@{
-	void processSubscription(const char*, zmq_msg_t);
-	void processUnsubscription(const char*, zmq_msg_t);
-	void notifyOfUnsubscription(void*, const Subscriber&, const PublisherStub&);
-	void notifyOfSubscription(void*, const Subscriber&, const PublisherStub&);
-	//@}
+  char* writePubInfo(char* buffer, const umundo::PublisherStub& pub);
+  char* readPubInfo(char* buffer, uint16_t& port, char*& channelName, char*& uuid);
+  char* writeSubInfo(char* buffer, const umundo::Subscriber& sub);
+  char* readSubInfo(char* buffer, char*& channelName, char*& uuid);
 
-	/** @name Local subscriber maintenance */
-	//@{
-	void addRemotePubToLocalSubs(const char*, const PublisherStub&); ///< See if we have a local Subscriber interested in the remote Publisher.
-	void removeRemotePubFromLocalSubs(const char*, const PublisherStub&); ///< A remote Publisher was removed, notify Subscribe%s.
 	//@}
 
 private:
-	ZeroMQNode(const ZeroMQNode &other) {}
-	ZeroMQNode& operator= (const ZeroMQNode &other) {
-		return *this;
-	}
-
-	/**
-	 * Subscribe to all in-process publishers and publish on network port.
-	 *
-	 * The forwarder is used when PUBPORT_SHARING is enabled, see also:
-	 * http://zguide.zeromq.org/page:all#A-Publish-Subscribe-Proxy-Server
-	 */
-	struct ZeroMQForwarder : public Thread {
-		ZeroMQForwarder(void* subSocket, void* pubSocket) {
-			_subSocket = subSocket;
-			_pubSocket = pubSocket;
-		}
-		void run() {
-			while (isStarted()) {
-				while (1) {
-					zmq_msg_t message;
-					int64_t more;
-					//  Process all parts of the message
-					zmq_msg_init (&message);
-					zmq_recvmsg (_subSocket, &message, 0);
-					size_t more_size = sizeof (more);
-					zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size);
-					zmq_sendmsg (_pubSocket, &message, more ? ZMQ_SNDMORE : 0);
-					zmq_msg_close (&message);
-					if (!more)
-						break;      //  Last message part
-				}
-			}
-		}
-		void* _pubSocket;
-		void* _subSocket;
-	};
-
-	void processSubscription(const char*, zmq_msg_t, bool); ///< notify local publishers about subscriptions
-	bool validateState(); ///< check the nodes state
-
-	/** @name Read / Write to raw byte arrays */
-	//@{
-	static char* writePubInfo(char*, const PublisherStub&); ///< write publisher info into given byte array
-	static char* readPubInfo(char*, uint16_t&, char*&, char*&); ///< read publisher from given byte array
-	static char* writeSubInfo(char*, const Subscriber&); ///< write subscriber info into given byte array
-	static char* readSubInfo(char*, char*&); ///< read subscriber from given byte array
-	//@}
-
 	static void* _zmqContext; ///< global 0MQ context.
-	void* _responder; ///< 0MQ node socket for administrative messages.
-
-	/** @name Sharing a single pulishe port (PUBPORT_SHARING) */
-	//@{
-	static void* _sharedPubSocket; ///< External 0MQ publisher socket where we forward to.
-	static void* _sharedSubSocket; ///< Internal 0MQ subscriber socket for ZeroMQPublisher internal publisher sockets.
-	static uint16_t _sharedPubPort;
-	static ZeroMQForwarder* _forwarder;
-	//@}
+  
+  void* _pubSocket; ///< public socket for outgoing external communication
+  void* _subSocket; ///< umundo internal socket to receive publications from publishers
+  void* _nodeSocket; ///< socket for node meta information
+  void* _readOpSocket;
+  void* _writeOpSocket;
+  uint16_t _pubPort; ///< port of our public publisher socket
 
 	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
 	Mutex _mutex;
 
-	map<string, NodeStub> _nodes;                                    ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
-	map<string, void*> _sockets;                                                  ///< UUIDs to ZeroMQ Node Sockets.
+	map<string, NodeStub> _nodes; ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
+	map<string, void*> _sockets;  ///< UUIDs to ZeroMQ Node Sockets.
 
-	map<string, map<string, PublisherStub> > _pendingRemotePubs;     ///< publishers of yet undiscovered nodes.
-	map<string, map<string, set<string> > > _subscriptions;                       ///< remote node UUIDs to local publisher UUID to remote subscriber UUIDs.
-
-	std::map<std::string, Publisher> _suspendedLocalPubs;                  ///< suspended publishers to be resumed when we wake up again.
-
+  std::multiset<std::string> _subscriptions; ///< subscriptions as we received them from zeromq
+  std::set<std::string> _confirmedSubscribers; ///< subscriptions as we received them from zeromq and confirmed by node communication
+  std::multimap<std::string, std::pair<long, std::pair<umundo::NodeStub, umundo::SubscriberStub> > > _pendingSubscriptions; ///< channel to timestamped pending subscribers we got from node communication
+  std::map<std::string, std::map<std::string, umundo::PublisherStub> > _pendingRemotePubs; ///< publishers of yet undiscovered nodes.
+  
 	shared_ptr<NodeConfig> _config;
 
-//	static shared_ptr<ZeroMQNode> _instance; ///< Singleton instance.
-
 	friend class Factory;
-	friend class ZeroMQPublisher;
 };
 
 }

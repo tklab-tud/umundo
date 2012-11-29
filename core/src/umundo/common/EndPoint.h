@@ -31,13 +31,13 @@ namespace umundo {
 	public:
 		virtual ~EndPointImpl() {}
 
-		virtual const string getIP() const           {
+		virtual const string getIP() const            {
 			return _ip;
 		}
 		virtual void setIP(string ip)                 {
 			_ip = ip;
 		}
-		virtual const string getTransport() const    {
+		virtual const string getTransport() const     {
 			return _transport;
 		}
 		virtual void setTransport(string transport)   {
@@ -59,19 +59,25 @@ namespace umundo {
 			return _isInProcess;
 		}
 		virtual void setInProcess(bool isInProcess)   {
-			_isInProcess = _isInProcess;
+			_isInProcess = isInProcess;
 		}
-		virtual const string getHost() const         {
+		virtual const string getHost() const          {
 			return _host;
 		}
 		virtual void setHost(string host)             {
 			_host = host;
 		}
-		virtual const string getDomain() const       {
+		virtual const string getDomain() const        {
 			return _domain;
 		}
 		virtual void setDomain(string domain)         {
 			_domain = domain;
+		}
+		virtual const long getLastSeen() const        {
+			return _lastSeen;
+		}
+		virtual void setLastSeen(long lastSeen)       {
+			_lastSeen = lastSeen;
 		}
 
 	protected:
@@ -82,6 +88,8 @@ namespace umundo {
 		bool _isInProcess;
 		string _host;
 		string _domain;
+    long _lastSeen;
+
 	};
 
 /**
@@ -126,11 +134,32 @@ public:
 	virtual const std::string getDomain() const {
 		return _impl->getDomain();
 	}
+	virtual const long getLastSeen() const {
+		return _impl->getLastSeen();
+	}
+
+  boost::shared_ptr<EndPointImpl> getEndPointImpl() const {
+		return _impl;
+	}
 
 protected:
 	boost::shared_ptr<EndPointImpl> _impl;
 };
 
+#if 0
+std::ostream & operator<<(std::ostream &os, const EndPoint& endPoint) {
+  os << "EndPoint:" << std::endl;
+  os << "\tIP: " << endPoint.getIP() << std::endl;
+  os << "\tTransport: " << endPoint.getTransport() << std::endl;
+  os << "\tPort: " << endPoint.getPort() << std::endl;
+  os << "\tisRemote: " << endPoint.isRemote() << std::endl;
+  os << "\tisInProcess: " << endPoint.isInProcess() << std::endl;
+  os << "\tHost: " << endPoint.getHost() << std::endl;
+  os << "\tDomain: " << endPoint.getDomain() << std::endl;
+  return os;
+}
+#endif
+  
 }
 
 

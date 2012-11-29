@@ -21,12 +21,14 @@
 
 #include "umundo/common/Factory.h"
 #include "umundo/common/Message.h"
+#include "umundo/common/UUID.h"
 
 namespace umundo {
 
 int PublisherImpl::instances = 0;
 
 PublisherImpl::PublisherImpl() : _greeter(NULL) {
+  _uuid = UUID::getUUID();
   instances++;
 }
 
@@ -39,12 +41,22 @@ shared_ptr<Configuration> PublisherConfig::create() {
 }
 
 Publisher::Publisher(const string& channelName) {
-	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher", this));
+	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
   PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
 	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
 	config->channelName = channelName;
 	_impl->init(config);
+}
+
+Publisher::Publisher(const string& channelName, Greeter* greeter) {
+  _impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
+  PublisherStub::_impl = _impl;
+  _impl->setChannelName(channelName);
+  shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
+  config->channelName = channelName;
+  _impl->setGreeter(greeter);
+  _impl->init(config);
 }
 
 void Publisher::send(const char* data, size_t length) {

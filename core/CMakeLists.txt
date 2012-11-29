@@ -160,6 +160,10 @@ INSTALL_HEADERS(HEADERS ${UMUNDOCORE_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundocore COMPONENT libraryCore)
 set_target_properties(umundocore PROPERTIES FOLDER "Libraries")
 
+# if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+# 	set_target_properties(umundocore PROPERTIES COMPILE_FLAGS "-Weffc++")
+# endif()
+
 # ok to have in IDEs, but do not install
 LIST(APPEND UMUNDOCORE_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
 

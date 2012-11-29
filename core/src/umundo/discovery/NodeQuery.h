@@ -56,7 +56,7 @@ public:
       _listener == other._listener;
   }
   bool operator!=(const NodeQuery& other) const { return !(operator==(other)); }
-//  
+
 //  Subscriber& operator=(const Subscriber& other)
 //  {
 //    _impl = other._impl;

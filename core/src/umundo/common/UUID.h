@@ -32,6 +32,7 @@ namespace umundo {
 class DLLEXPORT UUID {
 public:
 	static const string getUUID();
+	static bool isUUID(const std::string& uuid);
 
 private:
 	static boost::uuids::random_generator randomGen;

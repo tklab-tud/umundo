@@ -266,7 +266,7 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 	          (domain.length() == 0 ? NULL : domain.c_str()), // If non-NULL, specifies the domain, defaults to default domain
 	          (host.length() == 0 ? NULL : host.c_str()),     // If non-NULL, specifies the SRV target host name
 	          port,                                           // port number, defaults to name-reserving/non-discoverable
-	          0,                                              // length of the txtRecord, in bytes
+	          txtLength,                                      // length of the txtRecord, in bytes
 	          NULL,                                           // TXT record rdata: <length byte> <data> <length byte> <data> ...
 	          registerReply,                                  // called when the registration completes
 	          (void*)address                                  // context pointer which is passed to the callback
@@ -763,6 +763,8 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 	shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
 	assert(node.get() != NULL);
 
+  node->setLastSeen(Thread::getTimeStampMs());
+  
 //  LOG_DEBUG("addrInfoReply: Got info on %s at if %d", hostname, interfaceIndex);
 
 	if (node->_interfaceIndices.find(interfaceIndex) == node->_interfaceIndices.end()) {

@@ -115,6 +115,8 @@ protected:
 
 	void run(); ///< see Thread
 
+  bool validateState();
+  
 	/** @name Remote publisher / subscriber maintenance */
 	//@{
   void sendPubRemoved(void* socket, const umundo::Publisher& pub, bool hasMore);

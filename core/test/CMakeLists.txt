@@ -45,3 +45,18 @@ add_dependencies(ALL_TESTS test-core-greeter)
 # target_link_libraries(test-zeromq-layout ${UMUNDOCORE_LIBRARIES})
 # set_target_properties(test-zeromq-layout PROPERTIES FOLDER "Tests")
 # add_dependencies(ALL_TESTS test-zeromq-layout)
+
+add_executable(test-zeromq-server test-zeromq-server.cpp)
+target_link_libraries(test-zeromq-server ${UMUNDOCORE_LIBRARIES})
+set_target_properties(test-zeromq-server PROPERTIES FOLDER "Tests")
+add_dependencies(ALL_TESTS test-zeromq-server)
+
+add_executable(test-zeromq-client test-zeromq-client.cpp)
+target_link_libraries(test-zeromq-client ${UMUNDOCORE_LIBRARIES})
+set_target_properties(test-zeromq-client PROPERTIES FOLDER "Tests")
+add_dependencies(ALL_TESTS test-zeromq-client)
+
+add_executable(test-zeromq-disconnect test-zeromq-disconnect.cpp)
+target_link_libraries(test-zeromq-disconnect ${UMUNDOCORE_LIBRARIES})
+set_target_properties(test-zeromq-disconnect PROPERTIES FOLDER "Tests")
+add_dependencies(ALL_TESTS test-zeromq-disconnect)

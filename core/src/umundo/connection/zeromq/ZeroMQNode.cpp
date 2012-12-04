@@ -329,7 +329,7 @@ void ZeroMQNode::added(NodeStub node) {
   int hasMore = _pubs.size() - 1;
   for (pubIter = _pubs.begin(); pubIter != _pubs.end(); pubIter++, hasMore--) {
     // create a publisher added message from current publisher
-    sendPubAdded(client, pubIter->second, hasMore);
+    sendPubAdded(client, pubIter->second, (hasMore > 0));
   }
   LOG_INFO("sending %d publishers to newcomer", _pubs.size());
   
@@ -543,7 +543,9 @@ void ZeroMQNode::run() {
           processZMQCommSubscriptions(subChannel);
         } else {
           LOG_INFO("Got 0MQ unsubscription on %s", subChannel.c_str());
-          _subscriptions.erase(subChannel);
+          std::multiset<std::string>::iterator found = _subscriptions.find(subChannel);
+          if (found != _subscriptions.end()) _subscriptions.erase(found);
+
           //processZMQCommUnsubscriptions("", subChannel, SubscriberStub());
         }
         
@@ -779,9 +781,19 @@ void ZeroMQNode::processNodeCommUnsubscriptions(NodeStub& nodeStub, const Subscr
     LOG_INFO("Removing confirmed subscriber: %s", subStub.getUUID().c_str());
     _confirmedSubscribers.erase(subStub.getUUID());
   } else {
-    return;
-    //LOG_WARN("Trying to remove unconfirmed subscriber: %s", subId.c_str());
+//    return;
+    LOG_WARN("Trying to remove unconfirmed subscriber: %s", subStub.getUUID().c_str());
   }
+
+#if 0
+  // we never receive 0mq unsubscriptions for these due to the buggy zmq_disconnect
+  std::multiset<std::string>::iterator found;
+  found = _subscriptions.find("~" + subStub.getUUID());
+  if (found != _subscriptions.end()) _subscriptions.erase(found);
+
+  found = _subscriptions.find(subStub.getChannelName());
+  if (found != _subscriptions.end()) _subscriptions.erase(found);
+#endif
   
   std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
   while(pubIter != _pubs.end()) {
@@ -790,6 +802,11 @@ void ZeroMQNode::processNodeCommUnsubscriptions(NodeStub& nodeStub, const Subscr
     }
     pubIter++;
   }
+
+  if (_nodes.find(nodeStub.getUUID()) != _nodes.end()) {
+    _nodes[nodeStub.getUUID()].removeSubscriber(subStub);
+  }
+  
   assert(validateState());
 }
 
@@ -813,7 +830,8 @@ bool ZeroMQNode::confirmSubscription(const NodeStub& nodeStub, const SubscriberS
   subIter = _pendingSubscriptions.find(subId);
   while(subIter != _pendingSubscriptions.end()) {
     std::pair<NodeStub, SubscriberStub> subPair = subIter->second.second;
-    if (subPair.first == nodeStub && subPair.second == subStub) _pendingSubscriptions.erase(subIter++);
+    if (subPair.first == nodeStub && subPair.second == subStub)
+      _pendingSubscriptions.erase(subIter++);
     else subIter++;
   }
   
@@ -892,7 +910,6 @@ char* ZeroMQNode::readSubInfo(char* buffer, char*& channelName, char*& uuid) {
 }
 
 bool ZeroMQNode::validateState() {
-  return true;
   ScopeLock lock(_mutex);
   map<string, NodeStub>::iterator nodeIter = _nodes.begin();
   map<string, void*>::iterator nodeSockIter = _sockets.begin();
@@ -930,18 +947,42 @@ bool ZeroMQNode::validateState() {
   // every subscriber we actually added to node had to be confirmed - check
   // also remove subscribers ids and channels from 0mq subscriptions and see what's left
   std::map<std::string, SubscriberStub>::iterator remoteSubIter = remoteSubs.begin();
+  
+//  std::cout << "ZMQ Subs " << _subscriptions.size() << std::endl;
+  for(std::multiset<std::string>::iterator staleSubsIter = staleSubscriptions.begin(); staleSubsIter != staleSubscriptions.end(); staleSubsIter++) {
+//    std::cout << "\t" << *staleSubsIter << std::endl;
+  }
+
+//  std::cout << "Confirmed Subs " << _confirmedSubscribers.size() << std::endl;
+  for(std::set<std::string>::iterator confirmSubsIter = _confirmedSubscribers.begin(); confirmSubsIter != _confirmedSubscribers.end(); confirmSubsIter++) {
+//    std::cout << "\t" << *confirmSubsIter << std::endl;
+  }
+
+//  std::cout << "uMundo Subs " << remotePubs.size() << std::endl;
   while(remoteSubIter != remoteSubs.end()) {
-    assert(_confirmedSubscribers.find(remoteSubIter->first) != _confirmedSubscribers.end());
-    assert(staleSubscriptions.count(remoteSubIter->first) > 0);
-    assert(staleSubscriptions.count(remoteSubIter->second.getChannelName()) > 0);
+//    std::cout << "\t" << remoteSubIter->first << std::endl;
+//    std::cout << "\t" << remoteSubIter->second.getChannelName() << std::endl;
     
-    staleSubscriptions.erase(remoteSubIter->first);
-    staleSubscriptions.erase(remoteSubIter->second.getChannelName());
+    assert(_confirmedSubscribers.find(remoteSubIter->first) != _confirmedSubscribers.end());
+//    assert(staleSubscriptions.count(remoteSubIter->second.getChannelName()) > 0);
+    
+    std::multiset<std::string>::iterator staleFound;
+
+    staleFound = staleSubscriptions.find("~" + remoteSubIter->first);
+    if (staleFound != staleSubscriptions.end()) staleSubscriptions.erase(staleFound);
+
+    staleFound = staleSubscriptions.find(remoteSubIter->second.getChannelName());
+    if (staleFound != staleSubscriptions.end()) staleSubscriptions.erase(staleFound);
     
     remoteSubIter++;
   }
-  
-  assert(staleSubscriptions.size() < 5); // only for testing
+
+//  std::cout << "Stale Subs " << staleSubscriptions.size() << std::endl;
+  for(std::multiset<std::string>::iterator staleSubsIter = staleSubscriptions.begin(); staleSubsIter != staleSubscriptions.end(); staleSubsIter++) {
+//    std::cout << "\t" << *staleSubsIter << std::endl;
+  }
+
+  assert(staleSubscriptions.size() < 20); // only for testing
   
   return true;
 }

@@ -168,8 +168,8 @@ set reqFilesMac {
 	"/usr/local/lib/libumundorpc64_d.dylib"
 	"/usr/local/lib/libumundoutil64.dylib"
 	"/usr/local/lib/libumundoutil64_d.dylib"
-	"/usr/local/lib/libumundoNativeJava64.jnilib"
-	"/usr/local/lib/libumundoNativeJava64_d.jnilib"
+	"/usr/local/share/umundo/lib/libumundoNativeJava64.jnilib"
+	"/usr/local/share/umundo/lib/libumundoNativeJava64_d.jnilib"
 }
 
 set reqFilesMac [concat $reqFilesMac $reqFilesAndroid $reqFilesIOS $reqFilesDesktopCommonUnix $reqFilesXCodeProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
@@ -201,8 +201,8 @@ set reqFilesLinux32 {
 	"/usr/local/lib/libumundorpc_d.so"
 	"/usr/local/lib/libumundoutil.so"
 	"/usr/local/lib/libumundoutil_d.so"
-	"/usr/local/lib/libumundoNativeJava.so"
-	"/usr/local/lib/libumundoNativeJava_d.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava_d.so"
 
 	"/usr/local/share/umundo/java/umundo.jar"
 }
@@ -235,8 +235,8 @@ set reqFilesLinux64 {
 	"/usr/local/lib/libumundorpc64_d.so"
 	"/usr/local/lib/libumundoutil64.so"
 	"/usr/local/lib/libumundoutil64_d.so"
-	"/usr/local/lib/libumundoNativeJava64.so"
-	"/usr/local/lib/libumundoNativeJava64_d.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava64.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava64_d.so"
 
 	"/usr/local/share/umundo/java/umundo.jar"
 }
@@ -269,10 +269,10 @@ set reqFilesWin32 {
 	"/lib/umundorpc_d.lib"
 	"/lib/umundoutil.lib"
 	"/lib/umundoutil_d.lib"
-	"/lib/umundoNativeCSharp.dll"
-	"/lib/umundoNativeCSharp_d.dll"
-	"/lib/umundoNativeJava.dll"
-	"/lib/umundoNativeJava_d.dll"
+	"/share/umundo/lib/umundoNativeCSharp.dll"
+	"/share/umundo/lib/umundoNativeCSharp_d.dll"
+	"/share/umundo/lib/umundoNativeJava.dll"
+	"/share/umundo/lib/umundoNativeJava_d.dll"
 }
 set reqFilesWin32 [concat $reqFilesWin32 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesWin32 [lsort $reqFilesWin32]
@@ -303,10 +303,10 @@ set reqFilesWin64 {
 	"/lib/umundorpc64_d.lib"
 	"/lib/umundoutil64.lib"
 	"/lib/umundoutil64_d.lib"
-	"/lib/umundoNativeCSharp64.dll"
-	"/lib/umundoNativeCSharp64_d.dll"
-	"/lib/umundoNativeJava64.dll"
-	"/lib/umundoNativeJava64_d.dll"
+	"/share/umundo/lib/umundoNativeCSharp64.dll"
+	"/share/umundo/lib/umundoNativeCSharp64_d.dll"
+	"/share/umundo/lib/umundoNativeJava64.dll"
+	"/share/umundo/lib/umundoNativeJava64_d.dll"
 }
 set reqFilesWin64 [concat $reqFilesWin64 $reqFilesAndroid $reqFilesCSharpProject $reqFilesAndroidProject $reqFilesJavaSamples $reqFilesCPPSamples]
 set reqFilesWin64 [lsort $reqFilesWin64]

@@ -38,7 +38,7 @@ ZeroMQSubscriber::ZeroMQSubscriber() {}
 void ZeroMQSubscriber::init(boost::shared_ptr<Configuration> config) {
   _config = boost::static_pointer_cast<SubscriberConfig>(config);
   
-  (_subSocket  = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB))    || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+  (_subSocket     = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB))     || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
   (_readOpSocket  = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR))    || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
   (_writeOpSocket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR))    || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
   
@@ -149,27 +149,21 @@ void ZeroMQSubscriber::removed(PublisherStub pub) {
   
   if (_domainPubs.count(pub.getDomain()) == 0) {
     std::stringstream ss;
-    if (pub.isRemote()) {
-      // remote node, use network
-      ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
-    } else if (pub.isInProcess()) {
+    if (pub.isInProcess()) {
       // same process, use inproc communication
       ss << "inproc://um.pub." << pub.getDomain();
-    } else {
+    } else if (!pub.isRemote() && false) { // disabled for now
+      // same host, use inter-process communication
       ss << "ipc://um.pub." << pub.getDomain();
+    } else {
+      // remote node, use network
+      ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
     }
+
     if (isStarted()) {
       ZMQ_INTERNAL_SEND("disconnectPub", ss.str().c_str());
     } else {
-      int rc = 0;
-      while((rc = zmq_disconnect(_subSocket, ss.str().c_str())) < 0) {
-        if (errno == EAGAIN) {
-          LOG_INFO("zmq_disconnect %s: %s", ss.str().c_str(), zmq_strerror(errno));
-          break;
-        }
-        LOG_ERR("zmq_disconnect %s: %s", ss.str().c_str(), zmq_strerror(errno));
-        Thread::sleepMs(100);
-      }
+      zmq_disconnect(_subSocket, ss.str().c_str()) && LOG_ERR("zmq_disconnect %s: %s", ss.str().c_str(), zmq_strerror(errno));
     }
   }
 }
@@ -225,15 +219,7 @@ void ZeroMQSubscriber::run() {
         } else if (strcmp(op, "connectPub") == 0) {
           zmq_connect(_subSocket, endpoint) && LOG_ERR("zmq_connect %s: %s", endpoint, zmq_strerror(errno));
         } else if (strcmp(op, "disconnectPub") == 0) {
-          while((rc = zmq_disconnect(_subSocket, endpoint)) < 0) {
-            if (errno == EAGAIN) {
-              LOG_INFO("zmq_disconnect %s: %s", endpoint, zmq_strerror(errno));
-              break;
-            }
-            LOG_ERR("zmq_disconnect %s: %s", endpoint, zmq_strerror(errno));
-            Thread::sleepMs(100);
-          }
-
+          zmq_disconnect(_subSocket, endpoint) && LOG_ERR("zmq_disconnect %s: %s", endpoint, zmq_strerror(errno));
         }
         
         zmq_getsockopt (_readOpSocket, ZMQ_RCVMORE, &more, &more_size);

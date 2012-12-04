@@ -15,15 +15,16 @@ bool testDiscoveryStress() {
     Node n2;
     assert(NodeImpl::instances == 2);
 
-		for (int j = 0; j < i + 20; j++) {
+		for (int j = 0; j < i; j++) {
 			Subscriber s("foo", NULL);
       std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
       assert(SubscriberImpl::instances == j + 1);
 			n2.addSubscriber(s);
       std::cout << "\tSubscribers: " << p.waitForSubscribers(0) << std::endl;
       assert(p.waitForSubscribers(j + 1) == j + 1);
+      Thread::sleepMs(200);
 		}
-		assert(p.waitForSubscribers(i + 20) == i + 20);
+		assert(p.waitForSubscribers(i) == i);
     std::map<std::string, Subscriber> subs = n2.getSubscribers();
     std::map<std::string, Subscriber>::iterator subIter = subs.begin();
     while(subIter != subs.end()) {

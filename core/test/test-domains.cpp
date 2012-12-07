@@ -31,7 +31,7 @@ void testDifferentDomain() {
 	Node barNode(hostId + "bar");
 	assert(NodeImpl::instances == 2);
 
-  // this will leak memory as none deletes the receiver
+	// this will leak memory as none deletes the receiver
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
 

@@ -80,18 +80,18 @@ void condition_variable::_wait(unsigned int ms) {
 	int result = WaitForMultipleObjects(2, mEvents, FALSE, ms);
 	if (result == WAIT_FAILED) {
 		LPVOID lpMsgBuf;
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-		              FORMAT_MESSAGE_FROM_SYSTEM | 
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		              FORMAT_MESSAGE_FROM_SYSTEM |
 		              FORMAT_MESSAGE_IGNORE_INSERTS,
-		              NULL, 
-		              GetLastError(), 
+		              NULL,
+		              GetLastError(),
 		              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		              (LPTSTR) &lpMsgBuf, 
-		              0, 
+		              (LPTSTR) &lpMsgBuf,
+		              0,
 		              NULL);
 		LOG_ERR("%s", lpMsgBuf);
 		LocalFree(lpMsgBuf);
-    
+
 	}
 
 	// Check if we are the last waiter

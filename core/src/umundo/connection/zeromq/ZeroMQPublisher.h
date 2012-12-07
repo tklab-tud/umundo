@@ -59,11 +59,11 @@ protected:
 private:
 	void run();
 
-  void* _pubSocket;
+	void* _pubSocket;
 	shared_ptr<PublisherConfig> _config;
 
-  /// messages for subscribers we do not know yet
-  std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;
+	/// messages for subscribers we do not know yet
+	std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;
 
 	Monitor _pubLock;
 	Mutex _mutex;

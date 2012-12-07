@@ -133,6 +133,7 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\mDNSResponder-333.10\mDNSCore\CryptoAlg.c" />
     <ClCompile Include="..\mDNSResponder-333.10\mDNSCore\DNSCommon.c" />
     <ClCompile Include="..\mDNSResponder-333.10\mDNSCore\DNSDigest.c" />
     <ClCompile Include="..\mDNSResponder-333.10\mDNSCore\mDNS.c" />

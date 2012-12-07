@@ -33,28 +33,28 @@
 
 
 namespace umundo {
-  
+
 PBSerializer::PBSerializer() {}
 
 PBSerializer::~PBSerializer() {}
 
 shared_ptr<Implementation> PBSerializer::create() {
-  shared_ptr<Implementation> instance(new PBSerializer());
-  return instance;
+	shared_ptr<Implementation> instance(new PBSerializer());
+	return instance;
 }
 
 void PBSerializer::init(shared_ptr<Configuration> config) {
 }
 
 string PBSerializer::serialize(const string& type, void* obj) {
-  MessageLite* pbObj = (MessageLite*)obj;
-  //  MessageLite* pbObj = _serializers[type]->New();
-  //  pbObj->CheckTypeAndMergeFrom(*((MessageLite*)obj));
-  return pbObj->SerializeAsString();
+	MessageLite* pbObj = (MessageLite*)obj;
+	//  MessageLite* pbObj = _serializers[type]->New();
+	//  pbObj->CheckTypeAndMergeFrom(*((MessageLite*)obj));
+	return pbObj->SerializeAsString();
 }
 
 void PBSerializer::registerType(const string& type, void* serializer) {
-  _serializers[type] = (MessageLite*)serializer;
+	_serializers[type] = (MessageLite*)serializer;
 }
 
 Mutex PBSerializer::protoMutex;
@@ -67,18 +67,18 @@ google::protobuf::compiler::DiskSourceTree* PBSerializer::sourceTree = NULL;
 
 const google::protobuf::Message* PBSerializer::getProto(const std::string& type) {
 	ScopeLock lock(protoMutex);
-  // prefer descriptions from .proto files
-  if (descFactory != NULL && descs.find(type) != descs.end()) {
-    return descFactory->GetPrototype(descs[type]);
-  }
-  // otherwise take from .desc files
-  if (descFactory != NULL && descPool != NULL) {
-    const google::protobuf::Descriptor* desc = descPool->FindMessageTypeByName(type);
-    if (desc != NULL) {
-      return descFactory->GetPrototype(desc);
-    }
-  }
-  return NULL;
+	// prefer descriptions from .proto files
+	if (descFactory != NULL && descs.find(type) != descs.end()) {
+		return descFactory->GetPrototype(descs[type]);
+	}
+	// otherwise take from .desc files
+	if (descFactory != NULL && descPool != NULL) {
+		const google::protobuf::Descriptor* desc = descPool->FindMessageTypeByName(type);
+		if (desc != NULL) {
+			return descFactory->GetPrototype(desc);
+		}
+	}
+	return NULL;
 }
 
 /**
@@ -92,115 +92,115 @@ const google::protobuf::Message* PBSerializer::getProto(const std::string& type)
  */
 void PBSerializer::addProto(const std::string& dirOrFile) {
 	ScopeLock lock(protoMutex);
-  if (descPool == NULL) {
-    descPool = new google::protobuf::DescriptorPool();
-    descFactory = new google::protobuf::DynamicMessageFactory(descPool);
+	if (descPool == NULL) {
+		descPool = new google::protobuf::DescriptorPool();
+		descFactory = new google::protobuf::DynamicMessageFactory(descPool);
 		sourceTree = new google::protobuf::compiler::DiskSourceTree();
 		errorReporter = new PBErrorReporter();
-  }
+	}
 
-  std::string dirRoot;
-  std::string relDirOrFile;
-  size_t lastPathSep;
-  
-  if (isDir(dirOrFile)) {
-    dirRoot = dirOrFile;
-    relDirOrFile = "";
-  } else {
-    if ((lastPathSep = dirOrFile.find_last_of(PATH_SEPERATOR)) != std::string::npos) {
-      relDirOrFile = dirOrFile.substr(lastPathSep, dirOrFile.length() - lastPathSep);
-      dirRoot = dirOrFile.substr(0, lastPathSep);
-    }
-  }
+	std::string dirRoot;
+	std::string relDirOrFile;
+	size_t lastPathSep;
+
+	if (isDir(dirOrFile)) {
+		dirRoot = dirOrFile;
+		relDirOrFile = "";
+	} else {
+		if ((lastPathSep = dirOrFile.find_last_of(PATH_SEPERATOR)) != std::string::npos) {
+			relDirOrFile = dirOrFile.substr(lastPathSep, dirOrFile.length() - lastPathSep);
+			dirRoot = dirOrFile.substr(0, lastPathSep);
+		}
+	}
 
 	if (descImporters.find(dirRoot) == descImporters.end()) {
-  	sourceTree->MapPath("", dirRoot);
-  	descImporters[dirRoot] = new google::protobuf::compiler::Importer(sourceTree, errorReporter);
+		sourceTree->MapPath("", dirRoot);
+		descImporters[dirRoot] = new google::protobuf::compiler::Importer(sourceTree, errorReporter);
 	}
-  
-  addProtoRecurse(dirRoot, relDirOrFile, descImporters[dirRoot]);
+
+	addProtoRecurse(dirRoot, relDirOrFile, descImporters[dirRoot]);
 }
 
 
 void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer) {
-  
-  if (dirOrFile.length() > 0 && dirOrFile.find_last_of(".") == dirOrFile.size() - 1)
-    return;
-    
-  if (isDir(dirRoot + PATH_SEPERATOR + dirOrFile)) {
-    // a directory was given
-    
+
+	if (dirOrFile.length() > 0 && dirOrFile.find_last_of(".") == dirOrFile.size() - 1)
+		return;
+
+	if (isDir(dirRoot + PATH_SEPERATOR + dirOrFile)) {
+		// a directory was given
+
 #ifndef WIN32
-    DIR *dp;
-    dp = opendir((dirRoot + PATH_SEPERATOR + dirOrFile).c_str());
-    if (dp == NULL) {
-      LOG_ERR("Error opening directory '%s': %s", dirOrFile.c_str(), strerror(errno));
-      return;
-    }
-    struct dirent* entry;
-    while((entry = readdir(dp))) {
-      addProtoRecurse(dirRoot, dirOrFile + PATH_SEPERATOR + entry->d_name, importer);
-    }
-    closedir(dp);
+		DIR *dp;
+		dp = opendir((dirRoot + PATH_SEPERATOR + dirOrFile).c_str());
+		if (dp == NULL) {
+			LOG_ERR("Error opening directory '%s': %s", dirOrFile.c_str(), strerror(errno));
+			return;
+		}
+		struct dirent* entry;
+		while((entry = readdir(dp))) {
+			addProtoRecurse(dirRoot, dirOrFile + PATH_SEPERATOR + entry->d_name, importer);
+		}
+		closedir(dp);
 #else
-    WIN32_FIND_DATA ffd;
-    HANDLE hFind = INVALID_HANDLE_VALUE;
-    TCHAR szDir[MAX_PATH];
-    StringCchCopy(szDir, MAX_PATH, (dirRoot + PATH_SEPERATOR + dirOrFile).c_str());
-    StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
-    hFind = FindFirstFile(szDir, &ffd);
-    do {
-      addProtoRecurse(dirRoot, dirOrFile + PATH_SEPERATOR + ffd.cFileName, importer);
-    } while (FindNextFile(hFind, &ffd) != 0);
-    FindClose(hFind);
+		WIN32_FIND_DATA ffd;
+		HANDLE hFind = INVALID_HANDLE_VALUE;
+		TCHAR szDir[MAX_PATH];
+		StringCchCopy(szDir, MAX_PATH, (dirRoot + PATH_SEPERATOR + dirOrFile).c_str());
+		StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
+		hFind = FindFirstFile(szDir, &ffd);
+		do {
+			addProtoRecurse(dirRoot, dirOrFile + PATH_SEPERATOR + ffd.cFileName, importer);
+		} while (FindNextFile(hFind, &ffd) != 0);
+		FindClose(hFind);
 #endif
-    return;
-  }
-  
-  if (dirOrFile.length() > 6 && dirOrFile.substr(dirOrFile.length() - 6, 6).compare(".proto") == 0) {
-    const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
-    if (fileDesc != NULL) {
-      for (int j = 0; j < fileDesc->message_type_count(); j++) {
-        LOG_INFO("Added generic description for serializable type %s from .proto file", fileDesc->message_type(j)->name().c_str());
-        descs[fileDesc->message_type(j)->name()] = fileDesc->message_type(j);
-      }
-    } else {
-      LOG_ERR("Could not parse %s as .proto file", dirOrFile.c_str());
-    }
-  } else {
-    std::ifstream file((dirRoot + PATH_SEPERATOR + dirOrFile).c_str(), std::ios::in);
-    std::string content(static_cast<std::stringstream const&>(std::stringstream() << file.rdbuf()).str());
-    
-    google::protobuf::FileDescriptorSet fdSet;
-    fdSet.ParseFromString(content);
-    for (int i = 0; i < fdSet.file_size(); i++) {
-      google::protobuf::FileDescriptorProto fdProto = fdSet.file(i);
-      for (int j = 0; j < fdProto.dependency_size(); j++) {
-        std::string depProto = fdProto.dependency(j);
-        addProto(depProto);
-      }
-      for (int j = 0; j < fdProto.message_type_size(); j++) {
-        LOG_INFO("Added generic description for serializable type %s form .desc file", fdProto.message_type(j).name().c_str());
-      }
-      descPool->BuildFile(fdProto);
-    }
-  }
+		return;
+	}
+
+	if (dirOrFile.length() > 6 && dirOrFile.substr(dirOrFile.length() - 6, 6).compare(".proto") == 0) {
+		const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
+		if (fileDesc != NULL) {
+			for (int j = 0; j < fileDesc->message_type_count(); j++) {
+				LOG_INFO("Added generic description for serializable type %s from .proto file", fileDesc->message_type(j)->name().c_str());
+				descs[fileDesc->message_type(j)->name()] = fileDesc->message_type(j);
+			}
+		} else {
+			LOG_ERR("Could not parse %s as .proto file", dirOrFile.c_str());
+		}
+	} else {
+		std::ifstream file((dirRoot + PATH_SEPERATOR + dirOrFile).c_str(), std::ios::in);
+		std::string content(static_cast<std::stringstream const&>(std::stringstream() << file.rdbuf()).str());
+
+		google::protobuf::FileDescriptorSet fdSet;
+		fdSet.ParseFromString(content);
+		for (int i = 0; i < fdSet.file_size(); i++) {
+			google::protobuf::FileDescriptorProto fdProto = fdSet.file(i);
+			for (int j = 0; j < fdProto.dependency_size(); j++) {
+				std::string depProto = fdProto.dependency(j);
+				addProto(depProto);
+			}
+			for (int j = 0; j < fdProto.message_type_size(); j++) {
+				LOG_INFO("Added generic description for serializable type %s form .desc file", fdProto.message_type(j).name().c_str());
+			}
+			descPool->BuildFile(fdProto);
+		}
+	}
 }
 
 bool PBSerializer::isDir(const std::string& dirOrFile) {
-  int status;
-  struct stat dirStat;
-  status = stat (dirOrFile.c_str(), &dirStat);
-  
-  if (status != 0) {
-    LOG_ERR("Cannot open %s: %s", dirOrFile.c_str(), strerror(errno));
-    return false;
-  }
-  return((bool)(S_ISDIR (dirStat.st_mode)));
+	int status;
+	struct stat dirStat;
+	status = stat (dirOrFile.c_str(), &dirStat);
+
+	if (status != 0) {
+		LOG_ERR("Cannot open %s: %s", dirOrFile.c_str(), strerror(errno));
+		return false;
+	}
+	return((bool)(S_ISDIR (dirStat.st_mode)));
 }
-  
+
 void PBErrorReporter::AddError(const string & filename, int line, int column, const string & message) {
 	LOG_ERR("filename %s:%d:%d: %s", filename.c_str(), line, column, message.c_str());
 }
-  
+
 }

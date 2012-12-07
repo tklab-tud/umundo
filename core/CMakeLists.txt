@@ -73,28 +73,24 @@ if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
 	file(GLOB_RECURSE DISC_BONJOUR_FILES src/umundo/discovery/bonjour/*.cpp)
 	list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_FILES})
 
-	if (NOT APPLE AND NOT IOS)
-		# bonjour library is automatically available on mac
+	if (DISC_BONJOUR_EMBED)
+		find_package(BonjourEmbedded REQUIRED)
+		include_directories(${BonjourEmbedded_INCLUDE_DIR})
+		LIST(APPEND UMUNDOCORE_LIBRARIES ${BonjourEmbedded_LIBRARY})
 
-		if (DISC_BONJOUR_EMBED)
-			find_package(BonjourEmbedded REQUIRED)
-			include_directories(${BonjourEmbedded_INCLUDE_DIR})
-			LIST(APPEND UMUNDOCORE_LIBRARIES ${BonjourEmbedded_LIBRARY})
+		file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES src/umundo/discovery/bonjour/mDNSEmbedded.c)
+		list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_EMBED_FILES})
 
-			file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES src/umundo/discovery/bonjour/mDNSEmbedded.c)
-			list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_EMBED_FILES})
-
-			if (WIN32)
-				LIST(APPEND UMUNDOCORE_LIBRARIES "Iphlpapi")
-				LIST(APPEND UMUNDOCORE_LIBRARIES "Netapi32")
-			endif()
-
-		else()
-			find_package(Bonjour REQUIRED)
-			include_directories(${Bonjour_INCLUDE_DIR})
-			LIST(APPEND UMUNDOCORE_LIBRARIES ${Bonjour_LIBRARY})
-
+		if (WIN32)
+			LIST(APPEND UMUNDOCORE_LIBRARIES "Iphlpapi")
+			LIST(APPEND UMUNDOCORE_LIBRARIES "Netapi32")
 		endif()
+
+	else()
+		find_package(Bonjour REQUIRED)
+		include_directories(${Bonjour_INCLUDE_DIR})
+		LIST(APPEND UMUNDOCORE_LIBRARIES ${Bonjour_LIBRARY})
+
 	endif()
 endif()
 

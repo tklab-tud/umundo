@@ -25,7 +25,7 @@
 // Happens on STL member variables which are not public therefore is ok?
 //#pragma warning (disable : 4251)
 
-// see 
+// see
 // http://support.microsoft.com/default.aspx?scid=kb;EN-US;Q172396
 // http://support.microsoft.com/default.aspx?scid=kb;EN-US;Q168958
 // http://www.unknownroad.com/rtfm/VisualStudio/warningC4251.html

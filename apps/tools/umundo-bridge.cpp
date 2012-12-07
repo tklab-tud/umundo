@@ -44,7 +44,7 @@ void printUsageAndExit() {
 	printf("\t-t                 : tunnel all messages\n");
 	printf("\n");
 	printf("Example\n");
-	printf("\tumundo-bridge tcp://130.32.14.22:4242\n");	
+	printf("\tumundo-bridge tcp://130.32.14.22:4242\n");
 	exit(1);
 }
 
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (optind >= argc)
-	 	printUsageAndExit();
+		printUsageAndExit();
 
 	std::string hostname(argv[optind]);
 	NodeStub endPoint;
@@ -94,12 +94,12 @@ int main(int argc, char** argv) {
 	} else {
 		printUsageAndExit();
 	}
-	
+
 	if (pos + 1 < hostname.length()) {
 		string port(hostname.substr(oldPos));
 		endPoint.getImpl()->setPort(strTo<uint16_t>(port));
 	} else {
-		printUsageAndExit();		
+		printUsageAndExit();
 	}
 
 	boost::static_pointer_cast<umundo::ZeroMQNode>(node->_impl)->added(endPoint);

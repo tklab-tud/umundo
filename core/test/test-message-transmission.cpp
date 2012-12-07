@@ -40,44 +40,44 @@ bool testMessageTransmission() {
 		nrReceptions = 0;
 		nrMissing = 0;
 		bytesRecvd = 0;
-    
+
 		Node pubNode(hostId + "foo");
 		Publisher pub("foo");
 		pubNode.addPublisher(pub);
-    
+
 		TestReceiver* testRecv = new TestReceiver();
 		Node subNode(hostId + "foo");
 		Subscriber sub("foo", testRecv);
 		sub.setReceiver(testRecv);
 		subNode.addSubscriber(sub);
-    
+
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
-    
-    int iterations = 1000;
-    
+
+		int iterations = 1000;
+
 		for (int j = 0; j < iterations; j++) {
 			Message* msg = new Message();
 			msg->putMeta("seq",toStr(j));
 			pub.send(msg);
 			delete msg;
 		}
-    
+
 		// wait until all messages are delivered
 		Thread::sleepMs(500);
-    
+
 		// sometimes there is some weird latency
 		for (int i = 0; i < 5; i++) {
 			if (nrReceptions < iterations)
 				Thread::sleepMs(2000);
 		}
-    
+
 		std::cout << "expected " << iterations << " messages, received " << nrReceptions << std::endl;
 		assert(nrReceptions == iterations);
-    
+
 		subNode.removeSubscriber(sub);
 		pubNode.removePublisher(pub);
-    
+
 	}
 	return true;
 }
@@ -105,8 +105,8 @@ bool testDataTransmission() {
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, 40, BUFFER_SIZE);
 
-    int iterations = 1000;
-    
+		int iterations = 1000;
+
 		for (int j = 0; j < iterations; j++) {
 			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
 			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));

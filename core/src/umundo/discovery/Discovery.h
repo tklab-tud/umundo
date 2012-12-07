@@ -79,16 +79,16 @@ public:
 	static void add(NodeImpl* node);    /**< Add a Node to multicast domain discovery.
 		@param node Node to be added.
 	*/
-  static void add(Node* node) {
-    add(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
-  }
+	static void add(Node* node) {
+		add(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+	}
 
 	static void remove(NodeImpl* node); /**< Remove a Node from multicast domain discovery.
 		@param node Previously added Node to be removed.
 	*/
-  static void remove(Node* node) {
-    remove(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
-  }
+	static void remove(Node* node) {
+		remove(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+	}
 
 	//@}
 

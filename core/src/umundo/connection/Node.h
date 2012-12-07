@@ -54,34 +54,41 @@ protected:
  */
 class DLLEXPORT NodeStubBase : public EndPoint {
 public:
-  NodeStubBase() : _impl() { }
-  NodeStubBase(boost::shared_ptr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
-  NodeStubBase(const NodeStubBase& other) : EndPoint(other._impl), _impl(other._impl) { }
-  virtual ~NodeStubBase() { }
+	NodeStubBase() : _impl() { }
+	NodeStubBase(boost::shared_ptr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	NodeStubBase(const NodeStubBase& other) : EndPoint(other._impl), _impl(other._impl) { }
+	virtual ~NodeStubBase() { }
 
-  operator bool() const { return _impl; }
-  bool operator< (const NodeStubBase& other) const { return _impl < other._impl; }
-  bool operator==(const NodeStubBase& other) const { return _impl == other._impl; }
-  bool operator!=(const NodeStubBase& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const NodeStubBase& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const NodeStubBase& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const NodeStubBase& other) const {
+		return _impl != other._impl;
+	}
 
-  NodeStubBase& operator=(const NodeStubBase& other)
-  {
-    _impl = other._impl;
-    EndPoint::_impl = _impl;
-    return *this;
-  } // operator=
+	NodeStubBase& operator=(const NodeStubBase& other) {
+		_impl = other._impl;
+		EndPoint::_impl = _impl;
+		return *this;
+	} // operator=
 
 	/** @name Remote Node */
 	//@{
 	virtual const string getUUID() const {
 		return _impl->getUUID();
 	}
-	
+
 	//@}
-    
-  boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
-    return _impl;
-  }
+
+	boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
+		return _impl;
+	}
 
 protected:
 	boost::shared_ptr<NodeStubBaseImpl> _impl;
@@ -89,7 +96,7 @@ protected:
 
 class DLLEXPORT NodeStubImpl : public NodeStubBaseImpl {
 public:
-  virtual void addPublisher(const PublisherStub& pub) {
+	virtual void addPublisher(const PublisherStub& pub) {
 		_pubs[pub.getUUID()] = pub;
 	}
 	virtual void removePublisher(const PublisherStub& pub) {
@@ -110,98 +117,105 @@ public:
 		return _subs;
 	}
 
-  virtual SubscriberStub& getSubscriber(const std::string& uuid) {
-    if (_subs.find(uuid) != _subs.end())
-      return _subs[uuid];
-    return nullSubStub;
+	virtual SubscriberStub& getSubscriber(const std::string& uuid) {
+		if (_subs.find(uuid) != _subs.end())
+			return _subs[uuid];
+		return nullSubStub;
 	}
 
 	virtual std::map<std::string, PublisherStub>& getPublishers() {
 		return _pubs;
 	}
 
-  virtual PublisherStub& getPublisher(const std::string& uuid) {
-    if (_pubs.find(uuid) != _pubs.end())
-      return _pubs[uuid];
-    return nullPubStub;
+	virtual PublisherStub& getPublisher(const std::string& uuid) {
+		if (_pubs.find(uuid) != _pubs.end())
+			return _pubs[uuid];
+		return nullPubStub;
 	}
 
 private:
 	PublisherStub nullPubStub;
-  SubscriberStub nullSubStub;
-  std::map<std::string, PublisherStub> _pubs;
+	SubscriberStub nullSubStub;
+	std::map<std::string, PublisherStub> _pubs;
 	std::map<std::string, SubscriberStub> _subs;
-	
+
 };
 
 class DLLEXPORT NodeStub : public NodeStubBase {
 public:
 	NodeStub() : _impl() { }
-  NodeStub(boost::shared_ptr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
-  NodeStub(const NodeStub& other) : NodeStubBase(other._impl), _impl(other._impl) { }
-  virtual ~NodeStub() { }
+	NodeStub(boost::shared_ptr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
+	NodeStub(const NodeStub& other) : NodeStubBase(other._impl), _impl(other._impl) { }
+	virtual ~NodeStub() { }
 
-  operator bool() const { return _impl; }
-  bool operator< (const NodeStub& other) const { return _impl < other._impl; }
-  bool operator==(const NodeStub& other) const { return _impl == other._impl; }
-  bool operator!=(const NodeStub& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const NodeStub& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const NodeStub& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const NodeStub& other) const {
+		return _impl != other._impl;
+	}
 
-  NodeStub& operator=(const NodeStub& other)
-  {
-    _impl = other._impl;
-    EndPoint::_impl = _impl;
-    NodeStubBase::_impl = _impl;
-    return *this;
-  } // operator=
-  
-  virtual void addPublisher(const PublisherStub& pub) {
-    return _impl->addPublisher(pub);
-  }
+	NodeStub& operator=(const NodeStub& other) {
+		_impl = other._impl;
+		EndPoint::_impl = _impl;
+		NodeStubBase::_impl = _impl;
+		return *this;
+	} // operator=
+
+	virtual void addPublisher(const PublisherStub& pub) {
+		return _impl->addPublisher(pub);
+	}
 	virtual void removePublisher(const PublisherStub& pub) {
 		return _impl->removePublisher(pub);
 	}
-  virtual void addSubscriber(const SubscriberStub& sub) {
-    return _impl->addSubscriber(sub);
-  }
+	virtual void addSubscriber(const SubscriberStub& sub) {
+		return _impl->addSubscriber(sub);
+	}
 	virtual void removeSubscriber(const SubscriberStub& sub) {
 		return _impl->removeSubscriber(sub);
 	}
-	
-  
+
+
 #if !defined(SWIGJAVA) && !defined(SWIGCSHARP)
 	virtual std::map<std::string, SubscriberStub>& getSubscribers() {
-    return _impl->getSubscribers();
+		return _impl->getSubscribers();
 	}
-  
+
 	virtual std::map<std::string, PublisherStub>& getPublishers() {
-    return _impl->getPublishers();
+		return _impl->getPublishers();
 	}
 #else
-  std::set<PublisherStub> getPublishers() {
-    std::map<std::string, PublisherStub> pubs = _impl->getPublishers();
-    std::set<PublisherStub> pubSet;
-    for( std::map<std::string, PublisherStub>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
-    	pubSet.insert(it->second);
-    }
-    return pubSet;
-  }
-  
-  std::set<SubscriberStub> getSubscribers() {
-    std::map<std::string, SubscriberStub> subs = _impl->getSubscribers();
-    std::set<SubscriberStub> subSet;
-    for( std::map<std::string, SubscriberStub>::iterator it = subs.begin(); it != subs.end(); ++it ) {
-    	subSet.insert(it->second);
-    }
-    return subSet;
-  }
-#endif  
-
-  virtual SubscriberStub& getSubscriber(const std::string& uuid) {
-    return _impl->getSubscriber(uuid);
+	std::set<PublisherStub> getPublishers() {
+		std::map<std::string, PublisherStub> pubs = _impl->getPublishers();
+		std::set<PublisherStub> pubSet;
+		for( std::map<std::string, PublisherStub>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
+			pubSet.insert(it->second);
+		}
+		return pubSet;
 	}
 
-  virtual PublisherStub& getPublisher(const std::string& uuid) {
-    return _impl->getPublisher(uuid);
+	std::set<SubscriberStub> getSubscribers() {
+		std::map<std::string, SubscriberStub> subs = _impl->getSubscribers();
+		std::set<SubscriberStub> subSet;
+		for( std::map<std::string, SubscriberStub>::iterator it = subs.begin(); it != subs.end(); ++it ) {
+			subSet.insert(it->second);
+		}
+		return subSet;
+	}
+#endif
+
+	virtual SubscriberStub& getSubscriber(const std::string& uuid) {
+		return _impl->getSubscriber(uuid);
+	}
+
+	virtual PublisherStub& getPublisher(const std::string& uuid) {
+		return _impl->getPublisher(uuid);
 	}
 
 	boost::shared_ptr<NodeStubImpl> getImpl() const {
@@ -210,7 +224,7 @@ public:
 
 protected:
 	boost::shared_ptr<NodeStubImpl> _impl;
-	
+
 };
 
 /**
@@ -226,36 +240,36 @@ public:
 	virtual void addPublisher(Publisher& pub) = 0;
 	virtual void removePublisher(Publisher& pub) = 0;
 
-  static int instances;
-  
+	static int instances;
+
 	virtual std::map<std::string, Subscriber>& getSubscribers() {
 		return _subs;
 	}
-  
-  virtual Subscriber& getSubscriber(const std::string& uuid) {
-    if (_subs.find(uuid) != _subs.end())
-      return _subs[uuid];
-    return nullSub;
+
+	virtual Subscriber& getSubscriber(const std::string& uuid) {
+		if (_subs.find(uuid) != _subs.end())
+			return _subs[uuid];
+		return nullSub;
 	}
-  
+
 	virtual std::map<std::string, Publisher>& getPublishers() {
 		return _pubs;
 	}
-  
-  virtual Publisher& getPublisher(const std::string& uuid) {
-    if (_pubs.find(uuid) != _pubs.end())
-      return _pubs[uuid];
-    return nullPub;
+
+	virtual Publisher& getPublisher(const std::string& uuid) {
+		if (_pubs.find(uuid) != _pubs.end())
+			return _pubs[uuid];
+		return nullPub;
 	}
-	
+
 
 protected:
-  std::map<std::string, Publisher> _pubs;
+	std::map<std::string, Publisher> _pubs;
 	std::map<std::string, Subscriber> _subs;
 
 private:
-  Publisher nullPub;
-  Subscriber nullSub;
+	Publisher nullPub;
+	Subscriber nullSub;
 };
 
 /**
@@ -263,26 +277,33 @@ private:
  */
 class DLLEXPORT Node : public NodeStubBase {
 public:
-	
+
 	Node();
 	Node(const std::string domain);
-  Node(boost::shared_ptr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
-  Node(const Node& other) : NodeStubBase(other._impl), _impl(other._impl) { }
+	Node(boost::shared_ptr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
+	Node(const Node& other) : NodeStubBase(other._impl), _impl(other._impl) { }
 	virtual ~Node();
 
-  operator bool() const { return _impl; }
-  bool operator< (const Node& other) const { return _impl < other._impl; }
-  bool operator==(const Node& other) const { return _impl == other._impl; }
-  bool operator!=(const Node& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const Node& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const Node& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const Node& other) const {
+		return _impl != other._impl;
+	}
 
-  Node& operator=(const Node& other) 
-  {
-    _impl = other._impl;
+	Node& operator=(const Node& other) {
+		_impl = other._impl;
 		EndPoint::_impl = _impl;
-    NodeStubBase::_impl = _impl;
-    return *this;
-  } // operator=
-  
+		NodeStubBase::_impl = _impl;
+		return *this;
+	} // operator=
+
 	/** @name Publish / Subscriber Maintenance */
 	//@{
 
@@ -301,38 +322,38 @@ public:
 
 #if !defined(SWIGJAVA) && !defined(SWIGCSHARP)
 	virtual std::map<std::string, Subscriber>& getSubscribers() {
-    return _impl->getSubscribers();
+		return _impl->getSubscribers();
 	}
-  
+
 	virtual std::map<std::string, Publisher>& getPublishers() {
-    return _impl->getPublishers();
+		return _impl->getPublishers();
 	}
 #else
-  std::set<Publisher> getPublishers() {
-    std::map<std::string, Publisher> pubs = _impl->getPublishers();
-    std::set<Publisher> pubSet;
-    for( std::map<std::string, Publisher>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
-    	pubSet.insert(it->second);
-    }
-    return pubSet;
-  }
-
-  std::set<Subscriber> getSubscribers() {
-    std::map<std::string, Subscriber> subs = _impl->getSubscribers();
-    std::set<Subscriber> subSet;
-    for( std::map<std::string, Subscriber>::iterator it = subs.begin(); it != subs.end(); ++it ) {
-    	subSet.insert(it->second);
-    }
-    return subSet;
-  }
-#endif
-
-  virtual Subscriber& getSubscriber(const std::string& uuid) {
-    return _impl->getSubscriber(uuid);
+	std::set<Publisher> getPublishers() {
+		std::map<std::string, Publisher> pubs = _impl->getPublishers();
+		std::set<Publisher> pubSet;
+		for( std::map<std::string, Publisher>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
+			pubSet.insert(it->second);
+		}
+		return pubSet;
 	}
 
-  virtual Publisher& getPublisher(const std::string& uuid) {
-    return _impl->getPublisher(uuid);
+	std::set<Subscriber> getSubscribers() {
+		std::map<std::string, Subscriber> subs = _impl->getSubscribers();
+		std::set<Subscriber> subSet;
+		for( std::map<std::string, Subscriber>::iterator it = subs.begin(); it != subs.end(); ++it ) {
+			subSet.insert(it->second);
+		}
+		return subSet;
+	}
+#endif
+
+	virtual Subscriber& getSubscriber(const std::string& uuid) {
+		return _impl->getSubscriber(uuid);
+	}
+
+	virtual Publisher& getPublisher(const std::string& uuid) {
+		return _impl->getPublisher(uuid);
 	}
 
 	void connect(Connectable* connectable);
@@ -340,20 +361,20 @@ public:
 
 	//@}
 
-  void suspend() {
-    return _impl->suspend();
-  }
-  void resume() {
-    return _impl->resume();
-  }
-  
-  shared_ptr<NodeImpl> getImpl() const {
-    return _impl;
-  }
+	void suspend() {
+		return _impl->suspend();
+	}
+	void resume() {
+		return _impl->resume();
+	}
+
+	shared_ptr<NodeImpl> getImpl() const {
+		return _impl;
+	}
 
 protected:
 	boost::shared_ptr<NodeImpl> _impl;
-	
+
 	friend class Discovery;
 };
 

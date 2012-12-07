@@ -24,14 +24,14 @@
 namespace umundo {
 
 int SubscriberImpl::instances = -1;
-  
+
 SubscriberImpl::SubscriberImpl() : _receiver(NULL) {
-  _uuid = UUID::getUUID();
-  instances++;
+	_uuid = UUID::getUUID();
+	instances++;
 }
 
 SubscriberImpl::~SubscriberImpl() {
-  instances--;
+	instances--;
 }
 
 shared_ptr<Configuration> SubscriberConfig::create() {
@@ -40,7 +40,7 @@ shared_ptr<Configuration> SubscriberConfig::create() {
 
 Subscriber::Subscriber(const string& channelName, Receiver* receiver) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
-  SubscriberStub::_impl = _impl;
+	SubscriberStub::_impl = _impl;
 	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
@@ -54,8 +54,8 @@ Subscriber::~Subscriber() {
 
 Subscriber::Subscriber(const std::string& channelName) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
-  SubscriberStub::_impl = _impl;
-  _config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
+	SubscriberStub::_impl = _impl;
+	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
 	_impl->setChannelName(channelName);

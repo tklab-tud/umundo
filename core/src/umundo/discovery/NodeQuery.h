@@ -43,19 +43,21 @@ class DLLEXPORT NodeQuery : public boost::enable_shared_from_this<NodeQuery> {
 public:
 	NodeQuery(string domain, ResultSet<NodeStub>*);
 	virtual ~NodeQuery();
-  
-  bool operator< (const NodeQuery& other) const {
-    return !(operator==(other)) && (_domain < other._domain ||
-                                    _transport < other._transport ||
-                                    _listener < other._listener);
-  }
-  bool operator==(const NodeQuery& other) const {
-    return
-      _domain == other._domain &&
-      _transport == other._transport &&
-      _listener == other._listener;
-  }
-  bool operator!=(const NodeQuery& other) const { return !(operator==(other)); }
+
+	bool operator< (const NodeQuery& other) const {
+		return !(operator==(other)) && (_domain < other._domain ||
+		                                _transport < other._transport ||
+		                                _listener < other._listener);
+	}
+	bool operator==(const NodeQuery& other) const {
+		return
+		    _domain == other._domain &&
+		    _transport == other._transport &&
+		    _listener == other._listener;
+	}
+	bool operator!=(const NodeQuery& other) const {
+		return !(operator==(other));
+	}
 
 //  Subscriber& operator=(const Subscriber& other)
 //  {
@@ -64,7 +66,7 @@ public:
 //    return *this;
 //  } // operator=
 
-  
+
 	virtual void found(const NodeStub& node);
 	virtual void removed(const NodeStub& node);
 

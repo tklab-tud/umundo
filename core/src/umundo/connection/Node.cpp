@@ -35,25 +35,25 @@ shared_ptr<Configuration> NodeConfig::create() {
 
 NodeImpl::NodeImpl() {
 	_uuid = UUID::getUUID();
-  instances++;
+	instances++;
 }
 
 NodeImpl::~NodeImpl() {
-  instances--;
+	instances--;
 }
-  
+
 Node::Node() {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
-  NodeStubBase::_impl = _impl;
-  EndPoint::_impl = _impl;
+	NodeStubBase::_impl = _impl;
+	EndPoint::_impl = _impl;
 	shared_ptr<Configuration> config = Factory::config("node");
 	_impl->init(config);
 }
 
 Node::Node(string domain) {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
-  NodeStubBase::_impl = _impl;
-  EndPoint::_impl = _impl;
+	NodeStubBase::_impl = _impl;
+	EndPoint::_impl = _impl;
 	shared_ptr<Configuration> config = Factory::config("node");
 	_impl->setDomain(domain);
 	_impl->init(config);

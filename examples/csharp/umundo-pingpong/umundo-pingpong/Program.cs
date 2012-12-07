@@ -39,7 +39,7 @@ namespace umundo_pingpong
         	/*
         	 * Make sure this path contains the umundoNativeCSharp.dll!
         	 */
-            SetDllDirectory("C:\\Program Files\\uMundo\\lib");
+            SetDllDirectory("C:\\Users\\sradomski\\Desktop\\build\\umundo\\lib");
             org.umundo.core.Node node = new org.umundo.core.Node();
             Publisher pub = new Publisher("pingpong");
             PingReceiver recv = new PingReceiver();
@@ -53,7 +53,7 @@ namespace umundo_pingpong
                 String data = "data";
                 System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
                 byte[] buffer = enc.GetBytes(data);
-                msg.setData(buffer, (uint)buffer.Length);
+                msg.setData(buffer);
                 msg.putMeta("foo", "bar");
                 Console.Write("o");
                 pub.send(msg);

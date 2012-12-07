@@ -50,18 +50,18 @@ public:
 //		virtual string serialize(void* obj);
 	virtual void registerType(const string& type, void* serializer);
 
-  static void addProto(const std::string& dirOrFile);
-  static const google::protobuf::Message* getProto(const std::string& type);
-  
+	static void addProto(const std::string& dirOrFile);
+	static const google::protobuf::Message* getProto(const std::string& type);
+
 private:
-  static void addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer);
+	static void addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer);
 	static bool isDir(const std::string& dirOrFile);
 
 	map<string, MessageLite*> _serializers;
 	static std::map<std::string, const google::protobuf::Descriptor*> descs;
 	static std::map<std::string, google::protobuf::compiler::Importer*> descImporters;
-  static DynamicMessageFactory* descFactory;
-  static DescriptorPool* descPool;
+	static DynamicMessageFactory* descFactory;
+	static DescriptorPool* descPool;
 	static PBErrorReporter* errorReporter;
 	static google::protobuf::compiler::DiskSourceTree* sourceTree;
 

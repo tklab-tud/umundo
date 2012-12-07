@@ -31,19 +31,19 @@
 namespace umundo {
 
 TypeDeserializerImpl::~TypeDeserializerImpl() {
-  std::cout << "GONE!" << std::endl;
+	std::cout << "GONE!" << std::endl;
 }
 
 void TypeDeserializerImpl::receive(Message* msg) {
-  if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
-    // explicit type given
-    void* obj = deserialize(msg->getMeta("um.s11n.type"), msg);
-    _recv->receive(obj, msg);
-    //    _impl->destroyObj(obj);
-  } else {
-    // just pass the raw message
-    _recv->receive(NULL, msg);
-  }
+	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+		// explicit type given
+		void* obj = deserialize(msg->getMeta("um.s11n.type"), msg);
+		_recv->receive(obj, msg);
+		//    _impl->destroyObj(obj);
+	} else {
+		// just pass the raw message
+		_recv->receive(NULL, msg);
+	}
 }
 
 TypedSubscriber::TypedSubscriber(const string& channelName) : Subscriber(channelName) {
@@ -65,8 +65,8 @@ TypedSubscriber::TypedSubscriber(const string& channelName, TypedReceiver* recv)
 		Factory::registerPrototype("typeDeserializer", _registeredPrototype, NULL);
 	}
 	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
-  _impl->setReceiver(recv);
-  Subscriber::setReceiver(_impl.get());
+	_impl->setReceiver(recv);
+	Subscriber::setReceiver(_impl.get());
 	assert(_impl != NULL);
 }
 TypeDeserializerImpl* TypedSubscriber::_registeredPrototype = NULL;

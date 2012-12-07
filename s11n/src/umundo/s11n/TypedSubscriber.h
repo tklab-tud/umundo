@@ -37,19 +37,19 @@ public:
  */
 class DLLEXPORT TypeDeserializerImpl : public Implementation, public Receiver {
 public:
-  TypeDeserializerImpl() : _recv(NULL) {}
-  virtual ~TypeDeserializerImpl();
+	TypeDeserializerImpl() : _recv(NULL) {}
+	virtual ~TypeDeserializerImpl();
 	virtual void* deserialize(const string& type, Message* msg) = 0;
 	virtual void destroyObj(void* obj) = 0;
 	virtual void registerType(const string& type, void* deserializer) = 0;
-  void receive(Message* msg);
+	void receive(Message* msg);
 
-  virtual void setReceiver(TypedReceiver* recv) {
+	virtual void setReceiver(TypedReceiver* recv) {
 		_recv = recv;
 	}
-  
+
 protected:
-  TypedReceiver* _recv;
+	TypedReceiver* _recv;
 };
 
 /**
@@ -57,32 +57,39 @@ protected:
  */
 class DLLEXPORT TypedSubscriber : public Subscriber {
 public:
-  
-  TypedSubscriber() : _impl() {}
+
+	TypedSubscriber() : _impl() {}
 	TypedSubscriber(const std::string& channelName);
 	TypedSubscriber(const std::string& channelName, TypedReceiver* receiver);
-  TypedSubscriber(boost::shared_ptr<TypeDeserializerImpl> const impl) : _impl(impl) { }
-  TypedSubscriber(const TypedSubscriber& other) : _impl(other._impl) { }
+	TypedSubscriber(boost::shared_ptr<TypeDeserializerImpl> const impl) : _impl(impl) { }
+	TypedSubscriber(const TypedSubscriber& other) : _impl(other._impl) { }
 	virtual ~TypedSubscriber();
-  
-  operator bool() const { return _impl; }
-  bool operator< (const TypedSubscriber& other) const { return _impl < other._impl; }
-  bool operator==(const TypedSubscriber& other) const { return _impl == other._impl; }
-  bool operator!=(const TypedSubscriber& other) const { return _impl != other._impl; }
-    
-  TypedSubscriber& operator=(const TypedSubscriber& other)
-  {
-	  Subscriber::operator=(other);
-    _impl = other._impl;
-    return *this;
-  } // operator=
-  
+
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const TypedSubscriber& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const TypedSubscriber& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const TypedSubscriber& other) const {
+		return _impl != other._impl;
+	}
+
+	TypedSubscriber& operator=(const TypedSubscriber& other) {
+		Subscriber::operator=(other);
+		_impl = other._impl;
+		return *this;
+	} // operator=
+
 	void registerType(const string& type, void* serializer);
 
 	virtual void setReceiver(TypedReceiver* recv) {
 		_impl->setReceiver(recv);
 	}
-	
+
 	virtual string getType(Message* msg);
 	virtual void* deserialize(Message* msg);
 

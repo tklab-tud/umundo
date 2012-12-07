@@ -42,7 +42,7 @@ void Discovery::add(NodeImpl* node) {
 //}
 
 void Discovery::remove(NodeImpl* node) {
-  boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->remove(node);
+	boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery"))->remove(node);
 }
 
 //void Discovery::remove(NodeImpl* node) {

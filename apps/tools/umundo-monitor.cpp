@@ -121,10 +121,10 @@ public:
 			metaIter++;
 		}
 
-    if (object != NULL) {
-      google::protobuf::Message* pbObj = (google::protobuf::Message*)object;
-      pbObj->PrintDebugString();
-    }
+		if (object != NULL) {
+			google::protobuf::Message* pbObj = (google::protobuf::Message*)object;
+			pbObj->PrintDebugString();
+		}
 	}
 };
 
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (protoPath != NULL) {
-    PBSerializer::addProto(protoPath);
+		PBSerializer::addProto(protoPath);
 		sub.setReceiver(new ProtoBufDumpingReceiver());
 	} else {
 		sub.setReceiver(new PlainDumpingReceiver());
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
 				size_t keyEnd = line.find_first_of(" =", keyStart);
 				size_t valueStart = line.find_first_not_of(" =", keyEnd);
 				size_t valueEnd = line.length();
-				
+
 				string key = line.substr(keyStart, keyEnd - keyStart);
 				string value = line.substr(valueStart, valueEnd - valueStart);
 				cout << key << " = " << value << endl;

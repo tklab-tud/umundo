@@ -81,7 +81,7 @@ protected:
 class DLLEXPORT PublisherImpl : public PublisherStubImpl, public Implementation {
 public:
 	PublisherImpl();
-  virtual ~PublisherImpl();
+	virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
 	void putMeta(const string& key, const string& value) {
@@ -102,7 +102,7 @@ public:
 
 	//@}
 
-  static int instances;
+	static int instances;
 
 protected:
 	/** @name Optional subscriber awareness */
@@ -128,24 +128,31 @@ protected:
 class DLLEXPORT PublisherStub : public EndPoint {
 public:
 	PublisherStub() : _impl() { }
-  PublisherStub(boost::shared_ptr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
-  PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
+	PublisherStub(boost::shared_ptr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
-  operator bool() const { return _impl; }
-  bool operator< (const PublisherStub& other) const { return _impl < other._impl; }
-  bool operator==(const PublisherStub& other) const { return _impl == other._impl; }
-  bool operator!=(const PublisherStub& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const PublisherStub& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const PublisherStub& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const PublisherStub& other) const {
+		return _impl != other._impl;
+	}
 
-  PublisherStub& operator=(const PublisherStub& other) 
-  {
-    _impl = other._impl;
-    EndPoint::_impl = _impl;
-    return *this;
-  } // operator=
+	PublisherStub& operator=(const PublisherStub& other) {
+		_impl = other._impl;
+		EndPoint::_impl = _impl;
+		return *this;
+	} // operator=
 
-  boost::shared_ptr<PublisherStubImpl> getImpl() const {
-    return _impl;
-  }
+	boost::shared_ptr<PublisherStubImpl> getImpl() const {
+		return _impl;
+	}
 
 	/** @name Functionality of local *and* remote Publishers */
 	//@{
@@ -163,11 +170,11 @@ protected:
 
 #if 0
 std::ostream & operator<<(std::ostream &os, const PublisherStub& pubStub) {
-  os << "PublisherStub:" << std::endl;
-  os << "\tchannelName: " << pubStub.getChannelName() << std::endl;
-  os << "\tuuid: " << pubStub.getUUID() << std::endl;
-  os << static_cast<EndPoint>(pubStub);
-  return os;
+	os << "PublisherStub:" << std::endl;
+	os << "\tchannelName: " << pubStub.getChannelName() << std::endl;
+	os << "\tuuid: " << pubStub.getUUID() << std::endl;
+	os << static_cast<EndPoint>(pubStub);
+	return os;
 }
 #endif
 
@@ -181,22 +188,29 @@ public:
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);
-  Publisher(boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
-  Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
+	Publisher(boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
+	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
 
-  operator bool() const { return _impl; }
-  bool operator< (const Publisher& other) const { return _impl < other._impl; }
-  bool operator==(const Publisher& other) const { return _impl == other._impl; }
-  bool operator!=(const Publisher& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const Publisher& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const Publisher& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const Publisher& other) const {
+		return _impl != other._impl;
+	}
 
-  Publisher& operator=(const Publisher& other) 
-  {
-    _impl = other._impl;
-    PublisherStub::_impl = _impl;
-    EndPoint::_impl = _impl;
-    return *this;
-  } // operator=
+	Publisher& operator=(const Publisher& other) {
+		_impl = other._impl;
+		PublisherStub::_impl = _impl;
+		EndPoint::_impl = _impl;
+		return *this;
+	} // operator=
 
 	/** @name Functionality of local Publishers */
 	//@{
@@ -243,20 +257,20 @@ protected:
 
 #if 0
 std::ostream & operator<<(std::ostream &os, const Publisher& pub) {
-  os << "Publisher:" << std::endl;
-  os << "\tpublishing to: ";
-  std::set<string> subIds = pub.getSubscriberUUIDs();
-  std::set<string>::iterator subIdIter = subIds.begin();
-  while(subIdIter != subIds.end()) {
-    os << *subIdIter << ", ";
-    subIdIter++;
-  }
-  os << std::endl;
-  os << static_cast<PublisherStub>(pub);
-  return os;
+	os << "Publisher:" << std::endl;
+	os << "\tpublishing to: ";
+	std::set<string> subIds = pub.getSubscriberUUIDs();
+	std::set<string>::iterator subIdIter = subIds.begin();
+	while(subIdIter != subIds.end()) {
+		os << *subIdIter << ", ";
+		subIdIter++;
+	}
+	os << std::endl;
+	os << static_cast<PublisherStub>(pub);
+	return os;
 }
 #endif
-    
+
 }
 
 

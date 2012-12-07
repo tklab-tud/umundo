@@ -73,18 +73,26 @@ private:
 public:
 	TypedPublisher() : _impl() {}
 	TypedPublisher(const std::string& channelName);
-  TypedPublisher(boost::shared_ptr<TypeSerializerImpl> const impl) :  _impl(impl) { }
-  TypedPublisher(const TypedPublisher& other) : _impl(other._impl) { }
+	TypedPublisher(boost::shared_ptr<TypeSerializerImpl> const impl) :  _impl(impl) { }
+	TypedPublisher(const TypedPublisher& other) : _impl(other._impl) { }
 	virtual ~TypedPublisher();
-  
-  operator bool() const { return _impl; }
-  bool operator< (const TypedPublisher& other) const { return _impl < other._impl; }
-  bool operator==(const TypedPublisher& other) const { return _impl == other._impl; }
-  bool operator!=(const TypedPublisher& other) const { return _impl != other._impl; }
+
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const TypedPublisher& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const TypedPublisher& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const TypedPublisher& other) const {
+		return _impl != other._impl;
+	}
 
 
-	TypedPublisher& operator=(const TypedPublisher& other) {   
-	  Publisher::operator=(other);
+	TypedPublisher& operator=(const TypedPublisher& other) {
+		Publisher::operator=(other);
 		_impl = other._impl;
 		return *this;
 	} // operator=

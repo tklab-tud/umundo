@@ -150,8 +150,7 @@ const vector<Interface> Host::getInterfaces() {
 			LOG_ERR("ioctl: %s", strerror(errno));
 		}
 # endif
-		if (ifa->ifa_addr != NULL)
-		{
+		if (ifa->ifa_addr != NULL) {
 			int family = ifa->ifa_addr->sa_family;
 			switch (family) {
 			case AF_INET:

@@ -60,5 +60,8 @@
     <ClCompile Include="..\mDNSResponder-333.10\mDNSWindows\Secret.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mDNSResponder-333.10\mDNSCore\CryptoAlg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -41,7 +41,7 @@ public:
 	void suspend();
 	void resume();
 
-  void setReceiver(umundo::Receiver* receiver);
+	void setReceiver(umundo::Receiver* receiver);
 	virtual Message* getNextMsg();
 	virtual bool hasNextMsg();
 
@@ -55,15 +55,15 @@ public:
 protected:
 	ZeroMQSubscriber();
 
-  void* _subSocket;
-  void* _readOpSocket;
-  void* _writeOpSocket;
-  std::multimap<std::string, std::string> _domainPubs;
+	void* _subSocket;
+	void* _readOpSocket;
+	void* _writeOpSocket;
+	std::multimap<std::string, std::string> _domainPubs;
 	Mutex _mutex;
 
 private:
 
-  boost::shared_ptr<umundo::SubscriberConfig> _config;
+	boost::shared_ptr<umundo::SubscriberConfig> _config;
 	friend class Factory;
 };
 

@@ -61,14 +61,14 @@ public:
 	virtual void setChannelName(const std::string& channelName) {
 		_channelName = channelName;
 	}
-  
+
 	virtual std::string getUUID() const            {
 		return _uuid;
 	}
 	virtual void setUUID(const std::string& uuid) {
 		_uuid = uuid;
 	}
-	
+
 protected:
 	std::string _channelName;
 	std::string _uuid;
@@ -80,14 +80,14 @@ protected:
 class DLLEXPORT SubscriberImpl : public SubscriberStubImpl, public Implementation, public ResultSet<PublisherStub> {
 public:
 	SubscriberImpl();
-  virtual ~SubscriberImpl();
-  
+	virtual ~SubscriberImpl();
+
 	virtual Receiver* getReceiver() {
 		return _receiver;
 	}
 
 	virtual void setReceiver(Receiver* receiver) = 0;
-  
+
 	std::set<string> getPublisherUUIDs() {
 		return _pubUUIDs;
 	}
@@ -98,7 +98,7 @@ public:
 	virtual Message* getNextMsg() = 0;
 	virtual bool hasNextMsg() = 0;
 
-  static int instances;
+	static int instances;
 
 protected:
 	Receiver* _receiver;
@@ -110,21 +110,28 @@ protected:
  */
 class DLLEXPORT SubscriberStub {
 public:
-  virtual ~SubscriberStub() {}
+	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }
-  SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : _impl(impl) { }
-  SubscriberStub(const SubscriberStub& other) : _impl(other._impl) { }
+	SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : _impl(impl) { }
+	SubscriberStub(const SubscriberStub& other) : _impl(other._impl) { }
 
-  operator bool() const { return _impl; }
-  bool operator< (const SubscriberStub& other) const { return _impl < other._impl; }
-  bool operator==(const SubscriberStub& other) const { return _impl == other._impl; }
-  bool operator!=(const SubscriberStub& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const SubscriberStub& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const SubscriberStub& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const SubscriberStub& other) const {
+		return _impl != other._impl;
+	}
 
-  SubscriberStub& operator=(const SubscriberStub& other) 
-  {
-    _impl = other._impl;
-    return *this;
-  } // operator=
+	SubscriberStub& operator=(const SubscriberStub& other) {
+		_impl = other._impl;
+		return *this;
+	} // operator=
 
 	virtual const std::string getChannelName() const     {
 		return _impl->getChannelName();
@@ -133,9 +140,9 @@ public:
 		return _impl->getUUID();
 	}
 
-  shared_ptr<SubscriberStubImpl> getImpl() const {
-    return _impl;
-  }
+	shared_ptr<SubscriberStubImpl> getImpl() const {
+		return _impl;
+	}
 
 protected:
 	shared_ptr<SubscriberStubImpl> _impl;
@@ -156,21 +163,28 @@ public:
 	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);
 	Subscriber(const std::string& channelName, Receiver* receiver);
-  Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
-  Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
+	Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
+	Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
 
-  operator bool() const { return _impl; }
-  bool operator< (const Subscriber& other) const { return _impl < other._impl; }
-  bool operator==(const Subscriber& other) const { return _impl == other._impl; }
-  bool operator!=(const Subscriber& other) const { return _impl != other._impl; }
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const Subscriber& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const Subscriber& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const Subscriber& other) const {
+		return _impl != other._impl;
+	}
 
-  Subscriber& operator=(const Subscriber& other) 
-  {
-    _impl = other._impl;
-    SubscriberStub::_impl = _impl;
-    return *this;
-  } // operator=
+	Subscriber& operator=(const Subscriber& other) {
+		_impl = other._impl;
+		SubscriberStub::_impl = _impl;
+		return *this;
+	} // operator=
 
 	void setReceiver(Receiver* receiver) {
 		_impl->setReceiver(receiver);
@@ -212,9 +226,9 @@ public:
 		return _impl->resume();
 	}
 
-  shared_ptr<SubscriberImpl> getImpl() const {
-    return _impl;
-  }
+	shared_ptr<SubscriberImpl> getImpl() const {
+		return _impl;
+	}
 
 protected:
 

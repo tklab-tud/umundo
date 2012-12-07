@@ -75,6 +75,16 @@ shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::getInstance() {
 shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::_instance;
 
 BonjourNodeDiscovery::~BonjourNodeDiscovery() {
+	{
+		ScopeLock lock(_mutex);
+		map<intptr_t, NodeImpl* >::iterator nodeIter = _localNodes.begin();
+		while(nodeIter != _localNodes.end()) {
+			NodeImpl* node = nodeIter->second;
+			nodeIter++;
+			remove(node);
+		}
+	}
+
 //	UMUNDO_LOCK(_mutex); // we had some segfaults in validateState from other threads?
 	stop();
 //#ifndef DISC_BONJOUR_EMBED
@@ -149,11 +159,11 @@ void BonjourNodeDiscovery::run() {
 		embedded_mDNSmainLoop(tv);
 		UMUNDO_UNLOCK(_mutex);
 		// give other threads a chance to react before locking again
-#ifdef WIN32
+//#ifdef WIN32
 		Thread::sleepMs(100);
-#else
-		Thread::yield();
-#endif
+//#else
+//		Thread::yield();
+//#endif
 	}
 #else
 
@@ -250,13 +260,10 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 	}
 
 	LOG_DEBUG("Trying to register: %s.%s as %s",
-		(name.length() == 0 ? "null" : name.substr(0, 8).c_str()),
-		(domain.length() == 0 ? "null" : domain.substr(0, 8).c_str()),
-		regtype.c_str());
+	          (name.length() == 0 ? "null" : name.substr(0, 8).c_str()),
+	          (domain.length() == 0 ? "null" : domain.substr(0, 8).c_str()),
+	          regtype.c_str());
 
-#ifdef DISC_BONJOUR_EMBED
-	LOG_DEBUG("Calling DNSServiceRegister");
-#endif
 	err = DNSServiceRegister(
 	          &registerClient,                                // uninitialized DNSServiceRef
 	          0,                                              // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
@@ -271,9 +278,6 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 	          registerReply,                                  // called when the registration completes
 	          (void*)address                                  // context pointer which is passed to the callback
 	      );
-#ifdef DISC_BONJOUR_EMBED
-	LOG_DEBUG("DNSServiceRegister returned");
-#endif
 
 	if(registerClient && err == 0) {
 		// everything is fine, add FD to query set, remember query and node
@@ -339,11 +343,11 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 		return;
 	}
 	assert(_queryClients.find(address) == _queryClients.end());
-  
+
 	string transport = (query->getTransport().length() ? query->getTransport().c_str() : "tcp");
 	string regtype("_mundo._" + transport + ".");
 
-  string domain;
+	string domain;
 	if (query->getDomain().find(".") != string::npos) {
 		domain = query->getDomain();
 	} else if (query->getDomain().length() > 0) {
@@ -352,33 +356,28 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 		domain = "local.";
 	}
 
-  // report matching local nodes immediately!
-  map<intptr_t, NodeImpl* >::iterator localNodeIter = _localNodes.begin();
-  while(localNodeIter != _localNodes.end()) {
-    if (localNodeIter->second->getDomain().compare(query->getDomain()) == 0) {
-      shared_ptr<BonjourNodeStub> node = shared_ptr<BonjourNodeStub>(new BonjourNodeStub());
-      node->setInProcess(true);
-      node->setRemote(false);
-      node->setTransport(localNodeIter->second->getTransport());
-      node->setUUID(localNodeIter->second->getUUID());
-      node->setDomain(domain);
-      node->_regType = regtype;
-      node->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
-      
-      _queryToNodes[query][localNodeIter->second->getUUID()] = node;
-			_nodeToQuery[(intptr_t)node.get()] = query;
-      
-      query->found(NodeStub(node));
-    }
-    
-    localNodeIter++;
-  }
+	// report matching local nodes immediately!
+	map<intptr_t, NodeImpl* >::iterator localNodeIter = _localNodes.begin();
+	while(localNodeIter != _localNodes.end()) {
+		if (localNodeIter->second->getDomain().compare(query->getDomain()) == 0) {
+			shared_ptr<BonjourNodeStub> node = shared_ptr<BonjourNodeStub>(new BonjourNodeStub());
+			node->setInProcess(true);
+			node->setRemote(false);
+			node->setTransport(localNodeIter->second->getTransport());
+			node->setUUID(localNodeIter->second->getUUID());
+			node->setDomain(domain);
+			node->_regType = regtype;
+			node->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
 
-  
-  
-#ifdef DISC_BONJOUR_EMBED
-	LOG_DEBUG("Calling DNSServiceBrowse");
-#endif
+			_queryToNodes[query][localNodeIter->second->getUUID()] = node;
+			_nodeToQuery[(intptr_t)node.get()] = query;
+
+			query->found(NodeStub(node));
+		}
+
+		localNodeIter++;
+	}
+
 	err = DNSServiceBrowse(
 	          &queryClient,                  // uninitialized DNSServiceRef
 	          0,                             // Currently ignored, reserved for future use
@@ -388,10 +387,6 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 	          browseReply,                   // called when a service is found
 	          (void*)address
 	      );
-
-#ifdef DISC_BONJOUR_EMBED
-	LOG_DEBUG("DNSServiceBrowse returned");
-#endif
 
 	if(queryClient && err == 0) {
 		// query started succesfully, remember
@@ -597,7 +592,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 
 			intptr_t address = (intptr_t)(node.get());
 			assert(node->getTransport().length() > 0);
-      string regtype("_mundo._" + node->getTransport() + ".");
+			string regtype("_mundo._" + node->getTransport() + ".");
 			string name = (node->getUUID().length() ? node->getUUID() : "");
 
 			std::set<string>::iterator domainIter;
@@ -664,7 +659,7 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 
 	if(errorCode == kDNSServiceErr_NoError) {
 		shared_ptr<NodeQuery> query = getInstance()->_nodeToQuery[(intptr_t)context];
-    assert(query);
+		assert(query);
 		shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
 		assert(node.get() != NULL);
 
@@ -763,8 +758,8 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 	shared_ptr<BonjourNodeStub> node = getInstance()->_queryToNodes[query][((BonjourNodeStub*)context)->getUUID()];
 	assert(node.get() != NULL);
 
-  node->setLastSeen(Thread::getTimeStampMs());
-  
+	node->setLastSeen(Thread::getTimeStampMs());
+
 //  LOG_DEBUG("addrInfoReply: Got info on %s at if %d", hostname, interfaceIndex);
 
 	if (node->_interfaceIndices.find(interfaceIndex) == node->_interfaceIndices.end()) {
@@ -789,9 +784,9 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 			const unsigned char *b = (const unsigned char *) &((struct sockaddr_in *)address)->sin_addr;
 			asprintf(&addr, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
 #ifdef DISC_BONJOUR_EMBED
-			// Bonjour reports weird ip addresses after we found the first one
-			if (node->_interfacesIPv4.find(interfaceIndex) != node->_interfacesIPv4.end()) {
-				LOG_DEBUG("addrInfoReply: %p reported IP address change from %s to %s - ignoring", context, node->_interfacesIPv4[interfaceIndex].c_str(), addr);
+			// Bonjour reports weird ip addresses after we found the first one - we do get a ttl of 60 for these though
+			if (ttl == 60) {
+				LOG_DEBUG("addrInfoReply: %p reported weird IP address %s - ignoring", context, addr);
 			} else {
 #endif
 				node->_interfacesIPv4[interfaceIndex] = addr;
@@ -934,10 +929,10 @@ bool BonjourNodeDiscovery::validateState() {
 		// assume that we have a dns register client
 		assert(_registerClients.find(localNodeIter->first) != _registerClients.end());
 	}
-  if (_registerClients.size() != _localNodes.size()) {
-    LOG_ERR("Found %d register clients but %d nodes", _registerClients.size(), _localNodes.size());
-    assert(_registerClients.size() == _localNodes.size());
-  }
+	if (_registerClients.size() != _localNodes.size()) {
+		LOG_ERR("Found %d register clients but %d nodes", _registerClients.size(), _localNodes.size());
+		assert(_registerClients.size() == _localNodes.size());
+	}
 
 	// test register clients
 	for (registerClientIter = _registerClients.begin(); registerClientIter != _registerClients.end(); registerClientIter++) {

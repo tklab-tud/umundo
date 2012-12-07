@@ -55,12 +55,12 @@ bool findServices() {
 		LOG_INFO("Adding Services to ServiceManager1");
 		svcMgr1.addService(localEchoService);
 		svcMgr1.addService(localPingService);
-    
+
 		LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter pingSvcFilter("PingService");
 		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter, 0);
 		assert(pingSvcDesc);
-    
+
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
 
 		int iterations = 5;
@@ -96,7 +96,7 @@ bool findServices() {
 		sends = 0;
 
 		ServiceFilter echoSvcFilter("EchoService");
-    ServiceDescription echoSvcDesc = svcMgr2.find(echoSvcFilter);
+		ServiceDescription echoSvcDesc = svcMgr2.find(echoSvcFilter);
 		EchoServiceStub* echoSvc = new EchoServiceStub(echoSvcDesc);
 		time(&start);
 		while (iterations > 0) {
@@ -447,62 +447,62 @@ bool continuousQueries() {
 }
 
 bool stlContainerTests() {
-  {
-    // single item in container
-    NodeQuery n("foo", NULL);
-    std::set<NodeQuery> nodeQuerySet;
-    nodeQuerySet.insert(n);
-    assert(nodeQuerySet.find(n) != nodeQuerySet.end());
-    nodeQuerySet.erase(n);
-    assert(nodeQuerySet.size() == 0);
-    // copy of item ought to be identical
-    NodeQuery n2 = n;
-    assert(n == n2);
-    assert(!(n != n2));
-    nodeQuerySet.insert(n2);
-    assert(nodeQuerySet.find(n) != nodeQuerySet.end());
-    assert(nodeQuerySet.find(n2) != nodeQuerySet.end());
-    nodeQuerySet.erase(n);
-    assert(nodeQuerySet.size() == 0);
-  }
-  {
-    // single item in container
-    ServiceFilter sf("foo");
-    std::set<ServiceFilter> serviceFilterSet;
-    serviceFilterSet.insert(sf);
-    assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
-    serviceFilterSet.erase(sf);
-    assert(serviceFilterSet.size() == 0);
-    // copy of item ought to be identical
-    ServiceFilter sf2 = sf;
-    assert(sf == sf2);
-    assert(!(sf != sf2));
-    serviceFilterSet.insert(sf2);
-    assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
-    assert(serviceFilterSet.find(sf2) != serviceFilterSet.end());
-    serviceFilterSet.erase(sf);
-    assert(serviceFilterSet.size() == 0);
-  }
-  {
-    // single item in container
-    ServiceDescription sd;
-    std::set<ServiceDescription> serviceDescSet;
-    serviceDescSet.insert(sd);
-    assert(serviceDescSet.find(sd) != serviceDescSet.end());
-    serviceDescSet.erase(sd);
-    assert(serviceDescSet.size() == 0);
-    // copy of item ought to be identical
-    ServiceDescription sd2 = sd;
-    assert(sd == sd2);
-    assert(!(sd != sd2));
-    serviceDescSet.insert(sd2);
-    assert(serviceDescSet.find(sd) != serviceDescSet.end());
-    assert(serviceDescSet.find(sd2) != serviceDescSet.end());
-    serviceDescSet.erase(sd);
-    assert(serviceDescSet.size() == 0);
-  }
+	{
+		// single item in container
+		NodeQuery n("foo", NULL);
+		std::set<NodeQuery> nodeQuerySet;
+		nodeQuerySet.insert(n);
+		assert(nodeQuerySet.find(n) != nodeQuerySet.end());
+		nodeQuerySet.erase(n);
+		assert(nodeQuerySet.size() == 0);
+		// copy of item ought to be identical
+		NodeQuery n2 = n;
+		assert(n == n2);
+		assert(!(n != n2));
+		nodeQuerySet.insert(n2);
+		assert(nodeQuerySet.find(n) != nodeQuerySet.end());
+		assert(nodeQuerySet.find(n2) != nodeQuerySet.end());
+		nodeQuerySet.erase(n);
+		assert(nodeQuerySet.size() == 0);
+	}
+	{
+		// single item in container
+		ServiceFilter sf("foo");
+		std::set<ServiceFilter> serviceFilterSet;
+		serviceFilterSet.insert(sf);
+		assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
+		serviceFilterSet.erase(sf);
+		assert(serviceFilterSet.size() == 0);
+		// copy of item ought to be identical
+		ServiceFilter sf2 = sf;
+		assert(sf == sf2);
+		assert(!(sf != sf2));
+		serviceFilterSet.insert(sf2);
+		assert(serviceFilterSet.find(sf) != serviceFilterSet.end());
+		assert(serviceFilterSet.find(sf2) != serviceFilterSet.end());
+		serviceFilterSet.erase(sf);
+		assert(serviceFilterSet.size() == 0);
+	}
+	{
+		// single item in container
+		ServiceDescription sd;
+		std::set<ServiceDescription> serviceDescSet;
+		serviceDescSet.insert(sd);
+		assert(serviceDescSet.find(sd) != serviceDescSet.end());
+		serviceDescSet.erase(sd);
+		assert(serviceDescSet.size() == 0);
+		// copy of item ought to be identical
+		ServiceDescription sd2 = sd;
+		assert(sd == sd2);
+		assert(!(sd != sd2));
+		serviceDescSet.insert(sd2);
+		assert(serviceDescSet.find(sd) != serviceDescSet.end());
+		assert(serviceDescSet.find(sd2) != serviceDescSet.end());
+		serviceDescSet.erase(sd);
+		assert(serviceDescSet.size() == 0);
+	}
 
-  return true;
+	return true;
 }
 
 int main(int argc, char** argv) {

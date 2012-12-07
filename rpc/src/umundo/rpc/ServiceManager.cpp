@@ -154,7 +154,7 @@ void ServiceManager::stopQuery(const ServiceFilter& filter) {
 }
 
 ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter) {
-  return find(svcFilter, 3000);
+	return find(svcFilter, 3000);
 }
 
 ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int timeout) {
@@ -311,7 +311,7 @@ void ServiceManager::receive(Message* msg) {
 }
 
 void ServiceManager::addService(Service* service) {
-  ServiceDescription desc;
+	ServiceDescription desc;
 	addService(service, desc);
 }
 

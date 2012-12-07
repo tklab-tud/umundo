@@ -28,21 +28,21 @@ namespace umundo {
 int PublisherImpl::instances = 0;
 
 PublisherImpl::PublisherImpl() : _greeter(NULL) {
-  _uuid = UUID::getUUID();
-  instances++;
+	_uuid = UUID::getUUID();
+	instances++;
 }
 
 PublisherImpl::~PublisherImpl() {
-  instances--;
+	instances--;
 }
-  
+
 shared_ptr<Configuration> PublisherConfig::create() {
 	return shared_ptr<Configuration>(new PublisherConfig());
 }
 
 Publisher::Publisher(const string& channelName) {
 	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
-  PublisherStub::_impl = _impl;
+	PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
 	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
 	config->channelName = channelName;
@@ -50,13 +50,13 @@ Publisher::Publisher(const string& channelName) {
 }
 
 Publisher::Publisher(const string& channelName, Greeter* greeter) {
-  _impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
-  PublisherStub::_impl = _impl;
-  _impl->setChannelName(channelName);
-  shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
-  config->channelName = channelName;
-  _impl->setGreeter(greeter);
-  _impl->init(config);
+	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
+	PublisherStub::_impl = _impl;
+	_impl->setChannelName(channelName);
+	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
+	config->channelName = channelName;
+	_impl->setGreeter(greeter);
+	_impl->init(config);
 }
 
 void Publisher::send(const char* data, size_t length) {

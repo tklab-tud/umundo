@@ -87,10 +87,13 @@ if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
 		endif()
 
 	else()
-		find_package(Bonjour REQUIRED)
-		include_directories(${Bonjour_INCLUDE_DIR})
-		LIST(APPEND UMUNDOCORE_LIBRARIES ${Bonjour_LIBRARY})
+		if (NOT APPLE AND NOT IOS)
+			# bonjour library is automatically available on mac
 
+			find_package(Bonjour REQUIRED)
+			include_directories(${Bonjour_INCLUDE_DIR})
+			LIST(APPEND UMUNDOCORE_LIBRARIES ${Bonjour_LIBRARY})
+		endif()
 	endif()
 endif()
 

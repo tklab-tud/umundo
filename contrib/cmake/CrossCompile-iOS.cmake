@@ -38,13 +38,17 @@ else()
 endif()
 
 if (IOS6_OR_LATER)
-  # no armv6 support in ios6 - armv7s was added, but did no compile our dependencies for it
+  # no armv6 support in ios6 - armv7s was added, but we did no compile our dependencies for it
   SET(CMAKE_OSX_ARCHITECTURES "armv7")
   SET(ARCHS "-arch armv7")
 
   # we have to use clang - llvm will choke on those __has_feature macros?
   SET (CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
   SET (CMAKE_CXX_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")
+
+	if ($ENV{MACOSX_DEPLOYMENT_TARGET})
+		message(FATAL_ERROR "llvm will croak with MACOSX_DEPLOYMENT_TARGET environment variable set when building for ios - unset MACOSX_DEPLOYMENT_TARGET")
+	endif()
 
 else()
   SET(CMAKE_OSX_ARCHITECTURES "armv6" "armv7")

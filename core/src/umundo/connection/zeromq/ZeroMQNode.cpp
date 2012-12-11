@@ -196,6 +196,7 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 
 		std::map<std::string, NodeStub>::iterator nodeIter = _nodes.begin();
 		while (nodeIter != _nodes.end()) {
+			assert(_sockets.find(nodeIter->first) != _sockets.end());
 			void* nodeSocket = _sockets[nodeIter->first];
 			assert(nodeSocket != NULL);
 
@@ -226,8 +227,8 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 
 		std::map<std::string, NodeStub>::iterator nodeIter = _nodes.begin();
 		while (nodeIter != _nodes.end()) {
+			assert(_sockets.find(nodeIter->first) != _sockets.end());
 			void* nodeSocket = _sockets[nodeIter->first];
-			assert(nodeSocket != NULL);
 
 			std::map<std::string, PublisherStub> pubs = nodeIter->second.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
@@ -250,10 +251,9 @@ void ZeroMQNode::addPublisher(Publisher& pub) {
 	ScopeLock lock(_mutex);
 	if (_pubs.find(pub.getUUID()) == _pubs.end()) {
 		std::string internalPubId("inproc://um.pub.intern." + pub.getUUID());
-//    zmq_connect(_subSocket, internalPubId.c_str()) && LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		ZMQ_INTERNAL_SEND("connectPub", internalPubId.c_str());
 
-		LOG_INFO("%s added publisher %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
+		LOG_INFO("%s added publisher %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
 
 		_pubs[pub.getUUID()] = pub;
 		std::map<std::string, void*>::iterator socketIter = _sockets.begin();
@@ -271,7 +271,6 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 	ScopeLock lock(_mutex);
 	if (_pubs.find(pub.getUUID()) != _pubs.end()) {
 		std::string internalPubId("inproc://um.pub.intern." + pub.getUUID());
-//    zmq_disconnect(_subSocket, internalPubId.c_str()) && LOG_ERR("zmq_disconnect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		ZMQ_INTERNAL_SEND("disconnectPub", internalPubId.c_str());
 
 		LOG_INFO("%s removed publisher %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
@@ -294,38 +293,32 @@ void ZeroMQNode::added(NodeStub node) {
 		return;
 	ScopeLock lock(_mutex);
 
-  LOG_INFO("Found new node %s at %s://%s:%d", node.getUUID().c_str(), node.getTransport().c_str(), node.getIP().c_str(), node.getPort());
-
-	// embedded mDNS will not report removed nodes when exited non-gracefully
-	map<string, NodeStub>::iterator nodeIter = _nodes.begin();
-	while(nodeIter != _nodes.end()) {
-		NodeStub nodeStub = nodeIter->second;
-		nodeIter++;
-		
-		if (
-			nodeStub.getPort() == node.getPort() &&
-			nodeStub.getIP() == node.getIP()
-		) {
-			removed(nodeStub);
-		}
-	}
+	/**
+	 * Nodes registered via embedded mDNS might not have unregistered and someone else might
+	 * already have taken their place. mDNS will report these from cache as well so we might
+	 * get multiple nodes with the same address.
+	 */
 
 	if (_nodes.find(node.getUUID()) != _nodes.end()) {
 		LOG_WARN("Not adding already known node");
+		_nodes[node.getUUID()].getImpl()->setLastSeen(Thread::getTimeStampMs());
 		return;
 	}
+
+	LOG_INFO("Discovery reports node %s at %s://%s:%d",
+	         SHORT_UUID(node.getUUID()).c_str(),
+	         node.getTransport().c_str(),
+	         node.getIP().c_str(),
+	         node.getPort());
 
 	// establish connection
 	std::stringstream ss;
 	if (node.isInProcess()) {
-		// same process, use inproc communication
-		ss << "inproc://um.node." << node.getUUID();
-	} else if (!node.isRemote() && false) { // disabled for now
-		// same host, use inter-process communication
-		ss << "ipc://um.node." << node.getUUID();
+		ss << "inproc://um.node." << node.getUUID();  // same process, use inproc communication
+	} else if (!node.isRemote() && false) {         // disabled for now as it creates an actual file on unices
+		ss << "ipc://um.node." << node.getUUID();     // same host, use inter-process communication
 	} else {
-		// remote node, use network
-		ss << node.getTransport() << "://" << node.getIP() << ":" << node.getPort();
+		ss << node.getTransport() << "://" << node.getIP() << ":" << node.getPort();  // remote node, use network
 	}
 
 	// connect a socket to the remote node port
@@ -334,32 +327,40 @@ void ZeroMQNode::added(NodeStub node) {
 
 	// give the socket an id for zeroMQ routing
 	zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_ERR("zmq_setsockopt: %s",zmq_strerror(errno));
-	zmq_connect(client, ss.str().c_str()) && LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
+	zmq_connect(client, ss.str().c_str()) && LOG_ERR("%s zmq_connect %s: %s", SHORT_UUID(_uuid).c_str(), ss.str().c_str(), zmq_strerror(errno));
 
-	// remember node stub and socket
-	_nodes[node.getUUID()] = node;
+	assert(client);
+	// remember node stub as pending and open socket
+	_pendingNodes[node.getUUID()].nodeStub = node;
+	_pendingNodes[node.getUUID()].lastSeen = Thread::getTimeStampMs();
 	_sockets[node.getUUID()] = client;
 
-	// send local publishers to remote node
-	std::map<std::string, Publisher>::iterator pubIter;
-	int hasMore = _pubs.size() - 1;
-	for (pubIter = _pubs.begin(); pubIter != _pubs.end(); pubIter++, hasMore--) {
-		// create a publisher added message from current publisher
-		sendPubAdded(client, pubIter->second, (hasMore > 0));
-	}
-	LOG_INFO("sending %d publishers to newcomer", _pubs.size());
-
-	if (_pendingRemotePubs.find(node.getUUID()) != _pendingRemotePubs.end()) {
-		// the other node found us first and already sent its publishers
-		std::map<std::string, PublisherStub>::iterator pubIter = _pendingRemotePubs[node.getUUID()].begin();
-		while(pubIter != _pendingRemotePubs[node.getUUID()].end()) {
-			confirmPubAdded(node, pubIter->second);
-			pubIter++;
+	// send local publishers to remote node - this might be called multiple times for the same endpoint because of the embedded mDNS issues
+	if (_pubs.size() > 0) {
+		LOG_INFO("sending %d publishers to %s", _pubs.size(), ss.str().c_str());
+		std::map<std::string, Publisher>::iterator pubIter;
+		int hasMore = _pubs.size() - 1;
+		for (pubIter = _pubs.begin(); pubIter != _pubs.end(); pubIter++, hasMore--) {
+			sendPubAdded(client, pubIter->second, (hasMore > 0));
 		}
-		_pendingRemotePubs.erase(node.getUUID());
+	} else {
+		// send something to confirm node per node socket
+		LOG_INFO("No publishers to send - sending KEEP_ALIVE to %s", ss.str().c_str());
+		zmq_msg_t msg;
+		ZMQ_PREPARE(msg, 4);
+		char* buffer = (char*)zmq_msg_data(&msg);
+		*(uint16_t*)(buffer) = htons(Message::VERSION);
+		buffer += 2;
+		*(uint16_t*)(buffer) = htons(Message::KEEP_ALIVE);
+		buffer += 2;
+		zmq_sendmsg(client, &msg, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
-	assert(validateState());
 
+	// confirm node
+	processConfirmedNode(_pendingNodes[node.getUUID()]);
+
+	assert(validateState());
 }
 
 void ZeroMQNode::removed(NodeStub node) {
@@ -368,17 +369,17 @@ void ZeroMQNode::removed(NodeStub node) {
 		return;
 	ScopeLock lock(_mutex);
 
-  LOG_INFO("Lost node %s", node.getUUID().c_str());
+	LOG_INFO("Lost node %s", SHORT_UUID(node.getUUID()).c_str());
 
 	if (_nodes.find(node.getUUID()) == _nodes.end()) {
-		LOG_WARN("Not removing unknown node");
+		LOG_INFO("Not removing unknown node");
 		return;
 	}
 
 	std::map<std::string, PublisherStub> pubs = _nodes[node.getUUID()].getPublishers();
 	std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 	while (pubIter != pubs.end()) {
-		processNodeCommPubRemoval(node.getUUID(), pubIter->second);
+		processRemotePubRemoval(node, pubIter->second);
 		pubIter++;
 	}
 
@@ -399,12 +400,16 @@ void ZeroMQNode::removed(NodeStub node) {
 		LOG_WARN("removed: client was never added: %s", SHORT_UUID(node.getUUID()).c_str());
 		return;
 	}
+
+	assert(_sockets.find(node.getUUID()) != _sockets.end());
 	zmq_close(_sockets[node.getUUID()]) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 	_sockets.erase(node.getUUID());               // delete socket
 	_nodes.erase(node.getUUID());
-	_pendingRemotePubs.erase(node.getUUID());
-	assert(_sockets.size() == _nodes.size());
+	_pendingPublishers.erase(node.getUUID());
+	_pendingSubscriptions.erase(node.getUUID());
+
+//	assert(_sockets.size() == _nodes.size() + _pendingNodes.size());
 
 	LOG_INFO("%s removed %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(node.getUUID()).c_str());
 	assert(validateState());
@@ -412,6 +417,118 @@ void ZeroMQNode::removed(NodeStub node) {
 }
 
 void ZeroMQNode::changed(NodeStub node) {
+}
+
+void ZeroMQNode::processConfirmedNode(const PendingNode& node) {
+	if (!node.isConfirmed())
+		return;
+
+  // see if we had a zombie at the same endpoint and remove it
+	_nodes_t::iterator nodeIter = _nodes.begin();
+	while(nodeIter != _nodes.end()) {
+    NodeStub nodeStub = nodeIter->second;
+    nodeIter++;
+		if (
+		    nodeStub.getIP() == node.nodeStub.getIP() &&
+		    nodeStub.getPort() == node.nodeStub.getPort() &&
+		    nodeStub.getTransport() == node.nodeStub.getTransport()
+        ) {
+			removed(nodeStub);
+		}
+	}
+
+	// move form pending to confirmed
+	_nodes[node.nodeStub.getUUID()] = node.nodeStub;
+
+	LOG_INFO("%s confirmed node discovery of %s at %s://%s:%d",
+	         SHORT_UUID(_uuid).c_str(),
+	         SHORT_UUID(node.nodeStub.getUUID()).c_str(),
+	         node.nodeStub.getTransport().c_str(),
+	         node.nodeStub.getIP().c_str(),
+	         node.nodeStub.getPort());
+
+	// check whether we can also confirm its publishers
+	std::pair<_pendingPubs_t::iterator, _pendingPubs_t::iterator> pubRange = _pendingPublishers.equal_range(node.nodeStub.getUUID());
+	for (_pendingPubs_t::iterator it = pubRange.first; it != pubRange.second; ++it) {
+		assert(it->second.pubStub);
+		it->second.nodeStub = node.nodeStub;
+		it->second.pubStub.getImpl()->setInProcess(node.nodeStub.isInProcess());
+		it->second.pubStub.getImpl()->setRemote(node.nodeStub.isRemote());
+		it->second.pubStub.getImpl()->setIP(node.nodeStub.getIP());
+		it->second.pubStub.getImpl()->setTransport(node.nodeStub.getTransport());
+		processConfirmedPublisher(it->second);
+	}
+
+	// check subscribers as well
+	std::pair<_pendingSubs_t::iterator, _pendingSubs_t::iterator> subRange = _pendingSubscriptions.equal_range(node.nodeStub.getUUID());
+	for (_pendingSubs_t::iterator it = subRange.first; it != subRange.second; ++it) {
+		assert(it->second.subStub);
+		it->second.nodeStub = node.nodeStub;
+		it->second.subStub.getImpl()->setInProcess(node.nodeStub.isInProcess());
+		it->second.subStub.getImpl()->setRemote(node.nodeStub.isRemote());
+		it->second.subStub.getImpl()->setIP(node.nodeStub.getIP());
+		it->second.subStub.getImpl()->setTransport(node.nodeStub.getTransport());
+		processConfirmedSubscription(it->second);
+	}
+
+	_pendingNodes.erase(node.nodeStub.getUUID());
+
+}
+
+void ZeroMQNode::processConfirmedSubscription(const PendingSubscriber& sub) {
+	if (!sub.isConfirmed())
+		return;
+
+	assert(sub.nodeStub);
+	if (_nodes.find(sub.nodeStub.getUUID()) == _nodes.end())
+		return;
+
+	LOG_INFO("%s confirmed remote subscriber of %s at %s",
+	         SHORT_UUID(_uuid).c_str(),
+	         SHORT_UUID(sub.subStub.getChannelName()).c_str(),
+	         sub.nodeStub.getIP().c_str());
+
+	sub.nodeStub.getImpl()->addSubscriber(sub.subStub);
+
+	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
+	while(pubIter != _pubs.end()) {
+		if(pubIter->second.getChannelName().substr(0, sub.subStub.getChannelName().size()) == sub.subStub.getChannelName()) {
+			pubIter->second.addedSubscriber(sub.nodeStub.getUUID(), sub.subStub.getUUID());
+		}
+		pubIter++;
+	}
+
+	_pendingSubscriptions.erase(sub.subStub.getUUID());
+}
+
+void ZeroMQNode::processConfirmedPublisher(const PendingPublisher& pub) {
+	if (!pub.isConfirmed())
+		return;
+
+	assert(pub.nodeStub);
+	if (_nodes.find(pub.nodeStub.getUUID()) == _nodes.end())
+		return;
+
+	LOG_INFO("%s confirmed remote publisher of %s at %s://%s:%d",
+	         SHORT_UUID(_uuid).c_str(),
+	         SHORT_UUID(pub.pubStub.getChannelName()).c_str(),
+	         pub.pubStub.getTransport().c_str(),
+	         pub.pubStub.getIP().c_str(),
+	         pub.pubStub.getPort());
+
+	pub.nodeStub.getImpl()->addPublisher(pub.pubStub);
+
+	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
+	while(subIter != _subs.end()) {
+		if(pub.pubStub.getChannelName().substr(0, subIter->second.getChannelName().size()) == subIter->second.getChannelName()) {
+			subIter->second.added(pub.pubStub);
+			assert(_sockets.find(pub.nodeStub.getUUID()) != _sockets.end());
+			sendSubAdded(_sockets[pub.nodeStub.getUUID()], subIter->second, pub.pubStub, false);
+		}
+		subIter++;
+	}
+
+	_pendingPublishers.erase(pub.pubStub.getUUID());
 }
 
 void ZeroMQNode::sendPubRemoved(void* socket, const Publisher& pub, bool hasMore) {
@@ -564,13 +681,35 @@ void ZeroMQNode::run() {
 				std::string subChannel(data+1, zmq_msg_size(&message) - 1);
 
 				if (subscription) {
-					LOG_DEBUG("Got 0MQ subscription on %s", subChannel.c_str());
-					_subscriptions.insert(subChannel);
-					processZMQCommSubscriptions(subChannel);
+					LOG_INFO("Got 0MQ subscription on %s", subChannel.c_str());
+
+					// see if we already have a pending subscription and zmq confirm it
+					if (UUID::isUUID(subChannel.substr(1))) {
+						// only insert unique uuid subscriptions as ZMQ_XPUB_VERBOSE does not work for unsubscriptions
+						_subscriptions.insert(subChannel);
+						_pendingSubs_t::iterator subIter = _pendingSubscriptions.begin();
+						while(subIter != _pendingSubscriptions.end()) {
+							if (subIter->second.subStub.getUUID() == subChannel.substr(1)) {
+								subIter->second.zmqConfirmed = true;
+								subIter->second.lastSeen = Thread::getTimeStampMs();
+								processConfirmedSubscription(subIter->second);
+							}
+							subIter++;
+						}
+					}
 				} else {
-					LOG_DEBUG("Got 0MQ unsubscription on %s", subChannel.c_str());
-					_subscriptions.erase(subChannel);
-					processZMQCommUnsubscriptions(subChannel);
+					LOG_INFO("Got 0MQ unsubscription on %s", subChannel.c_str());
+					if (UUID::isUUID(subChannel.substr(1))) {
+						_subscriptions.erase(subChannel);
+						map<string, NodeStub>::iterator nodeIter = _nodes.begin();
+						while(nodeIter != _nodes.end()) {
+							SubscriberStub subStub = nodeIter->second.getSubscriber(subChannel.substr(1));
+							if (subStub) {
+								processRemoteSubRemoval(nodeIter->second, subStub);
+							}
+							nodeIter++;
+						}
+					}
 				}
 
 				zmq_getsockopt (_pubSocket, ZMQ_RCVMORE, &more, &more_size);
@@ -612,10 +751,17 @@ void ZeroMQNode::run() {
 				zmq_getsockopt (_nodeSocket, ZMQ_RCVMORE, &more, &more_size);
 
 				if (msgSize == 36 && remoteUUID == NULL) {
-					// remote id from envelope
+					// remote id from ZMQ router envelope
 					remoteUUID = (char*)malloc(37);
 					memcpy(remoteUUID, zmq_msg_data(&message), 36);
 					remoteUUID[36] = 0;
+					LOG_INFO("%s received node message from %s", SHORT_UUID(string(_uuid)).c_str(), SHORT_UUID(string(remoteUUID)).c_str());
+
+					// make a note of a pending node
+					if (_nodes.find(remoteUUID) == _nodes.end()) {
+						_pendingNodes[remoteUUID].zmqConfirmed = true;
+						processConfirmedNode(_pendingNodes[remoteUUID]);
+					}
 
 					if (_nodes.find(remoteUUID) != _nodes.end())
 						_nodes[remoteUUID].getImpl()->setLastSeen(Thread::getTimeStampMs());
@@ -638,6 +784,8 @@ void ZeroMQNode::run() {
 
 					switch (type) {
 					case Message::DATA:
+					case Message::KEEP_ALIVE:
+						// do nothing for now
 						break;
 					case Message::PUB_ADDED:
 					case Message::PUB_REMOVED: {
@@ -654,22 +802,48 @@ void ZeroMQNode::run() {
 						}
 
 						if (type == Message::PUB_ADDED) {
-							PublisherStub pubStub(boost::shared_ptr<PublisherStubImpl>(new PublisherStubImpl()));
-							pubStub.getImpl()->setChannelName(channel);
-							pubStub.getImpl()->setPort(port);
-							pubStub.getImpl()->setUUID(pubUUID);
-							pubStub.getImpl()->setDomain(remoteUUID);
-							processNodeCommPubAdded(remoteUUID, pubStub);
+							LOG_INFO("Received publisher for %s from %s", channel, SHORT_UUID(string(remoteUUID)).c_str());
+
+							std::pair<_pendingPubs_t::iterator, _pendingPubs_t::iterator> pubRange = _pendingPublishers.equal_range(remoteUUID);
+							for (_pendingPubs_t::iterator it = pubRange.first; it != pubRange.second; ++it) {
+								if (it->second.pubStub.getUUID() == string(pubUUID)) {
+									LOG_INFO("Publisher already pending");
+									break;
+								}
+							}
+
+							PendingPublisher pub;
+							pub.pubStub = PublisherStub(boost::shared_ptr<PublisherStubImpl>(new PublisherStubImpl()));
+							pub.pubStub.getImpl()->setChannelName(channel);
+							pub.pubStub.getImpl()->setPort(port);
+							pub.pubStub.getImpl()->setUUID(pubUUID);
+							pub.pubStub.getImpl()->setDomain(remoteUUID);
+
+							_pendingPublishers.insert(std::make_pair(remoteUUID, pub));
+							if (_nodes.find(remoteUUID) != _nodes.end()) {
+								assert(pub.pubStub);
+								pub.nodeStub = _nodes[remoteUUID];
+								pub.pubStub.getImpl()->setInProcess(pub.nodeStub.isInProcess());
+								pub.pubStub.getImpl()->setRemote(pub.nodeStub.isRemote());
+								pub.pubStub.getImpl()->setIP(pub.nodeStub.getIP());
+								pub.pubStub.getImpl()->setTransport(pub.nodeStub.getTransport());
+							}
+
+							processConfirmedPublisher(pub);
+
 						} else {
+
+							LOG_INFO("Lost publisher for %s from %s", channel, SHORT_UUID(string(remoteUUID)).c_str());
+							// we remove per node communication and zeromq, one will not find the publisher or node even
 							if (_nodes.find(remoteUUID) == _nodes.end()) {
-								LOG_ERR("Unknown node removed publisher - ignoring");
+								LOG_DEBUG("Unknown node removed publisher - ignoring");
 								break;
 							}
 							if (!_nodes[remoteUUID].getPublisher(pubUUID)) {
-								LOG_ERR("Unknown node sent unsubscription - ignoring");
+								LOG_DEBUG("Unknown node sent unsubscription - ignoring");
 								break;
 							}
-							processNodeCommPubRemoval(remoteUUID, _nodes[remoteUUID].getPublisher(pubUUID));
+							processRemotePubRemoval(_nodes[remoteUUID], _nodes[remoteUUID].getPublisher(pubUUID));
 						}
 						break;
 					}
@@ -677,13 +851,6 @@ void ZeroMQNode::run() {
 					case Message::SUBSCRIBE:
 					case Message::UNSUBSCRIBE: {
 						// a remote node tells us of a subscription of one of its subscribers
-
-						if (_nodes.find(remoteUUID) == _nodes.end()) {
-							LOG_ERR("Got a subscription from an unknown node - this should never happen!");
-							break;
-						}
-						NodeStub nodeStub = _nodes[remoteUUID];
-
 						uint16_t port;
 						char* pubChannel;
 						char* pubUUID;
@@ -702,21 +869,32 @@ void ZeroMQNode::run() {
 						if (type == Message::SUBSCRIBE) {
 							LOG_DEBUG("Got subscription on %s from %s", subChannel, subUUID);
 
-							if (!nodeStub.getSubscriber(subUUID)) {
-								SubscriberStub subStub(boost::shared_ptr<SubscriberStubImpl>(new SubscriberStubImpl()));
-								subStub.getImpl()->setChannelName(subChannel);
-								subStub.getImpl()->setUUID(subUUID);
-								nodeStub.addSubscriber(subStub);
-							}
-							processNodeCommSubscriptions(nodeStub, nodeStub.getSubscriber(subUUID));
+							PendingSubscriber sub;
+							sub.subStub = SubscriberStub(boost::shared_ptr<SubscriberStubImpl>(new SubscriberStubImpl()));
+							sub.subStub.getImpl()->setChannelName(subChannel);
+							sub.subStub.getImpl()->setUUID(subUUID);
+
+							if (_subscriptions.find(string("~" + string(subUUID))) != _subscriptions.end())
+								sub.zmqConfirmed = true;
+
+							if (_nodes.find(remoteUUID) != _nodes.end())
+								sub.nodeStub = _nodes[remoteUUID];
+
+							_pendingSubscriptions.insert(std::make_pair(remoteUUID, sub));
+
+							processConfirmedSubscription(sub);
 
 						} else {
 							LOG_DEBUG("Got unsubscription on %s from %s", subChannel, subUUID);
-							if (!nodeStub.getSubscriber(subUUID)) {
-								LOG_WARN("Got an unsubscription from an unknown subscriber!");
+							NodeStub nodeStub;
+							if (_nodes.find(remoteUUID) != _nodes.end())
+								nodeStub = _nodes[remoteUUID];
+
+							if (!nodeStub || !nodeStub.getSubscriber(subUUID)) {
+								LOG_DEBUG("Got an unsubscription from an unknown subscriber!");
 								break;
 							}
-							processNodeCommUnsubscriptions(nodeStub, nodeStub.getSubscriber(subUUID));
+							processRemoteSubRemoval(nodeStub, nodeStub.getSubscriber(subUUID));
 						}
 						break;
 					}
@@ -736,36 +914,7 @@ void ZeroMQNode::run() {
 	}
 }
 
-void ZeroMQNode::processNodeCommPubAdded(const std::string& nodeUUID, const PublisherStub& pubStub) {
-	if (_nodes.find(nodeUUID) != _nodes.end()) {
-		// we already know the node
-		confirmPubAdded(_nodes[nodeUUID], pubStub);
-	} else {
-		_pendingRemotePubs[nodeUUID][pubStub.getUUID()] = pubStub;
-	}
-}
-
-void ZeroMQNode::confirmPubAdded(NodeStub& nodeStub, const PublisherStub& pubStub) {
-	pubStub.getImpl()->setHost(nodeStub.getHost());
-	pubStub.getImpl()->setTransport(nodeStub.getTransport());
-	pubStub.getImpl()->setIP(nodeStub.getIP());
-	pubStub.getImpl()->setRemote(nodeStub.isRemote());
-	pubStub.getImpl()->setInProcess(nodeStub.isInProcess());
-	nodeStub.addPublisher(pubStub);
-
-	// see if we have a local subscriber interested in the publisher's channel
-	std::map<std::string, Subscriber>::iterator subIter;
-	for (subIter = _subs.begin(); subIter != _subs.end(); subIter++) {
-		if(pubStub.getChannelName().substr(0, subIter->second.getChannelName().size()) == subIter->second.getChannelName()) {
-			subIter->second.added(pubStub);
-			sendSubAdded(_sockets[nodeStub.getUUID()], subIter->second, pubStub, false);
-		}
-	}
-	assert(validateState());
-
-}
-
-void ZeroMQNode::processNodeCommPubRemoval(const std::string& nodeUUID, const PublisherStub& pubStub) {
+void ZeroMQNode::processRemotePubRemoval(const NodeStub& nodeStub, const PublisherStub& pubStub) {
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
 		if(pubStub.getChannelName().substr(0, subIter->second.getChannelName().size()) == subIter->second.getChannelName()) {
@@ -773,70 +922,13 @@ void ZeroMQNode::processNodeCommPubRemoval(const std::string& nodeUUID, const Pu
 		}
 		subIter++;
 	}
+	nodeStub.getImpl()->removePublisher(pubStub);
 	assert(validateState());
 }
 
-void ZeroMQNode::processZMQCommUnsubscriptions(const std::string& channel) {
-	// we might not get unsubscriptions with vanishing nodes with embedded mDNS servers, so we process these here
-	if (UUID::isUUID(channel.substr(1))) {
-		string subUUID(channel.substr(1));
-		// find us the node of this subscriber
-		map<string, NodeStub>::iterator nodeIter = _nodes.begin();
-		while(nodeIter != _nodes.end()) {
-			SubscriberStub subStub = nodeIter->second.getSubscriber(subUUID);
-			if (subStub) {
-				processNodeCommUnsubscriptions(nodeIter->second, subStub);
-			}
-			nodeIter++;
-		}
-	}
-	
-}
-
-void ZeroMQNode::processZMQCommSubscriptions(const std::string& channel) {
-	// we have a subscription from zeromq, try to confirm pending subscriptions from node communication
-	std::multimap<std::string, std::pair<long, std::pair<NodeStub, SubscriberStub> > >::iterator subIter = _pendingSubscriptions.find(channel);
-	while(subIter != _pendingSubscriptions.end()) {
-		std::pair<NodeStub, SubscriberStub> subPair = subIter->second.second;
-		if (confirmSubscription(subPair.first, subPair.second))
-			return;
-		subIter++;
-	}
-}
-
-void ZeroMQNode::processNodeCommSubscriptions(const NodeStub& nodeStub, const SubscriberStub& subStub) {
-	subStub.getImpl()->setLastSeen(Thread::getTimeStampMs());
-	std::pair<NodeStub, SubscriberStub> subPair = std::make_pair(nodeStub, subStub);
-	long now = Thread::getTimeStampMs();
-	std::pair<long, std::pair<NodeStub, SubscriberStub> > timedSubPair = std::make_pair(now, subPair);
-
-	std::string subId = std::string("~" + subStub.getUUID());
-	_pendingSubscriptions.insert(std::make_pair(subId, timedSubPair));
-
-	confirmSubscription(nodeStub, subStub);
-
-}
-
-void ZeroMQNode::processNodeCommUnsubscriptions(NodeStub& nodeStub, const SubscriberStub& subStub) {
-	subStub.getImpl()->setLastSeen(Thread::getTimeStampMs());
-
-	if (_confirmedSubscribers.count(subStub.getUUID()) > 0) {
-		LOG_INFO("Removing confirmed subscriber: %s", subStub.getUUID().c_str());
-		_confirmedSubscribers.erase(subStub.getUUID());
-	} else {
-    return; // zeromq might already have removed the subscriber
-//		LOG_WARN("Trying to remove unconfirmed subscriber: %s", subStub.getUUID().c_str());
-	}
-
-#if 0
-	// we never receive 0mq unsubscriptions for these due to the buggy zmq_disconnect
-	std::multiset<std::string>::iterator found;
-	found = _subscriptions.find("~" + subStub.getUUID());
-	if (found != _subscriptions.end()) _subscriptions.erase(found);
-
-	found = _subscriptions.find(subStub.getChannelName());
-	if (found != _subscriptions.end()) _subscriptions.erase(found);
-#endif
+void ZeroMQNode::processRemoteSubRemoval(const NodeStub& nodeStub, const SubscriberStub& subStub) {
+	if (!nodeStub.getSubscriber(subStub.getUUID()) == subStub)
+		return;
 
 	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
 	while(pubIter != _pubs.end()) {
@@ -845,51 +937,9 @@ void ZeroMQNode::processNodeCommUnsubscriptions(NodeStub& nodeStub, const Subscr
 		}
 		pubIter++;
 	}
-
-	if (_nodes.find(nodeStub.getUUID()) != _nodes.end()) {
-		_nodes[nodeStub.getUUID()].removeSubscriber(subStub);
-	}
-
+	nodeStub.getImpl()->removeSubscriber(subStub);
 	assert(validateState());
-}
 
-bool ZeroMQNode::confirmSubscription(const NodeStub& nodeStub, const SubscriberStub& subStub) {
-	// see whether we have all the subscribers subscriptions
-	std::string subId = std::string("~" + subStub.getUUID());
-
-	int receivedSubs;
-	int confirmedSubs;
-	receivedSubs = _subscriptions.count(subId);
-	confirmedSubs = _confirmedSubscribers.count(subStub.getUUID());
-	if (receivedSubs <= confirmedSubs)
-		return false;
-
-	// we received all zeromq subscriptions for this node, notify publishers
-	LOG_INFO("Confirming subscriber: %s", subStub.getUUID().c_str());
-	_confirmedSubscribers.insert(subStub.getUUID());
-
-	// remove from pending subscriptions
-	std::multimap<std::string, std::pair<long, std::pair<NodeStub, SubscriberStub> > >::iterator subIter;
-	subIter = _pendingSubscriptions.find(subId);
-	while(subIter != _pendingSubscriptions.end()) {
-		std::pair<NodeStub, SubscriberStub> subPair = subIter->second.second;
-		if (subPair.first == nodeStub && subPair.second == subStub)
-			_pendingSubscriptions.erase(subIter++);
-		else subIter++;
-	}
-
-	nodeStub.getImpl()->addSubscriber(subStub);
-
-	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
-	while(pubIter != _pubs.end()) {
-		if(pubIter->second.getChannelName().substr(0, subStub.getChannelName().size()) == subStub.getChannelName()) {
-			pubIter->second.addedSubscriber(nodeStub.getUUID(), subStub.getUUID());
-		}
-		pubIter++;
-	}
-
-	assert(validateState());
-	return true;
 }
 
 /**
@@ -962,18 +1012,12 @@ char* ZeroMQNode::readSubInfo(char* buffer, char*& channelName, char*& uuid) {
 	return buffer;
 }
 
+
 bool ZeroMQNode::validateState() {
 	ScopeLock lock(_mutex);
 	map<string, NodeStub>::iterator nodeIter = _nodes.begin();
 	map<string, void*>::iterator nodeSockIter = _sockets.begin();
-#if 0
-	std::multiset<std::string>::iterator zmqSubIter = _subscriptions.begin();
-	std::set<std::string>::iterator confirmedSubIter = _confirmedSubscribers.begin();
-	std::multimap<std::string, std::pair<long, std::pair<umundo::NodeStub, umundo::SubscriberStub> > >::iterator pendingSubIter = _pendingSubscriptions.begin();
-	std::map<std::string, std::map<std::string, umundo::PublisherStub> >::iterator pendingPubIter = _pendingRemotePubs.begin();
-	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
-	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
-#endif
+
 	// gather subIds and channels from nodes
 	std::map<std::string, PublisherStub> remotePubs;
 	std::map<std::string, SubscriberStub> remoteSubs;
@@ -992,33 +1036,18 @@ bool ZeroMQNode::validateState() {
 
 	nodeSockIter = _sockets.begin();
 	while(nodeSockIter != _sockets.end()) {
-		assert(_nodes.find(nodeSockIter->first) != _nodes.end());
+		assert(_nodes.find(nodeSockIter->first) != _nodes.end() ||
+		       _pendingNodes.find(nodeSockIter->first) != _pendingNodes.end());
 		nodeSockIter++;
 	}
 
 	std::multiset<std::string> staleSubscriptions = _subscriptions;
+
 	// every subscriber we actually added to node had to be confirmed - check
 	// also remove subscribers ids and channels from 0mq subscriptions and see what's left
 	std::map<std::string, SubscriberStub>::iterator remoteSubIter = remoteSubs.begin();
 
-//  std::cout << "ZMQ Subs " << _subscriptions.size() << std::endl;
-	for(std::multiset<std::string>::iterator staleSubsIter = staleSubscriptions.begin(); staleSubsIter != staleSubscriptions.end(); staleSubsIter++) {
-//    std::cout << "\t" << *staleSubsIter << std::endl;
-	}
-
-//  std::cout << "Confirmed Subs " << _confirmedSubscribers.size() << std::endl;
-	for(std::set<std::string>::iterator confirmSubsIter = _confirmedSubscribers.begin(); confirmSubsIter != _confirmedSubscribers.end(); confirmSubsIter++) {
-//    std::cout << "\t" << *confirmSubsIter << std::endl;
-	}
-
-//  std::cout << "uMundo Subs " << remotePubs.size() << std::endl;
 	while(remoteSubIter != remoteSubs.end()) {
-//    std::cout << "\t" << remoteSubIter->first << std::endl;
-//    std::cout << "\t" << remoteSubIter->second.getChannelName() << std::endl;
-
-		assert(_confirmedSubscribers.find(remoteSubIter->first) != _confirmedSubscribers.end());
-//    assert(staleSubscriptions.count(remoteSubIter->second.getChannelName()) > 0);
-
 		std::multiset<std::string>::iterator staleFound;
 
 		staleFound = staleSubscriptions.find("~" + remoteSubIter->first);
@@ -1030,12 +1059,12 @@ bool ZeroMQNode::validateState() {
 		remoteSubIter++;
 	}
 
-//  std::cout << "Stale Subs " << staleSubscriptions.size() << std::endl;
-	for(std::multiset<std::string>::iterator staleSubsIter = staleSubscriptions.begin(); staleSubsIter != staleSubscriptions.end(); staleSubsIter++) {
+//  std::cout << "Stale Subs at " << SHORT_UUID(_uuid) << ":" << staleSubscriptions.size() << std::endl;
+//	for(std::multiset<std::string>::iterator staleSubsIter = staleSubscriptions.begin(); staleSubsIter != staleSubscriptions.end(); staleSubsIter++) {
 //    std::cout << "\t" << *staleSubsIter << std::endl;
-	}
+//	}
 
-	assert(staleSubscriptions.size() < 20); // only for testing
+//	assert(staleSubscriptions.size() < 2); // only for testing
 
 	return true;
 }

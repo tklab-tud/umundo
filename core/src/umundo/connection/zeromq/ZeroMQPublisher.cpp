@@ -142,7 +142,7 @@ void ZeroMQPublisher::removedSubscriber(const std::string remoteId, const std::s
 		return;
 	_subUUIDs.erase(subId);
 
-	LOG_INFO("Publisher %s lost subscriber %s from node %s for channel", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
+	LOG_INFO("Publisher %s lost subscriber %s from node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL)
 		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), remoteId, subId);

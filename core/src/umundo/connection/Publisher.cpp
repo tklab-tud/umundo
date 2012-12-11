@@ -28,7 +28,6 @@ namespace umundo {
 int PublisherImpl::instances = 0;
 
 PublisherImpl::PublisherImpl() : _greeter(NULL) {
-	_uuid = UUID::getUUID();
 	instances++;
 }
 

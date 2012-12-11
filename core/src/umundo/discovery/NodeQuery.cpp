@@ -31,7 +31,7 @@ NodeQuery::~NodeQuery() {
 }
 
 void NodeQuery::found(const NodeStub& node) {
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 	assert(node);
 	if (_notifyImmediately) {
 		if (_nodes.find(node.getUUID()) != _nodes.end()) {
@@ -45,11 +45,10 @@ void NodeQuery::found(const NodeStub& node) {
 	} else {
 		_pendingFinds.insert(node);
 	}
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void NodeQuery::removed(const NodeStub& node) {
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 	assert(node);
 	if (_notifyImmediately) {
 		LOG_DEBUG("Removed node %s", SHORT_UUID(node.getUUID()).c_str());
@@ -58,7 +57,6 @@ void NodeQuery::removed(const NodeStub& node) {
 	} else {
 		_pendingRemovals.insert(node);
 	}
-	UMUNDO_UNLOCK(_mutex);
 }
 
 void NodeQuery::notifyImmediately(bool notifyImmediately) {
@@ -66,7 +64,7 @@ void NodeQuery::notifyImmediately(bool notifyImmediately) {
 }
 
 void NodeQuery::notifyResultSet() {
-	UMUNDO_LOCK(_mutex);
+	ScopeLock lock(_mutex);
 	set<NodeStub>::const_iterator nodeIter;
 
 	for (nodeIter = _pendingRemovals.begin(); nodeIter != _pendingRemovals.end(); nodeIter++) {
@@ -90,7 +88,6 @@ void NodeQuery::notifyResultSet() {
 
 	_pendingRemovals.clear();
 	_pendingFinds.clear();
-	UMUNDO_UNLOCK(_mutex);
 }
 
 const string& NodeQuery::getDomain() {

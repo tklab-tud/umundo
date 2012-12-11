@@ -210,11 +210,11 @@ public:
 	}
 #endif
 
-	virtual SubscriberStub& getSubscriber(const std::string& uuid) {
+	virtual SubscriberStub& getSubscriber(const std::string& uuid) const {
 		return _impl->getSubscriber(uuid);
 	}
 
-	virtual PublisherStub& getPublisher(const std::string& uuid) {
+	virtual PublisherStub& getPublisher(const std::string& uuid) const   {
 		return _impl->getPublisher(uuid);
 	}
 

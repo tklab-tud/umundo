@@ -75,6 +75,7 @@ ZeroMQSubscriber::~ZeroMQSubscriber() {
 	LOG_INFO("deleting subscriber for %s", _channelName.c_str());
 	stop();
 	join();
+
 	zmq_close(_subSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_readOpSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_writeOpSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
@@ -120,6 +121,8 @@ void ZeroMQSubscriber::added(PublisherStub pub) {
 			ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
 		}
 
+		LOG_INFO("%s subscribing to %s on %s", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ss.str().c_str());
+
 		if (isStarted()) {
 			ZMQ_INTERNAL_SEND("connectPub", ss.str().c_str());
 		} else {
@@ -159,6 +162,8 @@ void ZeroMQSubscriber::removed(PublisherStub pub) {
 			// remote node, use network
 			ss << pub.getTransport() << "://" << pub.getIP() << ":" << pub.getPort();
 		}
+
+		LOG_INFO("%s unsubscribing from %s on %s", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ss.str().c_str());
 
 		if (isStarted()) {
 			ZMQ_INTERNAL_SEND("disconnectPub", ss.str().c_str());

@@ -77,6 +77,51 @@ class NodeQuery;
  */
 class DLLEXPORT ZeroMQNode : public Thread, public ResultSet<NodeStub>, public NodeImpl {
 public:
+	class PendingNode {
+	public:
+		PendingNode() :
+			lastSeen(Thread::getTimeStampMs()),
+			zmqConfirmed(false) {}
+
+		NodeStub nodeStub;
+		long lastSeen;
+		/// TODO: A node may not have publishers initially and might be garbage collected eventually.
+		bool zmqConfirmed;
+		/// A pending node is confirmed if we found it the nodeStub via mDNS and seen a publisher.
+		bool isConfirmed() const {
+			return zmqConfirmed && nodeStub;
+		}
+	};
+
+	class PendingSubscriber {
+	public:
+		PendingSubscriber() :
+			lastSeen(Thread::getTimeStampMs()),
+			zmqConfirmed(false) {}
+
+		SubscriberStub subStub;
+		NodeStub nodeStub;
+		long lastSeen;
+		bool zmqConfirmed;
+		bool isConfirmed() const {
+			return nodeStub && zmqConfirmed;
+		}
+	};
+
+	class PendingPublisher {
+	public:
+		PendingPublisher() :
+			lastSeen(Thread::getTimeStampMs()) {}
+
+		PublisherStub pubStub;
+		NodeStub nodeStub;
+		long lastSeen;
+		/// A pending publisher is confirmed if we found its node as well
+		bool isConfirmed() const {
+			return nodeStub;
+		}
+	};
+
 	virtual ~ZeroMQNode();
 
 	/** @name Implementor */
@@ -102,9 +147,14 @@ public:
 	void changed(NodeStub);  ///< Never happens.
 	//@}
 
-	/** @name uMundo deployment object model */
+	/** @name Confirm entities as we receive them via mDNS and/or ZeroMQ */
 	//@{
-//	set<NodeStub*> getAllNodes();
+	void processConfirmedNode(const PendingNode& node);
+	void processConfirmedSubscription(const PendingSubscriber& sub);
+	void processConfirmedPublisher(const PendingPublisher& pub);
+
+	void processRemotePubRemoval(const NodeStub& nodeStub, const PublisherStub& pubStub);
+	void processRemoteSubRemoval(const NodeStub& nodeStub, const SubscriberStub& pubStub);
 	//@}
 
 	static uint16_t bindToFreePort(void* socket, const std::string& transport, const std::string& address);
@@ -123,16 +173,6 @@ protected:
 	void sendPubAdded(void* socket, const umundo::Publisher& pub, bool hasMore);
 	void sendSubAdded(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
 	void sendSubRemoved(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
-
-	void processNodeCommPubAdded(const std::string& nodeUUID, const umundo::PublisherStub& pubStub);
-	void processNodeCommPubRemoval(const std::string& nodeUUID, const umundo::PublisherStub& pubStub);
-	void confirmPubAdded(umundo::NodeStub& nodeStub, const umundo::PublisherStub& pubStub);
-
-	void processZMQCommSubscriptions(const std::string& channel);
-  void processZMQCommUnsubscriptions(const std::string& channel);
-	void processNodeCommSubscriptions(const umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
-	void processNodeCommUnsubscriptions(umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
-	bool confirmSubscription(const umundo::NodeStub& nodeStub, const umundo::SubscriberStub& subStub);
 	//@}
 
 	/** @name Read / Write to raw byte arrays */
@@ -157,13 +197,20 @@ private:
 	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
 	Mutex _mutex;
 
-	map<string, NodeStub> _nodes; ///< UUIDs to other NodeStub%s - at runtime we store their known Publishera as stubs, but do not know about subscribers.
-	map<string, void*> _sockets;  ///< UUIDs to ZeroMQ Node Sockets.
+	map<string, NodeStub> _nodes; ///< UUIDs to other NodeStub%s
+	typedef map<string, NodeStub> _nodes_t;
 
 	std::multiset<std::string> _subscriptions; ///< subscriptions as we received them from zeromq
-	std::set<std::string> _confirmedSubscribers; ///< subscriptions as we received them from zeromq and confirmed by node communication
-	std::multimap<std::string, std::pair<long, std::pair<umundo::NodeStub, umundo::SubscriberStub> > > _pendingSubscriptions; ///< channel to timestamped pending subscribers we got from node communication
-	std::map<std::string, std::map<std::string, umundo::PublisherStub> > _pendingRemotePubs; ///< publishers of yet undiscovered nodes.
+	map<string, void*> _sockets;  ///< UUIDs to ZeroMQ Node Sockets.
+
+	map<string, PendingNode> _pendingNodes;
+	typedef map<string, PendingNode> _pendingNodes_t;
+
+	std::multimap<std::string, PendingSubscriber> _pendingSubscriptions;
+	typedef std::multimap<std::string, PendingSubscriber> _pendingSubs_t;
+
+	std::multimap<std::string, PendingPublisher> _pendingPublishers;
+	typedef std::multimap<std::string, PendingPublisher> _pendingPubs_t;
 
 	shared_ptr<NodeConfig> _config;
 

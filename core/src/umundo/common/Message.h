@@ -36,6 +36,7 @@ public:
 	enum Type {
 	    VERSION       = 0xF003, // version 0.3 of the message format
 	    DATA          = 0x0000,
+	    KEEP_ALIVE    = 0x0001,
 	    PUB_ADDED     = 0x0004,
 	    PUB_REMOVED   = 0x0005,
 	    NODE_INFO     = 0x0006,

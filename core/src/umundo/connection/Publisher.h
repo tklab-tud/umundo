@@ -22,6 +22,7 @@
 #define PUBLISHER_H_F3M1RWLN
 
 #include "umundo/common/Common.h"
+#include "umundo/common/UUID.h"
 #include "umundo/common/EndPoint.h"
 #include "umundo/common/Implementation.h"
 
@@ -56,6 +57,7 @@ public:
 
 class PublisherStubImpl : public EndPointImpl {
 public:
+	PublisherStubImpl() : _uuid(UUID::getUUID()) {}
 	virtual std::string getChannelName() const            {
 		return _channelName;
 	}

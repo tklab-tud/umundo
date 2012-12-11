@@ -136,6 +136,7 @@ protected:
 	map<shared_ptr<NodeQuery>, map<string, shared_ptr<BonjourNodeStub> > > _queryToNodes; ///< query to all its nodes.
 
 	Mutex _mutex;
+	Monitor _monitor;
 
 	static shared_ptr<BonjourNodeDiscovery> _instance;  ///< The singleton instance.
 

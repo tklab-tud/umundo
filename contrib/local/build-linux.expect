@@ -1,6 +1,7 @@
 #!/usr/bin/expect
 
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
+set BUILD_TESTS $::env(BUILD_TESTS)
 
 set prompt "sradomski@"
 append prompt ${UMUNDO_BUILD_HOST}
@@ -15,7 +16,7 @@ eval spawn ssh ${UMUNDO_BUILD_HOST}.local.
 ##############################
 # umundo with avahi in debug configuration
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Debug -DDIST_PREPARE=ON /media/psf/Home/Documents/TK/Code/umundo\n" }
+expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON /media/psf/Home/Documents/TK/Code/umundo\n" }
 
 expect -re $prompt { send "make -j2\n" }
 expect "Building CXX" { exp_continue } \
@@ -25,10 +26,16 @@ expect -re $prompt { send "make -j2 java\n" }
 expect "Building CXX" { exp_continue } \
        -re $prompt { send "\n" }
 
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+
 ##############################
 # umundo with avahi in release configuration
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON /media/psf/Home/Documents/TK/Code/umundo\n" }
+expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON /media/psf/Home/Documents/TK/Code/umundo\n" }
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
@@ -36,4 +43,11 @@ expect "Building CXX" { exp_continue } \
 
 expect -re $prompt { send "make -j2 java\n" }
 expect "Building CXX" { exp_continue } \
-       -re $prompt { exit }
+       -re $prompt { send "\n" }
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+

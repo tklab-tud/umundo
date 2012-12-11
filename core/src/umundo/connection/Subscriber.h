@@ -22,6 +22,7 @@
 #define SUBSCRIBER_H_J64J09SP
 
 #include "umundo/common/Common.h"
+#include "umundo/common/UUID.h"
 #include "umundo/connection/Publisher.h"
 #include "umundo/common/ResultSet.h"
 #include "umundo/common/Implementation.h"
@@ -54,6 +55,7 @@ public:
 
 class DLLEXPORT SubscriberStubImpl : public EndPointImpl {
 public:
+	SubscriberStubImpl() : _uuid(UUID::getUUID()) {}
 	virtual ~SubscriberStubImpl() {}
 	virtual std::string getChannelName() const            {
 		return _channelName;

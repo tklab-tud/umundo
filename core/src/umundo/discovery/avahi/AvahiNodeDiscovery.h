@@ -60,6 +60,7 @@ private:
 
 	AvahiSimplePoll *_simplePoll;
 	Mutex _mutex;
+	Monitor _monitor;
 
 	bool validateState();
 
@@ -103,6 +104,9 @@ private:
 	map<intptr_t, AvahiServiceBrowser* > _avahiBrowsers;   ///< memory addresses of local nodes to avahi service browsers
 
 	map<shared_ptr<NodeQuery>, map<string, shared_ptr<AvahiNodeStub> > > _queryNodes;
+
+	uint64_t lastOperation;
+	void delayOperation();
 
 	static shared_ptr<AvahiNodeDiscovery> _instance;
 

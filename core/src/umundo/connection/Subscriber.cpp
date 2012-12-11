@@ -26,7 +26,6 @@ namespace umundo {
 int SubscriberImpl::instances = -1;
 
 SubscriberImpl::SubscriberImpl() : _receiver(NULL) {
-	_uuid = UUID::getUUID();
 	instances++;
 }
 

@@ -196,6 +196,7 @@ endif()
 
 # see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
 if (APPLE)
+#	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
 	set(CMAKE_OSX_ARCHITECTURES "x86_64;i386")
 	# support leopard and above
 	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
@@ -309,7 +310,7 @@ endif()
 
 # CMake does not allow explicit dependencies
 if (DISC_BONJOUR_EMBED AND NOT DISC_BONJOUR)
-	message(FATAL_ERROR "Cannot use embedded bonjour without bonjour - enable DISC_BONJOUR!")
+	set(DISC_BONJOUR ON)
 endif()
 if (DISC_BONJOUR AND DISC_AVAHI)
 	message(FATAL_ERROR "Cannot use both avahi and bonjour for discovery - choose either DISC_BONJOUR or DISC_AVAHI!")
@@ -480,6 +481,7 @@ if(NOT BUILD_SHARED_LIBS)
 	# @Todo: We could use dynamic variable names and a foreach with the components.
 	#
 	set(UMUNDO_STATIC_LIBRARIES_TMP "")
+	set(UMUNDO_COMP_BUILT "")
 	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
 	foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
 		string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
@@ -489,6 +491,7 @@ if(NOT BUILD_SHARED_LIBS)
 			if (_UMUNDO_COMP_NAME STREQUAL "SERIAL")
 				set(_UMUNDO_COMP_NAME S11N)
 			endif()
+			list(APPEND UMUNDO_COMP_BUILT umundo${_UMUNDO_COMP_NAME_LC})
 			list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDO${_UMUNDO_COMP_NAME}_LIBRARIES})
 			# cmake does not add the CMAKE_LIBRARY_POSTFIX to the location
 			# see: http://www.itk.org/Bug/print_bug_page.php?bug_id=7868
@@ -525,18 +528,19 @@ if(NOT BUILD_SHARED_LIBS)
 
 	list(SORT UMUNDO_STATIC_LIBRARIES)
 	list(REMOVE_DUPLICATES UMUNDO_STATIC_LIBRARIES)
-#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
+	#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
+	# message("UMUNDO_COMP_BUILT: ${UMUNDO_COMP_BUILT}")
 
 	if (IOS)
 		set(LIPO_INPUT_FILES "")
 		foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
-			message("ARCH: ${ARCH}")
+			# message("ARCH: ${ARCH}")
 			# @TODO: we should only depend on targets that are actually being built
 			ADD_CUSTOM_COMMAND(
 				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a
 				COMMAND   libtool
 				ARGS      -arch_only ${ARCH} -static -o ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a ${UMUNDO_STATIC_LIBRARIES} 1>/dev/null 2>/dev/null
-				DEPENDS   umundocore umundoserial umundorpc
+				DEPENDS   ${UMUNDO_COMP_BUILT}
 				COMMENT   "Running libtool on static libraries for ${ARCH}"
 			)
 			list(APPEND LIPO_INPUT_FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a)
@@ -554,7 +558,7 @@ if(NOT BUILD_SHARED_LIBS)
 				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
 				COMMAND   lib.exe
 				ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
-				DEPENDS   umundocore umundoserial umundorpc umundoutil
+				DEPENDS   ${UMUNDO_COMP_BUILT}
 				COMMENT   "Running lib.exe on static libraries"
 			)
 			ADD_CUSTOM_TARGET(umundo ALL

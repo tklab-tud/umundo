@@ -15,6 +15,13 @@ cd ${DIR}
 
 ./remove-dsstore-files.sh
 
+#echo -n "Run tests when after building? [y/N]: "; read BUILD_TESTS
+if [ "$BUILD_TESTS" == "y" ] || [ "$BUILD_TESTS" == "Y" ]; then
+	export BUILD_TESTS=ON
+else
+	export BUILD_TESTS=OFF
+fi
+
 echo -n "Build umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32
 if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ]; then
 	echo "Start the Linux 32Bit system named 'debian' and press return" && read
@@ -35,14 +42,14 @@ fi
 echo -n "Build umundo for iOS? [y/N]: "; read BUILD_IOS
 if [ "$BUILD_IOS" == "y" ] || [ "$BUILD_IOS" == "Y" ]; then
 	echo == BUILDING UMUNDO FOR IOS =========================================================
-	${DIR}/../build-umundo-ios.sh
+	${DIR}/../build-scripts/build-umundo-ios.sh
 fi
 
 echo -n "Build umundo for Android? [y/N]: "; read BUILD_ANDROID
 if [ "$BUILD_ANDROID" == "y" ] || [ "$BUILD_ANDROID" == "Y" ]; then
 	echo == BUILDING UMUNDO FOR Android =========================================================
 	export ANDROID_NDK=~/Developer/SDKs/android-ndk-r8
-	${DIR}/../build-umundo-android.sh
+	${DIR}/../build-scripts/build-umundo-android.sh
 fi
 
 echo -n "Build umundo for Windows 32Bit? [y/N]: "; read BUILD_WIN32

@@ -3,6 +3,7 @@
 set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
+set BUILD_TESTS $::env(BUILD_TESTS)
 
 
 set local_prompt {sradomski$ }
@@ -104,7 +105,7 @@ if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 ##############################
 # compile in debug configuration
 
-send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\r"
@@ -134,7 +135,7 @@ expect {
 ##############################
 # compile in release configuration
 
-send "\"cmake\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send "\"cmake\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\n\r"
@@ -165,6 +166,15 @@ expect {
 	"Linking" { puts "Linking"; exp_continue; }
 	"fatal error"      { puts "Dying"; exit; }
   -re $remote_prompt { puts "Continuing";  }
+}
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+	send "nmake test\n\r"
+	expect {
+		timeout            { puts "Timeout when building"; exit;  }
+		"Start"            { exp_continue; }
+	  -re $remote_prompt { puts "Continuing";  }
+	}
 }
 
 send "cd ..\r"

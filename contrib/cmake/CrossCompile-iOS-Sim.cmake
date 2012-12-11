@@ -44,6 +44,11 @@ if (IOS6_OR_LATER)
   # we have to use clang - llvm will choke on those __has_feature macros?
   SET (CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
   SET (CMAKE_CXX_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")
+
+	if ($ENV{MACOSX_DEPLOYMENT_TARGET})
+		message(FATAL_ERROR "llvm will croak with MACOSX_DEPLOYMENT_TARGET environment variable set when building for ios - unset MACOSX_DEPLOYMENT_TARGET")
+	endif()
+
 else()
   SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")
   SET (CMAKE_CXX_COMPILER "${DEVROOT}/usr/bin/g++")

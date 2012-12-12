@@ -216,7 +216,6 @@ void AvahiNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 	ScopeLock lock(_mutex);
 	delayOperation();
 
-	AvahiServiceBrowser *sb = NULL;
 	AvahiClient *client = NULL;
 	intptr_t address = (intptr_t)(query.get());
 
@@ -226,68 +225,19 @@ void AvahiNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 		return;
 	}
 
-	int error;
+	assert(_browsers.find(address) == _browsers.end());
+	_browsers[address] = query;
 
 	LOG_INFO("Adding query %p for nodes in '%s'", address, query->getDomain().c_str());
 
+	int error;
 	client = avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, browseClientCallback, (void*)address, &error);
-	if (client == NULL) {
+	if (client == NULL || error == 0) {
 		LOG_ERR("avahi_client_new failed - is the Avahi daemon running?", error);
 		assert(validateState());
 		return;
 	}
 
-	char* domain;
-	if (strstr(query->getDomain().c_str(), ".") != NULL) {
-		asprintf(&domain, "%s", query->getDomain().c_str());
-	} else if (query->getDomain().length() > 0) {
-		asprintf(&domain, "%s.local.", query->getDomain().c_str());
-	} else {
-		asprintf(&domain, "local.");
-	}
-
-	char* regtype;
-	const char* transport = (query->getTransport().length() ? query->getTransport().c_str() : "tcp");
-	asprintf(&regtype, "_mundo._%s", transport);
-
-#if 1
-	// report matching local nodes immediately!
-	map<intptr_t, NodeImpl* >::iterator localNodeIter = _nodes.begin();
-	while(localNodeIter != _nodes.end()) {
-		if (localNodeIter->second->getDomain().compare(query->getDomain()) == 0) {
-			shared_ptr<AvahiNodeStub> node = shared_ptr<AvahiNodeStub>(new AvahiNodeStub());
-			node->setInProcess(true);
-			node->setRemote(false);
-			node->setTransport(localNodeIter->second->getTransport());
-			node->setPort(localNodeIter->second->getPort());
-			node->setUUID(localNodeIter->second->getUUID());
-			node->setDomain(domain);
-			node->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
-
-			_queryNodes[query][localNodeIter->second->getUUID()] = node;
-
-			query->found(NodeStub(node));
-		}
-
-		localNodeIter++;
-	}
-#endif
-
-	if (!(sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, regtype, domain, (AvahiLookupFlags)0, browseCallback, (void*)address))) {
-		LOG_WARN("avahi_service_browser_new failed %s", avahi_strerror(error));
-		assert(validateState());
-		return;
-	}
-
-	assert(_avahiClients.find(address) == _avahiClients.end());
-	assert(_browsers.find(address) == _browsers.end());
-	assert(_avahiBrowsers.find(address) == _avahiBrowsers.end());
-	_avahiClients[address] = client;
-	_browsers[address] = query;
-	_avahiBrowsers[address] = sb;
-
-	free(domain);
-	free(regtype);
 	start();
 	assert(validateState());
 }
@@ -295,27 +245,80 @@ void AvahiNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 /**
  * Called whenever we register a new query with Avahi.
  */
-void AvahiNodeDiscovery::browseClientCallback(AvahiClient* c, AvahiClientState state, void* queryAddr) {
+void AvahiNodeDiscovery::browseClientCallback(AvahiClient* client, AvahiClientState state, void* queryAddr) {
 	ScopeLock lock(getInstance()->_mutex);
-	assert(c);
+	assert(client);
 	// there is not yet a query there
-//	assert(getInstance()->_browsers.find((intptr_t)queryAddr) != getInstance()->_browsers.end());
-
+	assert(getInstance()->_browsers.find((intptr_t)queryAddr) != getInstance()->_browsers.end());
+	shared_ptr<NodeQuery> query = getInstance()->_browsers[(intptr_t)queryAddr];
+	
 	switch(state) {
 	case AVAHI_CLIENT_CONNECTING:
-		LOG_WARN("browseClientCallback: Query %p - client still connecting %s", queryAddr, avahi_strerror(avahi_client_errno(c)));
+		LOG_WARN("browseClientCallback: Query %p - client still connecting %s", queryAddr, avahi_strerror(avahi_client_errno(client)));
 		break;
 	case AVAHI_CLIENT_FAILURE:
-		LOG_WARN("browseClientCallback: Query %p - server connection failure %s", queryAddr, avahi_strerror(avahi_client_errno(c)));
+		LOG_WARN("browseClientCallback: Query %p - server connection failure %s", queryAddr, avahi_strerror(avahi_client_errno(client)));
 		break;
-	case AVAHI_CLIENT_S_RUNNING:
-		LOG_INFO("browseClientCallback: Query %p - server state: RUNNING %s", queryAddr, avahi_strerror(avahi_client_errno(c)));
+	case AVAHI_CLIENT_S_RUNNING: {
+		LOG_INFO("browseClientCallback: Query %p - server state: RUNNING %s", queryAddr, avahi_strerror(avahi_client_errno(client)));
+		int error;
+		char* domain;
+		if (strstr(query->getDomain().c_str(), ".") != NULL) {
+			asprintf(&domain, "%s", query->getDomain().c_str());
+		} else if (query->getDomain().length() > 0) {
+			asprintf(&domain, "%s.local.", query->getDomain().c_str());
+		} else {
+			asprintf(&domain, "local.");
+		}
+
+		char* regtype;
+		const char* transport = (query->getTransport().length() ? query->getTransport().c_str() : "tcp");
+		asprintf(&regtype, "_mundo._%s", transport);
+
+		#if 1
+		// report matching local nodes immediately!
+		map<intptr_t, NodeImpl* >::iterator localNodeIter = getInstance()->_nodes.begin();
+		while(localNodeIter != getInstance()->_nodes.end()) {
+			if (localNodeIter->second->getDomain().compare(query->getDomain()) == 0) {
+				shared_ptr<AvahiNodeStub> node = shared_ptr<AvahiNodeStub>(new AvahiNodeStub());
+				node->setInProcess(true);
+				node->setRemote(false);
+				node->setTransport(localNodeIter->second->getTransport());
+				node->setPort(localNodeIter->second->getPort());
+				node->setUUID(localNodeIter->second->getUUID());
+				node->setDomain(domain);
+				node->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
+
+				getInstance()->_queryNodes[query][localNodeIter->second->getUUID()] = node;
+				query->found(NodeStub(node));
+			}
+
+			localNodeIter++;
+		}
+		#endif
+
+		AvahiServiceBrowser* sb;
+		if (!(sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, regtype, domain, (AvahiLookupFlags)0, browseCallback, (void*)queryAddr))) {
+			LOG_WARN("avahi_service_browser_new failed %s", avahi_strerror(error));
+			assert(getInstance()->validateState());
+			return;
+		}
+
+		assert(getInstance()->_avahiClients.find((intptr_t)queryAddr) == getInstance()->_avahiClients.end());
+		assert(getInstance()->_avahiBrowsers.find((intptr_t)queryAddr) == getInstance()->_avahiBrowsers.end());
+		getInstance()->_avahiClients[(intptr_t)queryAddr] = client;
+		getInstance()->_avahiBrowsers[(intptr_t)queryAddr] = sb;
+
+		free(domain);
+		free(regtype);
+
+		}
 		break;
 	case AVAHI_CLIENT_S_REGISTERING:
-		LOG_WARN("browseClientCallback: Query %p - server state: REGISTERING %s", queryAddr, avahi_strerror(avahi_client_errno(c)));
+		LOG_WARN("browseClientCallback: Query %p - server state: REGISTERING %s", queryAddr, avahi_strerror(avahi_client_errno(client)));
 		break;
 	case AVAHI_CLIENT_S_COLLISION:
-		LOG_WARN("browseClientCallback: Query %p - server state: COLLISION %s", queryAddr, avahi_strerror(avahi_client_errno(c)));
+		LOG_WARN("browseClientCallback: Query %p - server state: COLLISION %s", queryAddr, avahi_strerror(avahi_client_errno(client)));
 		break;
 	default:
 		LOG_WARN("Unknown state");
@@ -722,7 +725,7 @@ bool AvahiNodeDiscovery::validateState() {
 
 void AvahiNodeDiscovery::delayOperation() {
 	uint64_t diff;
-	long minDelay = 1200;
+	long minDelay = 300;
 	while((diff = Thread::getTimeStampMs() - lastOperation) < minDelay) {
 		Thread::sleepMs(minDelay - diff);
 	}

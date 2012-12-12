@@ -721,7 +721,7 @@ bool AvahiNodeDiscovery::validateState() {
 }
 
 void AvahiNodeDiscovery::delayOperation() {
-	long diff;
+	uint64_t diff;
 	long minDelay = 1200;
 	while((diff = Thread::getTimeStampMs() - lastOperation) < minDelay) {
 		Thread::sleepMs(minDelay - diff);

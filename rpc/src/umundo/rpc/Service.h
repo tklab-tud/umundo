@@ -105,6 +105,11 @@ public:
 		int predicate;
 	};
 
+	ServiceFilter() {};
+
+	operator bool() const {
+		return _svcName.length() > 0;
+	}
 	bool operator< (const ServiceFilter& other) const {
 		return _uuid < other._uuid;
 	}
@@ -149,8 +154,6 @@ public:
 private:
 	string _uuid;
 	string _svcName;
-
-	ServiceFilter() {};
 
 	bool isNumeric(const string& test) const;
 	double toNumber(const string& numberString) const;

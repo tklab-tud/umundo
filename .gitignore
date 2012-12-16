@@ -4,7 +4,6 @@ core/contrib/bindings/android/bin/
 core/contrib/bindings/android/gen/
 core/contrib/bindings/java/bin/
 build/
-build*/
 package/
 installer/umundo-*
 installer/*html

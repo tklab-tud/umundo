@@ -71,7 +71,7 @@ void ZeroMQNode::init(boost::shared_ptr<Configuration>) {
 	int vbsSub = 1;
 
 	std::string pubId("um.pub." + _uuid);
-	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+//	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm))               && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_pubSocket, ZMQ_XPUB_VERBOSE, &vbsSub, sizeof(vbsSub))   && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // receive all subscriptions
 
@@ -79,7 +79,7 @@ void ZeroMQNode::init(boost::shared_ptr<Configuration>) {
 	zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, "", 0)          && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // subscribe to every internal publisher
 
 	std::string nodeId("um.node." + _uuid);
-	zmq_setsockopt(_nodeSocket, ZMQ_IDENTITY, nodeId.c_str(), nodeId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+//	zmq_setsockopt(_nodeSocket, ZMQ_IDENTITY, nodeId.c_str(), nodeId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 
 	_port = bindToFreePort(_nodeSocket, "tcp", "*");
 	zmq_bind(_nodeSocket, std::string("inproc://" + nodeId).c_str()) && LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
@@ -235,6 +235,8 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 			// iterate all remote publishers
 			while (pubIter != pubs.end()) {
 				if(pubIter->second.getChannelName().substr(0, sub.getChannelName().size()) == sub.getChannelName()) {
+					zmq_msg_t uuidMsg;
+					ZMQ_SEND_IDENTITY(uuidMsg, _uuid, nodeSocket);
 					sendSubRemoved(nodeSocket, sub, pubIter->second, false);
 					sub.removed(pubIter->second);
 				}
@@ -259,6 +261,8 @@ void ZeroMQNode::addPublisher(Publisher& pub) {
 		std::map<std::string, void*>::iterator socketIter = _sockets.begin();
 		// notify all other nodes
 		while (socketIter != _sockets.end()) {
+			zmq_msg_t uuidMsg;
+			ZMQ_SEND_IDENTITY(uuidMsg, _uuid, socketIter->second);
 			sendPubAdded(socketIter->second, pub, false);
 			socketIter++;
 		}
@@ -279,6 +283,8 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 		std::map<std::string, void*>::iterator socketIter = _sockets.begin();
 		// notify all other nodes
 		while (socketIter != _sockets.end()) {
+			zmq_msg_t uuidMsg;
+			ZMQ_SEND_IDENTITY(uuidMsg, _uuid, socketIter->second);
 			sendPubRemoved(socketIter->second, pub, false);
 			socketIter++;
 		}
@@ -315,7 +321,7 @@ void ZeroMQNode::added(NodeStub node) {
 	std::stringstream ss;
 	if (node.isInProcess()) {
 		ss << "inproc://um.node." << node.getUUID();  // same process, use inproc communication
-	} else if (!node.isRemote() && false) {         // disabled for now as it creates an actual file on unices
+	} else if (!node.isRemote() && false) {           // disabled for now as it creates an actual file on unices
 		ss << "ipc://um.node." << node.getUUID();     // same host, use inter-process communication
 	} else {
 		ss << node.getTransport() << "://" << node.getIP() << ":" << node.getPort();  // remote node, use network
@@ -326,7 +332,7 @@ void ZeroMQNode::added(NodeStub node) {
 	(client = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_DEALER)) || LOG_ERR("zmq_socket: %s",zmq_strerror(errno));
 
 	// give the socket an id for zeroMQ routing
-	zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_ERR("zmq_setsockopt: %s",zmq_strerror(errno));
+//	zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_ERR("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_connect(client, ss.str().c_str()) && LOG_ERR("%s zmq_connect %s: %s", SHORT_UUID(_uuid).c_str(), ss.str().c_str(), zmq_strerror(errno));
 
 	assert(client);
@@ -339,13 +345,18 @@ void ZeroMQNode::added(NodeStub node) {
 	if (_pubs.size() > 0) {
 		LOG_INFO("sending %d publishers to %s", _pubs.size(), ss.str().c_str());
 		std::map<std::string, Publisher>::iterator pubIter;
-		int hasMore = _pubs.size() - 1;
-		for (pubIter = _pubs.begin(); pubIter != _pubs.end(); pubIter++, hasMore--) {
-			sendPubAdded(client, pubIter->second, (hasMore > 0));
+		int hasMore = _pubs.size();
+		zmq_msg_t uuidMsg;
+		ZMQ_SEND_IDENTITY(uuidMsg, _uuid, client);
+		for (pubIter = _pubs.begin(); pubIter != _pubs.end(); pubIter++) {
+			sendPubAdded(client, pubIter->second, (--hasMore > 0));
 		}
+		assert(hasMore == 0);
 	} else {
 		// send something to confirm node per node socket
 		LOG_INFO("No publishers to send - sending KEEP_ALIVE to %s", ss.str().c_str());
+		zmq_msg_t uuidMsg;
+		ZMQ_SEND_IDENTITY(uuidMsg, _uuid, client);
 		zmq_msg_t msg;
 		ZMQ_PREPARE(msg, 4);
 		char* buffer = (char*)zmq_msg_data(&msg);
@@ -373,6 +384,7 @@ void ZeroMQNode::removed(NodeStub node) {
 
 	if (_nodes.find(node.getUUID()) == _nodes.end()) {
 		LOG_INFO("Not removing unknown node");
+		assert(_sockets.find(node.getUUID()) == _sockets.end());
 		return;
 	}
 
@@ -523,6 +535,8 @@ void ZeroMQNode::processConfirmedPublisher(const PendingPublisher& pub) {
 		if(pub.pubStub.getChannelName().substr(0, subIter->second.getChannelName().size()) == subIter->second.getChannelName()) {
 			subIter->second.added(pub.pubStub);
 			assert(_sockets.find(pub.nodeStub.getUUID()) != _sockets.end());
+			zmq_msg_t uuidMsg;
+			ZMQ_SEND_IDENTITY(uuidMsg, _uuid, _sockets[pub.nodeStub.getUUID()]);
 			sendSubAdded(_sockets[pub.nodeStub.getUUID()], subIter->second, pub.pubStub, false);
 		}
 		subIter++;
@@ -780,6 +794,8 @@ void ZeroMQNode::run() {
 						LOG_ERR("Received message from wrong or unversioned umundo - ignoring");
 						zmq_msg_close (&message);
 						break;
+					} else {
+						LOG_INFO("%s received %s message from %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type), SHORT_UUID(string(remoteUUID)).c_str());
 					}
 
 					switch (type) {

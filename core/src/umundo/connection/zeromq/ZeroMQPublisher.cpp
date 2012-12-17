@@ -51,7 +51,7 @@ void ZeroMQPublisher::init(boost::shared_ptr<Configuration> config) {
 	int hwm = NET_ZEROMQ_SND_HWM;
 	std::string pubId("um.pub.intern." + _uuid);
 
-	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+//	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_bind(_pubSocket, std::string("inproc://" + pubId).c_str());
 

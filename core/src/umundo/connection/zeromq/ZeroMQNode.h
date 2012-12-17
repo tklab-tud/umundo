@@ -29,6 +29,14 @@
 #include "umundo/connection/Node.h"
 #include "umundo/discovery/NodeQuery.h"
 
+/// Send uuid as first message in envelope
+#define ZMQ_SEND_IDENTITY(msg, uuid, socket) \
+zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, uuid.length()) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+memcpy(zmq_msg_data(&msg), uuid.c_str(), uuid.length()); \
+zmq_sendmsg(socket, &msg, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+
 /// Initialize a zeromq message with a given size
 #define ZMQ_PREPARE(msg, size) \
 zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \

@@ -52,7 +52,7 @@ void ZeroMQSubscriber::init(boost::shared_ptr<Configuration> config) {
 	std::string subId("um.sub." + _uuid);
 	std::string lastSub("~" + _uuid); ///< this needs to have very "late" alphabetical order to ensure all channels are subscribed to first
 
-	zmq_setsockopt(_subSocket, ZMQ_IDENTITY, subId.c_str(), subId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+//	zmq_setsockopt(_subSocket, ZMQ_IDENTITY, subId.c_str(), subId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, _channelName.c_str(), _channelName.length())  && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, lastSub.c_str(), lastSub.length())  && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));

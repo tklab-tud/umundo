@@ -56,6 +56,11 @@ target_link_libraries(test-zeromq-client ${UMUNDOCORE_LIBRARIES})
 set_target_properties(test-zeromq-client PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-zeromq-client)
 
+add_executable(test-zeromq-nodecomm test-zeromq-nodecomm.cpp)
+target_link_libraries(test-zeromq-nodecomm ${UMUNDOCORE_LIBRARIES})
+set_target_properties(test-zeromq-nodecomm PROPERTIES FOLDER "Tests")
+add_dependencies(ALL_TESTS test-zeromq-nodecomm)
+
 if(NOT WIN32)
 	add_executable(test-zeromq-disconnect test-zeromq-disconnect.cpp)
 	target_link_libraries(test-zeromq-disconnect ${UMUNDOCORE_LIBRARIES})

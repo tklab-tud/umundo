@@ -46,6 +46,7 @@ public:
 
 	static const char* typeToString(uint16_t type) {
 		if (type == 0x0000) return "DATA";
+		if (type == 0x0001) return "KEEP_ALIVE";
 		if (type == 0x0004) return "PUB_ADDED";
 		if (type == 0x0005) return "PUB_REMOVED";
 		if (type == 0x0006) return "NODE_INFO";

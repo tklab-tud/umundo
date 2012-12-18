@@ -206,6 +206,8 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 			while (pubIter != pubs.end()) {
 				if(pubIter->second.getChannelName().substr(0, sub.getChannelName().size()) == sub.getChannelName()) {
 					sub.added(pubIter->second);
+          zmq_msg_t uuidMsg;
+          ZMQ_SEND_IDENTITY(uuidMsg, _uuid, nodeSocket);
 					sendSubAdded(nodeSocket, sub, pubIter->second, false);
 				}
 				pubIter++;
@@ -384,7 +386,10 @@ void ZeroMQNode::removed(NodeStub node) {
 
 	if (_nodes.find(node.getUUID()) == _nodes.end()) {
 		LOG_INFO("Not removing unknown node");
-		assert(_sockets.find(node.getUUID()) == _sockets.end());
+    if (_sockets.find(node.getUUID()) != _sockets.end()) {
+      zmq_close(_sockets[node.getUUID()]);
+      _sockets.erase(node.getUUID());               // delete socket
+    }
 		return;
 	}
 

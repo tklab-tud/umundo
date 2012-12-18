@@ -16,4 +16,6 @@ examples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava.so
 *.class
 
 s11n/test/java/bin*
+examples/csharp/umundo-pingpong/umundo-pingpong/bin*
+examples/csharp/umundo-pingpong/umundo-pingpong/obj*
 

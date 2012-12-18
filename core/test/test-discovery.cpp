@@ -150,10 +150,10 @@ bool testPubSubConnections() {
 
 int main(int argc, char** argv, char** envp) {
 //	setenv("UMUNDO_LOGLEVEL", "4", 1);
-//	if (!testNodeDiscovery())
-//		return EXIT_FAILURE;
-//	if (!testNodeRemoval())
-//		return EXIT_FAILURE;
+	if (!testNodeDiscovery())
+		return EXIT_FAILURE;
+	if (!testNodeRemoval())
+		return EXIT_FAILURE;
 	if (!testPubSubConnections())
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

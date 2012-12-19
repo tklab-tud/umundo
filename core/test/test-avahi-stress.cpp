@@ -22,6 +22,7 @@ template <typename T> std::string toStr(T tmp) {
 
 AvahiSimplePoll *_simplePoll = NULL;
 umundo::Mutex mutex;
+umundo::Monitor monitor;
 
 struct service {
 	AvahiEntryGroup* group;
@@ -77,6 +78,7 @@ void resolveCallback(
 			}
 			if (dots != 3) {
 				printf("Avahi bug: %s is not an ipv4 address!\n", addr);
+				assert(false);
 			}
 		} else if (protocol == AVAHI_PROTO_INET6) {
 			printf("resolveCallback ipv6 for iface %d: %s\n", interface, addr);
@@ -91,6 +93,7 @@ void resolveCallback(
 	}
 
 	avahi_service_resolver_free(r);
+	monitor.signal();
 }
 
 void browseCallback(
@@ -262,10 +265,10 @@ class AvahiRunner : public umundo::Thread {
 		while(isStarted()) {
 			{
 				umundo::ScopeLock lock(mutex);
-				int timeoutMs = 10;
+				int timeoutMs = 50;
 				avahi_simple_poll_iterate(_simplePoll, timeoutMs);
 			}
-			umundo::Thread::sleepMs(40);
+			umundo::Thread::sleepMs(20);
 		}
 	}
 };
@@ -287,42 +290,28 @@ int main(int argc, char** argv) {
 	q->regType = "_foo._tcp";
 	client = avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, browseClientCallback, (void*)q, &err);
 	
-	
-	int iteration = 0;
 	while(true) {
 		// int timeoutMs = 10;
 		// avahi_simple_poll_iterate(_simplePoll, timeoutMs);
 		
-		if (iteration < 20) {
+		for (int i = 0; i < 10; i++) {
 			umundo::ScopeLock lock(mutex);
 			struct service* svc = (service*)malloc(sizeof(service));
 			svc->group = NULL;
-			svc->name = strdup(toStr(iteration).c_str());
+			svc->name = strdup(toStr(i).c_str());
 			svc->transport = "tcp";
 			svc->domain = "foo.local.";
-			svc->port = iteration;
+			svc->port = i + 40;
 			svc->regType = "_foo._tcp";
 			
-			avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, &clientCallback, (void*)svc, &err);
+			AvahiClient* client = avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, &clientCallback, (void*)svc, &err);
+			clients[svc] = client;
 		}
-		
-		if (iteration > 20 + 400) {
-			umundo::ScopeLock lock(mutex);
-			std::map<service*, AvahiClient*>::iterator clientIter = clients.begin();
-			if (clientIter != clients.end()) {
-				avahi_client_free(clientIter->second);
-				free (clientIter->first);
-				clients.erase(clientIter);
-			}
-		}
-	
-		if (iteration > 20 + 800) {
-			break;
-		}
-		
-		umundo::Thread::sleepMs(10);
-		iteration++;
+
+		break;
 	}
+
+	umundo::Thread::sleepMs(6000);
 
 	return 0;
 }

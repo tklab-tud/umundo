@@ -24,6 +24,7 @@ namespace umundo {
 
 AvahiNodeStub::AvahiNodeStub() {
 	_isRemote = false;
+	_isInProcess = false;
 };
 
 AvahiNodeStub::~AvahiNodeStub() {

@@ -288,10 +288,10 @@ SET(CMAKE_LIBRARY_POSTFIX ${CMAKE_${BUILD_TYPE}_POSTFIX})
 
 # select implementations for discovery and network connectivity
 if(UNIX AND NOT APPLE AND NOT IOS AND NOT ANDROID)
-	# build with avahi on all unices but macosx
-	OPTION(DISC_BONJOUR "Use bonjour for discovery" OFF)
-	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF)
-	OPTION(DISC_AVAHI "Use avahi for discovery" ON)
+	# we used to build with avahi on linux but there is a bug and the ML is dead
+	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
+	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
+	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
 else()
 	# build with bonjour everywhere else
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)

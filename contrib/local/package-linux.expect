@@ -1,7 +1,7 @@
 #!/usr/bin/expect -d
 
+set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
-set timeout 150
 
 set local_prompt {sradomski$ }
 set prompt "sradomski@"

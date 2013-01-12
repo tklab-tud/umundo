@@ -115,9 +115,12 @@ In your <tt>pom.xml</tt> add a new repository and include the umundocore depende
       <dependency>
         <groupId>org.umundo</groupId>
         <artifactId>umundocore</artifactId>
-        <version>0.1.1</version>
+        <version>0.3.1</version>
       </dependency>
     </dependencies>
+
+<b>Note:</b> Have a look at the [maven repository](http://umundo.tk.informatik.tu-darmstadt.de/maven2/org/umundo/umundocore/) 
+to see the available versions.
 
 ## Trouble Shooting
 

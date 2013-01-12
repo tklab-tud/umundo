@@ -32,7 +32,6 @@ $change_log =~ s/###\s\n/\n/g;
 $change_log =~ s/###\s/\n\n    /g;
 $change_log =~ s/\n([^<])/\n    $1/g;
 
-
 my $installer_dir = shift or die("Expected directory as first argument\n");
 if (!File::Spec->file_name_is_absolute($installer_dir)) {
 	$installer_dir = File::Spec->rel2abs($installer_dir, getcwd);
@@ -93,8 +92,8 @@ my $descriptions = {
 	'./share/umundo/cmake/UseUMundo.cmake' => 'CMake macros for protobuf',
 };
 
-my ($mac_archive, $linux32_archive, $linux64_archive, $win32_archive, $win64_archive);
-my ($mac_files, $linux32_files, $linux64_files, $win32_files, $win64_files);
+my ($mac_archive, $linux32_archive, $linux64_archive, $win32_archive, $win64_archive, $rasp_pi_archive);
+my ($mac_files, $linux32_files, $linux64_files, $win32_files, $win64_files, $rasp_pi_files);
 
 chdir $installer_dir;
 foreach (sort <*>) {
@@ -102,6 +101,7 @@ foreach (sort <*>) {
 	$mac_archive         = File::Spec->rel2abs($_, getcwd) if (m/.*darwin.*\.tar\.gz/i);
 	$linux32_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-i686.*\.tar\.gz/i);
 	$linux64_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-x86_64.*\.tar\.gz/i);
+	$rasp_pi_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-armv6l.*\.tar\.gz/i);
 	$win32_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86-.*\.zip/i);
 	$win64_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86_64.*\.zip/i);
 }
@@ -109,6 +109,7 @@ foreach (sort <*>) {
 print STDERR "No archive for MacOSX found!\n" if (!$mac_archive);
 print STDERR "No archive for Linux 32Bit found!\n" if (!$linux32_archive);
 print STDERR "No archive for Linux 64Bit found!\n" if (!$linux64_archive);
+print STDERR "No archive for Raspberry Pi found!\n" if (!$rasp_pi_archive);
 print STDERR "No archive for Windows 32Bit found!\n" if (!$win32_archive);
 print STDERR "No archive for Windows 64Bit found!\n" if (!$win64_archive);
 
@@ -119,11 +120,13 @@ my $version = $1;
 %{$mac_files}      = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $mac_archive`)      if $mac_archive;
 %{$linux32_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $linux32_archive`)  if $linux32_archive;
 %{$linux64_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $linux64_archive`)  if $linux64_archive;
+%{$rasp_pi_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $rasp_pi_archive`)  if $rasp_pi_archive;
 %{$win32_files}    = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `unzip -l $win32_archive`)   if $win32_archive;
 %{$win64_files}    = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `unzip -l $win64_archive`)   if $win64_archive;
 
-# print Dumper($mac_files);
-# exit;
+#print Dumper($rasp_pi_files);
+#exit;
+
 my $tmpdir = File::Temp->newdir() or die($!);
 #print STDERR $tmpdir."\n";
 chdir $tmpdir or die($!);
@@ -131,8 +134,9 @@ chdir $tmpdir or die($!);
 system("tar", "xzf", $mac_archive)      if $mac_archive;
 system("tar", "xzf", $linux32_archive)  if $linux32_archive;
 system("tar", "xzf", $linux64_archive)  if $linux64_archive;
-system("unzip", "-q", $win32_archive)         if $win32_archive;
-system("unzip", "-q", $win64_archive)         if $win64_archive;
+system("tar", "xzf", $rasp_pi_archive)  if $rasp_pi_archive;
+system("unzip", "-q", $win32_archive)   if $win32_archive;
+system("unzip", "-q", $win64_archive)   if $win64_archive;
 
 my $rv;
 mkdir("content") or die($!);
@@ -170,9 +174,10 @@ my $flat_list = `find -s .`;
 
 print '<html><body>'."\n";
 
+$change_log =~ s/\s+$//;
 print '<h1>Changelog</h1>'."\n";
 print '<pre>'."\n";
-print $change_log;
+print $change_log."\n";
 print '</pre>'."\n";
 
 print '<h1>Contents</h1>';
@@ -183,9 +188,16 @@ for a given platform contain the same files, it is only a matter of taste and
 convenience. There are differences between the contents for each platform though 
 and they are listed in the <i>availability</i> column.</p>
 
-<p><tt>Mac</tt> are all the darwin installers, <tt>L32</tt> and <tt>L64</tt> is short for Linux 32 and 64Bit
-respectively, same with <tt>W32</tt> and <tt>W64</tt> for Windows. Only the first occurence of a 
-library is commented, the <tt>_d</tt> suffix signifies debug libraries, the <tt>64</tt> 
+<table>
+<tr><td><b>Mac</b></td><td>All the darwin installers</td></tr>
+<tr><td><b>L32</b></td><td>Linux i686 installers</td></tr>
+<tr><td><b>L64</b></td><td>Linux x86_64 installers</td></tr>
+<tr><td><b>W32</b></td><td>Windows x86 installers</td></tr>
+<tr><td><b>W64</b></td><td>Windows x86_64 installers</td></tr>
+<tr><td><b>RPI</b></td><td>Raspberry Pi linux-armv6l installers</td></tr>
+</table>
+
+<p>Only the first occurence of a library is commented, the <tt>_d</tt> suffix signifies debug libraries, the <tt>64</tt> 
 suffix is for 64Bit builds and the Windows libraries have no <tt>lib</tt> prefix.</p>
 
 EOF
@@ -194,9 +206,11 @@ print '<tr><th align="left">Availability</th><th align="left">Filename</th><th a
 print '<tr><td valign="top">'."\n";
 print '<pre>'."\n";
 
+#print Dumper($rasp_pi_files);
+
 foreach my $file (split("\n", $flat_list)) {
 	if ($file eq '.') {
-		print '<font bgcolor="#ccc">MAC</font>|L32|L64|W32|W64'."\n";
+		print '<font bgcolor="#ccc">MAC|L32|L64|W32|W64|RPI</font>'."\n";
 		next;
 	}
 	if (-d $file) {
@@ -204,12 +218,13 @@ foreach my $file (split("\n", $flat_list)) {
 		next;
 	}
 	$file =~ s/\.\///;
-#	print STDERR $file."\n";
+	#print STDERR $file."\n";
 	(exists($mac_files->{"usr/local/$file"}) ? print " X  " : print " -  ");
 	(exists($linux32_files->{"usr/local/$file"}) ? print " X  " : print " -  ");
 	(exists($linux64_files->{"usr/local/$file"}) ? print " X  " : print " -  ");
 	(exists($win32_files->{"$file"}) ? print " X  " : print " -  ");
 	(exists($win64_files->{"$file"}) ? print " X  " : print " -  ");
+	(exists($rasp_pi_files->{"usr/local/$file"}) ? print " X  " : print " -  ");
 	print "\n";
 }
 

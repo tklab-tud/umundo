@@ -130,25 +130,26 @@ GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
 # Android
 ########################################
 
-file(GLOB_RECURSE ANDROID_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/android*/*)
-foreach(ANDROID_LIB ${ANDROID_LIBS})
-	# do not pack static libraries
-#	if (NOT ANDROID_LIB MATCHES ".*\\.a" AND NOT ANDROID_LIB MATCHES "\\..*")
-	if (NOT ANDROID_LIB MATCHES ".*\\.a")
-		# remove weird double slashes
-		STRING(REGEX REPLACE "//" "/" ANDROID_LIB ${ANDROID_LIB})
-		# take relative path
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" ANDROID_PATH ${ANDROID_LIB})
-    # only take first two path elements
-		STRING(REGEX MATCH "[^/]*/[^/]*" ANDROID_PATH ${ANDROID_PATH})
-		# but remove umundo.jar from path in any case
-		STRING(REGEX REPLACE "/umundo.jar" "" ANDROID_PATH ${ANDROID_PATH})
-    # message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
-    # message(STATUS "ANDROID_LIB: ${ANDROID_LIB}")
-		install(FILES ${ANDROID_LIB} DESTINATION share/umundo/${ANDROID_PATH} COMPONENT libraryAndroid)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "libraryAndroid")
-	endif()
-endforeach()
+if (NOT ENV{UMUNDO_PACKAGE_CURR_ARCH_ONLY})
+	file(GLOB_RECURSE ANDROID_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/android*/*)
+	foreach(ANDROID_LIB ${ANDROID_LIBS})
+		# do not pack static libraries
+	#	if (NOT ANDROID_LIB MATCHES ".*\\.a" AND NOT ANDROID_LIB MATCHES "\\..*")
+		if (NOT ANDROID_LIB MATCHES ".*\\.a")
+			# remove weird double slashes
+			STRING(REGEX REPLACE "//" "/" ANDROID_LIB ${ANDROID_LIB})
+			# take relative path
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" ANDROID_PATH ${ANDROID_LIB})
+	    # only take first two path elements
+			STRING(REGEX MATCH "[^/]*/[^/]*" ANDROID_PATH ${ANDROID_PATH})
+			# but remove umundo.jar from path in any case
+			STRING(REGEX REPLACE "/umundo.jar" "" ANDROID_PATH ${ANDROID_PATH})
+	    # message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
+	    # message(STATUS "ANDROID_LIB: ${ANDROID_LIB}")
+			install(FILES ${ANDROID_LIB} DESTINATION share/umundo/${ANDROID_PATH} COMPONENT libraryAndroid)
+			list (APPEND UMUNDO_CPACK_COMPONENTS "libraryAndroid")
+		endif()
+	endforeach()
 
 # list(FIND UMUNDO_CPACK_COMPONENTS "libraryAndroid" FOUND_ITEM)
 # if (FOUND_ITEM GREATER -1)
@@ -165,31 +166,32 @@ endforeach()
 ########################################
 # iOS
 ########################################
-if (APPLE)
-	file(GLOB_RECURSE IOS_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/ios*/*.ios*)
-	foreach(IOS_LIB ${IOS_LIBS})
-		# match ios-5.0
-		STRING(REGEX REPLACE "//" "/" IOS_LIB ${IOS_LIB})
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" IOS_PATH ${IOS_LIB})
-		STRING(REGEX MATCH "[^/]*" IOS_PATH ${IOS_PATH})
-		# message(STATUS "IOS_LIB:  ${IOS_LIB}")
-		# message(STATUS "IOS_PATH: ${IOS_PATH}")
-		install(FILES ${IOS_LIB} DESTINATION share/umundo/${IOS_PATH} COMPONENT libraryIOS)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "libraryIOS")
-	endforeach()
-
-	list(FIND UMUNDO_CPACK_COMPONENTS "libraryIOS" FOUND_ITEM)
-	if (FOUND_ITEM GREATER -1)
-		file(GLOB_RECURSE IOS_PREBUILT_LIBS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/ios*/*.a)
-		foreach(IOS_PREBUILT_LIB ${IOS_PREBUILT_LIBS})
-			if(NOT EXISTS "${IOS_PREBUILT_LIB}/")
-				STRING(REGEX REPLACE "//" "/" IOS_PREBUILT_LIB ${IOS_PREBUILT_LIB})
-				STRING(REGEX MATCH "ios/[^//]+" IOS_PLATFORM ${IOS_PREBUILT_LIB})
-				# message("IOS_PLATFORM: ${IOS_PLATFORM}")
-				# message("IOS_PREBUILT_LIB: ${IOS_PREBUILT_LIB}")
-				install(FILES ${IOS_PREBUILT_LIB} DESTINATION share/umundo/deps/${IOS_PLATFORM} COMPONENT libraryPrebuilt)
-			endif()
+	if (APPLE)
+		file(GLOB_RECURSE IOS_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/ios*/*.ios*)
+		foreach(IOS_LIB ${IOS_LIBS})
+			# match ios-5.0
+			STRING(REGEX REPLACE "//" "/" IOS_LIB ${IOS_LIB})
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/package/cross-compiled/" "" IOS_PATH ${IOS_LIB})
+			STRING(REGEX MATCH "[^/]*" IOS_PATH ${IOS_PATH})
+			# message(STATUS "IOS_LIB:  ${IOS_LIB}")
+			# message(STATUS "IOS_PATH: ${IOS_PATH}")
+			install(FILES ${IOS_LIB} DESTINATION share/umundo/${IOS_PATH} COMPONENT libraryIOS)
+			list (APPEND UMUNDO_CPACK_COMPONENTS "libraryIOS")
 		endforeach()
+
+		list(FIND UMUNDO_CPACK_COMPONENTS "libraryIOS" FOUND_ITEM)
+		if (FOUND_ITEM GREATER -1)
+			file(GLOB_RECURSE IOS_PREBUILT_LIBS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/ios*/*.a)
+			foreach(IOS_PREBUILT_LIB ${IOS_PREBUILT_LIBS})
+				if(NOT EXISTS "${IOS_PREBUILT_LIB}/")
+					STRING(REGEX REPLACE "//" "/" IOS_PREBUILT_LIB ${IOS_PREBUILT_LIB})
+					STRING(REGEX MATCH "ios/[^//]+" IOS_PLATFORM ${IOS_PREBUILT_LIB})
+					# message("IOS_PLATFORM: ${IOS_PLATFORM}")
+					# message("IOS_PREBUILT_LIB: ${IOS_PREBUILT_LIB}")
+					install(FILES ${IOS_PREBUILT_LIB} DESTINATION share/umundo/deps/${IOS_PLATFORM} COMPONENT libraryPrebuilt)
+				endif()
+			endforeach()
+		endif()
 	endif()
 endif()
 
@@ -325,7 +327,7 @@ set(CPACK_RESOURCE_FILE_WELCOME "${PROJECT_SOURCE_DIR}/installer/packageMaker/we
 # Configuration for debian packages
 #
 set(CPACK_DEBIAN_PACKAGE_NAME "umundo")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libavahi-client3")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libavahi-client3, libpcre3")
 set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "protobuf-compiler, libprotobuf7")
 
 ###

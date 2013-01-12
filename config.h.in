@@ -64,6 +64,5 @@
 /** Implementation specific */
 #cmakedefine NET_ZEROMQ_SND_HWM @NET_ZEROMQ_SND_HWM@
 #cmakedefine NET_ZEROMQ_RCV_HWM @NET_ZEROMQ_RCV_HWM@
-#cmakedefine PUBPORT_SHARING
 
 #endif

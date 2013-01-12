@@ -5,7 +5,7 @@ set -e
 
 ME=`basename $0`
 ARCH=`uname -m`
-DEST_DIR="${PWD}/../../../prebuilt/linux-${ARCH}/gnu/lib"
+DEST_DIR="${PWD}/../../prebuilt/linux-${ARCH}/gnu"
 
 if [ ! -d mDNSPosix ]; then
 	echo
@@ -15,12 +15,12 @@ if [ ! -d mDNSPosix ]; then
 	echo
 	exit
 fi
-mkdir -p ${DEST_DIR} &> /dev/null
+mkdir -p ${DEST_DIR}/lib &> /dev/null
 
 if [ -f ispatched ]; then
 	rm ./ispatched
 else
-	patch -p1 < ../mDNSResponder-333.10.android.patch
+	patch -p1 < ../mDNSResponder-333.10.umundo.patch
 fi
 
 touch ispatched
@@ -76,4 +76,4 @@ ${CC} -g -shared -o build/prod/libmDNSEmbedded_d.so $OBJS
 echo ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 
-cp build/prod/* ${DEST_DIR}
+cp build/prod/* ${DEST_DIR}/lib

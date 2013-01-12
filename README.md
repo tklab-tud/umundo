@@ -139,6 +139,11 @@ as they become available.
 			<li>Everything builds and runs just fine with GCC.
 		</ul>
 	</td></tr>
+	<tr><td>Raspberry Pi</td><td>
+		<ul>
+			<li>Everything builds and runs just fine with GCC.
+		</ul>
+	</td></tr>
 	<tr><td>Android 2.3</td><td>
 		<ul>
 			<li>Worked whenever we tried, but we cannot automatically test on the simulator, as <a href="http://developer.android.com/guide/developing/devices/emulator.html#emulatornetworking">google does not deem multicast to be important</a>.
@@ -147,23 +152,6 @@ as they become available.
 	</td></tr>
     </tr>
 </table>
-
-## Directory Structure (excerpt)
-
-	contrib         # Contributed scripts and components not part of uMundo as such.
-	|-archives      # Archives and patches for the libraries we rely upon.
-	|-samples
-	| |-android     # Eclipse project illustrating usage of umundo on Android devices.
-	| |-java        # Sample java applications illustrating usage of umundo from Java.
-	|-cmake         # Finding libraries, cross-compilation and packaging support for build-system.
-	|-prebuilt      # Prebuilt libraries of our dependencies for all supported platforms.
-	core            # umundo.core implementation, see README.md within.
-	docs            # General documentation, API docs are in respective components docs/ directory.
-	installer       # Installers of uMundo for the supported platforms.
-	lib             # Prebuilt libraries of uMundo itself for all supported platforms.
-	rpc             # umundo.rpc implementation.
-	s11n            # umundo.s11n implementation, see README.md within.
-	util            # umundo.util with some umundo components and utility classes.
 
 ## FAQ
 

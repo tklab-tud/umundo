@@ -18,7 +18,7 @@ if [ ! -f src/zmq.cpp ]; then
 	echo
 	exit
 fi
-mkdir -p ${DEST_DIR} &> /dev/null
+mkdir -p ${DEST_DIR}/lib &> /dev/null
 
 if [ -f Makefile ]; then
 	make clean
@@ -32,7 +32,7 @@ CXXFLAGS="-s -fPIC" \
 
 make -j2
 make install
-cp ${BUILD_DIR}/lib/libzmq.a ${DEST_DIR}/lib
+cp ${BUILD_DIR}/lib/libzmq.a ${DEST_DIR}/lib/libzmq.a
 
 make clean
 ./configure \

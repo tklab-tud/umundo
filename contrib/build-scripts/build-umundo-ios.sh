@@ -13,6 +13,8 @@ SDK_VER="6.0"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 
+unset MACOSX_DEPLOYMENT_TARGET
+
 rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 
 if [[ -z $1 || $1 = "Debug" ]] ; then

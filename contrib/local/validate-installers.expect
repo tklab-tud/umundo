@@ -245,6 +245,40 @@ set reqFilesLinux64 [lsort $reqFilesLinux64]
 checkArchive "tar tzf ../../installer/umundo-linux-x86_64-*.tar.gz" Linux64 $reqFilesLinux64
 
 #############################
+# Validate Raspberry Pi installers
+#############################
+
+log_user 0
+set reqFilesRaspberryPi {
+	"/usr/local/bin/protoc-umundo-cpp-rpc"
+	"/usr/local/bin/umundo-pingpong"
+	"/usr/local/bin/umundo-monitor"
+
+	"/usr/local/include/umundo/s11n.h"
+	"/usr/local/include/umundo/core.h"
+	"/usr/local/include/umundo/rpc.h"
+	"/usr/local/include/umundo/util.h"
+
+	"/usr/local/lib/libumundo.so"
+	"/usr/local/lib/libumundo_d.so"
+	"/usr/local/lib/libumundocore.so"
+	"/usr/local/lib/libumundocore_d.so"
+	"/usr/local/lib/libumundoserial.so"
+	"/usr/local/lib/libumundoserial_d.so"
+	"/usr/local/lib/libumundorpc.so"
+	"/usr/local/lib/libumundorpc_d.so"
+	"/usr/local/lib/libumundoutil.so"
+	"/usr/local/lib/libumundoutil_d.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava.so"
+	"/usr/local/share/umundo/lib/libumundoNativeJava_d.so"
+
+	"/usr/local/share/umundo/java/umundo.jar"
+}
+set reqFilesRaspberryPi [concat $reqFilesRaspberryPi $reqFilesDesktopCommonUnix $reqFilesJavaSamples $reqFilesCPPSamples]
+set reqFilesRaspberryPi [lsort $reqFilesRaspberryPi]
+checkArchive "tar tzf ../../installer/umundo-linux-armv6l-*.tar.gz" RaspberryPi $reqFilesRaspberryPi
+
+#############################
 # Validate Win32 installers
 #############################
 

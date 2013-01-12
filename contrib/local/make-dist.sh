@@ -38,6 +38,14 @@ if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ]; then
 	expect build-linux.expect
 fi
 
+echo -n "Build umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI
+if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ]; then
+	echo "Start the Raspberry Pi system named 'raspberrypi' and press return" && read
+	echo == BUILDING UMUNDO FOR Raspberry Pi =========================================================
+	export UMUNDO_BUILD_HOST=raspberrypi
+	expect build-linux.expect
+fi
+
 # make sure to cross-compile before windows as we will copy all the files into the windows VM
 echo -n "Build umundo for iOS? [y/N]: "; read BUILD_IOS
 if [ "$BUILD_IOS" == "y" ] || [ "$BUILD_IOS" == "Y" ]; then
@@ -106,6 +114,13 @@ if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 		echo Start the Linux 64Bit system named 'debian64' again && read
 		echo == PACKAGING UMUNDO FOR Linux 64Bit =========================================================
 		export UMUNDO_BUILD_HOST=debian64
+		expect package-linux.expect
+ fi
+
+	if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+		echo Start the Raspberry Pi system named 'raspberrypi' again && read
+		echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
+		export UMUNDO_BUILD_HOST=raspberrypi
 		expect package-linux.expect
  fi
 

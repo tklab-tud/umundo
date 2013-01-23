@@ -62,9 +62,9 @@ fi
 
 echo -n "Build umundo for Windows 32Bit? [y/N]: "; read BUILD_WIN32
 if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ]; then
-	echo "Start the Windows 32Bit system named 'epikur-win7' and press return" && read
+	echo "Start the Windows 64Bit system named 'epikur-win7-64' and press return" && read
 	echo == BUILDING UMUNDO FOR Windows 32Bit =========================================================
-	export UMUNDO_BUILD_HOST=epikur-win7
+	export UMUNDO_BUILD_HOST=epikur-win7-64
 	export UMUNDO_BUILD_ARCH=32
 	# winsshd needs an xterm ..
 	TERM=xterm expect build-windows.expect
@@ -125,9 +125,9 @@ if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
  fi
 
 	if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Windows 32Bit system named 'epikur-win7' again && read
+		echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
 		echo == PACKAGING UMUNDO FOR Windows 32Bit =========================================================
-		export UMUNDO_BUILD_HOST=epikur-win7
+		export UMUNDO_BUILD_HOST=epikur-win7-64
 		export UMUNDO_BUILD_ARCH=32
 		TERM=xterm expect package-windows.expect
 	fi

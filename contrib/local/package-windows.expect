@@ -35,11 +35,11 @@ expect {
 send "set prompt=easy_to_recognize \r"
 expect -re $remote_prompt
 
-send "cd build-umundo\r"
+send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
 
 if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	send "\"c:\\Program Files\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
+	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
 	expect -re $remote_prompt
 } else {
 	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat\" x86_amd64\r"
@@ -68,9 +68,9 @@ expect -re $local_prompt
 eval cd ~/Documents/TK/Code/
 
 if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	eval spawn "scp -r epikur-win7.local:build-umundo\\\\umundo-windows* umundo/installer/"
+	eval spawn "scp -r epikur-win7-64.local:build-umundo-32\\\\umundo-windows* umundo/installer/"
 } else {
-	eval spawn "scp -r epikur-win7-64.local:build-umundo\\\\umundo-windows* umundo/installer/"
+	eval spawn "scp -r epikur-win7-64.local:build-umundo-64\\\\umundo-windows* umundo/installer/"
 }
 expect -re $local_prompt
 

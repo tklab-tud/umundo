@@ -105,7 +105,7 @@ else()
 	endif()
 endif()
 
-#message("CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
+message(STATUS "Searching for prebuilt libraries in: ${CMAKE_FIND_ROOT_PATH}")
 
 if (WIN32)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/snippets)

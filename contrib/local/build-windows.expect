@@ -21,10 +21,11 @@ eval cd ~/Documents/TK/Code/
 # prepare and deploy archive
 
 # check age of archive against modification date
-eval spawn find ./umundo -newer umundo-win.tar
+eval spawn find ./umundo -newer umundo-win.zip
 set redeploy 0;
 expect {
 	"find:*No such file"     { set redeploy 1; }
+	-re ".expect\r\n"        { set redeploy 0; }
 	-re ".cpp\r\n"           { set redeploy 1; }
 	-re "package\r\n"        { set redeploy 1; }
 	-re ".h\r\n"             { set redeploy 1; }
@@ -81,11 +82,11 @@ if {$redeploy} {
 }
 
 # setup directories
-send "rmdir \/S \/Q build-umundo\r"
+send "rmdir \/S \/Q build-umundo-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
-send "mkdir build-umundo\r"
+send "mkdir build-umundo-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
-send "cd build-umundo\r"
+send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
 
 ##############################
@@ -96,7 +97,7 @@ expect -re $remote_prompt
 # "c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
 # send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat x86_amd64\"\n"
 if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	send "\"c:\\Program Files\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
+	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
 	expect -re $remote_prompt
 } else {
 	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat\" x86_amd64\r"
@@ -105,7 +106,7 @@ if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 ##############################
 # compile in debug configuration
 
-send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\r"
@@ -191,7 +192,7 @@ expect -re $local_prompt
 eval cd ~/Documents/TK/Code/
 
 if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-  eval spawn "scp epikur-win7.local:win-package-x86.zip ."
+  eval spawn "scp epikur-win7-64.local:win-package-x86.zip ."
   expect -re $local_prompt
   eval spawn "unzip -o win-package-x86.zip"
   expect -re $local_prompt

@@ -1,5 +1,6 @@
 /**
  *  Copyright (C) 2012  Stefan Radomski
+ *  Copyright (C) 2013  Dirk Schnelle-Walka
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
@@ -14,8 +15,6 @@
  */
 
 package org.umundo.s11n;
-
-import org.umundo.core.Message;
 
 public interface ITypedGreeter {
 

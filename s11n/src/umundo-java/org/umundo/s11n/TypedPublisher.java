@@ -1,6 +1,7 @@
 /**
  *  Copyright (C) 2012  Daniel Schreiber
  *  Copyright (C) 2012  Stefan Radomski
+ *  Copyright (C) 2013  Dirk Schnelle-Walka
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
@@ -33,14 +34,16 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.ServiceDescriptor;
-import com.google.protobuf.DynamicMessage.Builder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 
 public class TypedPublisher extends Publisher {
 
-	ITypedGreeter typedGreeter;
-	GreeterDecorator greeterDecorator;
+	private static Map<String, FileDescriptor> protoFile = new HashMap<String, FileDescriptor>();
+	private static Map<String, Descriptor> protoMsgDesc = new HashMap<String, Descriptor>();
+	private static Map<String, ServiceDescriptor> protoSvcDesc = new HashMap<String, ServiceDescriptor>();
+	private ITypedGreeter typedGreeter;
+	private GreeterDecorator greeterDecorator;
 
 	class GreeterDecorator extends Greeter {
 		public void welcome(Publisher pub, String nodeId, String subId) {
@@ -160,9 +163,5 @@ public class TypedPublisher extends Publisher {
 		}
 	}
 
-	private static Map<String, FileDescriptor> protoFile = new HashMap<String, FileDescriptor>();
-	private static Map<String, Descriptor> protoMsgDesc = new HashMap<String, Descriptor>();
-	private static Map<String, Builder> protoMsgBuilders = new HashMap<String, Builder>();
-	private static Map<String, ServiceDescriptor> protoSvcDesc = new HashMap<String, ServiceDescriptor>();
 
 }

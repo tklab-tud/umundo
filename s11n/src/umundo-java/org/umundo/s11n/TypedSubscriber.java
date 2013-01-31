@@ -1,6 +1,7 @@
 /**
  *  Copyright (C) 2012  Daniel Schreiber
  *  Copyright (C) 2012  Stefan Radomski
+ *  Copyright (C) 2013  Dirk Schnelle-Walka
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD
@@ -16,9 +17,6 @@
 
 package org.umundo.s11n;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -28,19 +26,20 @@ import org.umundo.core.Message;
 import org.umundo.core.Receiver;
 import org.umundo.core.Subscriber;
 
-import com.google.protobuf.DescriptorProtos.DescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.DescriptorValidationException;
-import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.Descriptors.ServiceDescriptor;
-import com.google.protobuf.DynamicMessage.Builder;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.DynamicMessage.Builder;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class TypedSubscriber extends Subscriber {
+	private Map<String, Method> deserializerMethods = new HashMap<String, Method>();
+	private DeserializingReceiverDecorator decoratedReceiver;
+
+	private boolean autoRegisterTypes = false;
+	private Map<String, Object> autoDeserLoadFailed = new HashMap<String, Object>();
+	private ExtensionRegistry extensionRegistry;
 
 	class DeserializingReceiverDecorator extends Receiver {
 		ITypedReceiver r;
@@ -63,7 +62,7 @@ public class TypedSubscriber extends Subscriber {
 			if (TypedSubscriber.this.autoRegisterTypes && !TypedSubscriber.this.autoDeserLoadFailed.containsKey(type)
 					&& !TypedSubscriber.this.deserializerMethods.containsKey(type)) {
 				try {
-					Class c = Class.forName(type);
+					Class<?> c = Class.forName(type);
 					if (GeneratedMessage.class.isAssignableFrom(c)) {
 						TypedSubscriber.this.registerType((Class<? extends GeneratedMessage>) Class.forName(type));
 					}
@@ -85,7 +84,7 @@ public class TypedSubscriber extends Subscriber {
 					return;
 				}
 				try {
-					o = m.invoke(null, data);
+					o = m.invoke(null, data, extensionRegistry);
 				} catch (IllegalArgumentException e) {
 					r.receiveObject(null, msg);
 					return;
@@ -103,7 +102,7 @@ public class TypedSubscriber extends Subscriber {
 				try {
 					DynamicMessage _protoMsg = DynamicMessage.getDefaultInstance(TypedPublisher.protoDescForMessage(type));
 					Builder builder = _protoMsg.toBuilder(); 
-					builder.mergeFrom(data);
+					builder.mergeFrom(data, extensionRegistry);
 					r.receiveObject(builder.build(), msg);
 				} catch (InvalidProtocolBufferException e) {
 					// TODO Auto-generated catch block
@@ -125,10 +124,14 @@ public class TypedSubscriber extends Subscriber {
 		this.autoRegisterTypes = auto;
 	}
 
+	public void setExtensionRegistry(ExtensionRegistry registry) {
+		extensionRegistry = registry;
+	}
+
 	public void registerType(Class<? extends GeneratedMessage> type) throws SecurityException {
 		String n = type.getSimpleName();
 		try {
-			Method m = type.getMethod("parseFrom", byte[].class);
+			Method m = type.getMethod("parseFrom", byte[].class, ExtensionRegistryLite.class);
 			deserializerMethods.put(n, m);
 		} catch (NoSuchMethodException e) {
 			System.err.println("GeneratedMessage in protobuf no longer has a parseFrom method?");
@@ -146,12 +149,4 @@ public class TypedSubscriber extends Subscriber {
 		setReceiver(decoratedReceiver);
 		this.autoRegisterTypes = autoRegisterTypes;
 	}
-
-
-	private Map<String, Method> deserializerMethods = new HashMap<String, Method>();
-	private DeserializingReceiverDecorator decoratedReceiver;
-
-	private boolean autoRegisterTypes = false;
-	private Map<String, Object> autoDeserLoadFailed = new HashMap<String, Object>();
-
 }

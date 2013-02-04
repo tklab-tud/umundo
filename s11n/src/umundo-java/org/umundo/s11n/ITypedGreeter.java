@@ -18,7 +18,7 @@ package org.umundo.s11n;
 
 public interface ITypedGreeter {
 
-	public void welcome(TypedPublisher atPub, String nodeId, String subId);
-	public void farewell(TypedPublisher fromPub, String nodeId, String subId);
+	void welcome(TypedPublisher atPub, String nodeId, String subId);
+	void farewell(TypedPublisher fromPub, String nodeId, String subId);
 
 }

@@ -114,7 +114,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 endif()
 
 # The CSharp bindings are already picked up as a host-native dll above
-GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
+# GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
 # if (UMUNDONATIVECSHARP_LOCATION)
 # 	install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll DESTINATION share/umundo/lib COMPONENT librarySwig)
 # 	list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")

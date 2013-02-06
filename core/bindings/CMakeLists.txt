@@ -162,6 +162,10 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CMAKE_COMMAND} -E 
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/GreeterDecorator.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedGreeter.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CSC_EXECUTABLE}
 				/target:library
 				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp${CMAKE_LIBRARY_POSTFIX}.dll
@@ -188,6 +192,10 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CMAKE_COMMAND} -E 
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/GreeterDecorator.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedGreeter.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${DMCS_EXECUTABLE}
 				-target:library
 				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono${CMAKE_LIBRARY_POSTFIX}.dll

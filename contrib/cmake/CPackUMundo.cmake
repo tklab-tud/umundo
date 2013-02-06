@@ -18,14 +18,13 @@ file(GLOB_RECURSE PLATFORM_LIBS
 
 # sort host-native libraries into installation components
 foreach(PLATFORM_LIB ${PLATFORM_LIBS})
-#	message("PLATFORM_LIB: ${PLATFORM_LIB}")
 	if (PLATFORM_LIB MATCHES ".*Native.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-	elseif (PLATFORM_LIB MATCHES ".*umundoCSharp.*")
+	elseif (PLATFORM_LIB MATCHES ".*umundo.*[CS|cs]harp.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-	elseif (PLATFORM_LIB MATCHES ".*umundoJava.*")
+	elseif (PLATFORM_LIB MATCHES ".*umundo.*[J|j]ava.*")
 		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
 	elseif (PLATFORM_LIB MATCHES ".*umundoserial.*")

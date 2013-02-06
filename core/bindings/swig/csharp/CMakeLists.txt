@@ -8,6 +8,13 @@ SET(CMAKE_SWIG_FLAGS "")
 SET(UMUNDO_CSHARP_NAMESPACE "org.umundo.core")
 SET(UMUNDO_CSHARP_DIR "org/umundo/core")
 
+if (64BIT_HOST)
+	list(APPEND CMAKE_SWIG_FLAGS "-D64BIT_HOST")
+endif()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	list(APPEND CMAKE_SWIG_FLAGS "-DDEBUG")
+endif()
+
 # we need ; to produce a space with the package .. weird
 SET_SOURCE_FILES_PROPERTIES(umundocore.i PROPERTIES SWIG_FLAGS "-w401;-namespace;${UMUNDO_CSHARP_NAMESPACE}")
 SET_SOURCE_FILES_PROPERTIES(umundocore.i PROPERTIES CPLUSPLUS ON)
@@ -19,4 +26,4 @@ set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 # I am not sure why we need it twice, but we do at least on android
 SWIG_LINK_LIBRARIES(umundoNativeCSharp ${UMUNDOCORE_LIBRARIES})
 
-INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig)
+INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig DESTINATION share/umundo/lib)

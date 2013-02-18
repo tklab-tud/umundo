@@ -162,13 +162,17 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CMAKE_COMMAND} -E 
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/GreeterDecorator.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedGreeter.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CSC_EXECUTABLE}
 				/target:library
-				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp${CMAKE_LIBRARY_POSTFIX}.dll
 				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
-			COMMENT "Creating the library for C# ...")
+			COMMENT "Creating umundoCSharp${CMAKE_LIBRARY_POSTFIX}.dll for C# ...")
    add_dependencies(csharp umundoNativeCSharp)
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS csharp)
@@ -188,9 +192,13 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedReceiver.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${CMAKE_COMMAND} -E 
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/TypedSubscriber.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/GreeterDecorator.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
+			COMMAND ${CMAKE_COMMAND} -E 
+				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedGreeter.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${DMCS_EXECUTABLE}
 				-target:library
-				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono.dll
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono${CMAKE_LIBRARY_POSTFIX}.dll
 				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core

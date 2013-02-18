@@ -32,6 +32,8 @@ namespace org.umundo.s11n
     /// </summary>   
     public class TypedPublisher : Publisher
     {
+        private GreeterDecorator greeterDecorator;
+
         /// <summary>
         /// Constructs a new publisher for the given channel name.
         /// </summary>
@@ -114,6 +116,29 @@ namespace org.umundo.s11n
             string type = o.GetType().Name;
             Message message = PrepareMessage(type, buffer);
             send(message);
+        }
+
+        public ITypedGreeter ITypedGreeter
+        {
+            get
+            {
+                if (greeterDecorator == null)
+                {
+                    return null;
+                }
+                return greeterDecorator.Greeter;
+            }
+
+            set
+            {
+                if (greeterDecorator == null)
+                {
+                    greeterDecorator = new GreeterDecorator();
+                    greeterDecorator.TypedPublisher = this;
+                    base.setGreeter(greeterDecorator);
+                }
+                greeterDecorator.Greeter = value;
+            }
         }
     }
 }

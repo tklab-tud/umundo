@@ -42,4 +42,4 @@ set_target_properties(umundoNativeJava PROPERTIES FOLDER "Bindings")
 SWIG_LINK_LIBRARIES(umundoNativeJava ${UMUNDOCORE_LIBRARIES})
 SWIG_LINK_LIBRARIES(umundoNativeJava ${UMUNDOCORE_LIBRARIES})
 
-INSTALL_LIBRARY(TARGETS umundoNativeJava COMPONENT librarySwig)
+INSTALL_LIBRARY(TARGETS umundoNativeJava COMPONENT librarySwig DESTINATION share/umundo/lib)

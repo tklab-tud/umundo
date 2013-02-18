@@ -9,7 +9,7 @@ set -e
 
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )"
-SDK_VER="6.0"
+SDK_VER="6.1"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 

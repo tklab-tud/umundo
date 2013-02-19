@@ -341,8 +341,8 @@ if (S11N_PROTOBUF AND WIN32)
 endif()
 
 if (NET_ZEROMQ)
-	SET(NET_ZEROMQ_SND_HWM "10000" CACHE STRING "Maximum queue size for publishers")
-	SET(NET_ZEROMQ_RCV_HWM "10000" CACHE STRING "Maximum queue size for subscribers")
+	SET(NET_ZEROMQ_SND_HWM "300000" CACHE STRING "Maximum queue size for publishers")
+	SET(NET_ZEROMQ_RCV_HWM "300000" CACHE STRING "Maximum queue size for subscribers")
 endif()
 
 ############################################################

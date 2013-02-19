@@ -67,15 +67,16 @@ void ZeroMQNode::init(boost::shared_ptr<Configuration>) {
 	zmq_bind(_readOpSocket, readOpId.c_str())  && LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
 	zmq_connect(_writeOpSocket, readOpId.c_str()) && LOG_ERR("zmq_connect %s: %s", readOpId.c_str(), zmq_strerror(errno));
 
-	int hwm = 5000000;
+  int sndhwm = NET_ZEROMQ_SND_HWM;
+  int rcvhwm = NET_ZEROMQ_RCV_HWM;
 	int vbsSub = 1;
 
 	std::string pubId("um.pub." + _uuid);
 //	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
-	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm))               && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &sndhwm, sizeof(sndhwm))               && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_pubSocket, ZMQ_XPUB_VERBOSE, &vbsSub, sizeof(vbsSub))   && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // receive all subscriptions
 
-	zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+	zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &rcvhwm, sizeof(rcvhwm)) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, "", 0)          && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // subscribe to every internal publisher
 
 	std::string nodeId("um.node." + _uuid);

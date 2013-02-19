@@ -68,10 +68,10 @@ various stages of maturity:
 	of a suited protobuf compiler.
 	<br/><br/><table>
 		<tr>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">C++</td>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">Java</td>
-			<td bgcolor="#ffffdd" style="border-right: solid #bbb 1px;">Objective-C</td>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">C#</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
+			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>
@@ -83,10 +83,10 @@ various stages of maturity:
 		<a href="/tklab-tud/umundo/tree/master/rpc">[more]</a>
 	<br/><br/><table>
 		<tr>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">C++</td>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">Java</td>
-			<td bgcolor="#ffffdd" style="border-right: solid #bbb 1px;">Objective-C</td>
-			<td bgcolor="#ffdddd" style="border-right: solid #bbb 1px;">C#</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
+			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>
@@ -96,10 +96,10 @@ various stages of maturity:
 		<a href="/tklab-tud/umundo/tree/master/util">[more]</a>
 	<br/><br/><table>
 		<tr>
-			<td bgcolor="#ddffdd" style="border-right: solid #bbb 1px;">C++</td>
-			<td bgcolor="#ffdddd" style="border-right: solid #bbb 1px;">Java</td>
-			<td bgcolor="#ffffdd" style="border-right: solid #bbb 1px;">Objective-C</td>
-			<td bgcolor="#ffdddd" style="border-right: solid #bbb 1px;">C#</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
+			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">Java</td>
+			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>

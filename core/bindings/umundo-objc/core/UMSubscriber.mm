@@ -25,19 +25,18 @@ public:
   umundoReceiverWrapper(id<UMSubscriberReceiver> receiver) : _objcReceiver(receiver) {}
   id<UMSubscriberReceiver> _objcReceiver;
 	virtual void receive(umundo::Message* msg) {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-    NSData* nsData = [[NSData alloc] initWithBytes:(msg->data()) length:msg->size()];
-    NSMutableDictionary* nsMeta = [[NSMutableDictionary alloc] init];
-    std::map<std::string, std::string>::const_iterator metaIter;
-    for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
-      [nsMeta
-       setValue:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]
-       forKey:[NSString stringWithCString:metaIter->second.c_str() encoding:[NSString defaultCStringEncoding]]];
+    @autoreleasepool {
+      
+      NSData* nsData = [[NSData alloc] initWithBytes:(msg->data()) length:msg->size()];
+      NSMutableDictionary* nsMeta = [[NSMutableDictionary alloc] init];
+      std::map<std::string, std::string>::const_iterator metaIter;
+      for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
+        [nsMeta
+         setValue:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]
+         forKey:[NSString stringWithCString:metaIter->second.c_str() encoding:[NSString defaultCStringEncoding]]];
+      }
+      [_objcReceiver received:nsData withMeta:nsMeta];
     }
-    [_objcReceiver received:nsData withMeta:nsMeta];
-    [pool drain];
-
   }
 };
 
@@ -57,7 +56,7 @@ public:
       umundo::Receiver* cListener = new umundoReceiverWrapper(listener);
       std::string cppChannelName([name cStringUsingEncoding: NSASCIIStringEncoding]);
       _cppSub =
-        boost::shared_ptr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, cListener));
+      boost::shared_ptr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, cListener));
     }
   }
   return self;

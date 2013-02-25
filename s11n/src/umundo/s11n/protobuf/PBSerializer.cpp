@@ -124,6 +124,7 @@ void PBSerializer::addProto(const std::string& dirOrFile) {
 
 void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer) {
 
+  // relative dir or file is . or ..
 	if (dirOrFile.length() > 0 && dirOrFile.find_last_of(".") == dirOrFile.size() - 1)
 		return;
 
@@ -158,7 +159,7 @@ void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string
 	}
 
 	if (dirOrFile.length() > 6 && dirOrFile.substr(dirOrFile.length() - 6, 6).compare(".proto") == 0) {
-		const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
+    const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
 		if (fileDesc != NULL) {
 			for (int j = 0; j < fileDesc->message_type_count(); j++) {
 				LOG_INFO("Added generic description for serializable type %s from .proto file", fileDesc->message_type(j)->name().c_str());

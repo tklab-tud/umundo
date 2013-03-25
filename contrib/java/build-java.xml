@@ -64,6 +64,7 @@
 		<include name="**/*NativeJava*.so"/>
 		<include name="**/*NativeJava*.dll"/>
 		<exclude name="cross-compiled/**"/>
+		<exclude name="linux-armv*/**"/>
 		<!-- do not include debug builds in release -->
 		<!--exclude name="**/*undocoreSwigSwig_d*" if="${exclude.debug.jar}"/ -->
 		<!--exclude name="**/*undocoreSwig64_d*" if="${exclude.debug.jar}"/ -->

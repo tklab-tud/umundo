@@ -194,4 +194,9 @@ as they become available.
 
 	<dt><b>Are these actually questions that are asked frequently?</b></dt>
 	<dd>No, it's more like a set of questions I can imagine other people might have. It will eventually grow into a real FAQ.</dd>
+	
+	<dt><b>JNI causes XML parsing problems when using a custom ClassLoader</b></dt>
+	<dd>When using a custom ClassLoader it is possible to get strange exceptions, espacially
+	     when trying to parse XML files. A workaround is described at
+		 <a href="http://schnelle-walka.blogspot.de/2013/04/jni-causes-xml-parsing-problems-when.html">	 http://schnelle-walka.blogspot.de/2013/04/jni-causes-xml-parsing-problems-when.html</a></dd>
 </dl>

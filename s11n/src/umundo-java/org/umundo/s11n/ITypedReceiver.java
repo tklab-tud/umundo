@@ -24,5 +24,5 @@ public interface ITypedReceiver {
 	 * @param object the deserialized object contained in the message. Needs to be cast to its actual type to do something.
 	 * @param msg the original message, mainly to access meta information
 	 */
-	public void receiveObject(Object object, Message msg);
+	void receiveObject(Object object, Message msg);
 }

@@ -88,6 +88,7 @@ public:
 
 	virtual void setReceiver(TypedReceiver* recv) {
 		_impl->setReceiver(recv);
+    Subscriber::setReceiver(_impl.get());
 	}
 
 	virtual string getType(Message* msg);

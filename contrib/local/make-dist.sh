@@ -99,56 +99,72 @@ fi
 ############################
 
 echo -n "Build packages for those platforms? [a/y/N]: "; read BUILD_PACKAGES
-if [ "$BUILD_PACKAGES" == "y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
 
+cd ${DIR}
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+  echo -n "Package umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32 
+fi
+if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo Start the Linux 32Bit system named 'debian' again && read
+	echo == PACKAGING UMUNDO FOR Linux 32Bit =========================================================
+	export UMUNDO_BUILD_HOST=debian
+	expect package-linux.expect
+fi
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+  echo -n "Package umundo for Linux 64Bit? [y/N]: "; read BUILD_LINUX64 
+fi
+if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo Start the Linux 64Bit system named 'debian64' again && read
+	echo == PACKAGING UMUNDO FOR Linux 64Bit =========================================================
+	export UMUNDO_BUILD_HOST=debian64
+	expect package-linux.expect
+fi
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+ echo -n "Package umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI 
+fi
+if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo Start the Raspberry Pi system named 'raspberrypi' again && read
+	echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
+	export UMUNDO_BUILD_HOST=raspberrypi
+	expect package-linux.expect
+fi
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+ echo -n "Package umundo for Windows 32Bit? [y/N]: "; read BUILD_WIN32 
+fi
+if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
+	echo == PACKAGING UMUNDO FOR Windows 32Bit =========================================================
+	export UMUNDO_BUILD_HOST=epikur-win7-64
+	export UMUNDO_BUILD_ARCH=32
+	TERM=xterm expect package-windows.expect
+fi
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+  echo -n "Package umundo for Windows 64Bit? [y/N]: "; read BUILD_WIN64 
+fi
+if [ "$BUILD_WIN64" == "y" ] || [ "$BUILD_WIN64" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
+	echo == PACKAGING UMUNDO FOR Windows 64Bit =========================================================
+	export UMUNDO_BUILD_HOST=epikur-win7-64
+	export UMUNDO_BUILD_ARCH=64
+	TERM=xterm expect package-windows.expect
+fi
+
+if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+  echo -n "Package umundo for MacOSX? [y/N]: "; read BUILD_MAC 
+fi
+if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+	echo == PACKAGING UMUNDO FOR MacOSX =========================================================
+	cd /tmp/build-umundo
+	# rerun cmake for new cpack files
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+	make package
+	cp umundo*darwin* ${DIR}/../../installer
 	cd ${DIR}
-
-	if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Linux 32Bit system named 'debian' again && read
-		echo == PACKAGING UMUNDO FOR Linux 32Bit =========================================================
-		export UMUNDO_BUILD_HOST=debian
-		expect package-linux.expect
-	fi
-
-	if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Linux 64Bit system named 'debian64' again && read
-		echo == PACKAGING UMUNDO FOR Linux 64Bit =========================================================
-		export UMUNDO_BUILD_HOST=debian64
-		expect package-linux.expect
- fi
-
-	if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Raspberry Pi system named 'raspberrypi' again && read
-		echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
-		export UMUNDO_BUILD_HOST=raspberrypi
-		expect package-linux.expect
- fi
-
-	if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
-		echo == PACKAGING UMUNDO FOR Windows 32Bit =========================================================
-		export UMUNDO_BUILD_HOST=epikur-win7-64
-		export UMUNDO_BUILD_ARCH=32
-		TERM=xterm expect package-windows.expect
-	fi
-	
-	if [ "$BUILD_WIN64" == "y" ] || [ "$BUILD_WIN64" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
-		echo == PACKAGING UMUNDO FOR Windows 64Bit =========================================================
-		export UMUNDO_BUILD_HOST=epikur-win7-64
-		export UMUNDO_BUILD_ARCH=64
-		TERM=xterm expect package-windows.expect
-	fi
-
-	if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-		echo == PACKAGING UMUNDO FOR MacOSX =========================================================
-		cd /tmp/build-umundo
-		# rerun cmake for new cpack files
-		cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
-		make package
-		cp umundo*darwin* ${DIR}/../../installer
-		cd ${DIR}
-	fi	
 fi
 
 ############################

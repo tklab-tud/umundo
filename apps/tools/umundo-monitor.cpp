@@ -21,6 +21,7 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #ifdef WIN32
 #include "XGetopt.h"
@@ -68,10 +69,10 @@ std::string pathSeperator = "/";
 using namespace umundo;
 using namespace std;
 
-char* channel = NULL;
-char* domain = NULL;
-char* file = NULL;
-char* protoPath = NULL;
+std::string channel;
+std::string domain;
+std::string file;
+std::string protoPath;
 bool interactive = false;
 bool verbose = false;
 int minSubs = 0;
@@ -104,7 +105,12 @@ class PlainDumpingReceiver : public TypedReceiver {
 			std::cout << metaIter->first << ": " << metaIter->second << std::endl;
 			metaIter++;
 		}
-		std::cout << string(msg->data(), msg->size()) << std::flush;
+    std::string seperator;
+    for (int i = 0; i < msg->size(); i++) {
+      std::cout << seperator << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(static_cast<unsigned char>(msg->data()[i]));
+      seperator = ":";
+    }
+    std::cout << std::endl;
 	}
 };
 
@@ -164,7 +170,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (!channel)
+	if (!channel.length() > 0)
 		printUsageAndExit();
 
 	Node node(domain);
@@ -174,14 +180,14 @@ int main(int argc, char** argv) {
 	/**
 	 * Send file content
 	 */
-	if (file) {
+	if (file.length() > 0) {
 		node.addPublisher(pub);
 		pub.waitForSubscribers(minSubs);
 
 		FILE *fp;
-		fp = fopen(file, "r");
+		fp = fopen(file.c_str(), "r");
 		if (fp == NULL) {
-			printf("Failed to open file %s: %s\n", file, strerror(errno));
+			printf("Failed to open file %s: %s\n", file.c_str(), strerror(errno));
 			return EXIT_FAILURE;
 		}
 
@@ -192,7 +198,7 @@ int main(int argc, char** argv) {
 			lastread = fread(readBuffer, 1, 1000, fp);
 
 			if(ferror(fp)) {
-				printf("Failed to read from file %s: %s", file, strerror(errno));
+				printf("Failed to read from file %s: %s", file.c_str(), strerror(errno));
 				return EXIT_FAILURE;
 			}
 
@@ -206,12 +212,12 @@ int main(int argc, char** argv) {
 				break;
 		}
 		fclose(fp);
-		printf("Send %d bytes on channel \"%s\"\n", read, channel);
+		printf("Send %d bytes on channel \"%s\"\n", read, channel.c_str());
 		if (!interactive)
 			exit(0);
 	}
 
-	if (protoPath != NULL) {
+	if (protoPath.length() > 0) {
 		PBSerializer::addProto(protoPath);
 		sub.setReceiver(new ProtoBufDumpingReceiver());
 	} else {

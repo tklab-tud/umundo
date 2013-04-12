@@ -1,4 +1,17 @@
+#ifdef 64BIT_HOST
+#	ifdef DEBUG
+%module(directors="1", allprotected="1") umundoNativeCSharp64_d
+# else
+%module(directors="1", allprotected="1") umundoNativeCSharp64
+#	endif
+#else
+#	ifdef DEBUG
+%module(directors="1", allprotected="1") umundoNativeCSharp_d
+#	else
 %module(directors="1", allprotected="1") umundoNativeCSharp
+#	endif
+#endif
+
 // import swig typemaps
 %include <arrays_csharp.i>
 %include <stl.i>

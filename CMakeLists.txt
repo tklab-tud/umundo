@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "3")
-SET(UMUNDO_VERSION_PATCH "1")
+SET(UMUNDO_VERSION_PATCH "3")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -341,8 +341,8 @@ if (S11N_PROTOBUF AND WIN32)
 endif()
 
 if (NET_ZEROMQ)
-	SET(NET_ZEROMQ_SND_HWM "10000" CACHE STRING "Maximum queue size for publishers")
-	SET(NET_ZEROMQ_RCV_HWM "10000" CACHE STRING "Maximum queue size for subscribers")
+	SET(NET_ZEROMQ_SND_HWM "300000" CACHE STRING "Maximum queue size for publishers")
+	SET(NET_ZEROMQ_RCV_HWM "300000" CACHE STRING "Maximum queue size for subscribers")
 endif()
 
 ############################################################

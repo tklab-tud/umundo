@@ -328,6 +328,8 @@ set(CPACK_RESOURCE_FILE_WELCOME "${PROJECT_SOURCE_DIR}/installer/packageMaker/we
 set(CPACK_DEBIAN_PACKAGE_NAME "umundo")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libavahi-client3, libpcre3")
 set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "protobuf-compiler, libprotobuf7")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER, "Stefan Radomski")
+
 
 ###
 # Configuration for RPM packages

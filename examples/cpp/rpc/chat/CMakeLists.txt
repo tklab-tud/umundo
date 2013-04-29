@@ -44,6 +44,4 @@ add_executable(chat-rpc
 )
 target_link_libraries(chat-rpc 
   ${UMUNDO_LIBRARIES} 
-  debug ${PROTOBUF_LIBRARY_DEBUG}
-  optimized ${PROTOBUF_LIBRARY}
 )

@@ -106,6 +106,18 @@ using namespace umundo;
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
 
+//******************************
+// Beautify Node class
+//******************************
+
+%ignore umundo::Node::hasSubscriber(const string& uuid);
+%ignore umundo::Node::getSubscriber(const string& uuid);
+%ignore umundo::Node::getSubscribers();
+
+%ignore umundo::Node::hasPublisher(const string& uuid);
+%ignore umundo::Node::getPublisher(const string& uuid);
+%ignore umundo::Node::getPublishers();
+
 
 //******************************
 // byte[] signature for get/setData

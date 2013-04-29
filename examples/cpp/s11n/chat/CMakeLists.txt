@@ -44,6 +44,4 @@ add_executable(chat-s11n
 )
 target_link_libraries(chat-s11n 
   ${UMUNDO_LIBRARIES} 
-  debug ${PROTOBUF_LIBRARY_DEBUG}
-  optimized ${PROTOBUF_LIBRARY}
 )

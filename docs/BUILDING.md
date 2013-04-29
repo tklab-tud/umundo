@@ -37,15 +37,15 @@ Overview of the umundo dependencies. See the [Platform Notes](#platform-notes) f
 			<td></td>
 			<td>Versioning control system.</td></tr>
 		<tr>
-			<td bgcolor="#ffffdd"><a href="http://code.google.com/p/protobuf/">Protocol&nbsp;Buffers</a><br />required s11n</td>
+			<td bgcolor="#ffffdd"><a href="http://code.google.com/p/protobuf/">Protocol&nbsp;Buffers</a><br />included</td>
 			<td>2.4.1 works</td>
 			<td>Object serializer currently used. You will have to build them from source in MS Windows (see platform notes).</td></tr>
 		<tr>
-			<td bgcolor="#ffffdd"><a href="http://www.pcre.org/">PCRE</a><br />required core</td>
+			<td bgcolor="#ffffdd"><a href="http://www.pcre.org/">PCRE</a><br />included for non unices</td>
 			<td>7.0 works</td>
 			<td>Regular expressions implementation for service queries. At the moment in core as Regex.cpp. Prebuilt binaries for Windows and the mobile platforms are included.</tr>
 		<tr>
-			<td bgcolor="#ffffdd"><a href="http://code.google.com/p/protobuf/">ZeroMQ</a><br />required core</td>
+			<td bgcolor="#ffffdd"><a href="http://code.google.com/p/protobuf/">ZeroMQ</a><br />included</td>
 			<td>3.2</td>
 			<td>Network socket abstractions, just use the prebuilt binaries that come with the umundo distribution.</td></tr>
 		<tr>
@@ -81,9 +81,9 @@ Overview of the umundo dependencies. See the [Platform Notes](#platform-notes) f
 
 	<tr>
 		<td rowspan="1"><b>Linux</b></td>
-		<td bgcolor="#ffffdd">Avahi<br />required</td>
+		<td bgcolor="#ffffdd">Avahi<br />optional</td>
 		<td>3.x works</td>
-		<td>For Debian:<br /><tt>$ sudo apt-get install avahi-daemon libavahi-client-dev</tt></td></tr>
+		<td>For Debian:<br /><tt>$ sudo apt-get install avahi-daemon libavahi-client-dev</tt>. As of 0.3.2 we use the Bonjour mDNSResponder even on Linux.</td></tr>
 	</tr>
 
 	<tr>

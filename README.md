@@ -33,7 +33,7 @@ for your platform. It contains
 
 ## Components
 
-uMundo is divided into four components with different responsibilities in
+uMundo is divided into three components with different responsibilities in
 various stages of maturity:
 
 <dl>
@@ -60,10 +60,9 @@ various stages of maturity:
 	<a href="http://code.google.com/p/protobuf/">Protocol Buffers</a>. As it is
 	unpractical to wrap the whole typing system via native access from other languages,
 	this component exists once for every target language. At the moment,
-	implementations for C++, Java and Objective-C exist.<a href="/tklab-tud/umundo/tree/master/s11n">[more]</a>
+	implementations for C++, Java, C# and Objective-C exist.<a href="/tklab-tud/umundo/tree/master/s11n">[more]</a>
 	<br/><br/><b>Note:</b> You can always access all of uMundos functionality from
-	Objective-C as you can just use .mm extensions and write mixed code. Green with
-	Objective-C therefore means "Has an actual, Objective-C facade". The biggest
+	Objective-C as you can just use .mm extensions and write mixed code. The biggest
 	stumbling block for umundo.s11n to have a pure Objective-C facade is the absence
 	of a suited protobuf compiler.
 	<br/><br/><table>
@@ -79,30 +78,17 @@ various stages of maturity:
 	<dt><b>umundo.rpc</b></dt>
 	<dd>This component provides a service concept for remote procedure calls on top
 	of umundo.s11n. The new implementation features continuous service discovery with
-	pattern matching, but is only available in C++ at the moment.
+	pattern matching, but is only available in C++ and Java at the moment.
 		<a href="/tklab-tud/umundo/tree/master/rpc">[more]</a>
 	<br/><br/><table>
 		<tr>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
 			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
-			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>
 
-	<dt><b>umundo.util</b></dt>
-	<dd>Implementation of various C++ components for uMundo and some utility classes.
-		<a href="/tklab-tud/umundo/tree/master/util">[more]</a>
-	<br/><br/><table>
-		<tr>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
-			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">Java</td>
-			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
-			<td style="background-color: #ffdddd; border-right: solid #bbb 1px;">C#</td>
-		</tr>
-	</table>
-	</dd>
 </dl>
 
 ## Status

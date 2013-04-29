@@ -1,7 +1,7 @@
 #include "Chat.h"
 
 std::map<std::string, std::string> _participants;
-std::map<ServiceDescription*, ChatServiceStub*> _remoteChatServices;
+std::map<ServiceDescription, ChatServiceStub*> _remoteChatServices;
 std::string username;
 
 ChatServiceImpl::ChatServiceImpl() {
@@ -26,21 +26,21 @@ ChatServiceListener::ChatServiceListener() {
 	
 }
 
-void ChatServiceListener::added(shared_ptr<ServiceDescription> svcDesc) {
-	ChatServiceStub* remoteChatSvc = new ChatServiceStub(svcDesc.get());
+void ChatServiceListener::added(ServiceDescription svcDesc) {
+	ChatServiceStub* remoteChatSvc = new ChatServiceStub(svcDesc);
 	ChatMsg* joinMsg = new ChatMsg();
 	joinMsg->set_username(username.c_str());
 	remoteChatSvc->join(joinMsg);
 	delete joinMsg;
 	
-	_remoteChatServices[svcDesc.get()] = remoteChatSvc;
+	_remoteChatServices[svcDesc] = remoteChatSvc;
 }
 
-void ChatServiceListener::removed(shared_ptr<ServiceDescription> svcDesc) {
-	_remoteChatServices.erase(svcDesc.get());
+void ChatServiceListener::removed(ServiceDescription svcDesc) {
+	_remoteChatServices.erase(svcDesc);
 }
 
-void ChatServiceListener::changed(shared_ptr<ServiceDescription> svcDesc) {
+void ChatServiceListener::changed(ServiceDescription svcDesc) {
 	
 }
 
@@ -48,14 +48,14 @@ int main(int argc, char** argv) {
 	std::cout << "Username:" << std::endl;
 	std::getline(std::cin, username);
 
-	Node* chatNode = new Node();
-	ServiceManager* svcMgr = new ServiceManager();
+	Node chatNode;
+	ServiceManager svcMgr;
 	ChatServiceImpl* localChatService = new ChatServiceImpl();
-	svcMgr->addService(localChatService);
-	chatNode->connect(svcMgr);
+	svcMgr.addService(localChatService);
+	chatNode.connect(&svcMgr);
 	
-	ServiceFilter* svcFilter = new ServiceFilter("ChatService");
-	svcMgr->startQuery(svcFilter, new ChatServiceListener());
+	ServiceFilter svcFilter("ChatService");
+	svcMgr.startQuery(svcFilter, new ChatServiceListener());
 	
 	std::string line;
 	std::cout << "Start typing messages (empty line to quit):" << std::endl;
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 		chatMsg->set_username(username.c_str());
 		chatMsg->set_message(line.c_str());
 		
-		std::map<ServiceDescription*, ChatServiceStub*>::iterator svcIter = _remoteChatServices.begin();
+		std::map<ServiceDescription, ChatServiceStub*>::iterator svcIter = _remoteChatServices.begin();
 		while(svcIter != _remoteChatServices.end()) {
 			svcIter->second->receive(chatMsg);
 			svcIter++;

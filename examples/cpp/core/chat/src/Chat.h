@@ -17,8 +17,8 @@ class ChatGreeter : public Greeter {
 public:
 	ChatGreeter(const std::string& username, const std::string& subId);
 	virtual ~ChatGreeter() {}
-	void welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId);
-	void farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId);
+	virtual void welcome(Publisher, const string& nodeId, const string& subId);
+	virtual void farewell(Publisher, const string& nodeId, const string& subId);
 	
 	std::string _username;
 	std::string _subId;

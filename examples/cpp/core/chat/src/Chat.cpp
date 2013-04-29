@@ -15,15 +15,15 @@ void ChatReceiver::receive(Message* msg) {
 
 ChatGreeter::ChatGreeter(const std::string& username, const std::string& subId) : _username(username), _subId(subId) {}
 
-void ChatGreeter::welcome(Publisher* atPub, const std::string& nodeId, const std::string& subId) {
+void ChatGreeter::welcome(Publisher atPub, const std::string& nodeId, const std::string& subId) {
 	Message* greeting = Message::toSubscriber(subId);
 	greeting->putMeta("participant", _username);
 	greeting->putMeta("subscriber", _subId);
-	atPub->send(greeting);
+	atPub.send(greeting);
 	delete greeting;
 }
 
-void ChatGreeter::farewell(Publisher* fromPub, const std::string& nodeId, const std::string& subId) {
+void ChatGreeter::farewell(Publisher fromPub, const std::string& nodeId, const std::string& subId) {
 	if (_participants.find(subId) != _participants.end()) {
 		std::cout << _participants[subId] << " left the chat" << std::endl;
 		_participants.erase(subId);
@@ -37,13 +37,13 @@ int main(int argc, char** argv) {
 	std::cout << "Username:" << std::endl;
 	std::getline(std::cin, username);
 
-	Node* chatNode = new Node();
-	Subscriber* chatSub = new Subscriber("coreChat", new ChatReceiver());
-	Publisher* chatPub = new Publisher("coreChat");
-	chatPub->setGreeter(new ChatGreeter(username, chatSub->getUUID()));
+	Node chatNode;
+	Subscriber chatSub("coreChat", new ChatReceiver());
+	Publisher chatPub("coreChat");
+	chatPub.setGreeter(new ChatGreeter(username, chatSub.getUUID()));
 		
-	chatNode->addPublisher(chatPub);
-	chatNode->addSubscriber(chatSub);
+	chatNode.addPublisher(chatPub);
+	chatNode.addSubscriber(chatSub);
 	
 	std::string line;
 	std::cout << "Start typing messages (empty line to quit):" << std::endl;
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 		Message* msg = new Message();
 		msg->putMeta("userName", username.c_str());
 		msg->putMeta("chatMsg", line.c_str());
-		chatPub->send(msg);
+		chatPub.send(msg);
 		delete msg;
 	}
 	

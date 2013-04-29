@@ -175,11 +175,11 @@ using namespace umundo;
 
 %ignore umundo::Node::hasSubscriber(const string& uuid);
 %ignore umundo::Node::getSubscriber(const string& uuid);
-//%ignore umundo::Node::getSubscribers();
+%ignore umundo::Node::getSubscribers();
 
 %ignore umundo::Node::hasPublisher(const string& uuid);
 %ignore umundo::Node::getPublisher(const string& uuid);
-//%ignore umundo::Node::getPublishers();
+%ignore umundo::Node::getPublishers();
 
 //******************************
 // Beautify Regex class

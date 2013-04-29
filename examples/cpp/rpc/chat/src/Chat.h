@@ -22,9 +22,9 @@ class ChatServiceListener : public ResultSet<ServiceDescription> {
 public:
 	ChatServiceListener();
 	virtual ~ChatServiceListener() {}
-	virtual void added(shared_ptr<ServiceDescription>);
-	virtual void removed(shared_ptr<ServiceDescription>);
-	virtual void changed(shared_ptr<ServiceDescription>);
+	virtual void added(ServiceDescription);
+	virtual void removed(ServiceDescription);
+	virtual void changed(ServiceDescription);
 };
 
 #endif /* end of include guard: CHAT_H_C0YBZSDX */

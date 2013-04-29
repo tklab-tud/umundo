@@ -181,35 +181,6 @@ public:
 		return _impl->removeSubscriber(sub);
 	}
 
-
-#if !defined(SWIGJAVA) && !defined(SWIGCSHARP)
-	virtual std::map<std::string, SubscriberStub>& getSubscribers() {
-		return _impl->getSubscribers();
-	}
-
-	virtual std::map<std::string, PublisherStub>& getPublishers() {
-		return _impl->getPublishers();
-	}
-#else
-	std::set<PublisherStub> getPublishers() {
-		std::map<std::string, PublisherStub> pubs = _impl->getPublishers();
-		std::set<PublisherStub> pubSet;
-		for( std::map<std::string, PublisherStub>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
-			pubSet.insert(it->second);
-		}
-		return pubSet;
-	}
-
-	std::set<SubscriberStub> getSubscribers() {
-		std::map<std::string, SubscriberStub> subs = _impl->getSubscribers();
-		std::set<SubscriberStub> subSet;
-		for( std::map<std::string, SubscriberStub>::iterator it = subs.begin(); it != subs.end(); ++it ) {
-			subSet.insert(it->second);
-		}
-		return subSet;
-	}
-#endif
-
 	virtual SubscriberStub& getSubscriber(const std::string& uuid) const {
 		return _impl->getSubscriber(uuid);
 	}
@@ -221,6 +192,34 @@ public:
 	boost::shared_ptr<NodeStubImpl> getImpl() const {
 		return _impl;
 	}
+
+	virtual std::map<std::string, SubscriberStub>& getSubscribers() {
+		return _impl->getSubscribers();
+	}
+	
+	virtual std::map<std::string, PublisherStub>& getPublishers() {
+		return _impl->getPublishers();
+	}
+
+#if 0
+	virtual std::set<SubscriberStub> getSubscribers() {
+		std::map<std::string, SubscriberStub> subs = _impl->getSubscribers();
+		std::set<SubscriberStub> subSet;
+		for( std::map<std::string, SubscriberStub>::iterator it = subs.begin(); it != subs.end(); ++it ) {
+			subSet.insert(it->second);
+		}
+		return subSet;
+	}
+
+	virtual std::set<PublisherStub> getPublishers() {
+		std::map<std::string, PublisherStub> pubs = _impl->getPublishers();
+		std::set<PublisherStub> pubSet;
+		for( std::map<std::string, PublisherStub>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
+			pubSet.insert(it->second);
+		}
+		return pubSet;
+	}
+#endif
 
 protected:
 	boost::shared_ptr<NodeStubImpl> _impl;
@@ -320,7 +319,30 @@ public:
 		return _impl->removePublisher(pub);
 	}
 
-#if !defined(SWIGJAVA) && !defined(SWIGCSHARP)
+	virtual Subscriber& getSubscriber(const std::string& uuid) {
+		return _impl->getSubscriber(uuid);
+	}
+	
+	virtual Publisher& getPublisher(const std::string& uuid) {
+		return _impl->getPublisher(uuid);
+	}
+	
+	void connect(Connectable* connectable);
+	void disconnect(Connectable* connectable);
+	
+	//@}
+	
+	void suspend() {
+		return _impl->suspend();
+	}
+	void resume() {
+		return _impl->resume();
+	}
+	
+	shared_ptr<NodeImpl> getImpl() const {
+		return _impl;
+	}
+
 	virtual std::map<std::string, Subscriber>& getSubscribers() {
 		return _impl->getSubscribers();
 	}
@@ -328,17 +350,9 @@ public:
 	virtual std::map<std::string, Publisher>& getPublishers() {
 		return _impl->getPublishers();
 	}
-#else
-	std::set<Publisher> getPublishers() {
-		std::map<std::string, Publisher> pubs = _impl->getPublishers();
-		std::set<Publisher> pubSet;
-		for( std::map<std::string, Publisher>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
-			pubSet.insert(it->second);
-		}
-		return pubSet;
-	}
 
-	std::set<Subscriber> getSubscribers() {
+#if 0
+	virtual std::set<Subscriber> getSubscribers() {
 		std::map<std::string, Subscriber> subs = _impl->getSubscribers();
 		std::set<Subscriber> subSet;
 		for( std::map<std::string, Subscriber>::iterator it = subs.begin(); it != subs.end(); ++it ) {
@@ -346,31 +360,16 @@ public:
 		}
 		return subSet;
 	}
+	
+	virtual std::set<Publisher> getPublishers() {
+		std::map<std::string, Publisher> pubs = _impl->getPublishers();
+		std::set<Publisher> pubSet;
+		for( std::map<std::string, Publisher>::iterator it = pubs.begin(); it != pubs.end(); ++it ) {
+			pubSet.insert(it->second);
+		}
+		return pubSet;
+	}
 #endif
-
-	virtual Subscriber& getSubscriber(const std::string& uuid) {
-		return _impl->getSubscriber(uuid);
-	}
-
-	virtual Publisher& getPublisher(const std::string& uuid) {
-		return _impl->getPublisher(uuid);
-	}
-
-	void connect(Connectable* connectable);
-	void disconnect(Connectable* connectable);
-
-	//@}
-
-	void suspend() {
-		return _impl->suspend();
-	}
-	void resume() {
-		return _impl->resume();
-	}
-
-	shared_ptr<NodeImpl> getImpl() const {
-		return _impl;
-	}
 
 protected:
 	boost::shared_ptr<NodeImpl> _impl;

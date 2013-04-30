@@ -190,7 +190,7 @@ public:
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);
-	Publisher(boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
+	Publisher(const boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
 	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
 

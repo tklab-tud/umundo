@@ -76,8 +76,12 @@ using namespace umundo;
 %template(StringSet)    std::set<std::string>;
 %template(PublisherSet) std::set<umundo::Publisher>;
 %template(SubscriberSet) std::set<umundo::Subscriber>;
+%template(PublisherMap) std::map<std::string, umundo::Publisher>;
+%template(SubscriberMap) std::map<std::string, umundo::Subscriber>;
 %template(PublisherStubSet) std::set<umundo::PublisherStub>;
 %template(SubscriberStubSet) std::set<umundo::SubscriberStub>;
+%template(PublisherStubMap) std::map<std::string, umundo::PublisherStub>;
+%template(SubscriberStubMap) std::map<std::string, umundo::SubscriberStub>;
 
 // allow Java classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
@@ -173,13 +177,114 @@ using namespace umundo;
 // Beautify Node class
 //******************************
 
-%ignore umundo::Node::hasSubscriber(const string& uuid);
-%ignore umundo::Node::getSubscriber(const string& uuid);
-%ignore umundo::Node::getSubscribers();
+%rename(getSubscribersNative) umundo::Node::getSubscribers();
+%javamethodmodifiers umundo::Node::getSubscribers() "private";
+%rename(getPublishersNative) umundo::Node::getPublishers();
+%javamethodmodifiers umundo::Node::getPublishers() "private";
 
-%ignore umundo::Node::hasPublisher(const string& uuid);
-%ignore umundo::Node::getPublisher(const string& uuid);
-%ignore umundo::Node::getPublishers();
+%extend umundo::Node {
+	std::vector<std::string> getPubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, Publisher>::iterator pubIter = self->getPublishers().begin();
+		while(pubIter != self->getPublishers().end()) {
+			keys.push_back(pubIter->first);
+			pubIter++;
+		}
+		return keys;
+	}
+	std::vector<std::string> getSubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, Subscriber>::iterator subIter = self->getSubscribers().begin();
+		while(subIter != self->getSubscribers().end()) {
+			keys.push_back(subIter->first);
+			subIter++;
+		}
+		return keys;
+	}
+};
+
+%typemap(javaimports) umundo::Node %{
+import java.util.HashMap;
+%}
+
+%typemap(javacode) umundo::Node %{
+	public HashMap<String, Publisher> getPublishers() {
+		HashMap<String, Publisher> pubs = new HashMap<String, Publisher>();
+		PublisherMap pubMap = getPublishersNative();
+		StringVector pubKeys = getPubKeys();
+		for (int i = 0; i < pubKeys.size(); i++) {
+			pubs.put(pubKeys.get(i), pubMap.get(pubKeys.get(i)));
+		}
+		return pubs;
+	}
+	public HashMap<String, Subscriber> getSubscribers() {
+		HashMap<String, Subscriber> subs = new HashMap<String, Subscriber>();
+		SubscriberMap subMap = getSubscribersNative();
+		StringVector subKeys = getSubKeys();
+		for (int i = 0; i < subKeys.size(); i++) {
+			subs.put(subKeys.get(i), subMap.get(subKeys.get(i)));
+		}
+		return subs;
+	}
+
+%}
+
+
+//******************************
+// Beautify NodeStub class
+//******************************
+
+%rename(getSubscribersNative) umundo::NodeStub::getSubscribers();
+%javamethodmodifiers umundo::NodeStub::getSubscribers() "private";
+%rename(getPublishersNative) umundo::NodeStub::getPublishers();
+%javamethodmodifiers umundo::NodeStub::getPublishers() "private";
+
+%extend umundo::NodeStub {
+	std::vector<std::string> getPubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, PublisherStub>::iterator pubIter = self->getPublishers().begin();
+		while(pubIter != self->getPublishers().end()) {
+			keys.push_back(pubIter->first);
+			pubIter++;
+		}
+		return keys;
+	}
+	std::vector<std::string> getSubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, SubscriberStub>::iterator subIter = self->getSubscribers().begin();
+		while(subIter != self->getSubscribers().end()) {
+			keys.push_back(subIter->first);
+			subIter++;
+		}
+		return keys;
+	}
+};
+
+%typemap(javaimports) umundo::NodeStub %{
+import java.util.HashMap;
+%}
+
+%typemap(javacode) umundo::NodeStub %{
+	public HashMap<String, PublisherStub> getPublishers() {
+		HashMap<String, PublisherStub> pubs = new HashMap<String, PublisherStub>();
+		PublisherStubMap pubMap = getPublishersNative();
+		StringVector pubKeys = getPubKeys();
+		for (int i = 0; i < pubKeys.size(); i++) {
+			pubs.put(pubKeys.get(i), pubMap.get(pubKeys.get(i)));
+		}
+		return pubs;
+	}
+	public HashMap<String, SubscriberStub> getSubscribers() {
+		HashMap<String, SubscriberStub> subs = new HashMap<String, SubscriberStub>();
+		SubscriberStubMap subMap = getSubscribersNative();
+		StringVector subKeys = getSubKeys();
+		for (int i = 0; i < subKeys.size(); i++) {
+			subs.put(subKeys.get(i), subMap.get(subKeys.get(i)));
+		}
+		return subs;
+	}
+
+%}
 
 //******************************
 // Beautify Regex class

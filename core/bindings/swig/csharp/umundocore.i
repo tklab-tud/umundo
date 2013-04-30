@@ -64,8 +64,12 @@ using namespace umundo;
 %template(StringSet)    std::set<std::string>;
 %template(PublisherSet) std::set<umundo::Publisher>;
 %template(SubscriberSet) std::set<umundo::Subscriber>;
+%template(PublisherMap) std::map<std::string, umundo::Publisher>;
+%template(SubscriberMap) std::map<std::string, umundo::Subscriber>;
 %template(PublisherStubSet) std::set<umundo::PublisherStub>;
 %template(SubscriberStubSet) std::set<umundo::SubscriberStub>;
+%template(PublisherStubMap) std::map<std::string, umundo::PublisherStub>;
+%template(SubscriberStubMap) std::map<std::string, umundo::SubscriberStub>;
 
 // allow CSharp classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
@@ -94,6 +98,61 @@ using namespace umundo;
 
 
 //******************************
+// Prevent premature GC
+//******************************
+
+// this is helpful:
+// http://stackoverflow.com/questions/9817516/swig-java-retaining-class-information-of-the-objects-bouncing-from-c
+
+// The Java GC will eat receivers and greeters as the wrapper code never
+// holds a reference to their Java objects.
+
+//***************
+// Save the receiver in the subscriber
+
+// Do not generate this constructor - substitute by the one in the javacode typemap below
+%ignore umundo::Subscriber::Subscriber(const std::string&, Receiver*);
+
+// hide this constructor to enforce the one below
+%csmethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
+
+// rename setter an wrap by setter in javacode typemap below
+%rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
+%csmethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
+
+%typemap(cscode) umundo::Subscriber %{
+  // keep receiver as a reference to prevent premature GC
+  private Receiver _receiver;
+
+  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharp64PINVOKE.new_Subscriber__SWIG_2(channelName), true) {
+    setReceiver(receiver);
+  }
+
+  protected void setReceiver(Receiver receiver) {
+    // it is important to keep the reference, otherwise the Java GC will eat it!
+    _receiver = receiver;
+    setReceiverNative(receiver);
+  }
+%}
+
+//***************
+// Save the greeter in the publisher (same approach as above)
+
+%rename(setGreeterNative) umundo::Publisher::setGreeter(Greeter*);
+%csmethodmodifiers umundo::Publisher::setGreeter(Greeter* greeter) "private";
+
+%typemap(cscode) umundo::Publisher %{
+  // keep receiver as a reference to prevent premature GC
+  private Greeter _greeter;
+
+  public void setGreeter(Greeter greeter) {
+    // it is important to keep the reference, otherwise the CSharp GC will eat it!
+    _greeter = greeter;
+    setGreeterNative(greeter);
+  }
+%}
+
+//******************************
 // Beautify Message class
 //******************************
 
@@ -110,14 +169,118 @@ using namespace umundo;
 // Beautify Node class
 //******************************
 
-%ignore umundo::Node::hasSubscriber(const string& uuid);
-%ignore umundo::Node::getSubscriber(const string& uuid);
-%ignore umundo::Node::getSubscribers();
+%rename(getSubscribersNative) umundo::Node::getSubscribers();
+%csmethodmodifiers umundo::Node::getSubscribers() "private";
+%rename(getPublishersNative) umundo::Node::getPublishers();
+%csmethodmodifiers umundo::Node::getPublishers() "private";
 
-%ignore umundo::Node::hasPublisher(const string& uuid);
-%ignore umundo::Node::getPublisher(const string& uuid);
-%ignore umundo::Node::getPublishers();
+%extend umundo::Node {
+	std::vector<std::string> getPubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, Publisher>::iterator pubIter = self->getPublishers().begin();
+		while(pubIter != self->getPublishers().end()) {
+			keys.push_back(pubIter->first);
+			pubIter++;
+		}
+		return keys;
+	}
+	std::vector<std::string> getSubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, Subscriber>::iterator subIter = self->getSubscribers().begin();
+		while(subIter != self->getSubscribers().end()) {
+			keys.push_back(subIter->first);
+			subIter++;
+		}
+		return keys;
+	}
+};
 
+%typemap(csimports) umundo::Node %{
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+%}
+
+%typemap(cscode) umundo::Node %{
+	public Dictionary<string, Publisher> getPublishers() {
+		Dictionary<string, Publisher> pubs = new Dictionary<string, Publisher>();
+		PublisherMap pubMap = getPublishersNative();
+		StringVector pubKeys = getPubKeys();
+		for (int i = 0; i < pubKeys.Count; i++) {
+			pubs[pubKeys[i]] = pubMap[pubKeys[i]];
+		}
+		return pubs;
+	}
+	public Dictionary<string, Subscriber> getSubscribers() {
+		Dictionary<string, Subscriber> subs = new Dictionary<string, Subscriber>();
+		SubscriberMap subMap = getSubscribersNative();
+		StringVector subKeys = getSubKeys();
+		for (int i = 0; i < subKeys.Count; i++) {
+			subs[subKeys[i]] = subMap[subKeys[i]];
+		}
+		return subs;
+	}
+
+%}
+
+//******************************
+// Beautify NodeStub class
+//******************************
+
+%rename(getSubscribersNative) umundo::NodeStub::getSubscribers();
+%csmethodmodifiers umundo::NodeStub::getSubscribers() "private";
+%rename(getPublishersNative) umundo::NodeStub::getPublishers();
+%csmethodmodifiers umundo::NodeStub::getPublishers() "private";
+
+%extend umundo::NodeStub {
+	std::vector<std::string> getPubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, PublisherStub>::iterator pubIter = self->getPublishers().begin();
+		while(pubIter != self->getPublishers().end()) {
+			keys.push_back(pubIter->first);
+			pubIter++;
+		}
+		return keys;
+	}
+	std::vector<std::string> getSubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, SubscriberStub>::iterator subIter = self->getSubscribers().begin();
+		while(subIter != self->getSubscribers().end()) {
+			keys.push_back(subIter->first);
+			subIter++;
+		}
+		return keys;
+	}
+};
+
+
+%typemap(csimports) umundo::NodeStub %{
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+%}
+
+%typemap(cscode) umundo::NodeStub %{
+	public Dictionary<string, PublisherStub> getPublishers() {
+		Dictionary<string, PublisherStub> pubs = new Dictionary<string, PublisherStub>();
+		PublisherStubMap pubMap = getPublishersNative();
+		StringVector pubKeys = getPubKeys();
+		for (int i = 0; i < pubKeys.Count; i++) {
+			pubs[pubKeys[i]] = pubMap[pubKeys[i]];
+		}
+		return pubs;
+	}
+	public Dictionary<string, SubscriberStub> getSubscribers() {
+		Dictionary<string, SubscriberStub> subs = new Dictionary<string, SubscriberStub>();
+		SubscriberStubMap subMap = getSubscribersNative();
+		StringVector subKeys = getSubKeys();
+		for (int i = 0; i < subKeys.Count; i++) {
+			subs[subKeys[i]] = subMap[subKeys[i]];
+		}
+		return subs;
+	}
+
+%}
 
 //******************************
 // byte[] signature for get/setData

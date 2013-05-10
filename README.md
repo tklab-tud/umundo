@@ -44,13 +44,14 @@ various stages of maturity:
 	<a href="http://www.zeromq.org">ZeroMQ</a> to deliver byte arrays between nodes
 	discovered via <a href="http://developer.apple.com/opensource/">Bonjour</a> or
 	<a href="http://avahi.org/">Avahi</a>. The core is written in C++ and has
-	bindings to CSharp, Java and Objective-C. <a href="/tklab-tud/umundo/tree/master/core">[more]</a>
+	bindings to CSharp, Java, Python and Objective-C. <a href="/tklab-tud/umundo/tree/master/core">[more]</a>
 	<br/><br/><table>
 		<tr>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Objective-C</td>
 			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C#</td>
+			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Python</td>
 		</tr>
 	</table>
 	</dd>

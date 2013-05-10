@@ -468,7 +468,7 @@ to set some variables related to the build:
 	<tr>
 		<td><tt>CMAKE_BUILD_TYPE</tt></td>
 		<td>The build type as in <tt>Debug</tt> or <tt>Release</tt>. CMake also
-		offers <tt>MinSizeRel</tt>and <tt>RelWithDebInfo</tt></td>, but I have
+		offers <tt>MinSizeRel</tt> and <tt>RelWithDebInfo</tt>, but I have
 		never used them. In debug builds, all asserts are stripped and the default
 		log-level is decreased.
 

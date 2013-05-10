@@ -609,7 +609,6 @@ set(AVAILABLE_LANGUAGE_BINDINGS "")
 if (NOT SWIG_EXECUTABLE)
 	set(AVAILABLE_LANGUAGE_BINDINGS "SWIG_EXECUTABLE does not contain a path to a swig binary")
 else()
-	
 	if (TARGET "java")
 		set(AVAILABLE_LANGUAGE_BINDINGS "java ${AVAILABLE_LANGUAGE_BINDINGS}")
 	endif()
@@ -620,6 +619,10 @@ else()
 
 	if (TARGET "mono")
 		set(AVAILABLE_LANGUAGE_BINDINGS "mono ${AVAILABLE_LANGUAGE_BINDINGS}")
+	endif()
+
+	if (TARGET "_umundoNativePython")
+		set(AVAILABLE_LANGUAGE_BINDINGS "python ${AVAILABLE_LANGUAGE_BINDINGS}")
 	endif()
 
 endif()

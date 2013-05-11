@@ -625,6 +625,10 @@ else()
 		set(AVAILABLE_LANGUAGE_BINDINGS "python ${AVAILABLE_LANGUAGE_BINDINGS}")
 	endif()
 
+	if (TARGET "umundoNativePerl")
+		set(AVAILABLE_LANGUAGE_BINDINGS "perl ${AVAILABLE_LANGUAGE_BINDINGS}")
+	endif()
+
 endif()
 
 message(STATUS "Targets:")

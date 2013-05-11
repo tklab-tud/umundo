@@ -1,0 +1,50 @@
+if (CMAKE_CROSSCOMPILING)
+	return()
+endif()
+
+find_package(PerlLibs)
+if(NOT PERLLIBS_FOUND)
+	return()
+endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${PERL_INCLUDE_PATH})
+if (MSVC)
+	# MSVC does not include inttypes.h but SWIG needs it
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../msvc)
+endif()
+
+SET(CMAKE_SWIG_FLAGS "-c++")
+if (64BIT_HOST)
+	list(APPEND CMAKE_SWIG_FLAGS "-D64BIT_HOST")
+endif()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	list(APPEND CMAKE_SWIG_FLAGS "-DDEBUG")
+endif()
+
+SET_SOURCE_FILES_PROPERTIES(umundocore.i PROPERTIES SWIG_FLAGS "-w401,362;")
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/umundocorePERL_wrap.c PROPERTIES LANGUAGE CXX)
+SWIG_ADD_MODULE(umundoNativePerl perl umundocore.i)
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+	SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/umundocorePERL_wrap.c 
+		PROPERTIES 
+		COMPILE_FLAGS "-Wno-unused-value -Wno-duplicate-decl-specifier")
+endif()
+
+SWIG_LINK_LIBRARIES(umundoNativePerl ${PERL_LIBRARY})
+SWIG_LINK_LIBRARIES(umundoNativePerl ${UMUNDOCORE_LIBRARIES})
+
+set_target_properties(umundoNativePerl PROPERTIES FOLDER "Bindings")
+
+set(UMUNDO_PERL_WRAPPER "umundoNativePerl${CMAKE_LIBRARY_POSTFIX}.pm")
+string(REGEX REPLACE "NativePerl" "" UMUNDO_PERL_WRAPPER_DEST ${UMUNDO_PERL_WRAPPER})
+ADD_CUSTOM_COMMAND(
+	TARGET umundoNativePerl
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy 
+		${CMAKE_CURRENT_BINARY_DIR}/${UMUNDO_PERL_WRAPPER}
+		${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${UMUNDO_PERL_WRAPPER_DEST}
+)
+
+INSTALL_LIBRARY(TARGETS umundoNativePerl COMPONENT librarySwig DESTINATION share/umundo/lib)

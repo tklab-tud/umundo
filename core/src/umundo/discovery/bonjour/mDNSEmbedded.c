@@ -77,8 +77,6 @@ mDNSexport int embedded_mDNSInit() {
 	if (err)
 		return err;
 	err = uDNS_SetupDNSConfig( &mDNSStorage );
-	if (err)
-	// 	return err;
 #endif
 
 	if (err == 0) {

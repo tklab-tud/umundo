@@ -66,7 +66,10 @@ shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::getInstance() {
 		_instance = shared_ptr<BonjourNodeDiscovery>(new BonjourNodeDiscovery());
 #ifdef DISC_BONJOUR_EMBED
 		LOG_DEBUG("Initializing embedded mDNS server");
-		embedded_mDNSInit();
+		int err = embedded_mDNSInit();
+		if (err) {
+			LOG_WARN("mDNS_Init returned error: %s", errCodeToString(err).c_str());
+		}
 #endif
 		_instance->start();
 	}
@@ -663,7 +666,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 					assert(node->_serviceResolveClients.find(*domainIter) == node->_serviceResolveClients.end());
 					node->_serviceResolveClients[*domainIter] = serviceResolveClient;
 				} else {
-					LOG_WARN("DNSServiceResolve returned error %d", err);
+					LOG_WARN("DNSServiceResolve returned error: %s", errCodeToString(err).c_str());
 				}
 			}
 		}
@@ -751,9 +754,13 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 			getInstance()->_activeFDs[sockFD] = addrInfoClient;
 #endif
 		} else {
-			LOG_ERR("DNSServiceGetAddrInfo returned error");
+			if (err != kDNSServiceErr_NoError) {
+				LOG_ERR("DNSServiceGetAddrInfo returned error: %s", errCodeToString(err).c_str());
+			} else {
+				LOG_ERR("DNSServiceGetAddrInfo did not return a DNSServiceRef");			
+			}
 		}
-
+		
 		if (!(flags & kDNSServiceFlagsMoreComing)) {
 			// remove the service resolver for this domain
 			assert(node->_serviceResolveClients.find(node->_domain) != node->_serviceResolveClients.end());
@@ -1041,4 +1048,110 @@ bool BonjourNodeDiscovery::validateState() {
 	return true;
 }
 
+#if 0
+	kDNSServiceErr_NoError                   = 0,
+	kDNSServiceErr_Unknown                   = -65537,  /* 0xFFFE FFFF */
+	kDNSServiceErr_NoSuchName                = -65538,
+	kDNSServiceErr_NoMemory                  = -65539,
+	kDNSServiceErr_BadParam                  = -65540,
+	kDNSServiceErr_BadReference              = -65541,
+	kDNSServiceErr_BadState                  = -65542,
+	kDNSServiceErr_BadFlags                  = -65543,
+	kDNSServiceErr_Unsupported               = -65544,
+	kDNSServiceErr_NotInitialized            = -65545,
+	kDNSServiceErr_AlreadyRegistered         = -65547,
+	kDNSServiceErr_NameConflict              = -65548,
+	kDNSServiceErr_Invalid                   = -65549,
+	kDNSServiceErr_Firewall                  = -65550,
+	kDNSServiceErr_Incompatible              = -65551,  /* client library incompatible with daemon */
+	kDNSServiceErr_BadInterfaceIndex         = -65552,
+	kDNSServiceErr_Refused                   = -65553,
+	kDNSServiceErr_NoSuchRecord              = -65554,
+	kDNSServiceErr_NoAuth                    = -65555,
+	kDNSServiceErr_NoSuchKey                 = -65556,
+	kDNSServiceErr_NATTraversal              = -65557,
+	kDNSServiceErr_DoubleNAT                 = -65558,
+	kDNSServiceErr_BadTime                   = -65559,  /* Codes up to here existed in Tiger */
+	kDNSServiceErr_BadSig                    = -65560,
+	kDNSServiceErr_BadKey                    = -65561,
+	kDNSServiceErr_Transient                 = -65562,
+	kDNSServiceErr_ServiceNotRunning         = -65563,  /* Background daemon not running */
+	kDNSServiceErr_NATPortMappingUnsupported = -65564,  /* NAT doesn't support NAT-PMP or UPnP */
+	kDNSServiceErr_NATPortMappingDisabled    = -65565,  /* NAT supports NAT-PMP or UPnP but it's disabled by the administrator */
+	kDNSServiceErr_NoRouter                  = -65566,  /* No router currently configured (probably no network connectivity) */
+	kDNSServiceErr_PollingMode               = -65567,
+	kDNSServiceErr_Timeout                   = -65568
+#endif
+
+const std::string BonjourNodeDiscovery::errCodeToString(DNSServiceErrorType errType) {
+	switch (errType) {
+		case kDNSServiceErr_NoError:
+			return "kDNSServiceErr_NoError";
+		case kDNSServiceErr_Unknown:
+			return "kDNSServiceErr_Unknown";
+		case kDNSServiceErr_NoSuchName:
+			return "kDNSServiceErr_NoSuchName";
+		case kDNSServiceErr_NoMemory:
+			return "kDNSServiceErr_NoMemory";
+		case kDNSServiceErr_BadParam:
+			return "kDNSServiceErr_BadParam";
+		case kDNSServiceErr_BadReference:
+			return "kDNSServiceErr_BadReference";
+		case kDNSServiceErr_BadState:
+			return "kDNSServiceErr_BadState";
+		case kDNSServiceErr_BadFlags:
+			return "kDNSServiceErr_BadFlags";
+		case kDNSServiceErr_Unsupported:
+			return "kDNSServiceErr_Unsupported";
+		case kDNSServiceErr_NotInitialized:
+			return "kDNSServiceErr_NotInitialized";
+		case kDNSServiceErr_AlreadyRegistered:
+			return "kDNSServiceErr_AlreadyRegistered";
+		case kDNSServiceErr_NameConflict:
+			return "kDNSServiceErr_NameConflict";
+		case kDNSServiceErr_Invalid:
+			return "kDNSServiceErr_Invalid";
+		case kDNSServiceErr_Firewall:
+			return "kDNSServiceErr_Firewall";
+		case kDNSServiceErr_Incompatible:
+			return "kDNSServiceErr_Incompatible (client library incompatible with daemon)";
+		case kDNSServiceErr_BadInterfaceIndex:
+			return "kDNSServiceErr_BadInterfaceIndex";
+		case kDNSServiceErr_Refused:
+			return "kDNSServiceErr_Refused";
+		case kDNSServiceErr_NoSuchRecord:
+			return "kDNSServiceErr_NoSuchRecord";
+		case kDNSServiceErr_NoAuth:
+			return "kDNSServiceErr_NoAuth";
+		case kDNSServiceErr_NoSuchKey:
+			return "kDNSServiceErr_NoSuchKey";
+		case kDNSServiceErr_NATTraversal:
+			return "kDNSServiceErr_NATTraversal";
+		case kDNSServiceErr_DoubleNAT:
+			return "kDNSServiceErr_DoubleNAT";
+		case kDNSServiceErr_BadTime:
+			return "kDNSServiceErr_BadTime";
+		case kDNSServiceErr_BadSig:
+			return "kDNSServiceErr_BadSig";
+		case kDNSServiceErr_BadKey:
+			return "kDNSServiceErr_BadKey";
+		case kDNSServiceErr_Transient:
+			return "kDNSServiceErr_Transient";
+		case kDNSServiceErr_ServiceNotRunning:
+			return "kDNSServiceErr_ServiceNotRunning (Background daemon not running)";
+		case kDNSServiceErr_NATPortMappingUnsupported:
+			return "kDNSServiceErr_NATPortMappingUnsupported (NAT doesn't support NAT-PMP or UPnP)";
+		case kDNSServiceErr_NATPortMappingDisabled:
+			return "kDNSServiceErr_NATPortMappingDisabled (NAT supports NAT-PMP or UPnP but it's disabled by the administrator)";
+		case kDNSServiceErr_NoRouter:
+			return "kDNSServiceErr_NoRouter (No router currently configured (probably no network connectivity))";
+		case kDNSServiceErr_PollingMode:
+			return "kDNSServiceErr_PollingMode";
+		case kDNSServiceErr_Timeout:
+			return "kDNSServiceErr_Timeout";
+	}
+	return "unknown error";
+}
+
+	
 }

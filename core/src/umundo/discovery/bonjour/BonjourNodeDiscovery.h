@@ -75,7 +75,8 @@ protected:
 
 	bool validateState();
 	void forgetRemoteNodesFDs(shared_ptr<BonjourNodeStub>); ///< Remove a remote node with all its queries
-
+	static const std::string errCodeToString(DNSServiceErrorType errType);
+	
 	/** @name Bonjour callbacks */
 	//@{
 	static void DNSSD_API browseReply(

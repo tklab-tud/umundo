@@ -26,7 +26,7 @@ The fastest way to get started is to grab the [uMundo SDK](http://umundo.tk.info
 for your platform. It contains
 
 * uMundo libraries and headers
-* Available language bindings
+* Available language bindings (build from source for PHP, Python or Perl bindings)
 * Android cross-compiled libraries
 * iOS cross-compiled libraries with the darwin installer
 * Templates for Eclipse, XCode and Visual Studio
@@ -44,15 +44,16 @@ various stages of maturity:
 	<a href="http://www.zeromq.org">ZeroMQ</a> to deliver byte arrays between nodes
 	discovered via <a href="http://developer.apple.com/opensource/">Bonjour</a> or
 	<a href="http://avahi.org/">Avahi</a>. The core is written in C++ and has
-	bindings to CSharp, Java, Python, Perl and Objective-C. <a href="/tklab-tud/umundo/tree/master/core">[more]</a>
+	bindings to CSharp, Java, Python, Perl, PHP and Objective-C. <a href="/tklab-tud/umundo/tree/master/core">[more]</a>
 	<br/><br/><table>
 		<tr>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Objective-C</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C#</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Python</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Perl</td>
+			<td style="border-right: solid #bbb 1px;">C++</td>
+			<td style="border-right: solid #bbb 1px;">Java</td>
+			<td style="border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="border-right: solid #bbb 1px;">C#</td>
+			<td style="border-right: solid #bbb 1px;">Python</td>
+			<td style="border-right: solid #bbb 1px;">Perl</td>
+			<td style="border-right: solid #bbb 1px;">PHP5</td>
 		</tr>
 	</table>
 	</dd>
@@ -69,10 +70,10 @@ various stages of maturity:
 	of a suited protobuf compiler.
 	<br/><br/><table>
 		<tr>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
-			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C#</td>
+			<td style="border-right: solid #bbb 1px;">C++</td>
+			<td style="border-right: solid #bbb 1px;">Java</td>
+			<td style="border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="border-right: solid #bbb 1px;">C#</td>
 		</tr>
 	</table>
 	</dd>
@@ -84,9 +85,9 @@ various stages of maturity:
 		<a href="/tklab-tud/umundo/tree/master/rpc">[more]</a>
 	<br/><br/><table>
 		<tr>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">C++</td>
-			<td style="background-color: #ddffdd; border-right: solid #bbb 1px;">Java</td>
-			<td style="background-color: #ffffdd; border-right: solid #bbb 1px;">Objective-C</td>
+			<td style="border-right: solid #bbb 1px;">C++</td>
+			<td style="border-right: solid #bbb 1px;">Java</td>
+			<td style="border-right: solid #bbb 1px;">Objective-C</td>
 		</tr>
 	</table>
 	</dd>
@@ -102,15 +103,14 @@ are plenty of <tt>asserts</tt> in the source code. We plan to add more test-slav
 as they become available.
 
 <table>
-    </tr>
-    <tr><th>Platform</th><th>Issues</th></tr>
+	<tr><th>Platform</th><th>Issues</th></tr>
 	<tr><td>Mac OSX 10.7</td><td>
 		<ul>
 			<li>umundo.s11n employs the C++ generator for ProtoBuf as the various Objective-C generators are out of date (just use <tt>.mm</tt> file extensions).
 		</ul>
 	</td></tr>
 
-	<tr><td>iOS 5.x</td><td>
+	<tr><td>iOS 5.x / 6.x</td><td>
 		<ul>
 			<li>umundo.s11n uses the C++ generator as with Mac OSX.
 			<li>The automated test are not executed on the build-server.
@@ -138,7 +138,51 @@ as they become available.
 			<li>The automated test are not executed on the build-server.
 		</ul>
 	</td></tr>
-    </tr>
+</table>
+
+<table>
+	<tr><th>Language Bindings</th><th>Issues</th></tr>
+
+	<tr><td>Java</td><td>
+		<ul>
+			<li>No known issues.
+		</ul>
+	</td></tr>
+
+	<tr><td>CSharp</td><td>
+		<ul>
+			<li>Make sure to use 64Bit on 64Bit systems.
+			<li>No umundo.rpc implementation yet.
+		</ul>
+	</td></tr>
+
+	<tr><td>Objective C</td><td>
+		<ul>
+			<li>No umundo.rpc implementation yet, just use <tt>.mm</tt> extensions and the C++ implementation.
+		</ul>
+	</td></tr>
+	
+	<tr><td>Python</td><td>
+		<ul>
+			<li>Only umundo.core is available.
+			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+		</ul>
+	</td></tr>
+
+	<tr><td>Perl</td><td>
+		<ul>
+			<li>Only umundo.core is available.
+			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+		</ul>
+	</td></tr>
+
+	<tr><td>PHP5</td><td>
+		<ul>
+			<li>Only umundo.core is available.
+			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+		</ul>
+	</td></tr>
+
 </table>
 
 ## FAQ

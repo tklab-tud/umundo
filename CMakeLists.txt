@@ -629,6 +629,10 @@ else()
 		set(AVAILABLE_LANGUAGE_BINDINGS "perl ${AVAILABLE_LANGUAGE_BINDINGS}")
 	endif()
 
+	if (TARGET "umundoNativePHP")
+		set(AVAILABLE_LANGUAGE_BINDINGS "php ${AVAILABLE_LANGUAGE_BINDINGS}")
+	endif()
+
 endif()
 
 message(STATUS "Targets:")

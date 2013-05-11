@@ -52,7 +52,12 @@ if (UMUNDONATIVEJAVA_LOCATION)
 	# TODO: We could move the protoc targets into s11n/CMakeLists.txt to
 	# get rid of find_package(Protobuf REQUIRED) here
 	#
+	set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	if (DIST_PREPARE)
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.lib;" ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG}) # link statically!
+	endif()
 	find_package(Protobuf REQUIRED)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
 	# Find UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE
 	include("${CMAKE_MODULE_PATH}/UseUMundo.cmake")

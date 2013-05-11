@@ -165,25 +165,37 @@ as they become available.
 	<tr><td>Python</td><td>
 		<ul>
 			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+			<li>Object instances get garbage collected if they leave scope.
+			<li>Not part of the SDK yet.
+			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
 		</ul>
 	</td></tr>
 
 	<tr><td>Perl</td><td>
 		<ul>
 			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+			<li>Object instances get garbage collected if they leave scope.
+			<li>Not part of the SDK yet.
+			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
 		</ul>
 	</td></tr>
 
 	<tr><td>PHP5</td><td>
 		<ul>
 			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected, make sure to use the same scope for all objects.
+			<li>Object instances get garbage collected if they leave scope.
+			<li>Not part of the SDK yet.
+			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
 		</ul>
 	</td></tr>
 
 </table>
+
+<b>Note:</b> The scripting languages still have the problem of <b>premature garbage collection</b>.
+If you assign e.g. a <tt>Publisher</tt> to a <tt>Node</tt>, the node will only take the pointer to
+the underlying C++ object and not keep a reference to the language specific instance. This means
+that the respective garbage collectors will potentially remove these objects while they are still
+being used. This applies to all umundo.core objects.
 
 ## FAQ
 
@@ -200,6 +212,28 @@ as they become available.
 		this is due to the rather low ulimit for open file-handles on MacOSX
 		(<tt>ulimit -n</tt> gives 256).</dd>
 
+	<dt><b>Why am I not receiving messages?</b></dt>
+	<dd>There are a few things to check if you are not receiving published messages:
+		<ul>
+			<li>Are the subscriber and publisher added to different nodes?
+			<li>Are the nodes in the same (or default) domain?
+			<li>Does the channel name of the subscriber match the publisher's?
+			<li>Is the publisher already connected to the subscriber? <br />
+				<p style="padding-left: 1em;">You can use <tt>int Publisher.waitForSubscribers(int n)</tt> 
+				to wait until <tt>n</tt> subscribers connected. The method will return the actual number of subscribers. Therefore,
+				calling it with <tt>n = 0</tt> will not block and report the number of subscribers per publisher.</p>
+		</ul>
+	</dd>
+
+	<dt><b>How do I use the language bindings?</b></dt>
+	<dd>All language bindings constitute of two components: 
+		<ul>
+		 	<li>a native extension named <tt>umundoNative&lt;LANGUAGE>&lt;LIB_SUFFIX></tt>.
+			<li>a language specific wrapper that (loads and) provides access to this library.
+		</ul>
+		It depends on the actual language how to register/load extensions. There are a few 
+		<a href="/tklab-tud/umundo/tree/master/examples">examples</a>.</dd>
+		
 	<dt><b>Does uMundo support IPv6?</b></dt>
 	<dd>No, but only because I couldn't get ZeroMQ to compile with IPv6 on Android
 		devices. Both ZeroConf implementations (Avahi and Bonjour) support IPv6 and
@@ -208,27 +242,10 @@ as they become available.
 		<tt>getIP()</tt> and for ZeroMQ to be compiled with IPv6. The plan is to wait
 		for another release of ZeroMQ 3.x and have another look.</dd>
 
-	<dt><b>Does uMundo build for 64bit architectures?</b></dt>
-	<dd>Yes. But it is your responsibility to provide some libraries on your system.
-		Have a look at the top-level CMakeLists.txt at the 64bit section to add
-		library directories. If you have some unorthodox paths to your 64bit libraries,
-		consider using the environment variables for the various <tt>contrib/cmake/Find*.cmake</tt>
-		modules or edit these files themselves.<br />
-		On Debian amd64 stable, there are some linking issues when enabling
-		<tt>BUILD_PREFER_STATIC_LIBRARIES</tt> via cmake.</dd> This is not a problem
-		as you need to provide libzmq and all the libproto* libraries installed on
-		your system anyway.
-
-	<dt><b>What's with all the "narrowing conversion" warnings when building with a current gcc?</b></dt>
-	<dd>It seems that new versions of the gcc use C++11 as the default C++ standard
-		and warn about implicit conversions with loss of precision. There is a
-		<tt>-Wno-narrowing</tt> flag for gcc, but older versions will croak on it.</dd>
+	<dt><b>Why do I get <tt>NullPointerException</tt>s when using custom ClassLoaders in a umundo callback?</b></dt>
+	<dd>Java has some strange issues with regard to custom class-loaders and JNI. This blog entry details the issue and 
+		<a href="http://schnelle-walka.blogspot.de/2013/04/jni-causes-xml-parsing-problems-when.html">provides a workaround</a>.</dd>
 
 	<dt><b>Are these actually questions that are asked frequently?</b></dt>
-	<dd>No, it's more like a set of questions I can imagine other people might have. It will eventually grow into a real FAQ.</dd>
-	
-	<dt><b>JNI causes XML parsing problems when using a custom ClassLoader</b></dt>
-	<dd>When using a custom ClassLoader it is possible to get strange exceptions, espacially
-	     when trying to parse XML files. A workaround is described at
-		 <a href="http://schnelle-walka.blogspot.de/2013/04/jni-causes-xml-parsing-problems-when.html">	 http://schnelle-walka.blogspot.de/2013/04/jni-causes-xml-parsing-problems-when.html</a></dd>
+	<dd>No, it's more like a set of questions I can imagine other people might have. It will eventually grow into a real FAQ.</dd>	
 </dl>

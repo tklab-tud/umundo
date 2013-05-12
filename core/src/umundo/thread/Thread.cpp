@@ -104,7 +104,7 @@ uint64_t Thread::getTimeStampMs() {
 }
 
 //Monitor::Monitor(const Monitor& other) {
-//	LOG_ERR("CopyConstructor!");
+//	UM_LOG_ERR("CopyConstructor!");
 //}
 
 Monitor::Monitor() {

@@ -80,14 +80,14 @@ void DirectoryListingClient::receive(void* object, Message* msg) {
 				if (_listener != NULL)
 					_listener->changed(_knownEntries[key]);
 			} else {
-				LOG_ERR("Unknown directory entry reported as modified");
+				UM_LOG_ERR("Unknown directory entry reported as modified");
 			}
 		} else if (op.compare("removed") == 0) {
 			if (_knownEntries.find(key) != _knownEntries.end()) {
 				if (_listener != NULL)
 					_listener->removed(_knownEntries[key]);
 			} else {
-				LOG_ERR("Unknown directory entry reported as removed");
+				UM_LOG_ERR("Unknown directory entry reported as removed");
 			}
 		}
 	}

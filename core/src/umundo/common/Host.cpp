@@ -78,23 +78,23 @@ const string& Host::getHostname() {
 	if (err != 0) {
 
 #if defined(UNIX) || defined(IOS)
-		LOG_ERR("gethostname: %s", strerror(errno));
+		UM_LOG_ERR("gethostname: %s", strerror(errno));
 #elif defined(WIN32)
 		switch(err) {
 		case WSAEFAULT:
-			LOG_ERR("gethostname: The name parameter is a NULL pointer");
+			UM_LOG_ERR("gethostname: The name parameter is a NULL pointer");
 			break;
 		case WSANOTINITIALISED:
-			LOG_ERR("gethostname: No prior successful WSAStartup call");
+			UM_LOG_ERR("gethostname: No prior successful WSAStartup call");
 			break;
 		case WSAENETDOWN:
-			LOG_ERR("gethostname: The network subsystem has failed");
+			UM_LOG_ERR("gethostname: The network subsystem has failed");
 			break;
 		case WSAEINPROGRESS:
-			LOG_ERR("gethostname: A blocking Windows Sockets 1.1 call is in progress");
+			UM_LOG_ERR("gethostname: A blocking Windows Sockets 1.1 call is in progress");
 			break;
 		default:
-			LOG_ERR("gethostname: returned unknown error?!");
+			UM_LOG_ERR("gethostname: returned unknown error?!");
 			break;
 		}
 		// TODO: is this needed?
@@ -119,7 +119,7 @@ const vector<Interface> Host::getInterfaces() {
 	struct ifaddrs *ifaddr;
 	err = getifaddrs(&ifaddr);
 	if (err != 0) {
-		LOG_ERR("getifaddrs: %s", strerror(errno));
+		UM_LOG_ERR("getifaddrs: %s", strerror(errno));
 		return ifcs;
 	}
 
@@ -127,7 +127,7 @@ const vector<Interface> Host::getInterfaces() {
 	struct ifreq ifinfo;
 	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (sock == -1) {
-		LOG_ERR("socket: %s", strerror(errno));
+		UM_LOG_ERR("socket: %s", strerror(errno));
 		return ifcs;
 	};
 # endif
@@ -147,7 +147,7 @@ const vector<Interface> Host::getInterfaces() {
 				currIfc.mac = string(ifinfo.ifr_hwaddr.sa_data, IFHWADDRLEN);
 			}
 		} else {
-			LOG_ERR("ioctl: %s", strerror(errno));
+			UM_LOG_ERR("ioctl: %s", strerror(errno));
 		}
 # endif
 		if (ifa->ifa_addr != NULL) {
@@ -180,7 +180,7 @@ const vector<Interface> Host::getInterfaces() {
 	DWORD dwBufLen = sizeof(AdapterInfo);
 	DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
 	if (dwStatus != ERROR_SUCCESS) {
-		LOG_ERR("GetAdaptersInfo returned with error");
+		UM_LOG_ERR("GetAdaptersInfo returned with error");
 		return ifcs;
 	}
 

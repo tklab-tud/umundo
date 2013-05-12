@@ -51,38 +51,38 @@
 
 #ifdef DEBUG_THREADS
 #define UMUNDO_SCOPE_LOCK(mutex) \
-LOG_DEBUG("Locking mutex %p", &mutex); \
+UM_LOG_DEBUG("Locking mutex %p", &mutex); \
 ScopeLock lock(mutex);
 
 #define UMUNDO_LOCK(mutex) \
-LOG_DEBUG("Locking mutex %p", &mutex); \
+UM_LOG_DEBUG("Locking mutex %p", &mutex); \
 mutex.lock(); \
-LOG_DEBUG("Locked mutex %p", &mutex);
+UM_LOG_DEBUG("Locked mutex %p", &mutex);
 
 #define UMUNDO_TRYLOCK(mutex) \
-LOG_DEBUG("Tying to lock mutex %p", &mutex); \
+UM_LOG_DEBUG("Tying to lock mutex %p", &mutex); \
 mutex.trylock();
 
 #define UMUNDO_UNLOCK(mutex) \
-LOG_DEBUG("Unlocking mutex %p", &mutex); \
+UM_LOG_DEBUG("Unlocking mutex %p", &mutex); \
 mutex.unlock();
 
 #define UMUNDO_WAIT(monitor) \
-LOG_DEBUG("Waiting at monitor %p", &monitor); \
+UM_LOG_DEBUG("Waiting at monitor %p", &monitor); \
 monitor.wait(); \
-LOG_DEBUG("Signaled at monitor %p", &monitor);
+UM_LOG_DEBUG("Signaled at monitor %p", &monitor);
 
 #define UMUNDO_WAIT(monitor, ms) \
-LOG_DEBUG("Waiting for %dms at monitor %p", ms, &monitor); \
+UM_LOG_DEBUG("Waiting for %dms at monitor %p", ms, &monitor); \
 monitor.wait(ms); \
-LOG_DEBUG("Awaken at monitor %p", &monitor);
+UM_LOG_DEBUG("Awaken at monitor %p", &monitor);
 
 #define UMUNDO_SIGNAL(monitor) \
-LOG_DEBUG("Signaling monitor %p", &monitor); \
+UM_LOG_DEBUG("Signaling monitor %p", &monitor); \
 monitor.signal();
 
 #define UMUNDO_BROADCAST(monitor) \
-LOG_DEBUG("Signaling all monitor %p", &monitor); \
+UM_LOG_DEBUG("Signaling all monitor %p", &monitor); \
 monitor.broadcast();
 #endif
 

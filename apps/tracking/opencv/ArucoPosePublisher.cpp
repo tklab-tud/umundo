@@ -218,7 +218,7 @@ void ArucoPosePublisher::run() {
 			Message* msg = _typedPub->prepareMsg("Pose", smoothPose);
 			msg->putMeta("markerId", markerId);
 
-			LOG_DEBUG("Publishing pose of marker %d", k);
+			UM_LOG_DEBUG("Publishing pose of marker %d", k);
 			_typedPub->send(msg);
 			delete msg;
 

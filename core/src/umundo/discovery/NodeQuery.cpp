@@ -35,10 +35,10 @@ void NodeQuery::found(const NodeStub& node) {
 	assert(node);
 	if (_notifyImmediately) {
 		if (_nodes.find(node.getUUID()) != _nodes.end()) {
-//      LOG_DEBUG("Changed node %s", SHORT_UUID(node->getUUID()).c_str());
+//      UM_LOG_DEBUG("Changed node %s", SHORT_UUID(node->getUUID()).c_str());
 			_listener->changed(node);
 		} else {
-			LOG_DEBUG("Added node %s", SHORT_UUID(node.getUUID()).c_str());
+			UM_LOG_DEBUG("Added node %s", SHORT_UUID(node.getUUID()).c_str());
 			_listener->added(node);
 			_nodes[node.getUUID()] = node;
 		}
@@ -51,7 +51,7 @@ void NodeQuery::removed(const NodeStub& node) {
 	ScopeLock lock(_mutex);
 	assert(node);
 	if (_notifyImmediately) {
-		LOG_DEBUG("Removed node %s", SHORT_UUID(node.getUUID()).c_str());
+		UM_LOG_DEBUG("Removed node %s", SHORT_UUID(node.getUUID()).c_str());
 		_listener->removed(node);
 		_nodes.erase(node.getUUID());
 	} else {
@@ -69,7 +69,7 @@ void NodeQuery::notifyResultSet() {
 
 	for (nodeIter = _pendingRemovals.begin(); nodeIter != _pendingRemovals.end(); nodeIter++) {
 		assert(*nodeIter);
-		LOG_DEBUG("Removed node %s", SHORT_UUID(nodeIter->getUUID()).c_str());
+		UM_LOG_DEBUG("Removed node %s", SHORT_UUID(nodeIter->getUUID()).c_str());
 		_listener->removed(*nodeIter);
 		_nodes.erase(nodeIter->getUUID());
 	}
@@ -77,10 +77,10 @@ void NodeQuery::notifyResultSet() {
 	for (nodeIter = _pendingFinds.begin(); nodeIter != _pendingFinds.end(); nodeIter++) {
 		assert(*nodeIter);
 		if (_nodes.find(nodeIter->getUUID()) != _nodes.end()) {
-//      LOG_DEBUG("Changed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
+//      UM_LOG_DEBUG("Changed node %s", SHORT_UUID((*nodeIter)->getUUID()).c_str());
 			_listener->changed(NodeStub(*nodeIter));
 		} else {
-			LOG_DEBUG("Added node %s", SHORT_UUID(nodeIter->getUUID()).c_str());
+			UM_LOG_DEBUG("Added node %s", SHORT_UUID(nodeIter->getUUID()).c_str());
 			_listener->added(*nodeIter);
 			_nodes[nodeIter->getUUID()] = *nodeIter;
 		}

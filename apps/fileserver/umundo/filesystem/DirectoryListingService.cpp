@@ -90,13 +90,13 @@ DirectoryEntryContent* DirectoryListingService::get(DirectoryEntry* req) {
 	DirectoryEntryContent* rep = new DirectoryEntryContent();
 
 	if (_knownEntries.find(req->name()) == _knownEntries.end()) {
-		LOG_ERR("Request for unkown file '%s'", req->name().c_str());
+		UM_LOG_ERR("Request for unkown file '%s'", req->name().c_str());
 		return rep;
 	}
 
 	struct stat fileStat;
 	if (stat((_dir + '/' +  req->name()).c_str(), &fileStat) != 0) {
-		LOG_ERR("Error with stat on '%s': %s", req->name().c_str(), strerror(errno));
+		UM_LOG_ERR("Error with stat on '%s': %s", req->name().c_str(), strerror(errno));
 		return rep;
 	}
 	char* buffer = readFileIntoBuffer(req->name().c_str(), fileStat.st_size);
@@ -107,7 +107,7 @@ DirectoryEntryContent* DirectoryListingService::get(DirectoryEntry* req) {
 }
 
 void DirectoryListingService::notifyNewFile(const string& fileName, struct stat fileStat) {
-	LOG_DEBUG("New file %s found", fileName.c_str());
+	UM_LOG_DEBUG("New file %s found", fileName.c_str());
 	DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
 	Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
 	msg->putMeta("operation", "added");
@@ -119,7 +119,7 @@ void DirectoryListingService::notifyNewFile(const string& fileName, struct stat 
 }
 
 void DirectoryListingService::notifyModifiedFile(const string& fileName, struct stat fileStat) {
-	LOG_DEBUG("New file %s found", fileName.c_str());
+	UM_LOG_DEBUG("New file %s found", fileName.c_str());
 	DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
 	Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
 	msg->putMeta("operation", "modified");
@@ -131,7 +131,7 @@ void DirectoryListingService::notifyModifiedFile(const string& fileName, struct 
 }
 
 void DirectoryListingService::notifyRemovedFile(const string& fileName, struct stat fileStat) {
-	LOG_DEBUG("Removed file %s", fileName.c_str());
+	UM_LOG_DEBUG("Removed file %s", fileName.c_str());
 
 	DirectoryEntry* dirEntry = statToEntry(fileName, fileStat);
 	Message* msg = _notifyPub->prepareMsg("DirectoryEntry", dirEntry);
@@ -149,7 +149,7 @@ void DirectoryListingService::updateEntries() {
 	// stat directory for modification date
 	struct stat dirStat;
 	if (stat(_dir.c_str(), &dirStat) != 0) {
-		LOG_ERR("Error with stat on directory '%s': %s", _dir.c_str(), strerror(errno));
+		UM_LOG_ERR("Error with stat on directory '%s': %s", _dir.c_str(), strerror(errno));
 		return;
 	}
 
@@ -161,7 +161,7 @@ void DirectoryListingService::updateEntries() {
 		DIR *dp;
 		dp = opendir(_dir.c_str());
 		if (dp == NULL) {
-			LOG_ERR("Error opening directory '%s': %s", _dir.c_str(), strerror(errno));
+			UM_LOG_ERR("Error opening directory '%s': %s", _dir.c_str(), strerror(errno));
 			return;
 		}
 		// iterate all entries and see what changed
@@ -186,7 +186,7 @@ void DirectoryListingService::updateEntries() {
 
 			struct stat fileStat;
 			if (stat(filename, &fileStat) != 0) {
-				LOG_ERR("Error with stat on directory entry '%s': %s", filename, strerror(errno));
+				UM_LOG_ERR("Error with stat on directory entry '%s': %s", filename, strerror(errno));
 				free(filename);
 				continue;
 			}
@@ -281,7 +281,7 @@ DirectoryEntry* DirectoryListingService::statToEntry(const string& fileName, str
 		dEntry->set_type(DirectoryEntry_Type_BLOCK_DEV);
 #endif
 	} else {
-		LOG_WARN("Could not determine fs type of %s", fileName.c_str());
+		UM_LOG_WARN("Could not determine fs type of %s", fileName.c_str());
 		dEntry->set_type(DirectoryEntry_Type_UNKNOWN);
 	}
 
@@ -308,7 +308,7 @@ char* DirectoryListingService::readFileIntoBuffer(const string& fileName, int si
 
 	FILE* fd;
 	if ((fd = fopen(absFilename, "rb")) == NULL) {
-		LOG_ERR("Could not open %s: %s", absFilename, strerror(errno));
+		UM_LOG_ERR("Could not open %s: %s", absFilename, strerror(errno));
 		free(buffer);
 		free(absFilename);
 		return NULL;
@@ -317,7 +317,7 @@ char* DirectoryListingService::readFileIntoBuffer(const string& fileName, int si
 	int n;
 	if (size > 0) {
 		if ((n = fread(buffer, 1, size, fd)) != size) {
-			LOG_ERR("Expected to read %d bytes form %s, but got %d", size, absFilename, n);
+			UM_LOG_ERR("Expected to read %d bytes form %s, but got %d", size, absFilename, n);
 			free(buffer);
 			free(absFilename);
 			return NULL;

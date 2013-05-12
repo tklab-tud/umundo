@@ -5,19 +5,19 @@
 
 /// Initialize a zeromq message with a given size
 #define ZMQ_PREPARE(msg, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));
 
 /// Initialize a zeromq message with a given size and memcpy data
 #define ZMQ_PREPARE_DATA(msg, data, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), data, size);
 
 /// Initialize a zeromq message with a given null-terminated string
 #define ZMQ_PREPARE_STRING(msg, data, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size + 1) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size + 1) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), data, size + 1);
 
 /// Size of a publisher info on wire
@@ -47,21 +47,21 @@ public:
 
 		_transport = "tcp";
 
-		(_pubSocket = zmq_socket(context, ZMQ_PUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
+		(_pubSocket = zmq_socket(context, ZMQ_PUB)) || UM_LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 
 		int hwm = 100000;
 		std::string pubId("um.pub.intern." + _uuid);
 
-		zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 		zmq_bind(_pubSocket, std::string("inproc://" + pubId).c_str());
 
-		LOG_INFO("creating internal publisher for %s on %s", _channelName.c_str(), std::string("inproc://" + pubId).c_str());
+		UM_LOG_INFO("creating internal publisher for %s on %s", _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
 	}
 
 	~ZeroMQPublisher() {
-		LOG_INFO("deleting publisher for %s", _channelName.c_str());
+		UM_LOG_INFO("deleting publisher for %s", _channelName.c_str());
 
 		zmq_close(_pubSocket);
 
@@ -118,13 +118,13 @@ public:
 		umundo::ScopeLock lock(_mutex);
 		_subUUIDs.insert(subId);
 
-		LOG_ERR("Publisher %s received subscriber %s on node %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str());
+		UM_LOG_ERR("Publisher %s received subscriber %s on node %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str());
 
 		if (_greeter != NULL)
 			_greeter->welcome(umundo::Publisher(boost::static_pointer_cast<umundo::PublisherImpl>(shared_from_this())), remoteId, subId);
 
 		if (_queuedMessages.find(subId) != _queuedMessages.end()) {
-			LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[subId].size());
+			UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[subId].size());
 			std::list<std::pair<uint64_t, umundo::Message*> >::iterator msgIter = _queuedMessages[subId].begin();
 			while(msgIter != _queuedMessages[subId].end()) {
 				send(msgIter->second);
@@ -142,7 +142,7 @@ public:
 			return;
 		_subUUIDs.erase(subId);
 
-		LOG_ERR("Publisher %s lost subscriber %s from node %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str());
+		UM_LOG_ERR("Publisher %s lost subscriber %s from node %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str());
 
 		if (_greeter != NULL)
 			_greeter->farewell(umundo::Publisher(boost::static_pointer_cast<umundo::PublisherImpl>(shared_from_this())), remoteId, subId);
@@ -151,7 +151,7 @@ public:
 
 	void send(umundo::Message* msg) {
 		if (_isSuspended) {
-			LOG_WARN("Not sending message on suspended publisher");
+			UM_LOG_WARN("Not sending message on suspended publisher");
 			return;
 		}
 
@@ -160,7 +160,7 @@ public:
 		if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 			// explicit destination
 			if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end() && !msg->isQueued()) {
-				LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
+				UM_LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
 				umundo::Message* queuedMsg = new umundo::Message(*msg); // copy message
 				queuedMsg->setQueued(true);
 				_queuedMessages[msg->getMeta("um.sub")].push_back(std::make_pair(umundo::Thread::getTimeStampMs(), queuedMsg));
@@ -184,8 +184,8 @@ public:
 			metaIter++;
 		}
 
-		zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 		// all our meta information
 		for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
@@ -216,15 +216,15 @@ public:
 			((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length() + 1 + (metaIter->second).length()] = '\0';
 			assert(strlen(writePtr) == (metaIter->second).length());
 
-			zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-			zmq_msg_close(&metaMsg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+			zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+			zmq_msg_close(&metaMsg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 		}
 
 		// data as the second part of a multipart message
 		zmq_msg_t publication;
 		ZMQ_PREPARE_DATA(publication, msg->data(), msg->size());
-		zmq_sendmsg(_pubSocket, &publication, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&publication) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(_pubSocket, &publication, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&publication) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 };
 
@@ -246,10 +246,10 @@ public:
 		int hwm = 100000;
 		std::string subId("um.sub." + _uuid);
 
-		zmq_setsockopt(_subSocket, ZMQ_IDENTITY, subId.c_str(), subId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, subId.c_str(), subId.length())  && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, _channelName.c_str(), _channelName.length())  && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_subSocket, ZMQ_IDENTITY, subId.c_str(), subId.length()) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, subId.c_str(), subId.length())  && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, _channelName.c_str(), _channelName.length())  && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
 		int rcvTimeOut = 30;
 		zmq_setsockopt(_subSocket, ZMQ_RCVTIMEO, &rcvTimeOut, sizeof(rcvTimeOut));
@@ -258,8 +258,8 @@ public:
 #if 0
 		int reconnect_ivl_min = 100;
 		int reconnect_ivl_max = 200;
-		zmq_setsockopt (_subSocket, ZMQ_RECONNECT_IVL, &reconnect_ivl_min, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_setsockopt (_subSocket, ZMQ_RECONNECT_IVL_MAX, &reconnect_ivl_max, sizeof(int)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt (_subSocket, ZMQ_RECONNECT_IVL, &reconnect_ivl_min, sizeof(int)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_setsockopt (_subSocket, ZMQ_RECONNECT_IVL_MAX, &reconnect_ivl_max, sizeof(int)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 #endif
 
 		zmq_bind(_subSocket, std::string("inproc://" + subId).c_str());
@@ -269,7 +269,7 @@ public:
 	}
 
 	~ZeroMQSubscriber() {
-		LOG_INFO("deleting subscriber for %s", _channelName.c_str());
+		UM_LOG_INFO("deleting subscriber for %s", _channelName.c_str());
 		stop();
 		join();
 		zmq_close(_subSocket);
@@ -313,7 +313,7 @@ public:
 			} else {
 				ss << "ipc://um.pub." << pub.getDomain();
 			}
-			zmq_connect(_subSocket, ss.str().c_str()) && LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
+			zmq_connect(_subSocket, ss.str().c_str()) && UM_LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
 		}
 
 		_pubUUIDs.insert(pub.getUUID());
@@ -348,7 +348,7 @@ public:
 			} else {
 				ss << "ipc://um.pub." << pub.getDomain();
 			}
-			zmq_disconnect(_subSocket, ss.str().c_str()) && LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
+			zmq_disconnect(_subSocket, ss.str().c_str()) && UM_LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
 		}
 	}
 
@@ -372,7 +372,7 @@ public:
 		while(isStarted()) {
 			int rc = zmq_poll(items, 1, 20);
 			if (rc < 0) {
-				LOG_ERR("zmq_poll: %s", zmq_strerror(errno));
+				UM_LOG_ERR("zmq_poll: %s", zmq_strerror(errno));
 			}
 
 			if (!isStarted())
@@ -393,19 +393,19 @@ public:
 		while (1) {
 			// read the whole message
 			zmq_msg_t message;
-			zmq_msg_init(&message) && LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
+			zmq_msg_init(&message) && UM_LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
 			int rc;
 			rc = zmq_recvmsg(_subSocket, &message, ZMQ_DONTWAIT);
 			if (rc < 0) {
-				LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				UM_LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 				delete msg;
 				return NULL;
 			}
 
 			size_t msgSize = zmq_msg_size(&message);
-			zmq_getsockopt(_subSocket, ZMQ_RCVMORE, &more, &more_size) && LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
+			zmq_getsockopt(_subSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
 
 			if (more) {
 				char* key = (char*)zmq_msg_data(&message);
@@ -417,18 +417,18 @@ public:
 					msg->putMeta("um.channel", key);
 				} else {
 					if (strlen(key) + strlen(value) + 2 != msgSize) {
-						LOG_ERR("Received malformed meta field %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
-						zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+						UM_LOG_ERR("Received malformed meta field %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
+						zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 						break;
 					} else {
 						msg->putMeta(key, value);
 					}
 				}
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 			} else {
 				// last message contains actual data
 				msg->setData((char*)zmq_msg_data(&message), msgSize);
-				zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 				break; // last message part
 			}
 		}
@@ -442,7 +442,7 @@ public:
 
 		int rc = zmq_poll(items, 1, 0);
 		if (rc < 0) {
-			LOG_ERR("zmq_poll: %s", zmq_strerror(errno));
+			UM_LOG_ERR("zmq_poll: %s", zmq_strerror(errno));
 			return false;
 		}
 		if (items[0].revents & ZMQ_POLLIN) {
@@ -483,34 +483,34 @@ public:
 	void init(boost::shared_ptr<umundo::Configuration>) {
 		_transport = "tcp";
 
-		(_pubSocket  = zmq_socket(context, ZMQ_XPUB))    || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-		(_subSocket  = zmq_socket(context, ZMQ_SUB))     || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-		(_nodeSocket = zmq_socket(context, ZMQ_ROUTER))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+		(_pubSocket  = zmq_socket(context, ZMQ_XPUB))    || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+		(_subSocket  = zmq_socket(context, ZMQ_SUB))     || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+		(_nodeSocket = zmq_socket(context, ZMQ_ROUTER))  || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 
 		int hwm = 5000000;
 		int vbsSub = 1;
 
 		std::string pubId("um.pub." + _uuid);
-		zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
-		zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm))               && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
-		zmq_setsockopt(_pubSocket, ZMQ_XPUB_VERBOSE, &vbsSub, sizeof(vbsSub))   && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // receive all subscriptions
+		zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+		zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm))               && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+		zmq_setsockopt(_pubSocket, ZMQ_XPUB_VERBOSE, &vbsSub, sizeof(vbsSub))   && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // receive all subscriptions
 
-		zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
-		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, "", 0)          && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // subscribe to every internal publisher
+		zmq_setsockopt(_subSocket, ZMQ_RCVHWM, &hwm, sizeof(hwm)) && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+		zmq_setsockopt(_subSocket, ZMQ_SUBSCRIBE, "", 0)          && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno)); // subscribe to every internal publisher
 
 		std::string nodeId("um.node." + _uuid);
-		zmq_setsockopt(_nodeSocket, ZMQ_IDENTITY, nodeId.c_str(), nodeId.length()) && LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
+		zmq_setsockopt(_nodeSocket, ZMQ_IDENTITY, nodeId.c_str(), nodeId.length()) && UM_LOG_WARN("zmq_setsockopt: %s", zmq_strerror(errno));
 
 		_port = bindToFreePort(_nodeSocket, "tcp", "*");
-		zmq_bind(_nodeSocket, std::string("inproc://" + nodeId).c_str()) && LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
-		zmq_bind(_nodeSocket, std::string("ipc://" + nodeId).c_str())    && LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
+		zmq_bind(_nodeSocket, std::string("inproc://" + nodeId).c_str()) && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
+		zmq_bind(_nodeSocket, std::string("ipc://" + nodeId).c_str())    && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
 
 		_pubPort = bindToFreePort(_pubSocket, "tcp", "*");
-		zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
-		zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
+		zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
+		zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
 
-		LOG_ERR("Node %s listening on port %d", SHORT_UUID(_uuid).c_str(), _port);
-		LOG_ERR("Publisher %s listening on port %d", SHORT_UUID(_uuid).c_str(), _pubPort);
+		UM_LOG_ERR("Node %s listening on port %d", SHORT_UUID(_uuid).c_str(), _port);
+		UM_LOG_ERR("Publisher %s listening on port %d", SHORT_UUID(_uuid).c_str(), _pubPort);
 
 		_nodeQuery = boost::shared_ptr<umundo::NodeQuery>(new umundo::NodeQuery(_domain, this));
 
@@ -529,13 +529,13 @@ public:
 		// close connection to all remote publishers
 		std::map<std::string, void*>::iterator sockIter;
 		for (sockIter = _sockets.begin(); sockIter != _sockets.end(); sockIter++) {
-			zmq_close(sockIter->second) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+			zmq_close(sockIter->second) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 		}
 
 		join();
-		zmq_close(_pubSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
-		zmq_close(_subSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
-		zmq_close(_nodeSocket) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+		zmq_close(_pubSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+		zmq_close(_subSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+		zmq_close(_nodeSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	}
 
 	void suspend() {
@@ -581,7 +581,7 @@ public:
 				ss << transport << "://" << address << ":" << port;
 				break;
 			default:
-				LOG_WARN("zmq_bind at %s: %s", ss.str().c_str(), zmq_strerror(errno));
+				UM_LOG_WARN("zmq_bind at %s: %s", ss.str().c_str(), zmq_strerror(errno));
 				Thread::sleepMs(100);
 			}
 		}
@@ -618,7 +618,7 @@ public:
 		umundo::ScopeLock lock(_mutex);
 		if (_subs.find(sub.getUUID()) != _subs.end()) {
 			std::string subId("inproc://um.sub." + sub.getUUID());
-			//zmq_disconnect(_pubSocket, subId.c_str()) && LOG_ERR("zmq_connect %s: %s", subId.c_str(), zmq_strerror(errno));
+			//zmq_disconnect(_pubSocket, subId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", subId.c_str(), zmq_strerror(errno));
 			_subs.erase(sub.getUUID());
 
 			std::map<std::string, umundo::NodeStub>::iterator nodeIter = _nodes.begin();
@@ -646,11 +646,11 @@ public:
 		umundo::ScopeLock lock(_mutex);
 		if (_pubs.find(pub.getUUID()) == _pubs.end()) {
 			std::string internalPubId("inproc://um.pub.intern." + pub.getUUID());
-			zmq_connect(_subSocket, internalPubId.c_str()) && LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
+			zmq_connect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 
 //      std::string pubId("um.pub." + pub.getUUID()); // proxy publisher ipc and inproc for subscribers
-//      zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
-//      zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
+//      zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
+//      zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
 
 			_pubs[pub.getUUID()] = pub;
 			std::map<std::string, void*>::iterator socketIter = _sockets.begin();
@@ -666,11 +666,11 @@ public:
 		umundo::ScopeLock lock(_mutex);
 		if (_pubs.find(pub.getUUID()) != _pubs.end()) {
 			std::string internalPubId("inproc://um.pub.intern." + pub.getUUID());
-			zmq_disconnect(_subSocket, internalPubId.c_str()) && LOG_ERR("zmq_disconnect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
+			zmq_disconnect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_disconnect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 
 //      std::string pubId("um.pub." + pub.getUUID()); // unproxy publisher ipc and inproc for subscribers
-//      zmq_unbind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && LOG_WARN("zmq_unbind: %s", zmq_strerror(errno))
-//      zmq_unbind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && LOG_WARN("zmq_unbind: %s", zmq_strerror(errno))
+//      zmq_unbind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_WARN("zmq_unbind: %s", zmq_strerror(errno))
+//      zmq_unbind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_unbind: %s", zmq_strerror(errno))
 
 			_pubs.erase(pub.getUUID());
 			std::map<std::string, void*>::iterator socketIter = _sockets.begin();
@@ -689,7 +689,7 @@ public:
 		umundo::ScopeLock lock(_mutex);
 
 		if (_nodes.find(node.getUUID()) != _nodes.end()) {
-			LOG_WARN("Not adding already known node");
+			UM_LOG_WARN("Not adding already known node");
 			return;
 		}
 
@@ -709,11 +709,11 @@ public:
 
 		// connect a socket to the remote node port
 		void* client;
-		(client = zmq_socket(context, ZMQ_DEALER)) || LOG_ERR("zmq_socket: %s",zmq_strerror(errno));
+		(client = zmq_socket(context, ZMQ_DEALER)) || UM_LOG_ERR("zmq_socket: %s",zmq_strerror(errno));
 
 		// give the socket an id for zeroMQ routing
-		zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && LOG_ERR("zmq_setsockopt: %s",zmq_strerror(errno));
-		zmq_connect(client, ss.str().c_str()) && LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
+		zmq_setsockopt(client, ZMQ_IDENTITY, _uuid.c_str(), _uuid.length()) && UM_LOG_ERR("zmq_setsockopt: %s",zmq_strerror(errno));
+		zmq_connect(client, ss.str().c_str()) && UM_LOG_ERR("zmq_connect %s: %s", ss.str().c_str(), zmq_strerror(errno));
 
 		// remember node stub and socket
 		_nodes[node.getUUID()] = node;
@@ -726,7 +726,7 @@ public:
 			// create a publisher added message from current publisher
 			sendPubAdded(client, pubIter->second, hasMore);
 		}
-		LOG_INFO("sending %d publishers to newcomer", _pubs.size());
+		UM_LOG_INFO("sending %d publishers to newcomer", _pubs.size());
 
 		if (_pendingRemotePubs.find(node.getUUID()) != _pendingRemotePubs.end()) {
 			// the other node found us first and already sent its publishers
@@ -746,7 +746,7 @@ public:
 		umundo::ScopeLock lock(_mutex);
 
 		if (_nodes.find(node.getUUID()) == _nodes.end()) {
-			LOG_WARN("Not removing unknown node");
+			UM_LOG_WARN("Not removing unknown node");
 			return;
 		}
 
@@ -771,17 +771,17 @@ public:
 		}
 
 		if (_sockets.find(node.getUUID()) == _sockets.end()) {
-			LOG_WARN("removed: client was never added: %s", SHORT_UUID(node.getUUID()).c_str());
+			UM_LOG_WARN("removed: client was never added: %s", SHORT_UUID(node.getUUID()).c_str());
 			return;
 		}
-		zmq_close(_sockets[node.getUUID()]) && LOG_WARN("zmq_close: %s",zmq_strerror(errno));
+		zmq_close(_sockets[node.getUUID()]) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 
 		_sockets.erase(node.getUUID());               // delete socket
 		_nodes.erase(node.getUUID());
 		_pendingRemotePubs.erase(node.getUUID());
 		assert(_sockets.size() == _nodes.size());
 
-		LOG_INFO("%s removed %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(node.getUUID()).c_str());
+		UM_LOG_INFO("%s removed %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(node.getUUID()).c_str());
 
 	}
 
@@ -800,8 +800,8 @@ public:
 		buffer += 2;
 		writePubInfo(buffer, pub);
 
-		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&msg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 
 	void sendPubAdded(void* socket, const umundo::Publisher& pub, bool hasMore) {
@@ -818,8 +818,8 @@ public:
 
 		assert(buffer - (char*)zmq_msg_data(&msg) == zmq_msg_size(&msg));
 
-		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&msg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 
 	void sendSubAdded(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore) {
@@ -837,8 +837,8 @@ public:
 
 		assert((size_t)(buffer - (char*)zmq_msg_data(&msg)) == zmq_msg_size(&msg));
 
-		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&msg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 
 	void sendSubRemoved(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore) {
@@ -855,8 +855,8 @@ public:
 
 		assert((size_t)(buffer - (char*)zmq_msg_data(&msg)) == zmq_msg_size(&msg));
 
-		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(socket, &msg, (hasMore ? ZMQ_SNDMORE : 0)) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&msg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	}
 
@@ -896,11 +896,11 @@ public:
 					std::string subChannel(data+1, zmq_msg_size(&message) - 1);
 
 					if (subscription) {
-						LOG_ERR("Got 0MQ subscription on %s", subChannel.c_str());
+						UM_LOG_ERR("Got 0MQ subscription on %s", subChannel.c_str());
 						_subscriptions.insert(subChannel);
 						processZMQCommSubscriptions(subChannel);
 					} else {
-						LOG_ERR("Got 0MQ unsubscription on %s", subChannel.c_str());
+						UM_LOG_ERR("Got 0MQ unsubscription on %s", subChannel.c_str());
 						_subscriptions.erase(subChannel);
 						//processZMQCommUnsubscriptions("", subChannel, umundo::SubscriberStub());
 					}
@@ -956,7 +956,7 @@ public:
 						buffer += 2;
 
 						if (version != umundo::Message::VERSION) {
-							LOG_ERR("Received message from wrong or unversioned umundo - ignoring");
+							UM_LOG_ERR("Received message from wrong or unversioned umundo - ignoring");
 							zmq_msg_close (&message);
 							break;
 						}
@@ -974,7 +974,7 @@ public:
 							buffer = readPubInfo(buffer, port, channel, pubUUID);
 
 							if (buffer - (char*)zmq_msg_data(&message) != msgSize) {
-								LOG_ERR("Malformed PUB_ADDED|PUB_REMOVED message received - ignoring");
+								UM_LOG_ERR("Malformed PUB_ADDED|PUB_REMOVED message received - ignoring");
 								break;
 							}
 
@@ -987,11 +987,11 @@ public:
 								processNodeCommPubAdded(remoteUUID, pubStub);
 							} else {
 								if (_nodes.find(remoteUUID) == _nodes.end()) {
-									LOG_ERR("Unknown node removed publisher - ignoring");
+									UM_LOG_ERR("Unknown node removed publisher - ignoring");
 									break;
 								}
 								if (!_nodes[remoteUUID].getPublisher(pubUUID)) {
-									LOG_ERR("Unknown node sent unsubscription - ignoring");
+									UM_LOG_ERR("Unknown node sent unsubscription - ignoring");
 									break;
 								}
 								processPubRemoval(remoteUUID, _nodes[remoteUUID].getPublisher(pubUUID));
@@ -1004,7 +1004,7 @@ public:
 							// a remote node tells us of a subscription of one of its subscribers
 
 							if (_nodes.find(remoteUUID) == _nodes.end()) {
-								LOG_ERR("Got a subscription from an unknown node - this should never happen!");
+								UM_LOG_ERR("Got a subscription from an unknown node - this should never happen!");
 								break;
 							}
 							umundo::NodeStub nodeStub = _nodes[remoteUUID];
@@ -1020,7 +1020,7 @@ public:
 							if (buffer - (char*)zmq_msg_data(&message) != msgSize ||
 							        strlen(pubUUID) != 36 ||
 							        strlen(subUUID) != 36) {
-								LOG_ERR("Malformed SUBSCRIBE|UNSUBSCRIBE message received - ignoring");
+								UM_LOG_ERR("Malformed SUBSCRIBE|UNSUBSCRIBE message received - ignoring");
 								break;
 							}
 
@@ -1034,7 +1034,7 @@ public:
 								processNodeCommSubscriptions(nodeStub, nodeStub.getSubscriber(subUUID));
 							} else {
 								if (!nodeStub.getSubscriber(subUUID)) {
-									LOG_WARN("Got an unsubscription from an unknown subscriber!");
+									UM_LOG_WARN("Got an unsubscription from an unknown subscriber!");
 									break;
 								}
 								processNodeCommUnsubscriptions(nodeStub, nodeStub.getSubscriber(subUUID));
@@ -1042,7 +1042,7 @@ public:
 							break;
 						}
 						default:
-							LOG_WARN("Received unknown message type");
+							UM_LOG_WARN("Received unknown message type");
 						}
 					}
 
@@ -1125,12 +1125,12 @@ public:
 		if (_confirmedSubscribers.count(subId) > 0) {
 			_confirmedSubscribers.erase(subId);
 		} else {
-			LOG_WARN("Trying to remove unconfirmed subscriber: %s", subId.c_str());
+			UM_LOG_WARN("Trying to remove unconfirmed subscriber: %s", subId.c_str());
 		}
 		if (_confirmedSubscribers.count(channel) > 0) {
 			_confirmedSubscribers.erase(channel);
 		} else {
-			LOG_WARN("Trying to remove unconfirmed subscription: %s", channel.c_str());
+			UM_LOG_WARN("Trying to remove unconfirmed subscription: %s", channel.c_str());
 		}
 
 		std::map<std::string, umundo::Publisher>::iterator pubIter = _pubs.begin();

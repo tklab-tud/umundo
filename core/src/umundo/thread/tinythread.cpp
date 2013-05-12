@@ -89,7 +89,7 @@ void condition_variable::_wait(unsigned int ms) {
 		              (LPTSTR) &lpMsgBuf,
 		              0,
 		              NULL);
-		LOG_ERR("%s", lpMsgBuf);
+		UM_LOG_ERR("%s", lpMsgBuf);
 		LocalFree(lpMsgBuf);
 
 	}

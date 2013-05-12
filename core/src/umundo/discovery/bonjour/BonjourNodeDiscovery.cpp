@@ -65,10 +65,10 @@ shared_ptr<BonjourNodeDiscovery> BonjourNodeDiscovery::getInstance() {
 	if (_instance.get() == NULL) {
 		_instance = shared_ptr<BonjourNodeDiscovery>(new BonjourNodeDiscovery());
 #ifdef DISC_BONJOUR_EMBED
-		LOG_DEBUG("Initializing embedded mDNS server");
+		UM_LOG_DEBUG("Initializing embedded mDNS server");
 		int err = embedded_mDNSInit();
 		if (err) {
-			LOG_WARN("mDNS_Init returned error: %s", errCodeToString(err).c_str());
+			UM_LOG_WARN("mDNS_Init returned error: %s", errCodeToString(err).c_str());
 		}
 #endif
 		_instance->start();
@@ -154,7 +154,7 @@ void BonjourNodeDiscovery::run() {
 		tv.tv_sec  = BONJOUR_REPOLL_SEC;
 		tv.tv_usec = BONJOUR_REPOLL_USEC;
 		embedded_mDNSmainLoop(tv);
-    _monitor.signal();
+		_monitor.signal();
 		UMUNDO_UNLOCK(_mutex);
 		// give other threads a chance to react before locking again
 //#ifdef WIN32
@@ -168,7 +168,7 @@ void BonjourNodeDiscovery::run() {
 	fd_set readfds;
 	int nfds = -1;
 
-	LOG_DEBUG("Beginning select");
+	UM_LOG_DEBUG("Beginning select");
 	while(isStarted()) {
 		nfds = 0;
 		FD_ZERO(&readfds);
@@ -211,10 +211,10 @@ void BonjourNodeDiscovery::run() {
 			// timeout as no socket is selectable, just retry
 		} else {
 			if (errno != 0)
-				LOG_WARN("select failed %s", strerror(errno));
+				UM_LOG_WARN("select failed %s", strerror(errno));
 //#ifndef _DARWIN_UNLIMITED_SELECT
 			if (nfds > FD_SETSIZE)
-				LOG_WARN("number of file descriptors too large: %d of %d", nfds, FD_SETSIZE);
+				UM_LOG_WARN("number of file descriptors too large: %d of %d", nfds, FD_SETSIZE);
 //#endif
 			Thread::sleepMs(300);
 		}
@@ -227,7 +227,7 @@ void BonjourNodeDiscovery::run() {
  * Add a node to be discoverable by other nodes.
  */
 void BonjourNodeDiscovery::add(NodeImpl* node) {
-	LOG_INFO("Adding node %s", SHORT_UUID(node->getUUID()).c_str());
+	UM_LOG_INFO("Adding node %s", SHORT_UUID(node->getUUID()).c_str());
 	assert(node->getUUID().length() > 0);
 
 	ScopeLock lock(_mutex);
@@ -239,7 +239,7 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 	if (_localNodes.find(address) != _localNodes.end()) {
 		// there has to be a register client if we know the node
 		assert(_registerClients.find(address) != _registerClients.end());
-		LOG_WARN("Ignoring addition of node already added to discovery");
+		UM_LOG_WARN("Ignoring addition of node already added to discovery");
 		assert(validateState());
 		return;
 	}
@@ -279,20 +279,20 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 			foundNode->setDomain(domain);
 			foundNode->_regType = regtype;
 			foundNode->_interfacesIPv4[0] = "127.0.0.1"; // this might be a problem somewhen
-      
+
 			_queryToNodes[queryIter->second][node->getUUID()] = foundNode;
 			_nodeToQuery[(intptr_t)foundNode.get()] = queryIter->second;
-      
+
 			queryIter->second->found(NodeStub(foundNode));
 		}
 		queryIter++;
 	}
 #endif
 
-	LOG_DEBUG("Trying to register: %s.%s as %s",
-	          (name.length() == 0 ? "null" : name.substr(0, 8).c_str()),
-	          (domain.length() == 0 ? "null" : domain.substr(0, 8).c_str()),
-	          regtype.c_str());
+	UM_LOG_DEBUG("Trying to register: %s.%s as %s",
+	             (name.length() == 0 ? "null" : name.substr(0, 8).c_str()),
+	             (domain.length() == 0 ? "null" : domain.substr(0, 8).c_str()),
+	             regtype.c_str());
 
 	err = DNSServiceRegister(
 	          &registerClient,                                // uninitialized DNSServiceRef
@@ -321,23 +321,23 @@ void BonjourNodeDiscovery::add(NodeImpl* node) {
 		getInstance()->_registerClients[address] = registerClient;
 		getInstance()->_localNodes[address] = node;
 	} else {
-		LOG_ERR("DNSServiceRegister returned error %d", err);
+		UM_LOG_ERR("DNSServiceRegister returned error %d", err);
 	}
 #ifdef DISC_BONJOUR_EMBED
-  _monitor.wait(_mutex);
+	_monitor.wait(_mutex);
 #endif
-  
+
 	assert(validateState());
 }
 
 
 void BonjourNodeDiscovery::remove(NodeImpl* node) {
-	LOG_INFO("Removing node %s", SHORT_UUID(node->getUUID()).c_str());
+	UM_LOG_INFO("Removing node %s", SHORT_UUID(node->getUUID()).c_str());
 	ScopeLock lock(_mutex);
 
 	intptr_t address = (intptr_t)node;
 	if (_localNodes.find(address) == _localNodes.end()) {
-		LOG_WARN("Ignoring removal of unregistered node from discovery");
+		UM_LOG_WARN("Ignoring removal of unregistered node from discovery");
 		assert(validateState());
 		return;
 	}
@@ -353,9 +353,9 @@ void BonjourNodeDiscovery::remove(NodeImpl* node) {
 	_localNodes.erase(address);
 
 #ifdef DISC_BONJOUR_EMBED
-  _monitor.wait(_mutex);
+	_monitor.wait(_mutex);
 #endif
-  
+
 	assert(validateState());
 }
 
@@ -367,7 +367,7 @@ void BonjourNodeDiscovery::remove(NodeImpl* node) {
  * we will resolve its ip address.
  */
 void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
-	LOG_INFO("Adding query %p for nodes in domain '%s'", query.get(), query->getDomain().c_str());
+	UM_LOG_INFO("Adding query %p for nodes in domain '%s'", query.get(), query->getDomain().c_str());
 	DNSServiceErrorType err;
 	DNSServiceRef queryClient = NULL;
 
@@ -375,7 +375,7 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 	intptr_t address = (intptr_t)(query.get());
 
 	if (_queries.find(address) != _queries.end()) {
-		LOG_WARN("Already browsing for given query");
+		UM_LOG_WARN("Already browsing for given query");
 		assert(validateState());
 		return;
 	}
@@ -440,7 +440,7 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 		_queryClients[address] = queryClient;
 		_queries[address] = query;
 	} else {
-		LOG_WARN("DNSServiceBrowse returned error %d", err);
+		UM_LOG_WARN("DNSServiceBrowse returned error %d", err);
 	}
 //  _monitor.wait(_mutex);
 
@@ -448,13 +448,13 @@ void BonjourNodeDiscovery::browse(shared_ptr<NodeQuery> query) {
 }
 
 void BonjourNodeDiscovery::unbrowse(shared_ptr<NodeQuery> query) {
-	LOG_INFO("Removing query %p for nodes in %s", query.get(), query->getDomain().c_str());
+	UM_LOG_INFO("Removing query %p for nodes in %s", query.get(), query->getDomain().c_str());
 
 	ScopeLock lock(_mutex);
 	intptr_t address = (intptr_t)(query.get());
 
 	if (_queries.find(address) == _queries.end()) {
-		LOG_WARN("Unbrowsing query that was never added");
+		UM_LOG_WARN("Unbrowsing query that was never added");
 		assert(validateState());
 		return;
 	}
@@ -547,8 +547,8 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 	shared_ptr<BonjourNodeDiscovery> myself = getInstance();
 	UMUNDO_LOCK(myself->_mutex);
 
-	LOG_DEBUG("browseReply: %p received info on %s/%s as %s at if %d",
-	          queryAddr, SHORT_UUID(string(replyName)).c_str(), replyDomain, replyType, ifIndex);
+	UM_LOG_DEBUG("browseReply: %p received info on %s/%s as %s at if %d",
+	             queryAddr, SHORT_UUID(string(replyName)).c_str(), replyDomain, replyType, ifIndex);
 
 	assert(myself->_queries.find((intptr_t)queryAddr) != myself->_queries.end());
 	shared_ptr<NodeQuery> query = myself->_queries[(intptr_t)queryAddr];
@@ -574,7 +574,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 			} else if (strncmp(replyType + strlen(replyType) - 4, "udp", 3) == 0) {
 				node->setTransport("udp");
 			} else {
-				LOG_WARN("Unknown transport %s, defaulting to tcp", replyType + strlen(replyType) - 4);
+				UM_LOG_WARN("Unknown transport %s, defaulting to tcp", replyType + strlen(replyType) - 4);
 				node->setTransport("tcp");
 			}
 			node->_uuid = replyName;
@@ -595,7 +595,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 			// remember node
 			assert(getInstance()->_queryToNodes[query].find(replyName) == getInstance()->_queryToNodes[query].end());
 			getInstance()->_queryToNodes[query][replyName] = node;
-			LOG_INFO("Query %p discovered new node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
+			UM_LOG_INFO("Query %p discovered new node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
 		}
 		// even if we found the node before, add the new information
 		node->_domains.insert(replyDomain);
@@ -603,7 +603,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 	} else {
 		// remove or change the node or an interface
 		if(node.get() == NULL) {
-			LOG_WARN("Query %p reports removal of unknown or vanished node", queryAddr);
+			UM_LOG_WARN("Query %p reports removal of unknown or vanished node", queryAddr);
 			UMUNDO_UNLOCK(myself->_mutex);
 			return;
 		}
@@ -613,7 +613,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 		node->_interfacesIPv6.erase(ifIndex);
 		if (node->_interfaceIndices.empty()) {
 			// last interface was removed, node vanished
-			LOG_INFO("Query %p vanished node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
+			UM_LOG_INFO("Query %p vanished node %s", queryAddr, SHORT_UUID(node->getUUID()).c_str());
 			query->removed(NodeStub(node));
 			getInstance()->forgetRemoteNodesFDs(node);
 			assert(getInstance()->_nodeToQuery.find((intptr_t)node.get()) != getInstance()->_nodeToQuery.end());
@@ -666,7 +666,7 @@ void DNSSD_API BonjourNodeDiscovery::browseReply(
 					assert(node->_serviceResolveClients.find(*domainIter) == node->_serviceResolveClients.end());
 					node->_serviceResolveClients[*domainIter] = serviceResolveClient;
 				} else {
-					LOG_WARN("DNSServiceResolve returned error: %s", errCodeToString(err).c_str());
+					UM_LOG_WARN("DNSServiceResolve returned error: %s", errCodeToString(err).c_str());
 				}
 			}
 		}
@@ -693,11 +693,11 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 ) {
 
 	UMUNDO_LOCK(getInstance()->_mutex);
-	LOG_DEBUG("serviceResolveReply: info on node %s on %s:%d at if %d",
-	          SHORT_UUID(string(fullname)).c_str(),
-	          hosttarget,
-	          ntohs(opaqueport),
-	          interfaceIndex);
+	UM_LOG_DEBUG("serviceResolveReply: info on node %s on %s:%d at if %d",
+	             SHORT_UUID(string(fullname)).c_str(),
+	             hosttarget,
+	             ntohs(opaqueport),
+	             interfaceIndex);
 	assert(getInstance()->validateState());
 
 	if(errorCode == kDNSServiceErr_NoError) {
@@ -755,12 +755,12 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 #endif
 		} else {
 			if (err != kDNSServiceErr_NoError) {
-				LOG_ERR("DNSServiceGetAddrInfo returned error: %s", errCodeToString(err).c_str());
+				UM_LOG_ERR("DNSServiceGetAddrInfo returned error: %s", errCodeToString(err).c_str());
 			} else {
-				LOG_ERR("DNSServiceGetAddrInfo did not return a DNSServiceRef");			
+				UM_LOG_ERR("DNSServiceGetAddrInfo did not return a DNSServiceRef");
 			}
 		}
-		
+
 		if (!(flags & kDNSServiceFlagsMoreComing)) {
 			// remove the service resolver for this domain
 			assert(node->_serviceResolveClients.find(node->_domain) != node->_serviceResolveClients.end());
@@ -774,7 +774,7 @@ void DNSSD_API BonjourNodeDiscovery::serviceResolveReply(
 			node->_serviceResolveClients.erase(node->_domain);
 		}
 	} else {
-		LOG_WARN("serviceResolveReply called with error: %d", errorCode);
+		UM_LOG_WARN("serviceResolveReply called with error: %d", errorCode);
 	}
 	assert(getInstance()->validateState());
 	UMUNDO_UNLOCK(getInstance()->_mutex);
@@ -796,7 +796,7 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 
 	UMUNDO_LOCK(getInstance()->_mutex);
 	if (getInstance()->_nodeToQuery.find((intptr_t)context) == getInstance()->_nodeToQuery.end()) {
-		LOG_WARN("Ignoring address information for unknown node %p", context);
+		UM_LOG_WARN("Ignoring address information for unknown node %p", context);
 		UMUNDO_UNLOCK(getInstance()->_mutex);
 		return;
 	}
@@ -807,17 +807,17 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 
 	node->setLastSeen(Thread::getTimeStampMs());
 
-//  LOG_DEBUG("addrInfoReply: Got info on %s at if %d", hostname, interfaceIndex);
+//  UM_LOG_DEBUG("addrInfoReply: Got info on %s at if %d", hostname, interfaceIndex);
 
 	if (node->_interfaceIndices.find(interfaceIndex) == node->_interfaceIndices.end()) {
-		LOG_WARN("Got information on unknown interface index %d", interfaceIndex);
+		UM_LOG_WARN("Got information on unknown interface index %d", interfaceIndex);
 		assert(getInstance()->validateState());
 		UMUNDO_UNLOCK(getInstance()->_mutex);
 		return;
 	}
 
 	if (!address || (address->sa_family != AF_INET && address->sa_family != AF_INET6)) {
-		LOG_ERR("Address family not valid or no address given");
+		UM_LOG_ERR("Address family not valid or no address given");
 		assert(getInstance()->validateState());
 		UMUNDO_UNLOCK(getInstance()->_mutex);
 		return;
@@ -833,11 +833,11 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 #ifdef DISC_BONJOUR_EMBED
 			// Bonjour reports weird ip addresses after we found the first one - we do get a ttl of 60 for these though
 			if (ttl == 60) {
-				LOG_DEBUG("addrInfoReply: %p reported weird IP address %s - ignoring", context, addr);
+				UM_LOG_DEBUG("addrInfoReply: %p reported weird IP address %s - ignoring", context, addr);
 			} else {
 #endif
 				node->_interfacesIPv4[interfaceIndex] = addr;
-				LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV4", context, hostname, addr, interfaceIndex);
+				UM_LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV4", context, hostname, addr, interfaceIndex);
 #ifdef DISC_BONJOUR_EMBED
 			}
 #endif
@@ -850,7 +850,7 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 			         b[0x0], b[0x1], b[0x2], b[0x3], b[0x4], b[0x5], b[0x6], b[0x7],
 			         b[0x8], b[0x9], b[0xA], b[0xB], b[0xC], b[0xD], b[0xE], b[0xF]);
 			node->_interfacesIPv6[interfaceIndex] = addr;
-			LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV6", context, hostname, addr, interfaceIndex);
+			UM_LOG_DEBUG("addrInfoReply: %p found %s as %s at if %d IPV6", context, hostname, addr, interfaceIndex);
 
 			free(addr);
 		}
@@ -858,15 +858,15 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 	}
 	case kDNSServiceErr_NoSuchRecord:
 		if (address && address->sa_family == AF_INET) {
-			LOG_INFO("addrInfoReply: %p found kDNSServiceErr_NoSuchRecord for IPv4 %s at if %d", context, hostname, interfaceIndex);
+			UM_LOG_INFO("addrInfoReply: %p found kDNSServiceErr_NoSuchRecord for IPv4 %s at if %d", context, hostname, interfaceIndex);
 			node->_interfacesIPv4[interfaceIndex] = "";
 		} else if (address->sa_family == AF_INET6) {
-			LOG_DEBUG("addrInfoReply: %p found kDNSServiceErr_NoSuchRecord for IPv6 %s at if %d", context, hostname, interfaceIndex);
+			UM_LOG_DEBUG("addrInfoReply: %p found kDNSServiceErr_NoSuchRecord for IPv6 %s at if %d", context, hostname, interfaceIndex);
 			node->_interfacesIPv6[interfaceIndex] = "";
 		}
 		break;
 	default:
-		LOG_WARN("addrInfoReply error %d for %s at interface %d", errorCode, hostname, interfaceIndex);
+		UM_LOG_WARN("addrInfoReply error %d for %s at interface %d", errorCode, hostname, interfaceIndex);
 		break;
 	}
 	if (node->_interfacesIPv6.find(interfaceIndex) != node->_interfacesIPv6.end() &&
@@ -894,7 +894,7 @@ void DNSSD_API BonjourNodeDiscovery::addrInfoReply(
 		}
 //      node->_interfaceIndices.size() == node->_interfacesIPv6.size()) {
 		// we resolved all interfaces
-		//LOG_DEBUG("%p sufficiently resolved node %s", query.get(), SHORT_UUID(node->getUUID()).c_str());
+		//UM_LOG_DEBUG("%p sufficiently resolved node %s", query.get(), SHORT_UUID(node->getUUID()).c_str());
 	}
 
 	assert(getInstance()->validateState());
@@ -921,9 +921,9 @@ void DNSSD_API BonjourNodeDiscovery::registerReply(
     void                     *context // address of node
 ) {
 
-	LOG_DEBUG("registerReply: %s %s/%s as %s", (flags & kDNSServiceFlagsAdd ? "Registered" : "Unregistered"), SHORT_UUID(string(name)).c_str(), domain, regtype);
+	UM_LOG_DEBUG("registerReply: %s %s/%s as %s", (flags & kDNSServiceFlagsAdd ? "Registered" : "Unregistered"), SHORT_UUID(string(name)).c_str(), domain, regtype);
 	if (errorCode == kDNSServiceErr_NameConflict)
-		LOG_WARN("Name conflict with UUIDs?!");
+		UM_LOG_WARN("Name conflict with UUIDs?!");
 
 	switch (errorCode) {
 	case kDNSServiceErr_NoError: {
@@ -977,7 +977,7 @@ bool BonjourNodeDiscovery::validateState() {
 		assert(_registerClients.find(localNodeIter->first) != _registerClients.end());
 	}
 	if (_registerClients.size() != _localNodes.size()) {
-		LOG_ERR("Found %d register clients but %d nodes", _registerClients.size(), _localNodes.size());
+		UM_LOG_ERR("Found %d register clients but %d nodes", _registerClients.size(), _localNodes.size());
 		assert(_registerClients.size() == _localNodes.size());
 	}
 
@@ -1037,121 +1037,121 @@ bool BonjourNodeDiscovery::validateState() {
 	if (socketFDs.size() > 0) {
 		set<int>::iterator socketFDIter;
 		for (socketFDIter = socketFDs.begin(); socketFDIter != socketFDs.end(); socketFDIter++) {
-			LOG_ERR("Pending filehandle %d", (*socketFDIter));
+			UM_LOG_ERR("Pending filehandle %d", (*socketFDIter));
 		}
 	}
 	assert(socketFDs.size() == 0);
 #endif
 
-//  LOG_DEBUG("Validated state: %d remote nodes, %d local nodes, %d queries", _nodeToQuery.size(), _localNodes.size(), _activeFDs.size());
+//  UM_LOG_DEBUG("Validated state: %d remote nodes, %d local nodes, %d queries", _nodeToQuery.size(), _localNodes.size(), _activeFDs.size());
 	UMUNDO_UNLOCK(_mutex);
 	return true;
 }
 
 #if 0
-	kDNSServiceErr_NoError                   = 0,
-	kDNSServiceErr_Unknown                   = -65537,  /* 0xFFFE FFFF */
-	kDNSServiceErr_NoSuchName                = -65538,
-	kDNSServiceErr_NoMemory                  = -65539,
-	kDNSServiceErr_BadParam                  = -65540,
-	kDNSServiceErr_BadReference              = -65541,
-	kDNSServiceErr_BadState                  = -65542,
-	kDNSServiceErr_BadFlags                  = -65543,
-	kDNSServiceErr_Unsupported               = -65544,
-	kDNSServiceErr_NotInitialized            = -65545,
-	kDNSServiceErr_AlreadyRegistered         = -65547,
-	kDNSServiceErr_NameConflict              = -65548,
-	kDNSServiceErr_Invalid                   = -65549,
-	kDNSServiceErr_Firewall                  = -65550,
-	kDNSServiceErr_Incompatible              = -65551,  /* client library incompatible with daemon */
-	kDNSServiceErr_BadInterfaceIndex         = -65552,
-	kDNSServiceErr_Refused                   = -65553,
-	kDNSServiceErr_NoSuchRecord              = -65554,
-	kDNSServiceErr_NoAuth                    = -65555,
-	kDNSServiceErr_NoSuchKey                 = -65556,
-	kDNSServiceErr_NATTraversal              = -65557,
-	kDNSServiceErr_DoubleNAT                 = -65558,
-	kDNSServiceErr_BadTime                   = -65559,  /* Codes up to here existed in Tiger */
-	kDNSServiceErr_BadSig                    = -65560,
-	kDNSServiceErr_BadKey                    = -65561,
-	kDNSServiceErr_Transient                 = -65562,
-	kDNSServiceErr_ServiceNotRunning         = -65563,  /* Background daemon not running */
-	kDNSServiceErr_NATPortMappingUnsupported = -65564,  /* NAT doesn't support NAT-PMP or UPnP */
-	kDNSServiceErr_NATPortMappingDisabled    = -65565,  /* NAT supports NAT-PMP or UPnP but it's disabled by the administrator */
-	kDNSServiceErr_NoRouter                  = -65566,  /* No router currently configured (probably no network connectivity) */
-	kDNSServiceErr_PollingMode               = -65567,
-	kDNSServiceErr_Timeout                   = -65568
+kDNSServiceErr_NoError                   = 0,
+kDNSServiceErr_Unknown                   = -65537,  /* 0xFFFE FFFF */
+kDNSServiceErr_NoSuchName                = -65538,
+kDNSServiceErr_NoMemory                  = -65539,
+kDNSServiceErr_BadParam                  = -65540,
+kDNSServiceErr_BadReference              = -65541,
+kDNSServiceErr_BadState                  = -65542,
+kDNSServiceErr_BadFlags                  = -65543,
+kDNSServiceErr_Unsupported               = -65544,
+kDNSServiceErr_NotInitialized            = -65545,
+kDNSServiceErr_AlreadyRegistered         = -65547,
+kDNSServiceErr_NameConflict              = -65548,
+kDNSServiceErr_Invalid                   = -65549,
+kDNSServiceErr_Firewall                  = -65550,
+kDNSServiceErr_Incompatible              = -65551,  /* client library incompatible with daemon */
+kDNSServiceErr_BadInterfaceIndex         = -65552,
+kDNSServiceErr_Refused                   = -65553,
+kDNSServiceErr_NoSuchRecord              = -65554,
+kDNSServiceErr_NoAuth                    = -65555,
+kDNSServiceErr_NoSuchKey                 = -65556,
+kDNSServiceErr_NATTraversal              = -65557,
+kDNSServiceErr_DoubleNAT                 = -65558,
+kDNSServiceErr_BadTime                   = -65559,  /* Codes up to here existed in Tiger */
+kDNSServiceErr_BadSig                    = -65560,
+kDNSServiceErr_BadKey                    = -65561,
+kDNSServiceErr_Transient                 = -65562,
+kDNSServiceErr_ServiceNotRunning         = -65563,  /* Background daemon not running */
+kDNSServiceErr_NATPortMappingUnsupported = -65564,  /* NAT doesn't support NAT-PMP or UPnP */
+kDNSServiceErr_NATPortMappingDisabled    = -65565,  /* NAT supports NAT-PMP or UPnP but it's disabled by the administrator */
+kDNSServiceErr_NoRouter                  = -65566,  /* No router currently configured (probably no network connectivity) */
+kDNSServiceErr_PollingMode               = -65567,
+kDNSServiceErr_Timeout                   = -65568
 #endif
 
 const std::string BonjourNodeDiscovery::errCodeToString(DNSServiceErrorType errType) {
 	switch (errType) {
-		case kDNSServiceErr_NoError:
-			return "kDNSServiceErr_NoError";
-		case kDNSServiceErr_Unknown:
-			return "kDNSServiceErr_Unknown";
-		case kDNSServiceErr_NoSuchName:
-			return "kDNSServiceErr_NoSuchName";
-		case kDNSServiceErr_NoMemory:
-			return "kDNSServiceErr_NoMemory";
-		case kDNSServiceErr_BadParam:
-			return "kDNSServiceErr_BadParam";
-		case kDNSServiceErr_BadReference:
-			return "kDNSServiceErr_BadReference";
-		case kDNSServiceErr_BadState:
-			return "kDNSServiceErr_BadState";
-		case kDNSServiceErr_BadFlags:
-			return "kDNSServiceErr_BadFlags";
-		case kDNSServiceErr_Unsupported:
-			return "kDNSServiceErr_Unsupported";
-		case kDNSServiceErr_NotInitialized:
-			return "kDNSServiceErr_NotInitialized";
-		case kDNSServiceErr_AlreadyRegistered:
-			return "kDNSServiceErr_AlreadyRegistered";
-		case kDNSServiceErr_NameConflict:
-			return "kDNSServiceErr_NameConflict";
-		case kDNSServiceErr_Invalid:
-			return "kDNSServiceErr_Invalid";
-		case kDNSServiceErr_Firewall:
-			return "kDNSServiceErr_Firewall";
-		case kDNSServiceErr_Incompatible:
-			return "kDNSServiceErr_Incompatible (client library incompatible with daemon)";
-		case kDNSServiceErr_BadInterfaceIndex:
-			return "kDNSServiceErr_BadInterfaceIndex";
-		case kDNSServiceErr_Refused:
-			return "kDNSServiceErr_Refused";
-		case kDNSServiceErr_NoSuchRecord:
-			return "kDNSServiceErr_NoSuchRecord";
-		case kDNSServiceErr_NoAuth:
-			return "kDNSServiceErr_NoAuth";
-		case kDNSServiceErr_NoSuchKey:
-			return "kDNSServiceErr_NoSuchKey";
-		case kDNSServiceErr_NATTraversal:
-			return "kDNSServiceErr_NATTraversal";
-		case kDNSServiceErr_DoubleNAT:
-			return "kDNSServiceErr_DoubleNAT";
-		case kDNSServiceErr_BadTime:
-			return "kDNSServiceErr_BadTime";
-		case kDNSServiceErr_BadSig:
-			return "kDNSServiceErr_BadSig";
-		case kDNSServiceErr_BadKey:
-			return "kDNSServiceErr_BadKey";
-		case kDNSServiceErr_Transient:
-			return "kDNSServiceErr_Transient";
-		case kDNSServiceErr_ServiceNotRunning:
-			return "kDNSServiceErr_ServiceNotRunning (Background daemon not running)";
-		case kDNSServiceErr_NATPortMappingUnsupported:
-			return "kDNSServiceErr_NATPortMappingUnsupported (NAT doesn't support NAT-PMP or UPnP)";
-		case kDNSServiceErr_NATPortMappingDisabled:
-			return "kDNSServiceErr_NATPortMappingDisabled (NAT supports NAT-PMP or UPnP but it's disabled by the administrator)";
-		case kDNSServiceErr_NoRouter:
-			return "kDNSServiceErr_NoRouter (No router currently configured (probably no network connectivity))";
-		case kDNSServiceErr_PollingMode:
-			return "kDNSServiceErr_PollingMode";
-		case kDNSServiceErr_Timeout:
-			return "kDNSServiceErr_Timeout";
+	case kDNSServiceErr_NoError:
+		return "kDNSServiceErr_NoError";
+	case kDNSServiceErr_Unknown:
+		return "kDNSServiceErr_Unknown";
+	case kDNSServiceErr_NoSuchName:
+		return "kDNSServiceErr_NoSuchName";
+	case kDNSServiceErr_NoMemory:
+		return "kDNSServiceErr_NoMemory";
+	case kDNSServiceErr_BadParam:
+		return "kDNSServiceErr_BadParam";
+	case kDNSServiceErr_BadReference:
+		return "kDNSServiceErr_BadReference";
+	case kDNSServiceErr_BadState:
+		return "kDNSServiceErr_BadState";
+	case kDNSServiceErr_BadFlags:
+		return "kDNSServiceErr_BadFlags";
+	case kDNSServiceErr_Unsupported:
+		return "kDNSServiceErr_Unsupported";
+	case kDNSServiceErr_NotInitialized:
+		return "kDNSServiceErr_NotInitialized";
+	case kDNSServiceErr_AlreadyRegistered:
+		return "kDNSServiceErr_AlreadyRegistered";
+	case kDNSServiceErr_NameConflict:
+		return "kDNSServiceErr_NameConflict";
+	case kDNSServiceErr_Invalid:
+		return "kDNSServiceErr_Invalid";
+	case kDNSServiceErr_Firewall:
+		return "kDNSServiceErr_Firewall";
+	case kDNSServiceErr_Incompatible:
+		return "kDNSServiceErr_Incompatible (client library incompatible with daemon)";
+	case kDNSServiceErr_BadInterfaceIndex:
+		return "kDNSServiceErr_BadInterfaceIndex";
+	case kDNSServiceErr_Refused:
+		return "kDNSServiceErr_Refused";
+	case kDNSServiceErr_NoSuchRecord:
+		return "kDNSServiceErr_NoSuchRecord";
+	case kDNSServiceErr_NoAuth:
+		return "kDNSServiceErr_NoAuth";
+	case kDNSServiceErr_NoSuchKey:
+		return "kDNSServiceErr_NoSuchKey";
+	case kDNSServiceErr_NATTraversal:
+		return "kDNSServiceErr_NATTraversal";
+	case kDNSServiceErr_DoubleNAT:
+		return "kDNSServiceErr_DoubleNAT";
+	case kDNSServiceErr_BadTime:
+		return "kDNSServiceErr_BadTime";
+	case kDNSServiceErr_BadSig:
+		return "kDNSServiceErr_BadSig";
+	case kDNSServiceErr_BadKey:
+		return "kDNSServiceErr_BadKey";
+	case kDNSServiceErr_Transient:
+		return "kDNSServiceErr_Transient";
+	case kDNSServiceErr_ServiceNotRunning:
+		return "kDNSServiceErr_ServiceNotRunning (Background daemon not running)";
+	case kDNSServiceErr_NATPortMappingUnsupported:
+		return "kDNSServiceErr_NATPortMappingUnsupported (NAT doesn't support NAT-PMP or UPnP)";
+	case kDNSServiceErr_NATPortMappingDisabled:
+		return "kDNSServiceErr_NATPortMappingDisabled (NAT supports NAT-PMP or UPnP but it's disabled by the administrator)";
+	case kDNSServiceErr_NoRouter:
+		return "kDNSServiceErr_NoRouter (No router currently configured (probably no network connectivity))";
+	case kDNSServiceErr_PollingMode:
+		return "kDNSServiceErr_PollingMode";
+	case kDNSServiceErr_Timeout:
+		return "kDNSServiceErr_Timeout";
 	}
 	return "unknown error";
 }
 
-	
+
 }

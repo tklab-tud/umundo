@@ -57,7 +57,7 @@ const std::string BonjourNodeStub::getIP() const {
 			return ifIter->second;
 		ifIter++;
 	}
-	LOG_ERR("We did not found a valid address yet.");
+	UM_LOG_ERR("We did not found a valid address yet.");
 	return _interfacesIPv4.begin()->second;
 }
 

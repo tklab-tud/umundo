@@ -46,21 +46,21 @@ void ZeroMQPublisher::init(boost::shared_ptr<Configuration> config) {
 
 	_transport = "tcp";
 
-	(_pubSocket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PUB)) || LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
+	(_pubSocket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PUB)) || UM_LOG_WARN("zmq_socket: %s",zmq_strerror(errno));
 
 	int hwm = NET_ZEROMQ_SND_HWM;
 	std::string pubId("um.pub.intern." + _uuid);
 
-//	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
-	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+//	zmq_setsockopt(_pubSocket, ZMQ_IDENTITY, pubId.c_str(), pubId.length()) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_bind(_pubSocket, std::string("inproc://" + pubId).c_str());
 
-	LOG_INFO("creating internal publisher for %s on %s", _channelName.c_str(), std::string("inproc://" + pubId).c_str());
+	UM_LOG_INFO("creating internal publisher for %s on %s", _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
 }
 
 ZeroMQPublisher::~ZeroMQPublisher() {
-	LOG_INFO("deleting publisher for %s", _channelName.c_str());
+	UM_LOG_INFO("deleting publisher for %s", _channelName.c_str());
 
 	zmq_close(_pubSocket);
 
@@ -118,13 +118,13 @@ void ZeroMQPublisher::addedSubscriber(const std::string remoteId, const std::str
 	ScopeLock lock(_mutex);
 	_subUUIDs.insert(subId);
 
-	LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
+	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL)
 		_greeter->welcome(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), remoteId, subId);
 
 	if (_queuedMessages.find(subId) != _queuedMessages.end()) {
-		LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[subId].size());
+		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[subId].size());
 		std::list<std::pair<uint64_t, Message*> >::iterator msgIter = _queuedMessages[subId].begin();
 		while(msgIter != _queuedMessages[subId].end()) {
 			send(msgIter->second);
@@ -142,7 +142,7 @@ void ZeroMQPublisher::removedSubscriber(const std::string remoteId, const std::s
 		return;
 	_subUUIDs.erase(subId);
 
-	LOG_INFO("Publisher %s lost subscriber %s from node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
+	UM_LOG_INFO("Publisher %s lost subscriber %s from node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL)
 		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), remoteId, subId);
@@ -151,7 +151,7 @@ void ZeroMQPublisher::removedSubscriber(const std::string remoteId, const std::s
 
 void ZeroMQPublisher::send(Message* msg) {
 	if (_isSuspended) {
-		LOG_WARN("Not sending message on suspended publisher");
+		UM_LOG_WARN("Not sending message on suspended publisher");
 		return;
 	}
 
@@ -160,7 +160,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
 		if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end() && !msg->isQueued()) {
-			LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
+			UM_LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
 			Message* queuedMsg = new Message(*msg); // copy message
 			queuedMsg->setQueued(true);
 			_queuedMessages[msg->getMeta("um.sub")].push_back(std::make_pair(Thread::getTimeStampMs(), queuedMsg));
@@ -184,8 +184,8 @@ void ZeroMQPublisher::send(Message* msg) {
 		metaIter++;
 	}
 
-	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// all our meta information
 	for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
@@ -216,15 +216,15 @@ void ZeroMQPublisher::send(Message* msg) {
 		((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length() + 1 + (metaIter->second).length()] = '\0';
 		assert(strlen(writePtr) == (metaIter->second).length());
 
-		zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&metaMsg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&metaMsg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 
 	// data as the second part of a multipart message
 	zmq_msg_t publication;
 	ZMQ_PREPARE_DATA(publication, msg->data(), msg->size());
-	zmq_sendmsg(_pubSocket, &publication, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&publication) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+	zmq_sendmsg(_pubSocket, &publication, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+	zmq_msg_close(&publication) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 }
 
 

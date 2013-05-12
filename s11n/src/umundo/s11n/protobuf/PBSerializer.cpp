@@ -124,7 +124,7 @@ void PBSerializer::addProto(const std::string& dirOrFile) {
 
 void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer) {
 
-  // relative dir or file is . or ..
+	// relative dir or file is . or ..
 	if (dirOrFile.length() > 0 && dirOrFile.find_last_of(".") == dirOrFile.size() - 1)
 		return;
 
@@ -135,7 +135,7 @@ void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string
 		DIR *dp;
 		dp = opendir((dirRoot + PATH_SEPERATOR + dirOrFile).c_str());
 		if (dp == NULL) {
-			LOG_ERR("Error opening directory '%s': %s", dirOrFile.c_str(), strerror(errno));
+			UM_LOG_ERR("Error opening directory '%s': %s", dirOrFile.c_str(), strerror(errno));
 			return;
 		}
 		struct dirent* entry;
@@ -159,14 +159,14 @@ void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string
 	}
 
 	if (dirOrFile.length() > 6 && dirOrFile.substr(dirOrFile.length() - 6, 6).compare(".proto") == 0) {
-    const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
+		const google::protobuf::FileDescriptor* fileDesc = importer->Import(dirOrFile.substr(1, dirOrFile.length() - 1));
 		if (fileDesc != NULL) {
 			for (int j = 0; j < fileDesc->message_type_count(); j++) {
-				LOG_INFO("Added generic description for serializable type %s from .proto file", fileDesc->message_type(j)->name().c_str());
+				UM_LOG_INFO("Added generic description for serializable type %s from .proto file", fileDesc->message_type(j)->name().c_str());
 				descs[fileDesc->message_type(j)->name()] = fileDesc->message_type(j);
 			}
 		} else {
-			LOG_ERR("Could not parse %s as .proto file", dirOrFile.c_str());
+			UM_LOG_ERR("Could not parse %s as .proto file", dirOrFile.c_str());
 		}
 	} else {
 		std::ifstream file((dirRoot + PATH_SEPERATOR + dirOrFile).c_str(), std::ios::in);
@@ -181,7 +181,7 @@ void PBSerializer::addProtoRecurse(const std::string& dirRoot, const std::string
 				addProto(depProto);
 			}
 			for (int j = 0; j < fdProto.message_type_size(); j++) {
-				LOG_INFO("Added generic description for serializable type %s form .desc file", fdProto.message_type(j).name().c_str());
+				UM_LOG_INFO("Added generic description for serializable type %s form .desc file", fdProto.message_type(j).name().c_str());
 			}
 			descPool->BuildFile(fdProto);
 		}
@@ -194,14 +194,14 @@ bool PBSerializer::isDir(const std::string& dirOrFile) {
 	status = stat (dirOrFile.c_str(), &dirStat);
 
 	if (status != 0) {
-		LOG_ERR("Cannot open %s: %s", dirOrFile.c_str(), strerror(errno));
+		UM_LOG_ERR("Cannot open %s: %s", dirOrFile.c_str(), strerror(errno));
 		return false;
 	}
 	return((bool)(S_ISDIR (dirStat.st_mode)));
 }
 
 void PBErrorReporter::AddError(const string & filename, int line, int column, const string & message) {
-	LOG_ERR("filename %s:%d:%d: %s", filename.c_str(), line, column, message.c_str());
+	UM_LOG_ERR("filename %s:%d:%d: %s", filename.c_str(), line, column, message.c_str());
 }
 
 }

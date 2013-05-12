@@ -127,7 +127,7 @@ void SCache::update() {
 	_currSize = pSize;
 
 	if (_currSize > _maxSize)
-		LOG_WARN("Could not get cache to %d bytes, will be %d bytes", _maxSize, _currSize);
+		UM_LOG_WARN("Could not get cache to %d bytes, will be %d bytes", _maxSize, _currSize);
 
 	set<SCacheItem*>::iterator itemIter = _cacheItems.begin();
 	while(itemIter != _cacheItems.end()) {
@@ -224,7 +224,7 @@ void SCache::remove(SCacheItem* item) {
 		item->_cache = NULL;
 		_cacheItems.erase(item);
 	} else {
-		LOG_WARN("Cannot remove unknown item");
+		UM_LOG_WARN("Cannot remove unknown item");
 	}
 	dirty();
 }

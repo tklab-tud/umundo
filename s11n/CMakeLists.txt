@@ -72,7 +72,7 @@ if (APPLE OR IOS)
 	include_directories(${PROJECT_SOURCE_DIR}/core/bindings/)
 endif()
 
-LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
+#LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
 
 ############################################################
 # setup umundoserial library
@@ -81,6 +81,7 @@ LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
 LIST(SORT UMUNDOS11N_HEADER_FILES)
 
 add_library(umundoserial ${UMUNDOS11N_FILES} ${UMUNDOS11N_HEADER_FILES})
+set_target_properties(umundoserial PROPERTIES SOVERSION ${UMUNDO_VERSION})
 target_link_libraries(umundoserial ${UMUNDOS11N_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOS11N_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundoserial COMPONENT libraryS11N)

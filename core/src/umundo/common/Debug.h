@@ -27,18 +27,18 @@
 #include <stdarg.h> ///< variadic functions
 
 /// Log a message with error priority
-#define LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
+#define UM_LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
+#define UM_LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
+#define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
+#define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
 
 // never strip logging
 #if 0
 #ifndef BUILD_DEBUG
-#define LOG_ERR(fmt, ...) 1
-#define LOG_WARN(fmt, ...) 1
-#define LOG_INFO(fmt, ...) 1
-#define LOG_DEBUG(fmt, ...) 1
+#define UM_LOG_ERR(fmt, ...) 1
+#define UM_LOG_WARN(fmt, ...) 1
+#define UM_LOG_INFO(fmt, ...) 1
+#define UM_LOG_DEBUG(fmt, ...) 1
 #endif
 #endif
 
@@ -54,15 +54,15 @@ namespace umundo {
  * Macros and static functions used for debugging.
  *
  * All umundo logging is to be done using one of the following macros:
- * - #LOG_ERR(fmt, ...)
- * - #LOG_WARN(fmt, ...)
- * - #LOG_INFO(fmt, ...)
- * - #LOG_DEBUG(fmt, ...)
+ * - #UM_LOG_ERR(fmt, ...)
+ * - #UM_LOG_WARN(fmt, ...)
+ * - #UM_LOG_INFO(fmt, ...)
+ * - #UM_LOG_DEBUG(fmt, ...)
  *
  * These macros will take care of calling Debug::logMsg() for you. By using macros, we can simply remove them in release builds.
  * The macros will return a boolean to allow logging in lazy evaluated expressions:
  *
- * trueForSuccess() || LOG_WARN("Failed to succeed");
+ * trueForSuccess() || UM_LOG_WARN("Failed to succeed");
  */
 class DLLEXPORT Debug {
 public:

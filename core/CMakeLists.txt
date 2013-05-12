@@ -139,7 +139,7 @@ if (APPLE)
 	LIST(APPEND UMUNDOCORE_LIBRARIES ${FOUNDATION})
 endif()
 
-LIST(APPEND UMUNDOCORE_LIBRARIES umundocore)
+#LIST(APPEND UMUNDOCORE_LIBRARIES umundocore)
 
 ############################################################
 # process other directories
@@ -154,6 +154,7 @@ add_subdirectory(bindings)
 LIST(SORT UMUNDOCORE_HEADER_FILES)
 
 add_library(umundocore ${UMUNDOCORE_FILES} ${UMUNDOCORE_HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
+set_target_properties(umundocore PROPERTIES SOVERSION ${UMUNDO_VERSION})
 target_link_libraries(umundocore ${UMUNDOCORE_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOCORE_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundocore COMPONENT libraryCore)

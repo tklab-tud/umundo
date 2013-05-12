@@ -52,7 +52,7 @@ std::set<umundo::Subscriber> ServiceManager::getSubscribers() {
  */
 void ServiceManager::welcome(Publisher pub, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
-	LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
+	UM_LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
 	map<ServiceFilter, ResultSet<ServiceDescription>*>::iterator queryIter = _localQueries.begin();
 	while (queryIter != _localQueries.end()) {
 		Message* queryMsg = queryIter->first.toMessage();
@@ -78,7 +78,7 @@ void ServiceManager::welcome(Publisher pub, const string& nodeId, const string& 
  */
 void ServiceManager::farewell(Publisher pub, const string& nodeId, const string& subId) {
 	ScopeLock lock(_mutex);
-	LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
+	UM_LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 
 	// did this publisher responded to our queries before?
 	if (_remoteSvcDesc.find(subId) != _remoteSvcDesc.end()) {
@@ -137,7 +137,7 @@ void ServiceManager::startQuery(const ServiceFilter& filter, ResultSet<ServiceDe
 	queryMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 
 	_svcPub->send(queryMsg);
-	LOG_INFO("Sending new query to %d ServiceManagers", _svcPub->waitForSubscribers(0));
+	UM_LOG_INFO("Sending new query to %d ServiceManagers", _svcPub->waitForSubscribers(0));
 	delete queryMsg;
 }
 
@@ -160,7 +160,7 @@ ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter) {
 ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int timeout) {
 	if(_svcPub->waitForSubscribers(1, timeout) < 1) {
 		// there is no other ServiceManager yet
-		LOG_INFO("Failed to find another ServiceManager");
+		UM_LOG_INFO("Failed to find another ServiceManager");
 		return ServiceDescription();
 	}
 
@@ -171,7 +171,7 @@ ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int time
 	findMsg->putMeta("um.rpc.mgrId", _svcSub->getUUID());
 //	Thread::sleepMs(1000);
 	if(_findRequests.find(reqId) != _findRequests.end())
-		LOG_WARN("Find request %s already received", reqId.c_str());
+		UM_LOG_WARN("Find request %s already received", reqId.c_str());
 	_findRequests[reqId] = new Monitor();
 
 	_svcPub->send(findMsg);
@@ -183,7 +183,7 @@ ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int time
 	_findRequests.erase(reqId);
 
 	if (_findResponses.find(reqId) == _findResponses.end()) {
-		LOG_INFO("Failed to find %s", svcFilter.getServiceName().c_str());
+		UM_LOG_INFO("Failed to find %s", svcFilter.getServiceName().c_str());
 		return NULL;
 	}
 
@@ -208,7 +208,7 @@ std::set<ServiceDescription> ServiceManager::findLocal(const ServiceFilter& svcF
 	while(svcDescIter != _localSvcDesc.end()) {
 		if (svcFilter.matches(svcDescIter->second)) {
 			foundSvcs.insert(svcDescIter->second);
-			LOG_INFO("we have a match for %s", svcFilter.getServiceName().c_str());
+			UM_LOG_INFO("we have a match for %s", svcFilter.getServiceName().c_str());
 		}
 		svcDescIter++;
 	}
@@ -255,7 +255,7 @@ void ServiceManager::receive(Message* msg) {
 		ServiceFilter filter(msg);
 		_remoteQueries[filter.getUUID()] = filter;
 
-		LOG_INFO("Received query for '%s'", filter._svcName.c_str());
+		UM_LOG_INFO("Received query for '%s'", filter._svcName.c_str());
 
 		// do we have such a service?
 		std::set<ServiceDescription> foundSvcs = findLocal(filter);

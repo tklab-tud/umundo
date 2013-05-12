@@ -31,27 +31,27 @@
 
 /// Send uuid as first message in envelope
 #define ZMQ_SEND_IDENTITY(msg, uuid, socket) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, uuid.length()) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, uuid.length()) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), uuid.c_str(), uuid.length()); \
-zmq_sendmsg(socket, &msg, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
-zmq_msg_close(&msg) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+zmq_sendmsg(socket, &msg, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&msg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 /// Initialize a zeromq message with a given size
 #define ZMQ_PREPARE(msg, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));
 
 /// Initialize a zeromq message with a given size and memcpy data
 #define ZMQ_PREPARE_DATA(msg, data, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), data, size);
 
 /// Initialize a zeromq message with a given null-terminated string
 #define ZMQ_PREPARE_STRING(msg, data, size) \
-zmq_msg_init(&msg) && LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size + 1) && LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
+zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size + 1) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), data, size + 1);
 
 /// Size of a publisher info on wire
@@ -66,12 +66,12 @@ sub.getChannelName().length() + 1 + sub.getUUID().length() + 1
 #define ZMQ_INTERNAL_SEND(command, parameter) \
 zmq_msg_t socketOp; \
 ZMQ_PREPARE_STRING(socketOp, command, strlen(command)); \
-zmq_sendmsg(_writeOpSocket, &socketOp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
-zmq_msg_close(&socketOp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno)); \
+zmq_sendmsg(_writeOpSocket, &socketOp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&socketOp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno)); \
 zmq_msg_t endPointOp; \
 ZMQ_PREPARE_STRING(endPointOp, parameter, strlen(parameter)); \
-zmq_sendmsg(_writeOpSocket, &endPointOp, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
-zmq_msg_close(&endPointOp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+zmq_sendmsg(_writeOpSocket, &endPointOp, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno)); \
+zmq_msg_close(&endPointOp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 namespace umundo {
 

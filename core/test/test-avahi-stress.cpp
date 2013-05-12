@@ -38,9 +38,9 @@ struct query {
 	const char* regType;
 };
 
-std::map<service*, AvahiClient*> clients;	
-std::map<query*, AvahiClient*> queries;	
-std::map<std::string, service*> finds;	
+std::map<service*, AvahiClient*> clients;
+std::map<query*, AvahiClient*> queries;
+std::map<std::string, service*> finds;
 
 void resolveCallback(
     AvahiServiceResolver *r,
@@ -115,14 +115,14 @@ void browseCallback(
 	case AVAHI_BROWSER_NEW: {
 		printf("browseCallback AVAHI_BROWSER_NEW: %s\n", avahi_strerror(avahi_client_errno(avahi_service_browser_get_client(b))));
 		avahi_service_resolver_new(
-			avahi_service_browser_get_client(b), 
-			interface, 
-			protocol, 
-			name, 
-			type, 
-			domain, 
-			AVAHI_PROTO_UNSPEC, 
-			(AvahiLookupFlags)0, resolveCallback, userdata);
+		    avahi_service_browser_get_client(b),
+		    interface,
+		    protocol,
+		    name,
+		    type,
+		    domain,
+		    AVAHI_PROTO_UNSPEC,
+		    (AvahiLookupFlags)0, resolveCallback, userdata);
 		break;
 	}
 	case AVAHI_BROWSER_REMOVE: {
@@ -156,20 +156,20 @@ void browseClientCallback(AvahiClient* c, AvahiClientState state, void* userdata
 		printf("browseClientCallback AVAHI_CLIENT_S_RUNNING: %s\n", avahi_strerror(avahi_client_errno(c)));
 		query* q = (query*)userdata;
 		AvahiServiceBrowser* sb = avahi_service_browser_new(
-			c, 
-			AVAHI_IF_UNSPEC, 
-			AVAHI_PROTO_UNSPEC, 
-			q->regType, 
-			q->domain, 
-			(AvahiLookupFlags)0, 
-			browseCallback, 
-			(void*)q);
+		                              c,
+		                              AVAHI_IF_UNSPEC,
+		                              AVAHI_PROTO_UNSPEC,
+		                              q->regType,
+		                              q->domain,
+		                              (AvahiLookupFlags)0,
+		                              browseCallback,
+		                              (void*)q);
 		if (sb != NULL) {
 			queries[q] = c;
 		} else {
 			printf("browseClientCallback avahi_service_browser_new: %s\n", avahi_strerror(avahi_client_errno(c)));
 		}
-		
+
 		break;
 	}
 	case AVAHI_CLIENT_S_REGISTERING:
@@ -224,16 +224,16 @@ void clientCallback(AvahiClient* c, AvahiClientState state, void* userdata) {
 		}
 		if (avahi_entry_group_is_empty(svc->group)) {
 			err = avahi_entry_group_add_service(
-				svc->group, 
-				AVAHI_IF_UNSPEC, 
-				AVAHI_PROTO_UNSPEC, 
-				(AvahiPublishFlags)0, 
-				svc->name, 
-				svc->regType, 
-				svc->domain, 
-				NULL, 
-				svc->port, 
-				NULL);
+			          svc->group,
+			          AVAHI_IF_UNSPEC,
+			          AVAHI_PROTO_UNSPEC,
+			          (AvahiPublishFlags)0,
+			          svc->name,
+			          svc->regType,
+			          svc->domain,
+			          NULL,
+			          svc->port,
+			          NULL);
 			assert(err == 0);
 			err = avahi_entry_group_commit(svc->group);
 			assert(err == 0);
@@ -274,26 +274,26 @@ class AvahiRunner : public umundo::Thread {
 };
 
 int main(int argc, char** argv) {
-	int err;	
+	int err;
 
 	AvahiClient *client = NULL;
 	(void)client;
-	
+
 	(_simplePoll = avahi_simple_poll_new()) || printf("avahi_simple_poll_new\n");
 	assert(_simplePoll);
-	
+
 	AvahiRunner* avahiRunner = new AvahiRunner();
 	avahiRunner->start();
-	
+
 	struct query* q = (query*)malloc(sizeof(query));
 	q->domain = "foo.local.";
 	q->regType = "_foo._tcp";
 	client = avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, browseClientCallback, (void*)q, &err);
-	
+
 	while(true) {
 		// int timeoutMs = 10;
 		// avahi_simple_poll_iterate(_simplePoll, timeoutMs);
-		
+
 		for (int i = 0; i < 10; i++) {
 			umundo::ScopeLock lock(mutex);
 			struct service* svc = (service*)malloc(sizeof(service));
@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
 			svc->domain = "foo.local.";
 			svc->port = i + 40;
 			svc->regType = "_foo._tcp";
-			
+
 			AvahiClient* client = avahi_client_new(avahi_simple_poll_get(_simplePoll), (AvahiClientFlags)0, &clientCallback, (void*)svc, &err);
 			clients[svc] = client;
 		}

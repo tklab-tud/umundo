@@ -7,7 +7,7 @@ bool testRecursiveMutex() {
 	Mutex mutex;
 	UMUNDO_LOCK(mutex);
 	if(!mutex.try_lock()) {
-		LOG_ERR("tryLock should be possible from within the same thread");
+		UM_LOG_ERR("tryLock should be possible from within the same thread");
 		assert(false);
 	}
 	UMUNDO_LOCK(mutex);
@@ -23,7 +23,7 @@ bool testThreads() {
 	class Thread1 : public Thread {
 		void run() {
 			if(testMutex.try_lock()) {
-				LOG_ERR("tryLock should return false with a mutex locked in another thread");
+				UM_LOG_ERR("tryLock should return false with a mutex locked in another thread");
 				assert(false);
 			}
 			UMUNDO_LOCK(testMutex); // blocks
@@ -48,13 +48,13 @@ bool testThreads() {
 	Thread::sleepMs(20); // yield cpu and sleep
 	// thread1 sleeps with lock on mutex
 	if(testMutex.try_lock()) {
-		LOG_ERR("tryLock should return false with a mutex locked in another thread");
+		UM_LOG_ERR("tryLock should return false with a mutex locked in another thread");
 		assert(false);
 	}
 	UMUNDO_LOCK(testMutex);    // thread1 will unlock and sleep
 	thread1.join();      // join with thread1
 	if(thread1.isStarted()) {
-		LOG_ERR("thread still running after join");
+		UM_LOG_ERR("thread still running after join");
 		assert(false);
 	}
 	return true;
@@ -88,14 +88,14 @@ bool testMonitors() {
 		thread3.start();
 		Thread::sleepMs(5); // give threads a chance to run into wait
 		if(passedMonitor != 0) {
-			LOG_ERR("%d threads already passed the monitor", passedMonitor);
+			UM_LOG_ERR("%d threads already passed the monitor", passedMonitor);
 			assert(false);
 		}
 		{
 			UMUNDO_SIGNAL(testMonitor); // signal a single thread
 			Thread::sleepMs(40); // thread will increase passedMonitor
 			if(passedMonitor != 1) {
-				LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
+				UM_LOG_ERR("Expected 1 threads to pass the monitor, but %d did", passedMonitor);
 				assert(false);
 			}
 		}
@@ -103,7 +103,7 @@ bool testMonitors() {
 		Thread::sleepMs(40);
 
 		if (thread1.isStarted() || thread2.isStarted() || thread3.isStarted()) {
-			LOG_ERR("Threads ran to completion but still insist on being started");
+			UM_LOG_ERR("Threads ran to completion but still insist on being started");
 			assert(false);
 		}
 	}

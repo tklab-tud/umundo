@@ -11,7 +11,7 @@ list(APPEND UMUNDOUTIL_FILES ${UTIL_FILES})
 # include directories for our header files
 include_directories(src)
 
-LIST(APPEND UMUNDOUTIL_LIBRARIES umundoutil)
+#LIST(APPEND UMUNDOUTIL_LIBRARIES umundoutil)
 LIST(SORT UMUNDOUTIL_HEADER_FILES)
 
 add_library(umundoutil 
@@ -23,6 +23,7 @@ target_link_libraries(umundoutil ${UMUNDOUTIL_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOUTIL_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundoutil COMPONENT libraryUtil)
 set_target_properties(umundoutil PROPERTIES FOLDER "Libraries")
+set_target_properties(umundoutil PROPERTIES SOVERSION ${UMUNDO_VERSION})
 
 # ok to have in IDEs, but do not install
 LIST(APPEND UMUNDOUTIL_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)

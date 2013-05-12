@@ -37,26 +37,26 @@ bool findServices() {
 		buffer[i] = (char)i + 1;
 
 	for (int i = 0; i < 2; i++) {
-		LOG_INFO("Instantiating nodes");
+		UM_LOG_INFO("Instantiating nodes");
 		Node node1(hostId);
 		Node node2(hostId);
 
-		LOG_INFO("Instantiating local services");
+		UM_LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
 		PingService* localPingService = new PingService();
 
-		LOG_INFO("Connecting ServiceManagers");
+		UM_LOG_INFO("Connecting ServiceManagers");
 		ServiceManager svcMgr1;
 		node1.connect(&svcMgr1);
 
 		ServiceManager svcMgr2;
 		node2.connect(&svcMgr2);
 
-		LOG_INFO("Adding Services to ServiceManager1");
+		UM_LOG_INFO("Adding Services to ServiceManager1");
 		svcMgr1.addService(localEchoService);
 		svcMgr1.addService(localPingService);
 
-		LOG_INFO("Querying from ServiceManager2 for a PingService");
+		UM_LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter pingSvcFilter("PingService");
 		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter, 0);
 		assert(pingSvcDesc);

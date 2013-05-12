@@ -365,7 +365,7 @@ void Traceable::replay(const std::string& filename) {
 	int64_t fileOffset = 0;
 	std::ifstream traceFile(filename.c_str());
 	if (!traceFile) {
-		LOG_WARN("Replaying %s: Cannot open file", filename.c_str());
+		UM_LOG_WARN("Replaying %s: Cannot open file", filename.c_str());
 		return;
 	}
 	string line = "";

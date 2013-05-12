@@ -41,8 +41,8 @@ typedef enum
 	MDNS_LOG_MSG,
 	MDNS_LOG_OPERATION,
 	MDNS_LOG_SPS,
-	MDNS_LOG_INFO,
-	MDNS_LOG_DEBUG,
+	MDNS_UM_LOG_INFO,
+	MDNS_UM_LOG_DEBUG,
 	} mDNSLogLevel_t;
 
 // Set this symbol to 1 to answer remote queries for our Address, reverse mapping PTR, and HINFO records
@@ -98,13 +98,13 @@ typedef enum
 		#define LogMsg( ... )           LogMsgWithLevel(MDNS_LOG_MSG, __VA_ARGS__)
 		#define LogOperation( ... )     do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_OPERATION, __VA_ARGS__); } while (0)
 		#define LogSPS( ... )           do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_SPS,       __VA_ARGS__); } while (0)
-		#define LogInfo( ... )          do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_INFO,      __VA_ARGS__); } while (0)
+		#define LogInfo( ... )          do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_UM_LOG_INFO,      __VA_ARGS__); } while (0)
 	#elif (MDNS_GNU_VA_ARGS)
 		#define	debug_noop( ARGS... ) ((void)0)
 		#define	LogMsg( ARGS... )       LogMsgWithLevel(MDNS_LOG_MSG, ARGS)
 		#define	LogOperation( ARGS... ) do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_OPERATION, ARGS); } while (0)
 		#define	LogSPS( ARGS... )       do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_SPS,       ARGS); } while (0)
-		#define	LogInfo( ARGS... )      do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_LOG_INFO,      ARGS); } while (0)
+		#define	LogInfo( ARGS... )      do { if (mDNS_LoggingEnabled) LogMsgWithLevel(MDNS_UM_LOG_INFO,      ARGS); } while (0)
 	#else
 		#error Unknown variadic macros
 	#endif

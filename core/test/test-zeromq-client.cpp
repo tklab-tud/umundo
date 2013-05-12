@@ -8,9 +8,9 @@ int main(int argc, char** argv) {
 	int32_t more;
 	size_t more_size = sizeof(more);
 
-	(subSocket = zmq_socket(context, ZMQ_SUB)) || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-	zmq_connect(subSocket, "tcp://localhost:30101") && LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-	zmq_setsockopt(subSocket, ZMQ_SUBSCRIBE, "foo", 3)  && LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
+	(subSocket = zmq_socket(context, ZMQ_SUB)) || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+	zmq_connect(subSocket, "tcp://localhost:30101") && UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+	zmq_setsockopt(subSocket, ZMQ_SUBSCRIBE, "foo", 3)  && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 
 	while(1) {
 		zmq_pollitem_t items [] = {

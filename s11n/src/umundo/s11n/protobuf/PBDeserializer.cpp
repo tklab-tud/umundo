@@ -37,7 +37,7 @@ void* PBDeserializer::deserialize(const string& type, Message* msg) {
 		// we have an explicit deserializer type registered
 		MessageLite* pbObj = _deserializers[type]->New();
 		if(!pbObj->ParseFromString(data)) {
-			LOG_ERR("Could not parse %s from serialized data", type.c_str());
+			UM_LOG_ERR("Could not parse %s from serialized data", type.c_str());
 		}
 		return pbObj;
 	} else {
@@ -47,14 +47,14 @@ void* PBDeserializer::deserialize(const string& type, Message* msg) {
 			assert(deserializer->GetTypeName().compare(type) == 0);
 			google::protobuf::Message* pbObj = deserializer->New();
 			if(!pbObj->ParseFromString(data)) {
-				LOG_ERR("Could not parse %s from serialized data", type.c_str());
+				UM_LOG_ERR("Could not parse %s from serialized data", type.c_str());
 			}
 			// make sure we do not try to cast it to the actual object in receive
 			msg->putMeta("um.s11n.type", "google::protobuf::Message");
 			return pbObj;
 		}
 	}
-	LOG_ERR("received type %s, but no deserializer is known", type.c_str());
+	UM_LOG_ERR("received type %s, but no deserializer is known", type.c_str());
 	return NULL;
 }
 

@@ -53,7 +53,7 @@ bool testNodeRemoval() {
 	Node node1(hostId);
 	boost::shared_ptr<ZeroMQNode> nodeImpl1 = boost::static_pointer_cast<ZeroMQNode>(node1.getImpl());
 
-  int iterations = 2;
+	int iterations = 2;
 	for (int i = 0; i < iterations; i++) {
 		Node node2(hostId);
 		boost::shared_ptr<ZeroMQNode> nodeImpl2 = boost::static_pointer_cast<ZeroMQNode>(node2.getImpl());

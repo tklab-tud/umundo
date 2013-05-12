@@ -9,8 +9,8 @@ int main(int argc, char** argv) {
 	int32_t more;
 	size_t more_size = sizeof(more);
 
-	(pubSocket = zmq_socket(context, ZMQ_XPUB))  || LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-	zmq_bind(pubSocket, "tcp://*:30101") && LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+	(pubSocket = zmq_socket(context, ZMQ_XPUB))  || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
+	zmq_bind(pubSocket, "tcp://*:30101") && UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 
 	while(1) {
 		zmq_pollitem_t items [] = {
@@ -42,13 +42,13 @@ int main(int argc, char** argv) {
 
 		zmq_msg_t channelEnvlp;
 		ZMQ_PREPARE_STRING(channelEnvlp, "foo", 3);
-		zmq_sendmsg(pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&channelEnvlp) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 		zmq_msg_t message;
 		ZMQ_PREPARE_STRING(message, "this is foo!", 12);
-		zmq_sendmsg(pubSocket, &message, 0) >= 0 || LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-		zmq_msg_close(&message) && LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+		zmq_sendmsg(pubSocket, &message, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 
 	}

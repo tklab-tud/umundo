@@ -33,7 +33,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 SWIG_LINK_LIBRARIES(umundoNativePerl ${PERL_LIBRARY})
-SWIG_LINK_LIBRARIES(umundoNativePerl ${UMUNDOCORE_LIBRARIES})
+SWIG_LINK_LIBRARIES(umundoNativePerl umundocore)
 
 set_target_properties(umundoNativePerl PROPERTIES FOLDER "Bindings")
 

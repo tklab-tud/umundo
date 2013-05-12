@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
 			ZMQ_PREPARE_STRING(msg, "bar", 3);
 			zmq_sendmsg(dealerSocket, &msg, 0);
 			zmq_msg_close(&msg) && printf("zmq_msg_close: %s\n",zmq_strerror(errno));
-			
+
 		}
 
 		if (iteration == 10) {

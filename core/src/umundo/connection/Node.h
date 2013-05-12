@@ -196,7 +196,7 @@ public:
 	virtual std::map<std::string, SubscriberStub>& getSubscribers() {
 		return _impl->getSubscribers();
 	}
-	
+
 	virtual std::map<std::string, PublisherStub>& getPublishers() {
 		return _impl->getPublishers();
 	}
@@ -322,23 +322,23 @@ public:
 	virtual Subscriber& getSubscriber(const std::string& uuid) {
 		return _impl->getSubscriber(uuid);
 	}
-	
+
 	virtual Publisher& getPublisher(const std::string& uuid) {
 		return _impl->getPublisher(uuid);
 	}
-	
+
 	void connect(Connectable* connectable);
 	void disconnect(Connectable* connectable);
-	
+
 	//@}
-	
+
 	void suspend() {
 		return _impl->suspend();
 	}
 	void resume() {
 		return _impl->resume();
 	}
-	
+
 	shared_ptr<NodeImpl> getImpl() const {
 		return _impl;
 	}
@@ -360,7 +360,7 @@ public:
 		}
 		return subSet;
 	}
-	
+
 	virtual std::set<Publisher> getPublishers() {
 		std::map<std::string, Publisher> pubs = _impl->getPublishers();
 		std::set<Publisher> pubSet;

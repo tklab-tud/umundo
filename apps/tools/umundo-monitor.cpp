@@ -105,12 +105,12 @@ class PlainDumpingReceiver : public TypedReceiver {
 			std::cout << metaIter->first << ": " << metaIter->second << std::endl;
 			metaIter++;
 		}
-    std::string seperator;
-    for (int i = 0; i < msg->size(); i++) {
-      std::cout << seperator << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(static_cast<unsigned char>(msg->data()[i]));
-      seperator = ":";
-    }
-    std::cout << std::endl;
+		std::string seperator;
+		for (int i = 0; i < msg->size(); i++) {
+			std::cout << seperator << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(static_cast<unsigned char>(msg->data()[i]));
+			seperator = ":";
+		}
+		std::cout << std::endl;
 	}
 };
 

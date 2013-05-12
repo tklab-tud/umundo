@@ -142,7 +142,7 @@ bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 		double numSubstring = 0;
 
 		if (regex.hasError()) {
-			LOG_ERR("Pattern '%s' does not compile as regular expression", pattern.c_str());
+			UM_LOG_ERR("Pattern '%s' does not compile as regular expression", pattern.c_str());
 			return false;
 		}
 
@@ -359,11 +359,11 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 		if (_responses.find(reqId) != _responses.end()) {
 			break;
 		}
-		LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());
+		UM_LOG_ERR("Calling %s did not return within 1s - retrying", name.c_str());
 	}
 
 	if (_requests.find(reqId) == _requests.end()) {
-		LOG_ERR("Did not get a reply for calling %s", name.c_str());
+		UM_LOG_ERR("Did not get a reply for calling %s", name.c_str());
 	}
 
 	delete _requests[reqId];

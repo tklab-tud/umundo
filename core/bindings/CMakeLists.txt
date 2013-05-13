@@ -8,15 +8,14 @@ if (WIN32)
 	endif()
 
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # csc.exe
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0") # csc.exe
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0") # CSharp compiler
+	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # CSharp compiler
+else()
+	FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH ) # Mono compiler
+	FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH ) # Mono compiler
 endif()
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
-
-FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH )
-FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH )
 
 if (NOT IOS)
 	find_package(SWIG)
@@ -55,6 +54,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 	# TODO: We could move the protoc targets into s11n/CMakeLists.txt to
 	# get rid of find_package(Protobuf REQUIRED) here
 	#
+	
 	set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 	if (DIST_PREPARE)
 	 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG}) # link statically!

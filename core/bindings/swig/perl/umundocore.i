@@ -1,3 +1,5 @@
+# see http://www.swig.org/Doc2.0/Perl5.html#Perl5_nn8 for problems when loading
+
 #ifdef 64BIT_HOST
 #	ifdef DEBUG
 %module(directors="1", allprotected="1") umundoNativePerl64_d

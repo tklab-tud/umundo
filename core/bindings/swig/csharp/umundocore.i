@@ -128,7 +128,7 @@ using namespace umundo;
     setReceiver(receiver);
   }
 
-  protected void setReceiver(Receiver receiver) {
+  public void setReceiver(Receiver receiver) {
     // it is important to keep the reference, otherwise the Java GC will eat it!
     _receiver = receiver;
     setReceiverNative(receiver);

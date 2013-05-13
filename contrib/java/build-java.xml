@@ -8,6 +8,13 @@
 </taskdef -->
 
 <target name="compile" description="Compile the umundo java code.">
+	<echo message="dest: ${build.dir}/core/bindings/swig/java-class/"/>
+	<echo message="src:  ${build.dir}/protobuf/generated/"/>
+	<echo message="src:  ${build.dir}/core/bindings/swig/java/"/>
+	<echo message="src:  ${src.dir}/s11n/src/umundo-java/"/>
+	<echo message="src:  ${src.dir}/rpc/src/umundo-java/"/>
+	<echo message="cp:   ${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
+
   <mkdir dir="${build.dir}/core/bindings/swig/java-class/" />
 	<javac destdir="${build.dir}/core/bindings/swig/java-class/" debug="true" includeantruntime="false" target="1.5" source="1.5">
       <src path="${build.dir}/protobuf/generated/" />
@@ -15,7 +22,7 @@
       <src path="${src.dir}/s11n/src/umundo-java/" />
       <src path="${src.dir}/rpc/src/umundo-java/" />
       <classpath>
-          <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.4.1.jar"/>
+          <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
       </classpath>
   </javac>
 </target>
@@ -26,6 +33,7 @@
 	<echo message="protoc source dir:  ${protoc.src.dir}"/>
 	<echo message="protoc binary:      ${protoc.bin}"/>
 	<echo message="protoc plugin:      ${protoc.plugin}"/>
+	<echo message="destination dir:    ${build.dir}/protobuf/generated"/>
 
 	<mkdir dir="${build.dir}/protobuf/generated" />
 

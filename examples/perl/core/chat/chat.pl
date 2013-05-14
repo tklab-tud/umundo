@@ -1,4 +1,5 @@
 #!/opt/local/bin/perl
+# ^^ make sure the interpreter is the one used while building!
 
 # set to wherever your umundo libraries are
 use lib '../../../../build/cli/lib';

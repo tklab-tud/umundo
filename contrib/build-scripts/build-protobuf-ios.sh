@@ -10,8 +10,9 @@ PROTOC=`which protoc`
 set -e
 
 ME=`basename $0`
-SDK_VER="5.0"
-DEST_DIR="${PWD}/../../../prebuilt/protobuf/ios/${SDK_VER}"
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+SDK_VER="6.1"
+DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}"
 
 if [ ! -d src/google/protobuf ]; then
 	echo
@@ -35,7 +36,8 @@ fi
 # Build for Device
 #
 
-SYSROOT="/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS${SDK_VER}.sdk"
+TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer" 
+SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneOS${SDK_VER}.sdk"
 
 if [ ! -d ${SYSROOT} ]; then
 	echo
@@ -53,22 +55,22 @@ mkdir -p ${DEST_DIR}/ios &> /dev/null
 ./configure \
 CPP="cpp" \
 CXXCPP="cpp" \
-CXX=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ \
-CC=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc \
-LD=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
-CXXFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
+CXX=${TOOLCHAIN_ROOT}/usr/bin/g++ \
+CC=${TOOLCHAIN_ROOT}/usr/bin/gcc \
+LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
+CFLAGS="-O -isysroot ${SYSROOT} -arch armv7" \
+CXXFLAGS="-O -isysroot ${SYSROOT} -arch armv7" \
 --disable-dependency-tracking \
 --host=arm-apple-darwin10 \
 --target=arm-apple-darwin10 \
 --enable-shared=no \
 --with-protoc=${PROTOC} \
-LDFLAGS="-isysroot ${SYSROOT} -arch armv7 -arch armv6" \
-AR=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ar \
-AS=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/as \
-LIBTOOL=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/libtool \
-STRIP=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/strip \
-RANLIB=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ranlib \
+LDFLAGS="-isysroot ${SYSROOT} -arch armv7" \
+AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
 --prefix=${DEST_DIR}/ios
 
 make -j2 install
@@ -78,7 +80,8 @@ make -j2 install
 # Simulator
 #
 
-SYSROOT="/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${SDK_VER}.sdk"
+TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer" 
+SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneSimulator${SDK_VER}.sdk"
 
 if [ -f Makefile ]; then
 	make clean
@@ -88,20 +91,20 @@ mkdir -p ${DEST_DIR}/ios-sim &> /dev/null
 
 make clean
 ./configure \
-CXX=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/g++ \
-CC=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc \
-LD=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ld\ -r \
+CXX=${TOOLCHAIN_ROOT}/usr/bin/g++ \
+CC=${TOOLCHAIN_ROOT}/usr/bin/gcc \
+LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
 CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
 CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
 --disable-dependency-tracking \
 --enable-shared=no \
 --with-protoc=${PROTOC} \
 LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
-AR=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ar \
-AS=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/as \
-LIBTOOL=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/libtool \
-STRIP=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/strip \
-RANLIB=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ranlib \
+AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
 --prefix=${DEST_DIR}/ios-sim
 
 make -j2 install

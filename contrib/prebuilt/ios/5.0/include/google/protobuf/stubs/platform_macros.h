@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2012 Google Inc.  All rights reserved.
 // http://code.google.com/p/protobuf/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: kenton@google.com (Kenton Varda)
-//  Based on original Protocol Buffers design by
-//  Sanjay Ghemawat, Jeff Dean, and others.
+#ifndef GOOGLE_PROTOBUF_PLATFORM_MACROS_H_
+#define GOOGLE_PROTOBUF_PLATFORM_MACROS_H_
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_JAVA_ENUM_H__
-#define GOOGLE_PROTOBUF_COMPILER_JAVA_ENUM_H__
+#include <google/protobuf/stubs/common.h>
 
-#include <string>
-#include <vector>
-#include <google/protobuf/descriptor.h>
+// Processor architecture detection.  For more info on what's defined, see:
+//   http://msdn.microsoft.com/en-us/library/b0084kay.aspx
+//   http://www.agner.org/optimize/calling_conventions.pdf
+//   or with gcc, run: "echo | gcc -E -dM -"
+#if defined(_M_X64) || defined(__x86_64__)
+#define GOOGLE_PROTOBUF_ARCH_X64 1
+#define GOOGLE_PROTOBUF_ARCH_64_BIT 1
+#elif defined(_M_IX86) || defined(__i386__)
+#define GOOGLE_PROTOBUF_ARCH_IA32 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__QNX__)
+#define GOOGLE_PROTOBUF_ARCH_ARM_QNX 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__ARMEL__)
+#define GOOGLE_PROTOBUF_ARCH_ARM 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__MIPSEL__)
+#define GOOGLE_PROTOBUF_ARCH_MIPS 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__pnacl__)
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__ppc__)
+#define GOOGLE_PROTOBUF_ARCH_PPC 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#else
+#error Host architecture was not detected as supported by protobuf
+#endif
 
-namespace google {
-namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
+#if defined(__APPLE__)
+#define GOOGLE_PROTOBUF_OS_APPLE
+#elif defined(__native_client__)
+#define GOOGLE_PROTOBUF_OS_NACL
+#endif
 
-namespace protobuf {
-namespace compiler {
-namespace java {
-
-class EnumGenerator {
- public:
-  explicit EnumGenerator(const EnumDescriptor* descriptor);
-  ~EnumGenerator();
-
-  void Generate(io::Printer* printer);
-
- private:
-  const EnumDescriptor* descriptor_;
-
-  // The proto language allows multiple enum constants to have the same numeric
-  // value.  Java, however, does not allow multiple enum constants to be
-  // considered equivalent.  We treat the first defined constant for any
-  // given numeric value as "canonical" and the rest as aliases of that
-  // canonical value.
-  vector<const EnumValueDescriptor*> canonical_values_;
-
-  struct Alias {
-    const EnumValueDescriptor* value;
-    const EnumValueDescriptor* canonical_value;
-  };
-  vector<Alias> aliases_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(EnumGenerator);
-};
-
-}  // namespace java
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_JAVA_ENUM_H__
+#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_

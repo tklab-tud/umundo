@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2012 Google Inc.  All rights reserved.
 // http://code.google.com/p/protobuf/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,50 +28,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: kenton@google.com (Kenton Varda)
-//  Based on original Protocol Buffers design by
-//  Sanjay Ghemawat, Jeff Dean, and others.
+// This file is an internal atomic implementation, use atomicops.h instead.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_JAVA_EXTENSION_H__
-#define GOOGLE_PROTOBUF_COMPILER_JAVA_EXTENSION_H__
-
-#include <string>
-
-#include <google/protobuf/stubs/common.h>
+#ifndef GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_
+#define GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_
 
 namespace google {
 namespace protobuf {
-  class FieldDescriptor;       // descriptor.h
-  namespace io {
-    class Printer;             // printer.h
-  }
+namespace internal {
+
+inline Atomic32 NoBarrier_CompareAndSwap(volatile Atomic32* ptr,
+                                         Atomic32 old_value,
+                                         Atomic32 new_value) {
+  return __sync_val_compare_and_swap(ptr, old_value, new_value);
 }
 
-namespace protobuf {
-namespace compiler {
-namespace java {
+inline void MemoryBarrier() {
+  __sync_synchronize();
+}
 
-// Generates code for an extension, which may be within the scope of some
-// message or may be at file scope.  This is much simpler than FieldGenerator
-// since extensions are just simple identifiers with interesting types.
-class ExtensionGenerator {
- public:
-  explicit ExtensionGenerator(const FieldDescriptor* descriptor);
-  ~ExtensionGenerator();
+inline Atomic32 Acquire_CompareAndSwap(volatile Atomic32* ptr,
+                                       Atomic32 old_value,
+                                       Atomic32 new_value) {
+  Atomic32 ret = NoBarrier_CompareAndSwap(ptr, old_value, new_value);
+  MemoryBarrier();
+  return ret;
+}
 
-  void Generate(io::Printer* printer);
-  void GenerateNonNestedInitializationCode(io::Printer* printer);
-  void GenerateRegistrationCode(io::Printer* printer);
+inline void Release_Store(volatile Atomic32* ptr, Atomic32 value) {
+  MemoryBarrier();
+  *ptr = value;
+}
 
- private:
-  const FieldDescriptor* descriptor_;
-  string scope_;
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ExtensionGenerator);
-};
+inline Atomic32 Acquire_Load(volatile const Atomic32* ptr) {
+  Atomic32 value = *ptr;
+  MemoryBarrier();
+  return value;
+}
 
-}  // namespace java
-}  // namespace compiler
+}  // namespace internal
 }  // namespace protobuf
-
 }  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_JAVA_MESSAGE_H__
+
+#endif  // GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_

@@ -17,7 +17,7 @@
 		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
 		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
 		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
-		95B081A315D5456F00B807B5 /* libumundo.ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95B081A215D5456F00B807B5 /* libumundo.ios.a */; };
+		95777A061742A82E0035584C /* libumundo.ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95777A051742A82E0035584C /* libumundo.ios.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,7 +36,7 @@
 		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
-		95B081A215D5456F00B807B5 /* libumundo.ios.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.ios.a; path = "../../../package/cross-compiled/ios-5.1/libumundo.ios.a"; sourceTree = "<group>"; };
+		95777A051742A82E0035584C /* libumundo.ios.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.ios.a; path = "../../package/cross-compiled/ios-6.1/libumundo.ios.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,7 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95B081A315D5456F00B807B5 /* libumundo.ios.a in Frameworks */,
+				95777A061742A82E0035584C /* libumundo.ios.a in Frameworks */,
 				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
 				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
 				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
@@ -74,7 +74,7 @@
 		95017B65150391D5002BCAAA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				95B081A215D5456F00B807B5 /* libumundo.ios.a */,
+				95777A051742A82E0035584C /* libumundo.ios.a */,
 				95017B66150391D5002BCAAA /* UIKit.framework */,
 				95017B68150391D5002BCAAA /* Foundation.framework */,
 				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
@@ -230,9 +230,19 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../contrib/prebuilt/ios/6.1/include,
+					../../contrib/prebuilt/include,
+					../../rpc/src,
+					../../s11n/src,
+					../../core/src,
+					../../core/bindings,
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
 		};
@@ -251,10 +261,20 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../contrib/prebuilt/ios/6.1/include,
+					../../contrib/prebuilt/include,
+					../../rpc/src,
+					../../s11n/src,
+					../../core/src,
+					../../core/bindings,
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				USER_HEADER_SEARCH_PATHS = "";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -265,20 +285,9 @@
 				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					../../../core/bindings,
-					../../../s11n/src,
-					../../../contrib/prebuilt/include,
-					../../../core/src,
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"../../../package/cross-compiled/ios-5.1",
-					../../../contrib/prebuilt/ios/5.1/lib,
-					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
-					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -290,20 +299,9 @@
 				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					../../../core/bindings,
-					../../../s11n/src,
-					../../../contrib/prebuilt/include,
-					../../../core/src,
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"../../../package/cross-compiled/ios-5.1",
-					../../../contrib/prebuilt/ios/5.1/lib,
-					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1/i386/lib\"",
-					"\"$(SRCROOT)/../../../package/cross-compiled/ios-5.1\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};

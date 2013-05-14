@@ -23,7 +23,7 @@
 
 #import <Foundation/Foundation.h>
 
-#include <google/protobuf/message_lite.h>
+#include "google/protobuf/message_lite.h"
 #import <umundo/core.h>
 #import <umundo-objc/core.h>
 #import <umundo-objc/s11n.h>

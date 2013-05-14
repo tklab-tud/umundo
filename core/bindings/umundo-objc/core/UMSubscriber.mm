@@ -32,8 +32,8 @@ public:
       std::map<std::string, std::string>::const_iterator metaIter;
       for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
         [nsMeta
-         setValue:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]
-         forKey:[NSString stringWithCString:metaIter->second.c_str() encoding:[NSString defaultCStringEncoding]]];
+         setValue:[NSString stringWithCString:metaIter->second.c_str() encoding:[NSString defaultCStringEncoding]]
+         forKey:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]];
       }
       [_objcReceiver received:nsData withMeta:nsMeta];
     }

@@ -87,6 +87,72 @@ else ()
 endif()
 
 #
+# Download prebuilt libraries
+#
+
+SET(UMUNDO_LIBRARY_HOST_URL_PREFIX "http://umundo.tk.informatik.tu-darmstadt.de/prebuilt" CACHE STRING "The root path of an URL where to look for prebuilt libraries.")
+
+if (CMAKE_CROSSCOMPILING)
+	if (IOS)
+		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-ios.tgz)
+	elseif(ANDROID)
+		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-android.tgz)
+	else()
+	endif()
+else()
+	if (WIN32 AND 64BIT_HOST)
+		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64.tgz)
+	else()
+		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}.tgz)
+	endif()
+endif()
+
+# download include directory
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include)
+	message(STATUS "Downloading prebuilt library headers: ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/umundo-prebuilt-include.tgz")
+	file(DOWNLOAD ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/umundo-prebuilt-include.tgz
+		${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
+		INACTIVITY_TIMEOUT 60 STATUS DOWNLOAD_STATUS  SHOW_PROGRESS)
+	list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+	list(GET DOWNLOAD_STATUS 1 STATUS_STRING)
+	if(STATUS_CODE EQUAL 0)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+	else()
+		message("Downloading prebuilt library headers failed with ${STATUS_STRING} - maybe the host is down?")
+	endif()
+endif()
+
+# download prebuilt libraries
+if (NOT EXISTS ${UMUNDO_PREBUILT_LIBRARY_PATH})
+	message(STATUS "Downloading prebuilt libraries: ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}")
+	file(DOWNLOAD ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+		${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+		INACTIVITY_TIMEOUT 60 STATUS DOWNLOAD_STATUS  SHOW_PROGRESS)
+	list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+	list(GET DOWNLOAD_STATUS 1 STATUS_STRING)
+	if(STATUS_CODE EQUAL 0)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+	else()
+		message("Downloading prebuilt libraries failed with ${STATUS_STRING} - maybe this platform is not supported?")
+	endif()
+endif()
+
+
+#
 # BUILD_PREFER_PREBUILT_LIBS:
 # Do we want to search system paths or contrib/prebuilt first?
 #

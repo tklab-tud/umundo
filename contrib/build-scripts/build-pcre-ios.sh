@@ -4,12 +4,20 @@
 # build PCRE for iOS and iOS simulator
 #
 
+# make sure this is not set
+unset MACOSX_DEPLOYMENT_TARGET
+
+# be ridiculously conservative with regard to ios features
+export IPHONEOS_DEPLOYMENT_TARGET="1.0"
+
 # exit on error
 set -e
 
 ME=`basename $0`
-SDK_VER="5.0"
-DEST_DIR="${PWD}/../../../prebuilt/ios/${SDK_VER}"
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+SDK_VER="6.1"
+#SDK_VER="5.1"
+DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}-pcre-build"
 
 if [ ! -f pcre_version.c ]; then
 	echo
@@ -19,107 +27,139 @@ if [ ! -f pcre_version.c ]; then
 	echo
 	exit
 fi
+
 mkdir -p ${DEST_DIR} &> /dev/null
+
+# see http://stackoverflow.com/questions/2424770/floating-point-comparison-in-shell-script
+if [ $(bc <<< "$SDK_VER >= 6.1") -eq 1 ]; then
+  DEV_ARCHS="-arch armv7 -arch armv7s"
+elif [ $(bc <<< "$SDK_VER >= 5.1") -eq 1 ]; then
+  DEV_ARCHS="-arch armv6 -arch armv7"
+else
+  echo
+  echo "Building for SDK < 5.1 not supported"
+  exit
+fi
 
 #
 # Build for Device
 #
+if [ ! -d ${DEST_DIR}/device ]; then
 
-SYSROOT="/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS${SDK_VER}.sdk"
+  TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer" 
+  SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneOS${SDK_VER}.sdk"
 
-if [ ! -d ${SYSROOT} ]; then
-	echo
-	echo "Cannot find iOS developer tools."
-	echo
-	exit	
+  if [ ! -d ${SYSROOT} ]; then
+    echo
+    echo "Cannot find iOS developer tools at ${SYSROOT}."
+    echo
+    exit  
+  fi
+
+  if [ -f Makefile ]; then
+    make clean
+  fi
+
+  mkdir -p ${DEST_DIR}/device &> /dev/null
+
+  ./configure \
+  CPP="cpp" \
+  CXXCPP="cpp" \
+  CXX=${TOOLCHAIN_ROOT}/usr/bin/g++ \
+  CC=${TOOLCHAIN_ROOT}/usr/bin/gcc \
+  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
+  CFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  CXXFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  --disable-dependency-tracking \
+  --host=arm-apple-darwin10 \
+  --target=arm-apple-darwin10 \
+  --disable-shared \
+  --enable-utf8 \
+  LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
+  --prefix=${DEST_DIR}/device
+
+  make -j2 install
+else
+  echo
+  echo "${DEST_DIR}/device already exists - not rebuilding."
+  echo
 fi
-
-if [ -f Makefile ]; then
-	make clean
-fi
-
-mkdir -p ${DEST_DIR}/device &> /dev/null
-
-./configure \
---disable-shared \
---enable-utf8 \
-CPP="cpp" \
-CXXCPP="cpp" \
-CXX=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ \
-CC=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc \
-LD=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
-CXXFLAGS="-O -isysroot ${SYSROOT} -arch armv7 -arch armv6" \
---disable-dependency-tracking \
---host=arm-apple-darwin10 \
---target=arm-apple-darwin10 \
-LDFLAGS="-isysroot ${SYSROOT} -arch armv7 -arch armv6" \
-AR=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ar \
-AS=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/as \
-LIBTOOL=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/libtool \
-STRIP=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/strip \
-RANLIB=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ranlib \
---prefix=${DEST_DIR}/device
-
-make -j2 install
-
 
 #
 # Simulator
 #
+if [ ! -d ${DEST_DIR}/simulator ]; then
 
-SYSROOT="/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${SDK_VER}.sdk"
+  TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer" 
+  SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneSimulator${SDK_VER}.sdk"
 
-if [ -f Makefile ]; then
-	make clean
+  if [ ! -d ${SYSROOT} ]; then
+    echo
+    echo "Cannot find iOS developer tools at ${SYSROOT}."
+    echo
+    exit  
+  fi
+
+  if [ -f Makefile ]; then
+  	make clean
+  fi
+
+  mkdir -p ${DEST_DIR}/simulator &> /dev/null
+
+  ./configure \
+  CXX=${TOOLCHAIN_ROOT}/usr/bin/llvm-g++ \
+  CC=${TOOLCHAIN_ROOT}/usr/bin/llvm-gcc \
+  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
+  CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
+  CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
+  --disable-dependency-tracking \
+  --disable-shared \
+  --enable-utf8 \
+  LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
+  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
+  --prefix=${DEST_DIR}/simulator
+
+  make -j2 install
+else
+  echo
+  echo "${DEST_DIR}/device already exists - not rebuilding."
+  echo
 fi
 
-mkdir -p ${DEST_DIR}/simulator &> /dev/null
-
-make clean
-./configure \
---disable-shared \
---enable-utf8 \
-CXX=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/g++ \
-CC=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc \
-LD=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
-CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
---disable-dependency-tracking \
-LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
-AR=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ar \
-AS=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/as \
-LIBTOOL=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/libtool \
-STRIP=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/strip \
-RANLIB=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ranlib \
---prefix=${DEST_DIR}/simulator
-
-make -j2 install
-
-# tidy up
-rm -rf ${DEST_DIR}/simulator/bin
-rm -rf ${DEST_DIR}/simulator/include
-rm -rf ${DEST_DIR}/simulator/share
-rm -rf ${DEST_DIR}/simulator/lib/pkgconfig
-rm -rf ${DEST_DIR}/simulator/lib/*.la
-
-rm -rf ${DEST_DIR}/device/bin
-rm -rf ${DEST_DIR}/device/include
-rm -rf ${DEST_DIR}/device/share
-rm -rf ${DEST_DIR}/device/lib/pkgconfig
-rm -rf ${DEST_DIR}/device/lib/*.la
-
 echo
-echo "- Finished Build --------------------------------------"
+echo "- Creating universal binaries --------------------------------------"
 echo
-#
-# create universal library
-#
-lipo -create ${DEST_DIR}/simulator/lib/libpcre.a ${DEST_DIR}/device/lib/libpcre.a -output ${DEST_DIR}/lib/libpcre.a
-lipo -info ${DEST_DIR}/lib/libpcre.a
 
-lipo -create ${DEST_DIR}/simulator/lib/libpcrecpp.a ${DEST_DIR}/device/lib/libpcrecpp.a -output ${DEST_DIR}/lib/libpcrecpp.a
-lipo -info ${DEST_DIR}/lib/libpcrecpp.a
+LIBS=`find ${DIR}/../prebuilt/ios/*pcre-build* -name *.a`
+set +e
+for LIB in ${LIBS}; do
+  LIB_BASE=`basename $LIB .a`
+  ARCHS=`lipo -info $LIB`
+  ARCHS=`expr "$ARCHS" : '.*:\(.*\)$'`
+  for ARCH in ${ARCHS}; do
+    mkdir -p ${DIR}/../prebuilt/ios/arch/${ARCH} > /dev/null
+    lipo -extract $ARCH $LIB -output ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a \
+      || cp $LIB ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a
+    UNIQUE_LIBS=`ls ${DIR}/../prebuilt/ios/arch/${ARCH}`
+  done
+done
 
-lipo -create ${DEST_DIR}/simulator/lib/libpcreposix.a ${DEST_DIR}/device/lib/libpcreposix.a -output ${DEST_DIR}/lib/libpcreposix.a
-lipo -info ${DEST_DIR}/lib/libpcreposix.a
+
+for LIB in ${UNIQUE_LIBS}; do
+  FILELIST=""
+  for ARCH in `ls ${DIR}/../prebuilt/ios/arch/`; do
+    FILELIST="${FILELIST} ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB}"
+  done
+  lipo -create ${FILELIST} -output ${DIR}/../prebuilt/ios/lib/${LIB}
+done
+
+rm -rf ${DIR}/../prebuilt/ios/arch/

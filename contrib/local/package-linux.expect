@@ -14,7 +14,7 @@ expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; ex
 
 eval spawn ssh ${UMUNDO_BUILD_HOST}.local.
 expect -re $prompt { send "cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON /media/psf/Home/Documents/TK/Code/umundo\n" }
+expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON ~/sshfs/Documents/TK/Code/umundo\n" }
 
 expect -re $prompt { send "make package\n" }
 

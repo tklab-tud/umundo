@@ -18,6 +18,12 @@
  *  @endcond
  */
 
+#ifdef __has_feature
+# if __has_feature(objc_arc)
+#   define(HAS_AUTORELEASE_POOL)
+# endif
+#endif
+
 #ifndef UMSUBSCRIBER_H_L4CPAZMF
 #define UMSUBSCRIBER_H_L4CPAZMF
 

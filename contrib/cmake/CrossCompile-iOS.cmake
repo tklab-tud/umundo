@@ -39,8 +39,8 @@ endif()
 
 if (IOS6_OR_LATER)
   # no armv6 support in ios6 - armv7s was added, but we did no compile our dependencies for it
-  SET(CMAKE_OSX_ARCHITECTURES "armv7")
-  SET(ARCHS "-arch armv7")
+  SET(CMAKE_OSX_ARCHITECTURES armv7 armv7s)
+  SET(ARCHS "-arch armv7 -arch armv7s")
 
   # we have to use clang - llvm will choke on those __has_feature macros?
   SET (CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
@@ -51,7 +51,7 @@ if (IOS6_OR_LATER)
 	endif()
 
 else()
-  SET(CMAKE_OSX_ARCHITECTURES "armv6" "armv7")
+  SET(CMAKE_OSX_ARCHITECTURES armv6 armv7)
   SET(ARCHS "-arch armv6 -arch armv7")
 
   SET (CMAKE_C_COMPILER "${DEVROOT}/usr/bin/gcc")

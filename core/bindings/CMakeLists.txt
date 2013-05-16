@@ -9,13 +9,14 @@ if (WIN32)
 
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0") # CSharp compiler
+	#LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0.30319") # CSharp compiler
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # CSharp compiler
-else()
-	FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH ) # Mono compiler
-	FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH ) # Mono compiler
 endif()
+
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
+
+FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH ) # Mono compiler
+FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH ) # CSharp compiler
 
 if (NOT IOS)
 	find_package(SWIG)
@@ -29,6 +30,8 @@ if (NOT IOS)
 				add_subdirectory(swig/perl)
 				add_subdirectory(swig/php)
 			endif()
+			message("DMCS_EXECUTABLE: ${DMCS_EXECUTABLE}")
+			message("CSC_EXECUTABLE: ${CSC_EXECUTABLE}")
 			if (DMCS_EXECUTABLE OR CSC_EXECUTABLE)
 				if (NOT ANDROID)
 					add_subdirectory(swig/csharp)
@@ -56,8 +59,8 @@ if (UMUNDONATIVEJAVA_LOCATION)
 	#
 	
 	set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	if (DIST_PREPARE)
-	 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG}) # link statically!
+	if (NOT 64BIT_HOST AND DIST_PREPARE)
+	 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC}) # link statically!
 	endif()
 	find_package(Protobuf REQUIRED)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})

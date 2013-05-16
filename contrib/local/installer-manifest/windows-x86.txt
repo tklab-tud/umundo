@@ -1,0 +1,239 @@
+./bin: directory
+./bin/protoc-umundo-cpp-rpc.exe: PE32 executable for MS Windows (console) Intel 80386 32-bit
+./bin/protoc-umundo-java-rpc.exe: PE32 executable for MS Windows (console) Intel 80386 32-bit
+./bin/umundo-echo-service.exe: PE32 executable for MS Windows (console) Intel 80386 32-bit
+./bin/umundo-monitor.exe: PE32 executable for MS Windows (console) Intel 80386 32-bit
+./bin/umundo-pingpong.exe: PE32 executable for MS Windows (console) Intel 80386 32-bit
+./include: directory
+./include/umundo: directory
+./include/umundo/common: directory
+./include/umundo/common/Common.h: ASCII Java program text
+./include/umundo/common/Debug.h: ASCII Pascal program text
+./include/umundo/common/EndPoint.h: ASCII Pascal program text
+./include/umundo/common/Factory.h: ASCII Pascal program text
+./include/umundo/common/Host.h: ASCII Pascal program text
+./include/umundo/common/Implementation.h: ASCII C++ program text
+./include/umundo/common/Message.h: ASCII C++ program text
+./include/umundo/common/portability.h: ASCII Pascal program text
+./include/umundo/common/Regex.h: ASCII Pascal program text
+./include/umundo/common/ResultSet.h: ASCII Pascal program text
+./include/umundo/common/UUID.h: ASCII Pascal program text
+./include/umundo/connection: directory
+./include/umundo/connection/Node.h: ASCII Pascal program text
+./include/umundo/connection/Publisher.h: ASCII Pascal program text
+./include/umundo/connection/Subscriber.h: ASCII Pascal program text
+./include/umundo/connection/zeromq: directory
+./include/umundo/connection/zeromq/ZeroMQNode.h: ASCII Pascal program text
+./include/umundo/connection/zeromq/ZeroMQPublisher.h: ASCII Pascal program text
+./include/umundo/connection/zeromq/ZeroMQSubscriber.h: ASCII Pascal program text
+./include/umundo/core.h: ASCII Pascal program text
+./include/umundo/discovery: directory
+./include/umundo/discovery/avahi: directory
+./include/umundo/discovery/avahi/AvahiNodeDiscovery.h: ASCII Pascal program text
+./include/umundo/discovery/avahi/AvahiNodeStub.h: ASCII Pascal program text
+./include/umundo/discovery/bonjour: directory
+./include/umundo/discovery/bonjour/BonjourNodeDiscovery.h: ASCII Pascal program text
+./include/umundo/discovery/bonjour/BonjourNodeStub.h: ASCII Pascal program text
+./include/umundo/discovery/broadcast: directory
+./include/umundo/discovery/broadcast/BroadcastNodeDiscovery.h: ASCII c program text
+./include/umundo/discovery/Discovery.h: ASCII English text
+./include/umundo/discovery/NodeQuery.h: ASCII Pascal program text
+./include/umundo/protobuf: directory
+./include/umundo/protobuf/generated: directory
+./include/umundo/protobuf/generated/TestServices.pb.h: ASCII C++ program text
+./include/umundo/protobuf/generated/TestServices.rpc.pb.h: ASCII C++ program text
+./include/umundo/rpc: directory
+./include/umundo/rpc/Service.h: ASCII Pascal program text
+./include/umundo/rpc/ServiceManager.h: ASCII Pascal program text
+./include/umundo/rpc.h: ASCII Pascal program text
+./include/umundo/s11n: directory
+./include/umundo/s11n/protobuf: directory
+./include/umundo/s11n/protobuf/PBDeserializer.h: ASCII Pascal program text
+./include/umundo/s11n/protobuf/PBSerializer.h: ASCII Pascal program text
+./include/umundo/s11n/TypedPublisher.h: ASCII Pascal program text
+./include/umundo/s11n/TypedSubscriber.h: ASCII Pascal program text
+./include/umundo/s11n.h: ASCII Pascal program text
+./include/umundo/thread: directory
+./include/umundo/thread/Thread.h: ASCII Pascal program text
+./include/umundo/thread/tinythread.h: ASCII c program text
+./include/umundo/util: directory
+./include/umundo/util/Base64.h: ASCII C++ program text
+./include/umundo/util/crypto: directory
+./include/umundo/util/crypto/MD5.h: ASCII c program text
+./include/umundo/util.h: ASCII Pascal program text
+./lib: directory
+./lib/umundo-echo-service.lib: current ar archive
+./lib/umundo-monitor.lib: current ar archive
+./lib/umundo-pingpong.lib: current ar archive
+./lib/umundo.lib: current ar archive
+./lib/umundo_d.lib: current ar archive
+./lib/umundocore.lib: current ar archive
+./lib/umundocore_d.lib: current ar archive
+./lib/umundocore_d.pdb: MSVC program database ver 
+./lib/umundorpc.lib: current ar archive
+./lib/umundorpc_d.lib: current ar archive
+./lib/umundorpc_d.pdb: MSVC program database ver 
+./lib/umundoserial.lib: current ar archive
+./lib/umundoserial_d.lib: current ar archive
+./lib/umundoserial_d.pdb: MSVC program database ver 
+./lib/umundoutil.lib: current ar archive
+./lib/umundoutil_d.lib: current ar archive
+./lib/umundoutil_d.pdb: MSVC program database ver 
+./share: directory
+./share/umundo: directory
+./share/umundo/android-8: directory
+./share/umundo/android-8/armv5te: directory
+./share/umundo/android-8/armv5te/libumundoNativeJava.so: ELF 32-bit LSB shared object, ARM, version 1 (SYSV), dynamically linked, not stripped
+./share/umundo/android-8/armv5te/libumundoNativeJava_d.so: ELF 32-bit LSB shared object, ARM, version 1 (SYSV), dynamically linked, not stripped
+./share/umundo/android-8/umundo.jar: Zip archive data, at least v1.0 to extract
+./share/umundo/cmake: directory
+./share/umundo/cmake/FindUMundo.cmake: ASCII English text
+./share/umundo/cmake/UseUMundo.cmake: ASCII English text
+./share/umundo/deps: directory
+./share/umundo/deps/dnssd.lib: current ar archive
+./share/umundo/deps/dnssd.lib.pdb: MSVC program database ver 
+./share/umundo/deps/libzmq.lib: current ar archive
+./share/umundo/deps/libzmq_d.lib: current ar archive
+./share/umundo/deps/libzmq_d.pdb: MSVC program database ver 
+./share/umundo/deps/mDNSEmbedded.lib: current ar archive
+./share/umundo/deps/mDNSEmbedded_d.lib: current ar archive
+./share/umundo/deps/mdnsresponder.vc100.pdb: MSVC program database ver 
+./share/umundo/deps/pcre.lib: current ar archive
+./share/umundo/deps/pcred.lib: current ar archive
+./share/umundo/deps/pcred.pdb: MSVC program database ver 
+./share/umundo/java: directory
+./share/umundo/java/umundo.jar: Zip archive data, at least v1.0 to extract
+./share/umundo/lib: directory
+./share/umundo/lib/umundoCSharp.dll: PE32 executable for MS Windows (DLL) (console) Intel 80386 32-bit Mono/.Net assembly
+./share/umundo/lib/umundoCSharp_d.dll: PE32 executable for MS Windows (DLL) (console) Intel 80386 32-bit Mono/.Net assembly
+./share/umundo/lib/umundoNativeCSharp.dll: PE32 executable for MS Windows (DLL) (GUI) Intel 80386 32-bit
+./share/umundo/lib/umundoNativeCSharp.lib: current ar archive
+./share/umundo/lib/umundoNativeCSharp_d.dll: PE32 executable for MS Windows (DLL) (GUI) Intel 80386 32-bit
+./share/umundo/lib/umundoNativeCSharp_d.lib: current ar archive
+./share/umundo/lib/umundonativecsharp_d.pdb: MSVC program database ver 
+./share/umundo/lib/umundoNativeJava.dll: PE32 executable for MS Windows (DLL) (GUI) Intel 80386 32-bit
+./share/umundo/lib/umundoNativeJava.lib: current ar archive
+./share/umundo/lib/umundoNativeJava_d.dll: PE32 executable for MS Windows (DLL) (GUI) Intel 80386 32-bit
+./share/umundo/lib/umundoNativeJava_d.lib: current ar archive
+./share/umundo/lib/umundonativejava_d.pdb: MSVC program database ver 
+./share/umundo/samples: directory
+./share/umundo/samples/android: directory
+./share/umundo/samples/android/umundo-pingpong: directory
+./share/umundo/samples/android/umundo-pingpong/.classpath: XML  document text
+./share/umundo/samples/android/umundo-pingpong/.project: XML  document text
+./share/umundo/samples/android/umundo-pingpong/.settings: directory
+./share/umundo/samples/android/umundo-pingpong/.settings/org.eclipse.jdt.core.prefs: ASCII text
+./share/umundo/samples/android/umundo-pingpong/AndroidManifest.xml: ASCII text
+./share/umundo/samples/android/umundo-pingpong/gen: directory
+./share/umundo/samples/android/umundo-pingpong/gen/org: directory
+./share/umundo/samples/android/umundo-pingpong/gen/org/umundo: directory
+./share/umundo/samples/android/umundo-pingpong/gen/org/umundo/samples: directory
+./share/umundo/samples/android/umundo-pingpong/gen/org/umundo/samples/BuildConfig.java: ASCII C++ program text
+./share/umundo/samples/android/umundo-pingpong/gen/org/umundo/samples/R.java: ASCII c program text
+./share/umundo/samples/android/umundo-pingpong/libs: directory
+./share/umundo/samples/android/umundo-pingpong/libs/android-support-v4.jar: Zip archive data, at least v2.0 to extract
+./share/umundo/samples/android/umundo-pingpong/libs/armeabi: directory
+./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava.so: empty
+./share/umundo/samples/android/umundo-pingpong/libs/armeabi/libumundoNativeJava_d.so: empty
+./share/umundo/samples/android/umundo-pingpong/libs/README.txt: ASCII English text
+./share/umundo/samples/android/umundo-pingpong/libs/umundo.jar: empty
+./share/umundo/samples/android/umundo-pingpong/proguard-project.txt: ASCII English text
+./share/umundo/samples/android/umundo-pingpong/project.properties: ASCII English text
+./share/umundo/samples/android/umundo-pingpong/res: directory
+./share/umundo/samples/android/umundo-pingpong/res/drawable-hdpi: directory
+./share/umundo/samples/android/umundo-pingpong/res/drawable-hdpi/ic_action_search.png: PNG image data, 48 x 48, 8-bit colormap, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/drawable-hdpi/ic_launcher.png: PNG image data, 72 x 72, 8-bit/color RGBA, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/drawable-mdpi: directory
+./share/umundo/samples/android/umundo-pingpong/res/drawable-mdpi/ic_action_search.png: PNG image data, 32 x 32, 4-bit colormap, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/drawable-mdpi/ic_launcher.png: PNG image data, 48 x 48, 8-bit/color RGBA, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/drawable-xhdpi: directory
+./share/umundo/samples/android/umundo-pingpong/res/drawable-xhdpi/ic_action_search.png: PNG image data, 64 x 64, 8-bit colormap, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/drawable-xhdpi/ic_launcher.png: PNG image data, 96 x 96, 8-bit/color RGBA, non-interlaced
+./share/umundo/samples/android/umundo-pingpong/res/layout: directory
+./share/umundo/samples/android/umundo-pingpong/res/layout/activity_umundo_android.xml: XML  document text
+./share/umundo/samples/android/umundo-pingpong/res/values: directory
+./share/umundo/samples/android/umundo-pingpong/res/values/strings.xml: XML  document text
+./share/umundo/samples/android/umundo-pingpong/src: directory
+./share/umundo/samples/android/umundo-pingpong/src/org: directory
+./share/umundo/samples/android/umundo-pingpong/src/org/umundo: directory
+./share/umundo/samples/android/umundo-pingpong/src/org/umundo/samples: directory
+./share/umundo/samples/android/umundo-pingpong/src/org/umundo/samples/UMundoAndroidActivity.java: ASCII Java program text
+./share/umundo/samples/cpp: directory
+./share/umundo/samples/cpp/core: directory
+./share/umundo/samples/cpp/core/chat: directory
+./share/umundo/samples/cpp/core/chat/CMakeLists.txt: ASCII English text
+./share/umundo/samples/cpp/core/chat/src: directory
+./share/umundo/samples/cpp/core/chat/src/Chat.cpp: ASCII c program text
+./share/umundo/samples/cpp/core/chat/src/Chat.h: ASCII c program text
+./share/umundo/samples/cpp/rpc: directory
+./share/umundo/samples/cpp/rpc/chat: directory
+./share/umundo/samples/cpp/rpc/chat/CMakeLists.txt: ASCII English text
+./share/umundo/samples/cpp/rpc/chat/proto: directory
+./share/umundo/samples/cpp/rpc/chat/proto/ChatS11N.proto: ASCII text, with CRLF line terminators
+./share/umundo/samples/cpp/rpc/chat/src: directory
+./share/umundo/samples/cpp/rpc/chat/src/Chat.cpp: ASCII c program text
+./share/umundo/samples/cpp/rpc/chat/src/Chat.h: ASCII c program text
+./share/umundo/samples/cpp/s11n: directory
+./share/umundo/samples/cpp/s11n/chat: directory
+./share/umundo/samples/cpp/s11n/chat/CMakeLists.txt: ASCII English text
+./share/umundo/samples/cpp/s11n/chat/proto: directory
+./share/umundo/samples/cpp/s11n/chat/proto/ChatS11N.proto: ASCII text, with CRLF line terminators
+./share/umundo/samples/cpp/s11n/chat/src: directory
+./share/umundo/samples/cpp/s11n/chat/src/Chat.cpp: ASCII c program text
+./share/umundo/samples/cpp/s11n/chat/src/Chat.h: ASCII c program text
+./share/umundo/samples/csharp: directory
+./share/umundo/samples/csharp/umundo-pingpong: directory
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong: directory
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong/Program.cs: UTF-8 Unicode (with BOM) English text, with CRLF line terminators
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong/Properties: directory
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong/Properties/AssemblyInfo.cs: UTF-8 Unicode (with BOM) C++ program text, with CRLF line terminators
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong/umundo-pingpong.csproj: XML document text
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong/umundo-pingpong.csproj.user: XML document text
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong.sln: UTF-8 Unicode (with BOM) text, with CRLF line terminators
+./share/umundo/samples/csharp/umundo-pingpong/umundo-pingpong.suo: CDF V2 Document, No summary info
+./share/umundo/samples/csharp/umundo-s11ndemo: directory
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo: directory
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/amessage.cs: ASCII C++ program text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/amessage.proto: ASCII text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/Program.cs: UTF-8 Unicode (with BOM) C++ program text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/Properties: directory
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/Properties/AssemblyInfo.cs: UTF-8 Unicode (with BOM) C++ program text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/umundo-s11ndemo.csproj: exported SGML document text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/umundo-s11ndemo.csproj.user: XML document text
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo/umundoNativeCSharp_d.dll: PE32 executable for MS Windows (DLL) (console) Intel 80386 32-bit
+./share/umundo/samples/csharp/umundo-s11ndemo/umundo-s11ndemo.sln: UTF-8 Unicode (with BOM) text, with CRLF line terminators
+./share/umundo/samples/java: directory
+./share/umundo/samples/java/core: directory
+./share/umundo/samples/java/core/chat: directory
+./share/umundo/samples/java/core/chat/.classpath: XML  document text
+./share/umundo/samples/java/core/chat/.project: XML  document text
+./share/umundo/samples/java/core/chat/build.properties: ASCII text
+./share/umundo/samples/java/core/chat/build.xml: ASCII text, with CRLF line terminators
+./share/umundo/samples/java/core/chat/src: directory
+./share/umundo/samples/java/core/chat/src/org: directory
+./share/umundo/samples/java/core/chat/src/org/umundo: directory
+./share/umundo/samples/java/core/chat/src/org/umundo/Chat.java: ASCII Java program text, with CRLF line terminators
+./share/umundo/samples/java/rpc: directory
+./share/umundo/samples/java/rpc/chat: directory
+./share/umundo/samples/java/rpc/chat/.classpath: XML  document text
+./share/umundo/samples/java/rpc/chat/.project: XML  document text
+./share/umundo/samples/java/rpc/chat/build.properties: ASCII text
+./share/umundo/samples/java/rpc/chat/build.xml: ASCII text, with CRLF line terminators
+./share/umundo/samples/java/rpc/chat/proto: directory
+./share/umundo/samples/java/rpc/chat/proto/ChatS11N.proto: ASCII text, with CRLF line terminators
+./share/umundo/samples/java/rpc/chat/src: directory
+./share/umundo/samples/java/rpc/chat/src/org: directory
+./share/umundo/samples/java/rpc/chat/src/org/umundo: directory
+./share/umundo/samples/java/rpc/chat/src/org/umundo/Chat.java: ASCII Java program text, with CRLF line terminators
+./share/umundo/samples/java/s11n: directory
+./share/umundo/samples/java/s11n/chat: directory
+./share/umundo/samples/java/s11n/chat/.classpath: XML  document text
+./share/umundo/samples/java/s11n/chat/.project: XML  document text
+./share/umundo/samples/java/s11n/chat/build.properties: ASCII text
+./share/umundo/samples/java/s11n/chat/build.xml: ASCII text, with CRLF line terminators
+./share/umundo/samples/java/s11n/chat/proto: directory
+./share/umundo/samples/java/s11n/chat/proto/ChatS11N.proto: ASCII text, with CRLF line terminators
+./share/umundo/samples/java/s11n/chat/src: directory
+./share/umundo/samples/java/s11n/chat/src/org: directory
+./share/umundo/samples/java/s11n/chat/src/org/umundo: directory
+./share/umundo/samples/java/s11n/chat/src/org/umundo/Chat.java: ASCII Java program text, with CRLF line terminators

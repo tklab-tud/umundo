@@ -127,26 +127,26 @@ set reqFilesCPPSamples {
 
 
 set reqFilesIOS {
-	"/usr/local/share/umundo/ios-.*/libumundo.ios.a"
-	"/usr/local/share/umundo/ios-.*/libumundo_d.ios.a"
+	"/usr/local/share/umundo/ios/libumundo.a"
+	"/usr/local/share/umundo/ios/libumundo_d.a"
 
-	"/usr/local/share/umundo/deps/ios/.*/libpcreposix.a"
-	"/usr/local/share/umundo/deps/ios/.*/libpcrecpp.a"
-	"/usr/local/share/umundo/deps/ios/.*/libpcre.a"
-	"/usr/local/share/umundo/deps/ios/.*/libprotobuf-lite.a"
-	"/usr/local/share/umundo/deps/ios/.*/libprotobuf.a"
-	"/usr/local/share/umundo/deps/ios/.*/libprotoc.a"
-	"/usr/local/share/umundo/deps/ios/.*/libzmq.a"
+	"/usr/local/share/umundo/deps/ios/libpcreposix.a"
+	"/usr/local/share/umundo/deps/ios/libpcrecpp.a"
+	"/usr/local/share/umundo/deps/ios/libpcre.a"
+	"/usr/local/share/umundo/deps/ios/libprotobuf-lite.a"
+	"/usr/local/share/umundo/deps/ios/libprotobuf.a"
+	"/usr/local/share/umundo/deps/ios/libprotoc.a"
+	"/usr/local/share/umundo/deps/ios/libzmq.a"
 }
 
-# "/usr/local/share/umundo/ios-.*/libumundocore.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundocore_d.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundoserial.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundoserial_d.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundorpc.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundorpc_d.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundoutil.ios.a"
-# "/usr/local/share/umundo/ios-.*/libumundoutil_d.ios.a"
+# "/usr/local/share/umundo/ios/libumundocore.a"
+# "/usr/local/share/umundo/ios/libumundocore_d.a"
+# "/usr/local/share/umundo/ios/libumundoserial.a"
+# "/usr/local/share/umundo/ios/libumundoserial_d.a"
+# "/usr/local/share/umundo/ios/libumundorpc.a"
+# "/usr/local/share/umundo/ios/libumundorpc_d.a"
+# "/usr/local/share/umundo/ios/libumundoutil.a"
+# "/usr/local/share/umundo/ios/libumundoutil_d.a"
 
 #############################
 # Validate Mac installers

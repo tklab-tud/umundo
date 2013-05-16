@@ -25,7 +25,11 @@ public:
   umundoReceiverWrapper(id<UMSubscriberReceiver> receiver) : _objcReceiver(receiver) {}
   id<UMSubscriberReceiver> _objcReceiver;
 	virtual void receive(umundo::Message* msg) {
+#if HAS_AUTORELEASE_POOL
     @autoreleasepool {
+#else
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+#endif
       
       NSData* nsData = [[NSData alloc] initWithBytes:(msg->data()) length:msg->size()];
       NSMutableDictionary* nsMeta = [[NSMutableDictionary alloc] init];
@@ -36,7 +40,11 @@ public:
          forKey:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]];
       }
       [_objcReceiver received:nsData withMeta:nsMeta];
+#if HAS_AUTORELEASE_POOL
     }
+#else
+    [pool drain];
+#endif
   }
 };
 

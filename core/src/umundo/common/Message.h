@@ -42,6 +42,7 @@ public:
 	    NODE_INFO     = 0x0006,
 	    SUBSCRIBE     = 0x0007,
 	    UNSUBSCRIBE   = 0x0008,
+	    DOMAIN_CHECK  = 0x0009,
 	};
 
 	static const char* typeToString(uint16_t type) {

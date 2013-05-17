@@ -3,7 +3,7 @@
 
 import sys
 # set to wherever your umundo libraries are
-sys.path.append("../../../../build/cli/lib")
+sys.path.append("../../../../build/lib")
 
 import time
 import umundo64

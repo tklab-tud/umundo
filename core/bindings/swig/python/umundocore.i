@@ -100,7 +100,6 @@ using namespace umundo;
 %rename(waitSignal) wait;
 %rename(yieldThis) yield;
 
-
 //******************************
 // Ignore whole C++ classes
 //******************************

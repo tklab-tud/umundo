@@ -19,6 +19,12 @@ ELSE()
 ENDIF()
 
 project(umundo)
+
+# CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+  set(CMAKE_SYSTEM_PROCESSOR "x86")
+endif()
+
 # use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

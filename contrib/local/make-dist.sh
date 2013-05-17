@@ -171,4 +171,4 @@ fi
 # Validate installers
 ############################
 
-./validate.pl ${DIR}/../../installer
+./validate-installers.pl ${DIR}/../../installer

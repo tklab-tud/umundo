@@ -221,6 +221,8 @@ sub checkFiles {
   %{$contents} = splice(@{[ map { s/: //; $_ } split(/\n(.*: )/, "\n".$manifest) ]}, 1);
 #  print Dumper($contents);
   chdir('umundo-'.$platform.'-'.$version) or die($!);
+
+  # make sure all files are present
   foreach my $key (keys %{$contents}) {
     my $file_info = `file $key`;
     $file_info =~ s/^.*: //;
@@ -234,6 +236,14 @@ sub checkFiles {
       print "\t But got  '$a'\n";
     }
   }
+  
+  #make sure there is no garbage in the installers
+  foreach my $file (keys %{$fileList}) {
+    unless (exists $contents->{'./'.$file}) {
+      print "--- Superfluous file '$file' found\n"
+    }
+  }
+  
   chdir('..') or die($!);
 }
 

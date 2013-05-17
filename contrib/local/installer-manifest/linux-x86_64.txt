@@ -106,7 +106,7 @@
 ./usr/local/share/umundo/samples/android/umundo-pingpong/.project: XML  document text
 ./usr/local/share/umundo/samples/android/umundo-pingpong/.settings: directory
 ./usr/local/share/umundo/samples/android/umundo-pingpong/.settings/org.eclipse.jdt.core.prefs: ASCII text
-./usr/local/share/umundo/samples/android/umundo-pingpong/AndroidManifest.xml : ASCII text
+./usr/local/share/umundo/samples/android/umundo-pingpong/AndroidManifest.xml: ASCII text
 ./usr/local/share/umundo/samples/android/umundo-pingpong/gen: directory
 ./usr/local/share/umundo/samples/android/umundo-pingpong/gen/org: directory
 ./usr/local/share/umundo/samples/android/umundo-pingpong/gen/org/umundo: directory

@@ -5,9 +5,12 @@ import sys
 import time
 
 sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
-import umundo64
+try:
+	import umundo64 as umundo
+except ImportError:
+	import umundo
 
-class TestReceiver(umundo64.Receiver):
+class TestReceiver(umundo.Receiver):
     def receive(self, *args):
         sys.stdout.write("i")
         sys.stdout.flush()
@@ -15,16 +18,16 @@ class TestReceiver(umundo64.Receiver):
 print "umundo-pingpong version python\n"
 
 testRcv = TestReceiver()
-pub = umundo64.Publisher("pingpong")
-sub = umundo64.Subscriber("pingpong", testRcv)
+pub = umundo.Publisher("pingpong")
+sub = umundo.Subscriber("pingpong", testRcv)
 
-node = umundo64.Node()
+node = umundo.Node()
 node.addPublisher(pub)
 node.addSubscriber(sub)
 
 while True:
     time.sleep(1)
-    msg = umundo64.Message()
+    msg = umundo.Message()
     msg.setData("ping")
     pub.send(msg)
 

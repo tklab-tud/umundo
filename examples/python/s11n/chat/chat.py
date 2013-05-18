@@ -6,6 +6,7 @@ import time
 
 sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
 sys.path.append("./generated/") # compiled protobuf
+sys.path.append("../../../../s11n/src/umundo-python") # s11n python binding
 try:
 	import umundo64 as umundo
 except ImportError:

@@ -1,5 +1,3 @@
-option java_package = "org.umundo.protobuf";
-
 message ChatMsg {
 	required string username = 1;
 	optional string message = 2;

@@ -1,0 +1,26 @@
+<!-- TODO run target -->
+<project name="umundo-chat" default="protoc">
+
+	<property file="build.properties"/>
+	<property name="src" value="src"/>
+	<property name="bin" value="bin"/>
+	<property name="protoc.gendir" location="generated"/>
+	<property name="protoc.srcdir" location="proto"/>
+
+	<target name="clean">
+		<delete dir="${bin}"/>
+		<delete dir="${protoc.gendir}"/>
+	</target>
+
+	<target name="protoc">
+		<delete dir="${protoc.gendir}"/>
+		<mkdir dir="${protoc.gendir}" />
+		<apply executable="${protoc.bin}" parallel="true">
+			<arg value="--proto_path" /><arg value="${protoc.srcdir}" />
+			<arg value="--python_out" /><arg value="${protoc.gendir}" />
+			<fileset dir="${protoc.srcdir}">
+				<include name="**/*.proto"/>
+			</fileset>
+		</apply>
+	</target>
+</project>

@@ -2,15 +2,19 @@
 # ^^ make sure the interpreter is the one used while building!
 
 import sys
-# set to wherever your umundo libraries are
-sys.path.append("../../../../build/lib")
+import time
+
+sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
+try:
+	import umundo64 as umundo
+except ImportError:
+	import umundo
 
 import time
-import umundo64
 
-node = umundo64.Node();
-pub = umundo64.Publisher("chat");
-sub = umundo64.Subscriber("chat");
+node = umundo.Node();
+pub = umundo.Publisher("chat");
+sub = umundo.Subscriber("chat");
 
 # TODO: actually implement the chat
 time.sleep(10);

@@ -36,11 +36,24 @@ cd ${BUILD_DIR}
 #        "mips" - matches to the NDK ABI with the same name
 #            (not testes on real devices)
 
+mkdir -p ${BUILD_DIR}/armeabi-release &> /dev/null
+cd ${BUILD_DIR}/armeabi-release
+
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DDIST_PREPARE=ON \
+-DANDROID_ABI="armeabi" \
+-DCMAKE_BUILD_TYPE=Release
+make -j2 VERBOSE=1
+make -j2 java
+
+mkdir -p ${BUILD_DIR}/x86-release &> /dev/null
+cd ${BUILD_DIR}/x86-release
 
 cmake ${DIR}/../../ \
 -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
 -DDIST_PREPARE=ON \
 -DANDROID_ABI="x86" \
--DCMAKE_BUILD_TYPE=Debug
+-DCMAKE_BUILD_TYPE=Release
 make -j2 VERBOSE=1
 make -j2 java

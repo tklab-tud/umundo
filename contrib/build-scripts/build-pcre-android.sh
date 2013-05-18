@@ -9,9 +9,8 @@ set -e
 
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )" 
-TARGET_DEVICE="arm-linux-androideabi"
 BUILD_DIR="/tmp/build-pcre-android/"
-DEST_DIR="${DIR}/../prebuilt/android/${TARGET_DEVICE}/lib"
+DEST_DIR="${DIR}/../prebuilt/android"
 
 if [ ! -f pcre_version.c ]; then
 	echo
@@ -21,42 +20,26 @@ if [ ! -f pcre_version.c ]; then
 	echo
 	exit
 fi
-mkdir -p ${BUILD_DIR} &> /dev/null
-mkdir -p ${DEST_DIR} &> /dev/null
+
 
 if [ -f Makefile ]; then
 	make clean
 fi
 
+# if [ -f ispatched ]; then
+# 	rm ./ispatched
+# else
+# 	patch -p1 < ../zeromq-3.1.0.android.patch
+# fi
+# touch ispatched
+
 CC_COMMON_FLAGS="-I. -DANDROID -DTARGET_OS_ANDROID -fno-strict-aliasing -fno-omit-frame-pointer -fno-rtti -fno-exceptions -fdata-sections -ffunction-sections"
 
-CC_ARMEABI_FLAGS="${CC_ARMEABI_FLAGS} \
--D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5__ \
--fsigned-char \
--march=armv5te \
--mtune=xscale \
--msoft-float \
--mfpu=vfp \
--mfloat-abi=softfp \
--fPIC \
--finline-limit=64"
+# build for x86
 
 CC_X86_FLAGS="${CC_COMMON_FLAGS} \
 -funwind-tables \
 -finline-limit=300"
-
-CC_MIPS_FLAGS="${CC_COMMON_FLAGS} \
--fsigned-char \
--fpic \
--finline-functions \
--funwind-tables \
--fmessage-length=0 \
--fno-inline-functions-called-once \
--fgcse-after-reload \
--frerun-cse-after-loop \
--frename-registers"
-
-# build for x86
 
 X86_SYSROOT="${ANDROID_NDK}/platforms/android-9/arch-x86"
 X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.6/prebuilt/darwin-x86"
@@ -86,14 +69,29 @@ RANLIB="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ranlib" \
 --host=arm-linux-androideabi \
 --enable-static \
 --disable-shared \
---prefix=${BUILD_DIR}/x86
+--disable-cpp \
 
 set +e
-make -j2 install
+make -j2
+mkdir -p ${DEST_DIR}/x86/lib &> /dev/null
+cp .libs/*.a ${DEST_DIR}/x86/lib
 set -e
-make clean
+
 
 # build for arm
+
+make clean
+
+CC_ARMEABI_FLAGS="${CC_ARMEABI_FLAGS} \
+-D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5__ \
+-fsigned-char \
+-march=armv5te \
+-mtune=xscale \
+-msoft-float \
+-mfpu=vfp \
+-mfloat-abi=softfp \
+-fPIC \
+-finline-limit=64"
 
 ARM_SYSROOT="${ANDROID_NDK}/platforms/android-8/arch-arm"
 ARMEABI_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/darwin-x86"
@@ -123,12 +121,28 @@ RANLIB="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ranlib" \
 --host=arm-linux-androideabi \
 --enable-static \
 --disable-shared \
---prefix=${BUILD_DIR}/armeabi
+--disable-cpp \
 
 set +e
-make -j2 install
+make -j2
+mkdir -p ${DEST_DIR}/armeabi/lib &> /dev/null
+cp .libs/*.a ${DEST_DIR}/armeabi/lib
 set -e
-make clean
+
+# build for mips
+
+CC_MIPS_FLAGS="${CC_COMMON_FLAGS} \
+-fsigned-char \
+-fpic \
+-finline-functions \
+-funwind-tables \
+-fmessage-length=0 \
+-fno-inline-functions-called-once \
+-fgcse-after-reload \
+-frerun-cse-after-loop \
+-frename-registers"
+
+# TODO if needed
 
 echo
 echo "Installed static libraries in ${DEST_DIR}"

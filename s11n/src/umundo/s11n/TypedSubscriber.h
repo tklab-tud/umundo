@@ -62,7 +62,7 @@ public:
 	TypedSubscriber(const std::string& channelName);
 	TypedSubscriber(const std::string& channelName, TypedReceiver* receiver);
 	TypedSubscriber(boost::shared_ptr<TypeDeserializerImpl> const impl) : _impl(impl) { }
-	TypedSubscriber(const TypedSubscriber& other) : _impl(other._impl) { }
+	TypedSubscriber(const TypedSubscriber& other) : Subscriber(other), _impl(other._impl) { }
 	virtual ~TypedSubscriber();
 
 	operator bool() const {

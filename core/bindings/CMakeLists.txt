@@ -78,7 +78,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 				find_program(PROTOBUF_PROTOC_EXECUTABLE NAMES protoc protoc.exe)
 				set(JAR_EXCLUDE_JNI ON) # JNI inside jar not allowed with Android
 			endif()
-			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}-${CMAKE_SYSTEM_VERSION})
+			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC})
 		else()
 			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package)
 		endif()

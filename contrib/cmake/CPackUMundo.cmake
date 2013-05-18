@@ -128,7 +128,7 @@ endif()
 ########################################
 
 if (NOT ENV{UMUNDO_PACKAGE_CURR_ARCH_ONLY})
-	file(GLOB_RECURSE ANDROID_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/android*/*)
+	file(GLOB_RECURSE ANDROID_LIBS ${PROJECT_SOURCE_DIR}/package/cross-compiled/android/*)
 	foreach(ANDROID_LIB ${ANDROID_LIBS})
 		# do not pack static libraries
 	#	if (NOT ANDROID_LIB MATCHES ".*\\.a" AND NOT ANDROID_LIB MATCHES "\\..*")
@@ -141,8 +141,8 @@ if (NOT ENV{UMUNDO_PACKAGE_CURR_ARCH_ONLY})
 			STRING(REGEX MATCH "[^/]*/[^/]*" ANDROID_PATH ${ANDROID_PATH})
 			# but remove umundo.jar from path in any case
 			STRING(REGEX REPLACE "/umundo.jar" "" ANDROID_PATH ${ANDROID_PATH})
-	    # message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
-	    # message(STATUS "ANDROID_LIB: ${ANDROID_LIB}")
+	    #message(STATUS "ANDROID_PATH: ${ANDROID_PATH}")
+	    #message(STATUS "ANDROID_LIB: ${ANDROID_LIB}")
 			install(FILES ${ANDROID_LIB} DESTINATION share/umundo/${ANDROID_PATH} COMPONENT libraryAndroid)
 			list (APPEND UMUNDO_CPACK_COMPONENTS "libraryAndroid")
 		endif()

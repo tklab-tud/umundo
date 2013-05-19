@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(chat-s11n)
 
+SET(CMAKE_BUILD_TYPE Debug CACHE STRING "")
+
 #
 # We need to set CMAKE_MODULE_PATH to the path where FindUMundo.cmake can be 
 # found in order for CMake to be able to search for umundo.
@@ -44,4 +46,5 @@ add_executable(chat-s11n
 )
 target_link_libraries(chat-s11n 
   ${UMUNDO_LIBRARIES} 
+	${PROTOBUF_LIBRARIES}
 )

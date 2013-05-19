@@ -74,7 +74,7 @@ public:
 	TypedPublisher() : _impl() {}
 	TypedPublisher(const std::string& channelName);
 	TypedPublisher(boost::shared_ptr<TypeSerializerImpl> const impl) :  _impl(impl) { }
-	TypedPublisher(const TypedPublisher& other) : _impl(other._impl) { }
+	TypedPublisher(const TypedPublisher& other) : Publisher(other), _impl(other._impl) { }
 	virtual ~TypedPublisher();
 
 	operator bool() const {

@@ -49,8 +49,13 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+// #if __cplusplus > 199711L
+// 	typedef boost::shared_ptr std::shared_ptr
+// 	typedef boost::weak_ptr std::weak_ptr
+// #else
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+// #endif
 #include <stdlib.h>
 #include <stdint.h>
 

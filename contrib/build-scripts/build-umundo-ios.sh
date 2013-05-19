@@ -4,6 +4,12 @@
 # build all of umundo for iOS and iOS simulator
 #
 
+# make sure this is not set
+unset MACOSX_DEPLOYMENT_TARGET
+
+# be ridiculously conservative with regard to ios features
+export IPHONEOS_DEPLOYMENT_TARGET="1.0"
+
 # exit on error
 set -e
 
@@ -13,45 +19,75 @@ SDK_VER="6.1"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 
-unset MACOSX_DEPLOYMENT_TARGET
-
 rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 
-if [[ -z $1 || $1 = "Debug" ]] ; then
-mkdir -p ${BUILD_DIR}/iossim-debug &> /dev/null
-cd ${BUILD_DIR}/iossim-debug
-cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug && make -j2
+#
+# Build device with older SDK for old architectures
+#
+export IOS_SDK_VERSION=5.1
 
-mkdir -p ${BUILD_DIR}/ios-debug &> /dev/null
-cd ${BUILD_DIR}/ios-debug
-cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug && make -j2
+mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug &> /dev/null
+cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug
+make -j2
 
-# build universal libraries for debug
-cd ${DIR}
+mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release &> /dev/null
+cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release
+make -j2
 
-lipo -create -output ../../package/cross-compiled/ios-${SDK_VER}/libumundo_d.ios.a \
-../../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundo_d.a \
-../../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundo_d.a
+#
+# Build device with current SDK
+#
+export IOS_SDK_VERSION=6.1
 
-fi
+mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug &> /dev/null
+cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug
+make -j2
 
-if [[ -z $1 || $1 = "Release" ]] ; then
+mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
+cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug
+make -j2
 
-mkdir -p ${BUILD_DIR}/iossim-release &> /dev/null
-cd ${BUILD_DIR}/iossim-release
-cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release && make -j2
+mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release &> /dev/null
+cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release
+make -j2
 
-mkdir -p ${BUILD_DIR}/ios-release &> /dev/null
-cd ${BUILD_DIR}/ios-release
-cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release && make -j2
+mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release &> /dev/null
+cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release
+cmake ${DIR}/../../ -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release
+make -j2
 
-# build universal libraries for release
-cd ${DIR}
+#
+# Create universal binary
+#
 
-lipo -create -output ../../package/cross-compiled/ios-${SDK_VER}/libumundo.ios.a \
-../../package/cross-compiled/ios-${SDK_VER}/arm/lib/libumundo.a \
-../../package/cross-compiled/ios-${SDK_VER}/i386/lib/libumundo.a
+LIBS=`find ${DIR}/../../package/cross-compiled/ios-* -name *.a`
+set +e
+for LIB in ${LIBS}; do
+  LIB_BASE=`basename $LIB .a`
+  ARCHS=`lipo -info $LIB`
+  ARCHS=`expr "$ARCHS" : '.*:\(.*\)$'`
+  for ARCH in ${ARCHS}; do
+    mkdir -p ${DIR}/../../package/cross-compiled/ios/arch/${ARCH} > /dev/null
+    lipo -extract $ARCH $LIB -output ${DIR}/../../package/cross-compiled/ios/arch/${ARCH}/${LIB_BASE}.a \
+      || cp $LIB ${DIR}/../../package/cross-compiled/ios/arch/${ARCH}/${LIB_BASE}.a
+    UNIQUE_LIBS=`ls ${DIR}/../../package/cross-compiled/ios/arch/${ARCH}`
+  done
+done
 
-fi
+mkdir -p ${DIR}/../../package/cross-compiled/ios/lib &> /dev/null
 
+for LIB in ${UNIQUE_LIBS}; do
+  FILELIST=""
+  for ARCH in `ls ${DIR}/../../package/cross-compiled/ios/arch/`; do
+    FILELIST="${FILELIST} ${DIR}/../../package/cross-compiled/ios/arch/${ARCH}/${LIB}"
+  done
+  lipo -create ${FILELIST} -output ${DIR}/../../package/cross-compiled/ios/lib/${LIB}
+done
 
+rm -rf ${DIR}/../../package/cross-compiled/ios/arch
+rm -rf ${DIR}/../../package/cross-compiled/ios-*/

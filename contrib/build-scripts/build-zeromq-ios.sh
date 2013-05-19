@@ -4,14 +4,20 @@
 # build ZeroMQ for iOS and iOS simulator
 #
 
+# make sure this is not set
+unset MACOSX_DEPLOYMENT_TARGET
+
+# be ridiculously conservative with regard to ios features
+export IPHONEOS_DEPLOYMENT_TARGET="1.0"
+
 # exit on error
 set -e
 
 ME=`basename $0`
-DIR="$( cd "$( dirname "$0" )" && pwd )" 
-SDK_VER="6.0"
-DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}"
-BUILD_DIR="/tmp/zeromq"
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+#SDK_VER="6.1"
+SDK_VER="5.1"
+DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}-zeromq-build"
 
 if [ ! -f src/zmq.cpp ]; then
 	echo
@@ -21,89 +27,137 @@ if [ ! -f src/zmq.cpp ]; then
 	echo
 	exit
 fi
+
 mkdir -p ${DEST_DIR} &> /dev/null
-mkdir -p ${DEST_DIR}/device/lib &> /dev/null
-mkdir -p ${DEST_DIR}/simulator/lib &> /dev/null
+
+# see http://stackoverflow.com/questions/2424770/floating-point-comparison-in-shell-script
+if [ $(bc <<< "$SDK_VER >= 6.1") -eq 1 ]; then
+  DEV_ARCHS="-arch armv7 -arch armv7s"
+elif [ $(bc <<< "$SDK_VER >= 5.1") -eq 1 ]; then
+  DEV_ARCHS="-arch armv6 -arch armv7"
+else
+  echo
+  echo "Building for SDK < 5.1 not supported"
+  exit
+fi
 
 #
 # Build for Device
 #
+if [ ! -d ${DEST_DIR}/device ]; then
 
-SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS${SDK_VER}.sdk"
+  TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer" 
+  SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneOS${SDK_VER}.sdk"
 
-if [ ! -d ${SYSROOT} ]; then
-	echo
-	echo "Cannot find iOS developer tools."
-	echo
-	exit	
+  if [ ! -d ${SYSROOT} ]; then
+    echo
+    echo "Cannot find iOS developer tools at ${SYSROOT}."
+    echo
+    exit  
+  fi
+
+  if [ -f Makefile ]; then
+    make clean
+  fi
+
+  mkdir -p ${DEST_DIR}/device &> /dev/null
+
+  ./configure \
+  CPP="cpp" \
+  CXXCPP="cpp" \
+  CXX=${TOOLCHAIN_ROOT}/usr/bin/g++ \
+  CC=${TOOLCHAIN_ROOT}/usr/bin/gcc \
+  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
+  CFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  CXXFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  --host=arm-apple-darwin10 \
+  --target=arm-apple-darwin10 \
+  --disable-shared \
+  --disable-dependency-tracking \
+  LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS}" \
+  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
+  --prefix=${DEST_DIR}/device
+
+  make -j2 install
+else
+  echo
+  echo "${DEST_DIR}/device already exists - not rebuilding."
+  echo
 fi
-
-if [ -f Makefile ]; then
-	make clean
-fi
-
-mkdir -p ${BUILD_DIR}/ios &> /dev/null
-
-./configure \
-CPP="cpp" \
-CXXCPP="cpp" \
-CXX=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ \
-CC=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc \
-LD=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-Os -isysroot ${SYSROOT} -arch armv7 -arch armv7s -marm -miphoneos-version-min=4.3" \
-CXXFLAGS="-Os -isysroot ${SYSROOT} -arch armv7 -arch armv7s -marm -miphoneos-version-min=4.3" \
---disable-dependency-tracking \
---host=arm-apple-darwin10 \
-LDFLAGS="-isysroot ${SYSROOT} -arch armv7 -arch armv7s -miphoneos-version-min=4.3" \
-AR=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ar \
-AS=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/as \
-LIBTOOL=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/libtool \
-STRIP=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/strip \
-RANLIB=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ranlib \
---prefix=${BUILD_DIR}/ios
-
-make -j2 install
-
 
 #
 # Simulator
 #
+if [ ! -d ${DEST_DIR}/simulator ]; then
 
-SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${SDK_VER}.sdk"
+  TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer" 
+  SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneSimulator${SDK_VER}.sdk"
 
-if [ -f Makefile ]; then
-	make clean
+  if [ ! -d ${SYSROOT} ]; then
+    echo
+    echo "Cannot find iOS developer tools at ${SYSROOT}."
+    echo
+    exit  
+  fi
+
+  if [ -f Makefile ]; then
+  	make clean
+  fi
+
+  mkdir -p ${DEST_DIR}/simulator &> /dev/null
+
+  ./configure \
+  CXX=${TOOLCHAIN_ROOT}/usr/bin/llvm-g++ \
+  CC=${TOOLCHAIN_ROOT}/usr/bin/llvm-gcc \
+  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
+  CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
+  CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
+  --disable-shared \
+  --disable-dependency-tracking \
+  LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
+  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
+  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
+  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
+  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
+  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
+  --prefix=${DEST_DIR}/simulator
+
+  make -j2 install
+else
+  echo
+  echo "${DEST_DIR}/device already exists - not rebuilding."
+  echo
 fi
 
-mkdir -p ${BUILD_DIR}/ios-sim &> /dev/null
+echo
+echo "- Creating universal binaries --------------------------------------"
+echo
 
-make clean
-./configure \
-CXX=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/g++ \
-CC=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc \
-LD=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ld\ -r \
-CFLAGS="-Os -isysroot ${SYSROOT} -arch i386 -miphoneos-version-min=4.3" \
-CXXFLAGS="-Os -isysroot ${SYSROOT} -arch i386 -miphoneos-version-min=4.3" \
---disable-dependency-tracking \
-LDFLAGS="-isysroot  ${SYSROOT} -arch i386 -miphoneos-version-min=4.3" \
-AR=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ar \
-AS=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/as \
-LIBTOOL=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/libtool \
-STRIP=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/strip \
-RANLIB=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/ranlib \
---prefix=${BUILD_DIR}/ios-sim
+LIBS=`find ${DIR}/../prebuilt/ios/*zeromq-build* -name *.a`
+set +e
+for LIB in ${LIBS}; do
+  LIB_BASE=`basename $LIB .a`
+  ARCHS=`lipo -info $LIB`
+  ARCHS=`expr "$ARCHS" : '.*:\(.*\)$'`
+  for ARCH in ${ARCHS}; do
+    mkdir -p ${DIR}/../prebuilt/ios/arch/${ARCH} > /dev/null
+    lipo -extract $ARCH $LIB -output ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a \
+      || cp $LIB ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a
+    UNIQUE_LIBS=`ls ${DIR}/../prebuilt/ios/arch/${ARCH}`
+  done
+done
 
-make -j2 install
 
-# tidy up
-mv ${BUILD_DIR}/ios/lib/lib* ${DEST_DIR}/device/lib
-mv ${BUILD_DIR}/ios-sim/lib/lib* ${DEST_DIR}/simulator/lib
+for LIB in ${UNIQUE_LIBS}; do
+  FILELIST=""
+  for ARCH in `ls ${DIR}/../prebuilt/ios/arch/`; do
+    FILELIST="${FILELIST} ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB}"
+  done
+  lipo -create ${FILELIST} -output ${DIR}/../prebuilt/ios/lib/${LIB}
+done
 
-#
-# create universal library
-#
-lipo -info ${DEST_DIR}/device/lib/libzmq.a
-lipo -info ${DEST_DIR}/simulator/lib/libzmq.a
-lipo -create ${DEST_DIR}/device/lib/libzmq.a ${DEST_DIR}/simulator/lib/libzmq.a -output ${DEST_DIR}/lib/libzmq.a
-echo "Built universal library in: ${DEST_DIR}/lib/libzmq.a"
-lipo -info ${DEST_DIR}/lib/libzmq.a
+rm -rf ${DIR}/../prebuilt/ios/arch/

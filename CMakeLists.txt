@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "3")
-SET(UMUNDO_VERSION_PATCH "4-pre1")
+SET(UMUNDO_VERSION_PATCH "4")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -19,6 +19,12 @@ ELSE()
 ENDIF()
 
 project(umundo)
+
+# CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+  set(CMAKE_SYSTEM_PROCESSOR "x86")
+endif()
+
 # use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -49,7 +55,7 @@ endif()
 # We use the toolchain file from http://code.google.com/p/android-cmake/
 if (CMAKE_CROSSCOMPILING AND ANDROID_ABI)
 	set(ANDROID ON)
-	set(CMAKE_CROSSCOMPILING_TARGET android)
+	set(CMAKE_CROSSCOMPILING_TARGET "android")
 	set(CMAKE_SYSTEM_VERSION ${ANDROID_NATIVE_API_LEVEL})
 endif()
 
@@ -67,6 +73,7 @@ if(CMAKE_CROSSCOMPILING)
 	if (IOS)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY")
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/ios/${CMAKE_SYSTEM_VERSION}")
+		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/ios/")
 	elseif (ANDROID)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni - we don't?
 		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
@@ -358,10 +365,12 @@ if(UNIX AND NOT APPLE AND NOT IOS AND NOT ANDROID)
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
 	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
+	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
 else()
 	# build with bonjour everywhere else
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
+	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
 	if(CMAKE_CROSSCOMPILING AND ANDROID)
 		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 		# required in patched bonjour headers
@@ -425,8 +434,11 @@ else()
 endif()
 
 # prefer static libraries for linking
+set(CMAKE_FIND_LIBRARY_SUFFIXES_SHARED ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES_STATIC .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+
 if(BUILD_PREFER_STATIC_LIBRARIES)
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
 endif()
 
 # where should libraries end up?
@@ -434,7 +446,7 @@ if (DIST_PREPARE)
 	if (CMAKE_CROSSCOMPILING)
 		string(TOLOWER ${CMAKE_CROSSCOMPILING_TARGET} CMAKE_CROSSCOMPILING_TARGET_LC)
 		set(OUTPUT_DIR
-			${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}-${CMAKE_SYSTEM_VERSION}/${CMAKE_SYSTEM_PROCESSOR})
+			${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}/${CMAKE_SYSTEM_PROCESSOR})
 	else()
 		if (WIN32 AND 64BIT_HOST)
 			set(OUTPUT_DIR
@@ -481,6 +493,13 @@ endif()
 # enable config.h style compile time options and add as "umundo/config.h"
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/umundo/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# gcc is picky when it comes to argument order
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+	if (NOT ANDROID)
+		add_definitions("-fPIC")
+	endif()
+endif()
 
 ############################################################
 # Handle sub-components
@@ -542,10 +561,7 @@ if(NOT BUILD_SHARED_LIBS)
 	else()
 		set(UMUNDO_STATIC_LIBRARIES_SUFFIX "a")
 	endif()
-	#
-	# walk add their dependent libraries
-	# @Todo: We could use dynamic variable names and a foreach with the components.
-	#
+
 	set(UMUNDO_STATIC_LIBRARIES_TMP "")
 	set(UMUNDO_COMP_BUILT "")
 	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")

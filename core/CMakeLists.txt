@@ -110,6 +110,14 @@ if(DISC_AVAHI)
 endif()
 
 ###########################################
+# Broadcast
+###########################################
+if(DISC_BROADCAST)
+	file(GLOB_RECURSE DISC_BROADCAST_FILES src/umundo/discovery/broadcast/*.cpp)
+	list(APPEND UMUNDOCORE_FILES ${DISC_BROADCAST_FILES})
+endif()
+
+###########################################
 # Threads
 ###########################################
 if(THREAD_PTHREAD AND NOT ANDROID)

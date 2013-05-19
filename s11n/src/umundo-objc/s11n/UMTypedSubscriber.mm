@@ -50,7 +50,11 @@
 
 void umundoTypedReceiverWrapper::receive(umundo::Message* msg) {
 		// use an @autorelease {} here?
+#if HAS_AUTORELEASE_POOL
   @autoreleasepool {
+#else
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+#endif
     google::protobuf::MessageLite* pbObj = _deserializers[msg->getMeta("um.s11n.type")]->New();
     pbObj->ParseFromString(std::string(msg->data(), msg->size()));
     assert(pbObj->SerializeAsString().compare(std::string(msg->data(), msg->size())) == 0);
@@ -63,7 +67,10 @@ void umundoTypedReceiverWrapper::receive(umundo::Message* msg) {
       [meta setValue:value forKey:key];
     }
     [_objcTypedReceiver received:pbObj andMeta:meta];
-
+#if HAS_AUTORELEASE_POOL
   }
+#else
+  [pool drain];
+#endif
 }
 

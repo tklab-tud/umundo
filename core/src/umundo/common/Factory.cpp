@@ -33,6 +33,10 @@
 #include "umundo/discovery/avahi/AvahiNodeDiscovery.h"
 #endif
 
+#ifdef DISC_BROADCAST
+#include "umundo/discovery/broadcast/BroadcastNodeDiscovery.h"
+#endif
+
 #if !(defined DISC_AVAHI || defined DISC_BONJOUR)
 #error "No discovery implementation choosen"
 #endif
@@ -83,6 +87,9 @@ Factory::Factory() {
 #endif
 #ifdef DISC_AVAHI
 	_prototypes["discovery"] = new AvahiNodeDiscovery();
+#endif
+#ifdef DISC_BROADCAST
+	_prototypes["discovery"] = new BroadcastNodeDiscovery();
 #endif
 }
 

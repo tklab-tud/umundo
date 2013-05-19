@@ -9,13 +9,14 @@ if (WIN32)
 
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files/swig") # swig.exe
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
-	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0") # CSharp compiler
+	#LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0.30319") # CSharp compiler
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # CSharp compiler
-else()
-	FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH ) # Mono compiler
-	FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH ) # Mono compiler
 endif()
+
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
+
+FIND_PROGRAM(DMCS_EXECUTABLE dmcs PATHS $ENV{DMCS_HOME} ENV PATH ) # Mono compiler
+FIND_PROGRAM(CSC_EXECUTABLE csc PATHS $ENV{CSC_HOME} ENV PATH ) # CSharp compiler
 
 if (NOT IOS)
 	find_package(SWIG)
@@ -25,7 +26,9 @@ if (NOT IOS)
 			INCLUDE(${SWIG_USE_FILE})
 			add_subdirectory(swig/java)
 			if (NOT DIST_PREPARE)
-				add_subdirectory(swig/python)
+				if (NOT WIN32)
+					add_subdirectory(swig/python)
+				endif()
 				add_subdirectory(swig/perl)
 				add_subdirectory(swig/php)
 			endif()
@@ -56,8 +59,8 @@ if (UMUNDONATIVEJAVA_LOCATION)
 	#
 	
 	set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	if (DIST_PREPARE)
-	 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG}) # link statically!
+	if (NOT 64BIT_HOST AND DIST_PREPARE)
+	 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC}) # link statically!
 	endif()
 	find_package(Protobuf REQUIRED)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
@@ -75,7 +78,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 				find_program(PROTOBUF_PROTOC_EXECUTABLE NAMES protoc protoc.exe)
 				set(JAR_EXCLUDE_JNI ON) # JNI inside jar not allowed with Android
 			endif()
-			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}-${CMAKE_SYSTEM_VERSION})
+			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC})
 		else()
 			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package)
 		endif()
@@ -218,8 +221,6 @@ if (UMUNDONATIVECSHARP_LOCATION)
 			add_dependencies(ALL_TESTS mono)
 		endif()
 		set_target_properties(mono PROPERTIES FOLDER "Bindings")
-	else()
-		message(STATUS "Could not find dmcs mono compiler - will not build Mono bindings")
 	endif()
 	
 endif()

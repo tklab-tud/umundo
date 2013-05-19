@@ -24,15 +24,17 @@ eval cd ~/Documents/TK/Code/
 eval spawn find ./umundo -newer umundo-win.zip
 set redeploy 0;
 expect {
-	"find:*No such file"     { set redeploy 1; }
-	-re ".expect\r\n"        { set redeploy 0; }
-	-re ".cpp\r\n"           { set redeploy 1; }
-	-re "package\r\n"        { set redeploy 1; }
-	-re ".h\r\n"             { set redeploy 1; }
-	-re "CMakeLists.txt\r\n" { set redeploy 1; }
+	"find:*No such file" { set redeploy 1; }
+	".expect\r\n"        { set redeploy 0; }
+	".cpp\r\n"           { set redeploy 1; }
+	"package\r\n"        { set redeploy 1; }
+	".h\r\n"             { set redeploy 1; }
+	"CMakeLists.txt\r\n" { set redeploy 1; }
 	-re $local_prompt        { }
 }
 #set redeploy 0;
+
+puts $redeploy;
 
 if {$redeploy} {
 # eval spawn rm umundo-win.tar

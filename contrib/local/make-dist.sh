@@ -171,13 +171,4 @@ fi
 # Validate installers
 ############################
 
-expect validate-installers.expect
-
-############################
-# Create ReadMe.html
-############################
-
-echo -n "Create ReadMe.html? [y/N]: "; read CREATE_README
-if [ "$CREATE_README" == "y" ]; then
-	./make-installer-html-table.pl ${DIR}/../../installer > ${DIR}/../../installer/ReadMe.html
-fi
+./validate-installers.pl ${DIR}/../../installer

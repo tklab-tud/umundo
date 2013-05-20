@@ -27,7 +27,7 @@ class ChatReceiver(umundoS11n.TypedReceiver):
 		super(ChatReceiver,self).__init__()
 		self.participants = participants;
 
-	def receiveObject(chatMsg, msg):
+	def receiveObject(self, chatMsg, msg):
 		if not object is None:
 			if chatMsg.type == ChatMsg.Type.JOINED:
 				participants[msg.getMeta("subscriber")] = chatMsg.username

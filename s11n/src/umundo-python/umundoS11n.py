@@ -5,8 +5,11 @@ try:
 except:
     import umundo as umundo_proto
 
-
 class TypedPublisher(umundo_proto.Publisher):
+
+    def __init__(self, *args):
+        super(TypedPublisher,self).__init__(*args)
+
     def prepareMessage(self, protoType, messageLiteObject):
         msg = umundo_proto.Message()
         buffer = messageLiteObject.SerializeToString()
@@ -18,47 +21,46 @@ class TypedPublisher(umundo_proto.Publisher):
 		self.send(self.prepareMessage(protoType, messageLiteObject))
 
 
-
 class TypedSubscriber(umundo_proto.Subscriber):
 
     def __init__(self, channel, receiver):
-        umundo_proto.Subscriber.__init__(self, channel)
+        super(TypedSubscriber, self).__init__(channel)
+        self.deserializerMethods = dict()
         self.channel = channel
         self.receiver = receiver
-        decoratedReceiver = TypedSubscriber.DeserializingReceiverDecorator(receiver)
-
+        decoratedReceiver = DeserializingReceiverDecorator(receiver)
+        #pyt.bla(self,decoratedReceiver)
         self.setReceiver(decoratedReceiver)
 
-    class DeserializingReceiverDecorator(umundo_proto.Receiver):
-
-        def __init__(self, receiver):
-            self.receiver = receiver
-
-        def receive(self, msg):
-            print(msg)
-            if (not "um.s11n.type" in msg.getMeta()):
-                return self.receiver.receiveObject(msg)
-            protoType = msg.getMeta("um.s11n.type");
-            data = msg.getData();
-
-            print("type: "+protoType)
-            print("data: "+data)
-            return None
+    def registerType(self, generatedMessageType):
+        self.deserializerMethods[generatedMessageType.__class__] = generatedMessageType
 
 
+class DeserializingReceiverDecorator(umundo_proto.Receiver):
 
-class TypedReceiver:
-    def receiveObject(obj, msg):
-        pass
+    def __init__(self, receiver):
+        super(DeserializingReceiverDecorator,self).__init__()
+        self.receiver = receiver
+
+    def receive(self, msg):
+        print("msg received, TODO:impl")
+        if (not "um.s11n.type" in msg.getMeta()):
+            return self.receiver.receiveObject(msg)
+        protoType = msg.getMeta("um.s11n.type");
+        data = msg.getData();
+        print("type: "+protoType)
+        print("data: "+data)
+        return None
 
 
-class TypedGreeter:
-    def welcome(self, atPub, nodeId, subId):
-        pass
 
-    def farewell(self, fromPub, nodeId, subId):
-        pass
+class TypedReceiver(umundo_proto.Receiver):
 
-    def prepareMessage(self, type, msgLite):
-        pass
+    def __init__(self, *args):
+        super(TypedReceiver,self).__init__(*args)
 
+
+class TypedGreeter(umundo_proto.Greeter):
+
+    def __init__(self, *args):
+        super(TypedGreeter,self).__init__(*args)

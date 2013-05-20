@@ -3,7 +3,14 @@ import sys
 try:
     import umundo64 as umundo_proto
 except:
-    import umundo as umundo_proto
+    try:
+        import umundo as umundo_proto
+    except:
+        try:
+            import umundo64_d as umundo_proto
+        except:
+            import umundo_d as umundo_proto
+
 
 class TypedPublisher(umundo_proto.Publisher):
 

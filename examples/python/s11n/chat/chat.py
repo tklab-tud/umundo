@@ -9,13 +9,22 @@ sys.path.append("./generated/") # compiled protobuf
 sys.path.append("../../../../s11n/src/umundo-python") # s11n python binding
 try:
 	import umundo64 as umundo
-except ImportError:
-	import umundo
+except:
+	try:
+		import umundo
+	except:
+		try:
+			import umundo64_d as umundo 
+		except:
+			import umundo_d as umundo	
+	
+	
 import umundoS11n
 from ChatS11N_pb2 import ChatMsg
 
 class ChatReceiver(umundoS11n.TypedReceiver):
 	def __init__(self, participants):
+		super(ChatReceiver,self).__init__()
 		self.participants = participants;
 
 	def receiveObject(chatMsg, msg):

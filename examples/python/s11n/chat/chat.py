@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # ^^ make sure the interpreter is the one used while building!
 
 import sys
@@ -68,7 +68,7 @@ chatPub = umundoS11n.TypedPublisher("s11nChat")
 chatGrt = ChatGreeter(chatPub, chatSub, username, participants)
 
 chatSub.registerType(ChatMsg)
-chatPub.setGreeter(chatGrt)
+#chatPub.setGreeter(chatGrt)
 
 node = umundo.Node()
 node.addPublisher(chatPub)

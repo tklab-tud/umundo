@@ -45,19 +45,11 @@ class TypedSubscriber(umundo_proto.Subscriber):
 class DeserializingReceiverDecorator(umundo_proto.Receiver):
 
     def __init__(self, receiver):
-        super(DeserializingReceiverDecorator,self).__init__()
+        super(DeserializingReceiverDecorator, self).__init__()
         self.receiver = receiver
 
-    def receive(self, msg):
-        print("msg received, TODO:impl")
-        if (not "um.s11n.type" in msg.getMeta()):
-            return self.receiver.receiveObject(msg)
-        protoType = msg.getMeta("um.s11n.type");
-        data = msg.getData();
-        print("type: "+protoType)
-        print("data: "+data)
-        return None
-
+    def receive(self, *args):
+        self.receiver.receive(args)
 
 
 class TypedReceiver(umundo_proto.Receiver):

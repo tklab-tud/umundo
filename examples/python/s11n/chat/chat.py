@@ -7,19 +7,9 @@ import time
 sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
 sys.path.append("./generated/") # compiled protobuf
 sys.path.append("../../../../s11n/src/umundo-python") # s11n python binding
-try:
-	import umundo64 as umundo
-except:
-	try:
-		import umundo
-	except:
-		try:
-			import umundo64_d as umundo 
-		except:
-			import umundo_d as umundo	
-	
 	
 import umundoS11n
+from umundoS11n import umundo_proto as umundo
 from ChatS11N_pb2 import ChatMsg
 
 class ChatReceiver(umundoS11n.TypedReceiver):
@@ -28,7 +18,7 @@ class ChatReceiver(umundoS11n.TypedReceiver):
 		self.participants = participants;
 
 	def receiveObject(self, chatMsg, msg):
-		if not object is None:
+		if not msg is None:
 			if chatMsg.type == ChatMsg.Type.JOINED:
 				participants[msg.getMeta("subscriber")] = chatMsg.username
 				print "%s joined the chat" % chatMsg.username

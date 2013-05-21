@@ -1,4 +1,4 @@
-import sys
+import sys, traceback
 
 try:
     import umundo64 as umundo_proto
@@ -48,8 +48,18 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
         super(DeserializingReceiverDecorator, self).__init__()
         self.receiver = receiver
 
-    def receive(self, *args):
-        self.receiver.receive(args)
+    def receive(self, msg):
+        try:
+            metaType = msg.getMeta("um.s11n.type")
+            if (metaType == None):
+                print("unkown msg")
+                return
+            else:
+                data = msg.data();
+                return self.receiver.receive(metaType, data)
+        except BaseException as e:
+            print("failed received")
+            traceback.print_exc(file=sys.stdout)
 
 
 class TypedReceiver(umundo_proto.Receiver):

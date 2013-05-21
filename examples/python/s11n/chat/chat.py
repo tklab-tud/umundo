@@ -19,11 +19,14 @@ class ChatReceiver(umundoS11n.TypedReceiver):
 
 	def receiveObject(self, chatMsg, msg):
 		if not msg is None:
+			print("%s: %s"%(chatMsg.username, chatMsg.message))
+			'''
 			if chatMsg.type == ChatMsg.Type.JOINED:
 				participants[msg.getMeta("subscriber")] = chatMsg.username
 				print "%s joined the chat" % chatMsg.username
 			elif chatMsg.type == ChatMsg.Type.NORMAL:
 				print "%s: %s" % (chatMsg.username, chatMsg.message)
+			'''
 
 class ChatGreeter(umundoS11n.TypedGreeter):
 	def __init__(self, publisher, subscriber, username, participants):
@@ -57,7 +60,7 @@ chatSub = umundoS11n.TypedSubscriber("s11nChat", chatRcv);
 chatPub = umundoS11n.TypedPublisher("s11nChat")
 chatGrt = ChatGreeter(chatPub, chatSub, username, participants)
 
-chatSub.registerType(ChatMsg)
+chatSub.registerType("ChatMsg", ChatMsg)
 #chatPub.setGreeter(chatGrt)
 
 node = umundo.Node()
@@ -76,4 +79,4 @@ while True:
 	msg = ChatMsg()
 	msg.username = username
 	msg.message = inputmsg
-	chatPub.sendObject("ChatMsg", msg);
+	chatPub.sendObject(msg)

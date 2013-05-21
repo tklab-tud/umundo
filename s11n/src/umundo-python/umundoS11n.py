@@ -24,8 +24,10 @@ class TypedPublisher(umundo_proto.Publisher):
         msg.putMeta("um.s11n.type", protoType)
         return msg
 
-    def sendObject(self, protoType, messageLiteObject):
-		self.send(self.prepareMessage(protoType, messageLiteObject))
+    def sendObject(self, messageLiteObject):
+        protoType = str(type(messageLiteObject).__name__)
+        print("send type:%s"%protoType)
+        self.send(self.prepareMessage(protoType, messageLiteObject))
 
 
 class TypedSubscriber(umundo_proto.Subscriber):
@@ -35,18 +37,20 @@ class TypedSubscriber(umundo_proto.Subscriber):
         self.deserializerMethods = dict()
         self.channel = channel
         self.receiver = receiver
-        self.decoratedReceiver = DeserializingReceiverDecorator(receiver)
+        self.decoratedReceiver = DeserializingReceiverDecorator(self, receiver)
         self.setReceiver(self.decoratedReceiver)
 
-    def registerType(self, generatedMessageType):
-        self.deserializerMethods[generatedMessageType.__class__] = generatedMessageType
+    def registerType(self, name, clazz):
+        print(type(clazz))
+        self.deserializerMethods[name] = clazz
 
 
 class DeserializingReceiverDecorator(umundo_proto.Receiver):
 
-    def __init__(self, receiver):
+    def __init__(self, typedSubscriber, receiver):
         super(DeserializingReceiverDecorator, self).__init__()
         self.receiver = receiver
+        self.typedSubscriber = typedSubscriber
 
     def receive(self, msg):
         try:
@@ -54,9 +58,22 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
             if (metaType == None):
                 print("unkown msg")
                 return
+            elif (not metaType in self.typedSubscriber.deserializerMethods):
+                print("unkown type %s"%metaType)
+                for k in self.typedSubscriber.deserializerMethods:
+                    print(k)
+                    print(self.typedSubscriber.deserializerMethods[k])
             else:
                 data = msg.data();
-                return self.receiver.receive(metaType, data)
+                #print(type(data))
+                savedClazz = self.typedSubscriber.deserializerMethods[metaType]
+                #print(type(savedClazz))
+                instance =savedClazz()
+                #print(type(instance))
+                #print(dir(savedClazz))
+                savedClazz.ParseFromString(instance, data)
+                #print(instance)
+                return self.receiver.receiveObject(instance, msg)
         except BaseException as e:
             print("failed received")
             traceback.print_exc(file=sys.stdout)

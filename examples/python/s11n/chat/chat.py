@@ -18,17 +18,17 @@ class ChatReceiver(umundoS11n.TypedReceiver):
 		self.participants = participants;
 
 	def receiveObject(self, chatMsg, msg):
-		if not msg is None:
-			print("%s: %s"%(chatMsg.username, chatMsg.message))
-			'''
-			if chatMsg.type == ChatMsg.Type.JOINED:
-				participants[msg.getMeta("subscriber")] = chatMsg.username
-				print "%s joined the chat" % chatMsg.username
-			elif chatMsg.type == ChatMsg.Type.NORMAL:
-				print "%s: %s" % (chatMsg.username, chatMsg.message)
-			'''
+		try:
+			if not msg is None:
+				if chatMsg.type == ChatMsg.JOINED:
+					participants[msg.getMeta("subscriber")] = chatMsg.username
+					print "%s joined the chat" % chatMsg.username
+				elif chatMsg.type == ChatMsg.NORMAL:
+					print "%s: %s" % (chatMsg.username, chatMsg.message)
+		except BaseException as e:
+			traceback.print_exc(file=sys.stdout)
 
-class ChatGreeter(umundoS11n.TypedGreeter):
+class ChatGreeter(umundo.Greeter):
 	def __init__(self, publisher, subscriber, username, participants):
 		super(ChatGreeter,self).__init__()
 		self.publisher = publisher
@@ -37,19 +37,26 @@ class ChatGreeter(umundoS11n.TypedGreeter):
 		self.participants = participants
 
 	def welcome(self, publisher, nodeId, subId):
-		welcomeMsg = ChatMsg()
-		welcomeMsg.username = self.userName
-		welcomeMsg.type = ChatMsg.Type.JOINED
-		greeting = self.publisher.prepareMessage("ChatMsg", welcomeMsg)
-		greeting.setReceiver(subId)
-		greeting.putMeta("subscriber", self.subscriber.getUUID())
-		self.publisher.send(greeting)
+		try:
+			welcomeMsg = ChatMsg()
+			welcomeMsg.username = self.username
+			welcomeMsg.type = ChatMsg.JOINED
+
+			greeting = self.publisher.prepareMessage("ChatMsg", welcomeMsg)
+			greeting.setReceiver(subId)
+			greeting.putMeta("subscriber", self.subscriber.getUUID())
+			self.publisher.send(greeting)
+		except BaseException as e:
+			traceback.print_exc(file=sys.stdout)
 
 	def farewell(self, publisher, nodeId, subId):
-		if subId in participants:
-			print "%s left the chat" % subId
-		else:
-			print "An unknown user left the chat: %s" % subId
+		try:
+			if subId in participants:
+				print "%s left the chat" % subId
+			else:
+				print "An unknown user left the chat: %s" % subId
+		except BaseException as e:
+			traceback.print_exc(file=sys.stdout)
 
 
 username = raw_input("Dein Username: ")
@@ -79,4 +86,4 @@ while True:
 	msg = ChatMsg()
 	msg.username = username
 	msg.message = inputmsg
-	chatPub.sendObject(msg)
+	chatPub.sendObject("ChatMsg", msg)

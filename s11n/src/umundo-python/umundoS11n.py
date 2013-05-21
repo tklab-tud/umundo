@@ -1,4 +1,4 @@
-import sys, traceback
+import sys, traceback,binascii
 
 try:
     import umundo64 as umundo_proto
@@ -13,25 +13,22 @@ except:
 
 
 class TypedPublisher(umundo_proto.Publisher):
-
     def __init__(self, *args):
         super(TypedPublisher,self).__init__(*args)
 
     def prepareMessage(self, protoType, messageLiteObject):
         msg = umundo_proto.Message()
         buffer = messageLiteObject.SerializeToString()
+        #print "-> send %s: %s (%s)" % (protoType, binascii.hexlify(buffer), buffer)
         msg.setData(buffer)
         msg.putMeta("um.s11n.type", protoType)
         return msg
 
-    def sendObject(self, messageLiteObject):
-        protoType = str(type(messageLiteObject).__name__)
-        print("send type:%s"%protoType)
-        self.send(self.prepareMessage(protoType, messageLiteObject))
+    def sendObject(self, name, messageLiteObject):
+        self.send(self.prepareMessage(name, messageLiteObject))
 
 
 class TypedSubscriber(umundo_proto.Subscriber):
-
     def __init__(self, channel, receiver):
         super(TypedSubscriber, self).__init__(channel)
         self.deserializerMethods = dict()
@@ -41,12 +38,10 @@ class TypedSubscriber(umundo_proto.Subscriber):
         self.setReceiver(self.decoratedReceiver)
 
     def registerType(self, name, clazz):
-        print(type(clazz))
         self.deserializerMethods[name] = clazz
 
 
 class DeserializingReceiverDecorator(umundo_proto.Receiver):
-
     def __init__(self, typedSubscriber, receiver):
         super(DeserializingReceiverDecorator, self).__init__()
         self.receiver = receiver
@@ -56,23 +51,14 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
         try:
             metaType = msg.getMeta("um.s11n.type")
             if (metaType == None):
-                print("unkown msg")
                 return
             elif (not metaType in self.typedSubscriber.deserializerMethods):
-                print("unkown type %s"%metaType)
-                for k in self.typedSubscriber.deserializerMethods:
-                    print(k)
-                    print(self.typedSubscriber.deserializerMethods[k])
+                return
             else:
                 data = msg.data();
-                #print(type(data))
-                savedClazz = self.typedSubscriber.deserializerMethods[metaType]
-                #print(type(savedClazz))
-                instance =savedClazz()
-                #print(type(instance))
-                #print(dir(savedClazz))
-                savedClazz.ParseFromString(instance, data)
-                #print(instance)
+                #print "-> receive %s: %s" % (metaType, data)
+                instance = self.typedSubscriber.deserializerMethods[metaType]()
+                instance.ParseFromString(data)
                 return self.receiver.receiveObject(instance, msg)
         except BaseException as e:
             print("failed received")
@@ -80,12 +66,10 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
 
 
 class TypedReceiver(umundo_proto.Receiver):
-
     def __init__(self, *args):
         super(TypedReceiver,self).__init__(*args)
 
 
 class TypedGreeter(umundo_proto.Greeter):
-
     def __init__(self, *args):
         super(TypedGreeter,self).__init__(*args)

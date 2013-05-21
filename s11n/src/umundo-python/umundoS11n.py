@@ -35,9 +35,8 @@ class TypedSubscriber(umundo_proto.Subscriber):
         self.deserializerMethods = dict()
         self.channel = channel
         self.receiver = receiver
-        decoratedReceiver = DeserializingReceiverDecorator(receiver)
-        #pyt.bla(self,decoratedReceiver)
-        self.setReceiver(decoratedReceiver)
+        self.decoratedReceiver = DeserializingReceiverDecorator(receiver)
+        self.setReceiver(self.decoratedReceiver)
 
     def registerType(self, generatedMessageType):
         self.deserializerMethods[generatedMessageType.__class__] = generatedMessageType

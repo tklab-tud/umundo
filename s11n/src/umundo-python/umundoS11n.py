@@ -1,4 +1,4 @@
-import sys, traceback, zlib, binascii
+import sys, traceback, zlib
 
 try:
     import umundo64 as umundo_proto
@@ -21,7 +21,8 @@ class TypedPublisher(umundo_proto.Publisher):
         buffer = messageLiteObject.SerializeToString()
         msg.setData(buffer)
         msg.putMeta("um.s11n.type", protoType)
-        print "-> send %s: size=%s, crc32=%s, data=0x%s" % (protoType, len(buffer), zlib.crc32(buffer), binascii.hexlify(buffer))
+        print "-> send %s: size=%s, crc32=%s, data=%s" % (protoType, len(buffer), zlib.crc32(buffer), ":".join("{0:x}".format(ord(c)).zfill(2) for c in buffer))
+
         return msg
 
     def sendObject(self, name, messageLiteObject):
@@ -56,7 +57,7 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
                 return
             else:
                 data = msg.data();
-                print "-> receive %s: size=%d, crc32=%s, data=0x%s" % (metaType, len(data), zlib.crc32(data), binascii.hexlify(data))
+                print "-> receive %s: size=%d, crc32=%s, data=%s" % (metaType, len(data), zlib.crc32(data), ":".join("{0:x}".format(ord(c)).zfill(2) for c in data))
                 instance = self.typedSubscriber.deserializerMethods[metaType]()
                 instance.ParseFromString(data)
                 return self.receiver.receiveObject(instance, msg)

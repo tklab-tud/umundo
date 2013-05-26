@@ -1,5 +1,11 @@
 import sys, traceback, zlib
 
+####
+# s11n Python 2.7 implementation in dependence on the Java implementation in umundo-java/org/umundo/s11n
+####
+
+
+# import the appropriate library
 try:
     import umundo64 as umundo_proto
 except:
@@ -16,12 +22,15 @@ class TypedPublisher(umundo_proto.Publisher):
     def __init__(self, *args):
         super(TypedPublisher,self).__init__(*args)
 
+    # serializes the message including type information
     def prepareMessage(self, protoType, messageLiteObject):
         msg = umundo_proto.Message()
         buffer = messageLiteObject.SerializeToString()
         msg.setData(buffer)
         msg.putMeta("um.s11n.type", protoType)
-        print "-> send %s: size=%s, crc32=%s, data=%s" % (protoType, len(buffer), zlib.crc32(buffer), ":".join("{0:x}".format(ord(c)).zfill(2) for c in buffer))
+
+        # debug: compare sent data with received data
+        #print "-> send %s: size=%s, crc32=%s, data=%s" % (protoType, len(buffer), zlib.crc32(buffer), ":".join("{0:x}".format(ord(c)).zfill(2) for c in buffer))
 
         return msg
 
@@ -51,18 +60,20 @@ class DeserializingReceiverDecorator(umundo_proto.Receiver):
     def receive(self, msg):
         try:
             metaType = msg.getMeta("um.s11n.type")
-            if (metaType == None):
+            if metaType is None:  # no meta type information
                 return
-            elif (not metaType in self.typedSubscriber.deserializerMethods):
+            elif not metaType in self.typedSubscriber.deserializerMethods:  # unknown type
                 return
-            else:
-                data = msg.data();
-                print "-> receive %s: size=%d, crc32=%s, data=%s" % (metaType, len(data), zlib.crc32(data), ":".join("{0:x}".format(ord(c)).zfill(2) for c in data))
+            else:  # type is known, deserialize message
+                data = msg.data()
+
+                # debug: compare sent data with received data
+                #print "-> receive %s: size=%d, crc32=%s, data=%s" % (metaType, len(data), zlib.crc32(data), ":".join("{0:x}".format(ord(c)).zfill(2) for c in data))
+
                 instance = self.typedSubscriber.deserializerMethods[metaType]()
                 instance.ParseFromString(data)
                 return self.receiver.receiveObject(instance, msg)
         except BaseException as e:
-            print("failed received")
             traceback.print_exc(file=sys.stdout)
 
 

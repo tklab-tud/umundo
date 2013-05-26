@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # make sure the interpreter is the one used while building!
 
+# this is used to test the python core binding
+
 import sys
 import time
 

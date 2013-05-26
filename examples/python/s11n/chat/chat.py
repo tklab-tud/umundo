@@ -86,7 +86,7 @@ while True:
         node.removeSubscriber(chatSub)
         break
 
-	msg = ChatMsg()
-	msg.username = username
-	msg.message = inputmsg
-	chatPub.sendObject("ChatMsg", msg)
+    msg = ChatMsg()
+    msg.username = username
+    msg.message = inputmsg
+    chatPub.sendObject("ChatMsg", msg)

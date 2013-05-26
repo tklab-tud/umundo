@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # make sure the interpreter is the one used while building!
 
 # this is used to test the python core binding
@@ -8,9 +8,9 @@ import time
 
 sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
 try:
-	import umundo64 as umundo
+    import umundo64 as umundo # 64 bit
 except ImportError:
-	import umundo
+    import umundo # 32 bit
 
 import time
 

@@ -1,22 +1,17 @@
+#!/usr/bin/env python2.7
+# make sure the interpreter is the one used while building!
+
 import sys, traceback, zlib
 
 ####
 # s11n Python 2.7 implementation in dependence on the Java implementation in umundo-java/org/umundo/s11n
 ####
 
-
-# import the appropriate library
+sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
 try:
-    import umundo64 as umundo_proto
-except:
-    try:
-        import umundo as umundo_proto
-    except:
-        try:
-            import umundo64_d as umundo_proto
-        except:
-            import umundo_d as umundo_proto
-
+    import umundo64 as umundo_proto # 64 bit
+except ImportError:
+    import umundo as umundo_proto # 32 bit
 
 class TypedPublisher(umundo_proto.Publisher):
     def __init__(self, *args):

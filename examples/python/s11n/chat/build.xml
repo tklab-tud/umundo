@@ -1,4 +1,6 @@
-<!-- TODO run target -->
+<!-- This script generates generate/ChatS11N_pb2.py from proto/ChatS11N.proto
+    Don't forget to define protoc.bin in build.properties
+-->
 <project name="umundo-chat" default="protoc">
 
 	<property file="build.properties"/>

@@ -1,21 +1,20 @@
 #!/usr/bin/python
-# ^^ make sure the interpreter is the one used while building!
+# make sure the interpreter is the one used while building!
 
 import sys
 import time
 
 sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
 try:
-	import umundo64 as umundo
+    import umundo64 as umundo
 except ImportError:
-	import umundo
+    import umundo
+
 
 class TestReceiver(umundo.Receiver):
     def receive(self, *args):
         sys.stdout.write("i")
         sys.stdout.flush()
-
-print "umundo-pingpong version python\n"
 
 testRcv = TestReceiver()
 pub = umundo.Publisher("pingpong")

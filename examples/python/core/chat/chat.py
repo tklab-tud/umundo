@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# ^^ make sure the interpreter is the one used while building!
+# make sure the interpreter is the one used while building!
 
 import sys
 import time

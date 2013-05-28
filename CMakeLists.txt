@@ -339,8 +339,6 @@ endif()
 # see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
 if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
-    # prefer macports libs
-    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
 	set(CMAKE_OSX_ARCHITECTURES "x86_64;i386")
 	# support leopard and above
 	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)

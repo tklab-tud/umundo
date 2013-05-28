@@ -1,16 +1,22 @@
-#!/usr/bin/python
-# ^^ make sure the interpreter is the one used while building!
+#!/usr/bin/env python2.7
+# make sure the interpreter is the one used while building!
+
+# this is used to test the python core binding
 
 import sys
-# set to wherever your umundo libraries are
-sys.path.append("../../../../build/cli/lib")
+import time
+
+sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
+try:
+    import umundo64 as umundo # 64 bit
+except ImportError:
+    import umundo # 32 bit
 
 import time
-import umundo64
 
-node = umundo64.Node();
-pub = umundo64.Publisher("chat");
-sub = umundo64.Subscriber("chat");
+node = umundo.Node();
+pub = umundo.Publisher("chat");
+sub = umundo.Subscriber("chat");
 
 # TODO: actually implement the chat
 time.sleep(10);

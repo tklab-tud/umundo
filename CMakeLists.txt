@@ -32,6 +32,79 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 string(TOLOWER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LC)
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CMAKE_CXX_COMPILER_ID_LC)
 
+################################################################
+# Configuration of library type, linking and language bindings
+################################################################
+
+#
+# There are a few considerations when building libraries to run on as 
+# many platforms as possible while providing flexibility and convenience.
+#
+# 1. When you just hit cmake && make you get a set of dynamic libraries linked as dynamically as possible
+#   1.1 Except on Windows where deploying libraries is a pain
+#   1.2 Building shared libs on Windows fails as we expose STL in our public headers
+#
+# 2. When Building the language bindings, the resulting extensions should be as static as possible
+#
+# 3. There are convenience libraries name libumundo (as opposed to libumundo[core|serial|rpc])
+#    which include / link against everything.
+#
+# Build static libraries and language bindings
+# $ cmake -DDIST_PREPARE=ON -DBUILD_BINDINGS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_PREFER_STATIC_LIBRARIES=ON
+#
+# Build libraries for distribution:
+# $ cmake -DDIST_PREPARE=ON -DBUILD_BINDINGS=OFF
+#
+
+OPTION(BUILD_TESTS    "Build umundo tests" OFF)
+OPTION(BUILD_BINDINGS "Build umundo language bindings" ON)
+OPTION(DIST_PREPARE   "Put libraries into the lib folder of the source tree" OFF)
+
+# setup defaults
+if (CMAKE_CROSSCOMPILING AND ANDROID)
+	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" OFF)
+	OPTION(BUILD_UMUNDO_RPC  "Build umundo remote procedure calls" OFF)
+	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" OFF)
+else()
+	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" ON)
+	OPTION(BUILD_UMUNDO_RPC  "Build umundo remote procedure calls" ON)
+	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" ON)
+endif()
+if (CMAKE_CROSSCOMPILING)
+	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
+	OPTION(BUILD_UMUNDO_TOOLS "Build sample applications" OFF)
+else()
+	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
+	OPTION(BUILD_UMUNDO_TOOLS "Build sample applications" ON)
+endif()
+
+if (WIN32 OR CMAKE_CROSSCOMPILING)
+	OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+else()
+	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
+endif()
+
+# prefer static libraries for linking
+set(CMAKE_FIND_LIBRARY_SUFFIXES_SHARED ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES_STATIC .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(BUILD_PREFER_STATIC_LIBRARIES)
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
+endif()
+set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+
+# Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
+# http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
+if (NOT 64BIT_HOST AND CMAKE_CROSSCOMPILING OR WIN32)
+	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
+else()
+	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
+endif()
+OPTION(DEBUG_THREADS "Print log messages on mutex and monitor access" OFF)
+if (DEBUG_THREADS)
+	add_definitions("-DDEBUG_THREADS")
+endif()
+
 ############################################################
 # Search paths for cross compiling and prebuilds
 ############################################################
@@ -178,6 +251,11 @@ else()
 	endif()
 endif()
 
+# prepend some directories given at cmake invocation time
+if (CMAKE_CUSTOM_FIND_PATH)
+	SET(CMAKE_FIND_ROOT_PATH "${CMAKE_CUSTOM_FIND_PATH};${CMAKE_FIND_ROOT_PATH}")
+endif()
+
 message(STATUS "Searching for prebuilt libraries in: ${CMAKE_FIND_ROOT_PATH}")
 
 if (WIN32)
@@ -188,13 +266,6 @@ endif()
 # General setup
 ############################################################
 
-# enable testing and actual output with tests
-if (CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_TESTS "Build umundo tests" OFF)
-else()
-	OPTION(BUILD_TESTS "Build umundo tests" OFF)
-endif()
-
 # a dummy target to depend on the targets needed for tests, see:
 # http://stackoverflow.com/questions/733475/cmake-ctest-make-test-doesnt-build-tests
 add_custom_target(ALL_TESTS COMMENT "Building all tests when BUILD_TESTS is enabled")
@@ -202,8 +273,6 @@ if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)
 endif()
-
-OPTION(DIST_PREPARE "Put libraries into the lib folder of the source tree" OFF)
 
 # where to find the cmake modules we distribute
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
@@ -289,38 +358,6 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 add_definitions("-DBUILD_${BUILD_TYPE}")
 
-if (CMAKE_CROSSCOMPILING AND ANDROID)
-	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" OFF)
-	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" OFF)
-	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" OFF)
-else()
-	OPTION(BUILD_UMUNDO_S11N "Build umundo serialization" ON)
-	OPTION(BUILD_UMUNDO_RPC "Build umundo remote procedure calls" ON)
-	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" ON)
-endif()
-if (CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
-else()
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
-endif()
-
-if (WIN32 OR CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-else()
-	OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
-endif()
-
-# Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
-# http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
-if (NOT 64BIT_HOST AND CMAKE_CROSSCOMPILING OR WIN32)
-	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
-else()
-	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
-endif()
-OPTION(DEBUG_THREADS "Print log messages on mutex and monitor access" OFF)
-if (DEBUG_THREADS)
-	add_definitions("-DDEBUG_THREADS")
-endif()
 
 # Enable verbose Makefiles to debug the build process itself
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -370,7 +407,7 @@ else()
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
 	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
 	if(CMAKE_CROSSCOMPILING AND ANDROID)
-		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
+		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF)
 		# required in patched bonjour headers
 		add_definitions("-DTARGET_OS_ANDROID")
 	elseif(WIN32)
@@ -391,10 +428,6 @@ endif()
 if (NOT DISC_AVAHI AND NOT DISC_BONJOUR)
 	message(FATAL_ERROR "No discovery implementation choosen - enable either DISC_BONJOUR or DISC_AVAHI!")
 endif()
-if (BUILD_PREFER_PREBUILT_LIBS AND NOT BUILD_PREFER_STATIC_LIBRARIES)
-	# this is ok as long as we do not ship dynamic libraries in contrib/prebuilt
-#	message(STATUS "Potentially problematic dynamic linking into contrib/prebuilt!")
-endif()
 
 if(WIN32)
 	SET(THREAD_WIN32 ON)
@@ -406,15 +439,6 @@ OPTION(NET_ZEROMQ "Use 0MQ for networking" ON)
 OPTION(S11N_PROTOBUF "Use protobuf object serialization" ON)
 OPTION(RPC_PROTOBUF "Use protobuf remote procedure calls" ON)
 
-if (S11N_PROTOBUF AND WIN32)
-	# take a guess at PROTOBUF_SRC_ROOT_FOLDER
-	if(EXISTS "${PROJECT_BINARY_DIR}/../protobuf-2.4.1/")
-		set(PROTOBUF_SRC_ROOT_FOLDER "${PROJECT_BINARY_DIR}/../protobuf-2.4.1")
-	elseif(EXISTS "${PROJECT_BINARY_DIR}/../../protobuf-2.4.1/")
-		set(PROTOBUF_SRC_ROOT_FOLDER "${PROJECT_BINARY_DIR}/../../protobuf-2.4.1")
-	endif()
-endif()
-
 if (NET_ZEROMQ)
 	SET(NET_ZEROMQ_SND_HWM "300000" CACHE STRING "Maximum queue size for publishers")
 	SET(NET_ZEROMQ_RCV_HWM "300000" CACHE STRING "Maximum queue size for subscribers")
@@ -424,19 +448,20 @@ endif()
 # Library location, type and linking
 ############################################################
 
+if (BUILD_UMUNDO_S11N AND S11N_PROTOBUF AND WIN32)
+	# take a guess at PROTOBUF_SRC_ROOT_FOLDER
+	if(EXISTS "${PROJECT_BINARY_DIR}/../protobuf-2.4.1/")
+		set(PROTOBUF_SRC_ROOT_FOLDER "${PROJECT_BINARY_DIR}/../protobuf-2.4.1")
+	elseif(EXISTS "${PROJECT_BINARY_DIR}/../../protobuf-2.4.1/")
+		set(PROTOBUF_SRC_ROOT_FOLDER "${PROJECT_BINARY_DIR}/../../protobuf-2.4.1")
+	endif()
+endif()
+
 # built shared or static libraries?
 if(BUILD_SHARED_LIBS)
 	add_definitions("-DCOMPILING_DLL")
 else()
 	add_definitions("-DUMUNDO_STATIC")
-endif()
-
-# prefer static libraries for linking
-set(CMAKE_FIND_LIBRARY_SUFFIXES_SHARED ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES_STATIC .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
-if(BUILD_PREFER_STATIC_LIBRARIES)
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
 endif()
 
 # where should libraries end up?
@@ -469,12 +494,46 @@ foreach( OUTPUT_CONFIG ${CMAKE_CONFIGURATION_TYPES} )
 endforeach()
 
 ############################################################
-# Dependancies used in more than one of our components
-# are included here to avoid multiple find* statements
+# Find all our dependant libraries here so we can control
+# their link type in a central place
 ############################################################
 
+OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" ON)
+OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" ON)
+OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
+
+# Boost
 FIND_PATH(Boost_INCLUDE_DIR boost/version.hpp PATHS /usr/include)
 include_directories(${Boost_INCLUDE_DIR})
+
+# Protobuf
+if (BUILD_PREFER_STATIC_PROTOBUF)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
+else()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
+endif()
+if (BUILD_UMUNDO_S11N)
+	find_package(Protobuf)
+endif()
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
+
+# PCRE
+if (BUILD_PREFER_STATIC_PCRE)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
+else()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
+endif()
+find_package(PCRE REQUIRED)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
+
+# 0MQ
+if (BUILD_PREFER_STATIC_ZEROMQ)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
+else()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
+endif()
+find_package(ZeroMQ REQUIRED)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
 
 ############################################################
@@ -535,7 +594,11 @@ if (BUILD_UMUNDO_UTIL)
 	include_directories(${UTIL_INCLUDES})
 endif()
 if (BUILD_UMUNDO_APPS)
-	add_subdirectory(apps)
+	add_subdirectory(apps/fileserver)
+	add_subdirectory(apps/tracking/opencv)
+endif()
+if (BUILD_UMUNDO_TOOLS)
+	add_subdirectory(apps/tools)
 endif()
 
 if (NOT CMAKE_CROSSCOMPILING)
@@ -688,7 +751,9 @@ foreach(LIBRARY ${ALL_LIBRARIES})
 endforeach()
 
 set(AVAILABLE_LANGUAGE_BINDINGS "")
-if (NOT SWIG_EXECUTABLE)
+if (NOT BUILD_BINDINGS)
+	set(AVAILABLE_LANGUAGE_BINDINGS "BUILD_BINDINGS explicitly set to false")
+elseif (NOT SWIG_EXECUTABLE)
 	set(AVAILABLE_LANGUAGE_BINDINGS "SWIG_EXECUTABLE does not contain a path to a swig binary")
 else()
 	if (TARGET "java")
@@ -724,7 +789,14 @@ message(STATUS "  Building umundo.rpc ............ : ${BUILD_UMUNDO_RPC}")
 message(STATUS "  Building umundo.util ........... : ${BUILD_UMUNDO_UTIL}")
 message(STATUS "  Building umundo tests .......... : ${BUILD_TESTS}")
 message(STATUS "  Building umundo applications ... : ${BUILD_UMUNDO_APPS}")
+message(STATUS "  Building umundo tools .......... : ${BUILD_UMUNDO_TOOLS}")
 message(STATUS "  Available language bindings .... : ${AVAILABLE_LANGUAGE_BINDINGS}")
+if (BUILD_SHARED_LIBS AND BUILD_BINDINGS)
+	message(STATUS "")
+	message(STATUS "    Warning: Building language bindings BUILD_SHARED_LIBS=ON")
+	message(STATUS "             introduces runtime dependency to libumundocore")
+	message(STATUS "")
+endif()
 
 message(STATUS "General information:")
 message(STATUS "  Build type ..................... : ${CMAKE_BUILD_TYPE}")
@@ -760,10 +832,6 @@ message(STATUS "  Binaries will end up in ........ : " ${REL_CMAKE_RUNTIME_OUTPU
 ############################################################
 # Tests
 ############################################################
-
-if (NOT CMAKE_CROSSCOMPILING)
-	add_subdirectory(apps/tools)
-endif()
 
 if(BUILD_TESTS)
 	add_subdirectory(core/test)

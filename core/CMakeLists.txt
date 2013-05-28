@@ -147,13 +147,13 @@ if (APPLE)
 	LIST(APPEND UMUNDOCORE_LIBRARIES ${FOUNDATION})
 endif()
 
-#LIST(APPEND UMUNDOCORE_LIBRARIES umundocore)
-
 ############################################################
 # process other directories
 ############################################################
 
-add_subdirectory(bindings)
+if (BUILD_BINDINGS)
+	add_subdirectory(bindings)
+endif()
 
 ############################################################
 # setup umundocore library

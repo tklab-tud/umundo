@@ -240,6 +240,7 @@ void ZeroMQSubscriber::run() {
 		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
 			Message* msg = getNextMsg();
 			_receiver->receive(msg);
+      delete msg;
 		}
 	}
 }

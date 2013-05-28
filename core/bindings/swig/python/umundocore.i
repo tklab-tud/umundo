@@ -79,6 +79,15 @@ using namespace umundo;
 // enable conversion from char*, int to jbytearray
 %apply (char *STRING, size_t LENGTH) { (const char* data, size_t length) };
 
+
+# %extend umundo::Message {
+# 	void getData(char **result, int *len) {
+# 		*result = (char *)self->data();
+# 		int size = self->size();
+# 		len = &size;
+# 	}
+# }
+
 // ignore these functions in every class
 %ignore setChannelName(string);
 %ignore setUUID(string);

@@ -15,10 +15,10 @@ eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
 expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
        -re $local_prompt { }
 
-eval cd ~/Documents/TK/Code/
-
 ##############################
 # prepare and deploy archive
+
+eval cd ~/Documents/TK/Code/
 
 # check age of archive against modification date
 eval spawn find ./umundo -newer umundo-win.zip
@@ -108,7 +108,7 @@ if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 ##############################
 # compile in debug configuration
 
-send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" ..\\umundo\r"
+send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\r"
@@ -138,7 +138,7 @@ expect {
 ##############################
 # compile in release configuration
 
-send "\"cmake\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send "\"cmake\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\n\r"

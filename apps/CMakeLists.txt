@@ -1,2 +1,0 @@
-add_subdirectory(tracking/opencv)
-add_subdirectory(fileserver)

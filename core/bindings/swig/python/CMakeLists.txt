@@ -15,6 +15,7 @@ if (MSVC)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../msvc)
 endif()
 
+# -includeall?
 SET(CMAKE_SWIG_FLAGS "-threads" "-c++")
 if (64BIT_HOST)
 	list(APPEND CMAKE_SWIG_FLAGS "-D64BIT_HOST")

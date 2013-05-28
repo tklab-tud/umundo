@@ -32,6 +32,7 @@ typedef std::set set;
 typedef std::list list;
 
 %rename(equals) operator==; 
+%rename(c_empty) empty; 
 %rename(isValid) operator bool;
 %ignore operator!=;
 %ignore operator<;

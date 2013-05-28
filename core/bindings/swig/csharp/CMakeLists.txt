@@ -25,5 +25,6 @@ set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 
 # I am not sure why we need it twice, but we do at least on android
 SWIG_LINK_LIBRARIES(umundoNativeCSharp umundocore)
+SWIG_LINK_LIBRARIES(umundoNativeCSharp ${UMUNDOCORE_LIBRARIES})
 
 INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig DESTINATION share/umundo/lib)

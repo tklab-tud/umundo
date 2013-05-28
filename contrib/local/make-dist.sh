@@ -27,6 +27,7 @@ if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ]; then
 	echo "Start the Linux 32Bit system named 'debian' and press return" && read
 	echo == BUILDING UMUNDO FOR Linux 32Bit =========================================================
 	export UMUNDO_BUILD_HOST=debian
+	export UMUNDO_BUILD_ARCH=32
 	expect build-linux.expect
 fi
 
@@ -35,6 +36,7 @@ if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ]; then
 	echo "Start the Linux 64Bit system named 'debian64' and press return" && read
 	echo == BUILDING UMUNDO FOR Linux 64Bit =========================================================
 	export UMUNDO_BUILD_HOST=debian64
+	export UMUNDO_BUILD_ARCH=64
 	expect build-linux.expect
 fi
 
@@ -86,12 +88,18 @@ if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
 	rm -rf /tmp/build-umundo
 	mkdir -p /tmp/build-umundo
 	cd /tmp/build-umundo
-	cmake -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DBUILD_UMUNDO_APPS=OFF -DBUILD_UMUNDO_TOOLS=OFF -DBUILD_UMUNDO_S11N=OFF -DBUILD_UMUNDO_RPC=OFF -DBUILD_UMUNDO_UTIL=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_BINDINGS=ON -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
 	make -j2
-	make -j2 java	
-	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+	rm -rf /tmp/build-umundo/*
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DBUILD_UMUNDO_APPS=OFF -DBUILD_UMUNDO_TOOLS=OFF -DBUILD_UMUNDO_S11N=OFF -DBUILD_UMUNDO_RPC=OFF -DBUILD_UMUNDO_UTIL=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_BINDINGS=ON -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
 	make -j2
-	make -j2 java	
+	make -j2 java
+	rm -rf /tmp/build-umundo/*
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DBUILD_SHARED_LIBS=ON -DBUILD_BINDINGS=OFF -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
+	make -j2
+	rm -rf /tmp/build-umundo/*
+	cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DBUILD_SHARED_LIBS=ON -DBUILD_BINDINGS=OFF -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Debug ${DIR}/../..
+	make -j2
 fi
 
 ############################
@@ -109,6 +117,7 @@ if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ] || [ "$BUILD_PACKA
 	echo Start the Linux 32Bit system named 'debian' again && read
 	echo == PACKAGING UMUNDO FOR Linux 32Bit =========================================================
 	export UMUNDO_BUILD_HOST=debian
+	export UMUNDO_BUILD_ARCH=32
 	expect package-linux.expect
 fi
 
@@ -119,6 +128,7 @@ if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ] || [ "$BUILD_PACKA
 	echo Start the Linux 64Bit system named 'debian64' again && read
 	echo == PACKAGING UMUNDO FOR Linux 64Bit =========================================================
 	export UMUNDO_BUILD_HOST=debian64
+	export UMUNDO_BUILD_ARCH=64
 	expect package-linux.expect
 fi
 
@@ -129,6 +139,7 @@ if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$B
 	echo Start the Raspberry Pi system named 'raspberrypi' again && read
 	echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
 	export UMUNDO_BUILD_HOST=raspberrypi
+	export UMUNDO_BUILD_ARCH=32
 	expect package-linux.expect
 fi
 

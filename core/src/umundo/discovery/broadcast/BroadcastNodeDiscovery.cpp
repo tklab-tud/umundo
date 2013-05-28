@@ -58,6 +58,7 @@ void BroadcastNodeDiscovery::add(NodeImpl* node) {
 	/**
 	 * umundo.core asks you to make the given node discoverable
 	 */
+
 }
 
 void BroadcastNodeDiscovery::remove(NodeImpl* node) {

@@ -16,6 +16,8 @@
 	<echo message="cp:   ${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
 
   <mkdir dir="${build.dir}/core/bindings/swig/java-class/" />
+  <mkdir dir="${build.dir}/protobuf/generated/" />
+
 	<javac destdir="${build.dir}/core/bindings/swig/java-class/" debug="true" includeantruntime="false" target="1.5" source="1.5">
       <src path="${build.dir}/protobuf/generated/" />
       <src path="${build.dir}/core/bindings/swig/java/" />

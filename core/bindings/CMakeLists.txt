@@ -53,17 +53,9 @@ endif()
 GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
 if (UMUNDONATIVEJAVA_LOCATION)
 
-	#
-	# TODO: We could move the protoc targets into s11n/CMakeLists.txt to
-	# get rid of find_package(Protobuf REQUIRED) here
-	#
-	
-	set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	if (NOT 64BIT_HOST AND DIST_PREPARE)
-	 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC}) # link statically!
+	if (NOT PROTOBUF_PROTOC_EXECUTABLE)
+		find_program(PROTOBUF_PROTOC_EXECUTABLE NAMES protoc protoc.exe)
 	endif()
-	find_package(Protobuf REQUIRED)
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
 	# Find UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE
 	include("${CMAKE_MODULE_PATH}/UseUMundo.cmake")
@@ -90,39 +82,43 @@ if (UMUNDONATIVEJAVA_LOCATION)
 	FIND_PROGRAM(ANT_EXECUTABLE ant PATHS $ENV{ANT_HOME}/bin ENV PATH )
 	if (ANT_EXECUTABLE)
 		# run protoc for java
-#		ADD_CUSTOM_TARGET(java_protoc_s11n ALL
-		ADD_CUSTOM_TARGET(java_protoc_s11n
-			COMMAND ${ANT_EXECUTABLE}
-			-Dsrc.dir=${PROJECT_SOURCE_DIR}
-			-Dbuild.dir=${PROJECT_BINARY_DIR}
-			-Dbuild.type=${CMAKE_BUILD_TYPE}
-			-Dprotoc.src.dir=${PROJECT_SOURCE_DIR}/s11n/interfaces/protobuf/
-			-Dprotoc.plugin=${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE}
-			-Dprotoc.bin=${PROTOBUF_PROTOC_EXECUTABLE}
-			-f build-java.xml protoc
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
-			COMMENT "Creating ProtoBuf messages for Java ...")
-		set_target_properties(java_protoc_s11n PROPERTIES FOLDER "Bindings")
+		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_S11N)
+	#		ADD_CUSTOM_TARGET(java_protoc_s11n ALL
+			ADD_CUSTOM_TARGET(java_protoc_s11n
+				COMMAND ${ANT_EXECUTABLE}
+				-Dsrc.dir=${PROJECT_SOURCE_DIR}
+				-Dbuild.dir=${PROJECT_BINARY_DIR}
+				-Dbuild.type=${CMAKE_BUILD_TYPE}
+				-Dprotoc.src.dir=${PROJECT_SOURCE_DIR}/s11n/interfaces/protobuf/
+				-Dprotoc.plugin=${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE}
+				-Dprotoc.bin=${PROTOBUF_PROTOC_EXECUTABLE}
+				-f build-java.xml protoc
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
+				COMMENT "Creating ProtoBuf messages for Java ...")
+			set_target_properties(java_protoc_s11n PROPERTIES FOLDER "Bindings")
+		endif()
 
 #		ADD_CUSTOM_TARGET(java_protoc_rpc ALL
-		ADD_CUSTOM_TARGET(java_protoc_rpc
-			COMMAND ${ANT_EXECUTABLE}
-			-Dsrc.dir=${PROJECT_SOURCE_DIR}
-			-Dbuild.dir=${PROJECT_BINARY_DIR}
-			-Dbuild.type=${CMAKE_BUILD_TYPE}
-			-Dprotoc.src.dir=${PROJECT_SOURCE_DIR}/rpc/services/protobuf/
-			-Dprotoc.plugin=${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE}
-			-Dprotoc.bin=${PROTOBUF_PROTOC_EXECUTABLE}
-			-f build-java.xml protoc
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
-			COMMENT "Creating ProtoBuf services for Java ...")
-		set_target_properties(java_protoc_rpc PROPERTIES FOLDER "Bindings")
-
-		# we need to build the protoc plugin first
-		if (UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP)
-			add_dependencies(java_protoc_s11n ${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP})
-			add_dependencies(java_protoc_rpc ${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP})
+		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_RPC)
+			ADD_CUSTOM_TARGET(java_protoc_rpc
+				COMMAND ${ANT_EXECUTABLE}
+				-Dsrc.dir=${PROJECT_SOURCE_DIR}
+				-Dbuild.dir=${PROJECT_BINARY_DIR}
+				-Dbuild.type=${CMAKE_BUILD_TYPE}
+				-Dprotoc.src.dir=${PROJECT_SOURCE_DIR}/rpc/services/protobuf/
+				-Dprotoc.plugin=${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE}
+				-Dprotoc.bin=${PROTOBUF_PROTOC_EXECUTABLE}
+				-f build-java.xml protoc
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
+				COMMENT "Creating ProtoBuf services for Java ...")
+			set_target_properties(java_protoc_rpc PROPERTIES FOLDER "Bindings")
 		endif()
+
+		# # we need to build the protoc plugin first
+		# if (UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP)
+		# 	add_dependencies(java_protoc_s11n ${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP})
+		# 	add_dependencies(java_protoc_rpc ${UMUNDO_PROTOBUF_JAVA_RPC_EXECUTABLE_DEP})
+		# endif()
 
 		# package everything into a jar
 #		ADD_CUSTOM_TARGET(java_build_jar ALL
@@ -138,9 +134,14 @@ if (UMUNDONATIVEJAVA_LOCATION)
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
 			COMMENT "Creating the jar ...")
 		# make sure ant runs after we built the wrappers
-		add_dependencies(java java_protoc_s11n)
-		add_dependencies(java java_protoc_rpc)
+		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_S11N)
+			add_dependencies(java java_protoc_s11n)
+		endif()
+		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_RPC)
+			add_dependencies(java java_protoc_rpc)
+		endif()
 		add_dependencies(java umundoNativeJava)
+		
 		set_target_properties(java PROPERTIES FOLDER "Bindings")
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS java)

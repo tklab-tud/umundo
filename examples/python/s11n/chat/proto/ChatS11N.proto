@@ -1,0 +1,10 @@
+message ChatMsg {
+	required string username = 1;
+	optional string message = 2;
+	enum Type {
+		NORMAL = 0;
+		JOINED = 1;
+		LEFT = 2;
+	}
+	optional Type type = 3 [default = NORMAL];
+}

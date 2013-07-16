@@ -36,24 +36,85 @@ cd ${BUILD_DIR}
 #        "mips" - matches to the NDK ABI with the same name
 #            (not testes on real devices)
 
-mkdir -p ${BUILD_DIR}/armeabi-release &> /dev/null
-cd ${BUILD_DIR}/armeabi-release
+mkdir -p ${BUILD_DIR} &> /dev/null
+cd ${BUILD_DIR}
 
+rm -rf *
 cmake ${DIR}/../../ \
 -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
 -DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+-DANDROID_ABI="armeabi" \
+-DCMAKE_BUILD_TYPE=Debug
+make -j2
+make -j2 java
+
+rm -rf *
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="armeabi" \
 -DCMAKE_BUILD_TYPE=Release
-make -j2 VERBOSE=1
+make -j2
 make -j2 java
 
-mkdir -p ${BUILD_DIR}/x86-release &> /dev/null
-cd ${BUILD_DIR}/x86-release
-
+rm -rf *
 cmake ${DIR}/../../ \
 -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
 -DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+-DANDROID_ABI="x86" \
+-DCMAKE_BUILD_TYPE=Debug
+make -j2
+make -j2 java
+
+rm -rf *
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="x86" \
 -DCMAKE_BUILD_TYPE=Release
-make -j2 VERBOSE=1
+make -j2
 make -j2 java
+
+# copy into umundo-pingpong example
+cp ${DIR}/../../package/cross-compiled/android/umundo.jar \
+   ${DIR}/../../examples/android/umundo-pingpong/libs/
+cp ${DIR}/../../package/cross-compiled/android/armv5te/lib/libumundoNativeJava_d.so \
+   ${DIR}/../../examples/android/umundo-pingpong/libs/armeabi/
+cp ${DIR}/../../package/cross-compiled/android/armv5te/lib/libumundoNativeJava.so \
+   ${DIR}/../../examples/android/umundo-pingpong/libs/armeabi/
+cp ${DIR}/../../package/cross-compiled/android/i686/lib/libumundoNativeJava_d.so \
+   ${DIR}/../../examples/android/umundo-pingpong/libs/x86/
+cp ${DIR}/../../package/cross-compiled/android/i686/lib/libumundoNativeJava.so \
+   ${DIR}/../../examples/android/umundo-pingpong/libs/x86/

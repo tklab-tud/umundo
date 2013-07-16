@@ -78,7 +78,7 @@ public class TypedPublisher extends Publisher {
 	}
 
 	public void sendObject(MessageLite o) {
-		sendObject(o.getClass().getName(), o);
+		sendObject(o.getClass().getSimpleName(), o);
 	}
 
 	public void sendObject(String type, MessageLite o) {

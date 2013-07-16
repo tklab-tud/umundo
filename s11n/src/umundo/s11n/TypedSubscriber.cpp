@@ -36,13 +36,14 @@ TypeDeserializerImpl::~TypeDeserializerImpl() {
 
 void TypeDeserializerImpl::receive(Message* msg) {
 	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
-		// explicit type given
+		// explicit type given and known
 		void* obj = deserialize(msg->getMeta("um.s11n.type"), msg);
 		_recv->receive(obj, msg);
 		//    _impl->destroyObj(obj);
 	} else {
-		// just pass the raw message
-		_recv->receive(NULL, msg);
+		// generic message
+		void* obj = deserialize("", msg);
+		_recv->receive(obj, msg);
 	}
 }
 

@@ -1,4 +1,4 @@
-#ifdef 64BIT_HOST
+#ifdef HOST_64BIT
 #	ifdef DEBUG
 %module(directors="1", allprotected="1") umundoNativePython64_d
 # else

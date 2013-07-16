@@ -5,6 +5,19 @@ set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
 
 set local_prompt {sradomski$ }
+
+#
+# Copy JNI files over!
+#
+eval cd ~/Documents/TK/Code/
+eval spawn \
+	find ./umundo/package -name *NativeJava* -exec zip -r umundo-jni.zip \\{\\} \\\;
+expect -re $local_prompt
+
+eval spawn "scp -r umundo-jni.zip ${UMUNDO_BUILD_HOST}.local:~"
+expect -re $local_prompt
+
+
 eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
 expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
        -re $local_prompt { }
@@ -33,7 +46,13 @@ expect {
 }
 
 send "set prompt=easy_to_recognize \r"
-expect -re $remote_prompt
+
+expect -re $remote_prompt { send "unzip umundo-jni.zip\n" }
+expect {
+	timeout            { puts "Timeout when unzipping JNIs"; exit;  }
+	"replace"          { send "y\n"; }
+	-re $remote_prompt { }
+}
 
 send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt

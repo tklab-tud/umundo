@@ -17,8 +17,8 @@ endif()
 
 # -includeall?
 SET(CMAKE_SWIG_FLAGS "-threads" "-c++")
-if (64BIT_HOST)
-	list(APPEND CMAKE_SWIG_FLAGS "-D64BIT_HOST")
+if (HOST_64BIT)
+	list(APPEND CMAKE_SWIG_FLAGS "-DHOST_64BIT")
 endif()
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	list(APPEND CMAKE_SWIG_FLAGS "-DDEBUG")

@@ -1,15 +1,7 @@
-#ifdef 64BIT_HOST
-#	ifdef DEBUG
-%module(directors="1", allprotected="1") umundoNativeCSharp64_d
-# else
-%module(directors="1", allprotected="1") umundoNativeCSharp64
-#	endif
-#else
 #	ifdef DEBUG
 %module(directors="1", allprotected="1") umundoNativeCSharp_d
-#	else
+#else
 %module(directors="1", allprotected="1") umundoNativeCSharp
-#	endif
 #endif
 
 // import swig typemaps
@@ -124,10 +116,9 @@ using namespace umundo;
   // keep receiver as a reference to prevent premature GC
   private Receiver _receiver;
 
-  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharp64PINVOKE.new_Subscriber__SWIG_2(channelName), true) {
+  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharpPINVOKE.new_Subscriber__SWIG_2(channelName), true) {
     setReceiver(receiver);
   }
-
   public void setReceiver(Receiver receiver) {
     // it is important to keep the reference, otherwise the Java GC will eat it!
     _receiver = receiver;

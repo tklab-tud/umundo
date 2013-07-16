@@ -24,7 +24,7 @@ list(APPEND UMUNDORPC_FILES  ${RPC_FILES})
 # Protocol Buffers
 ###########################################
 
-if (RPC_PROTOBUF)
+if (RPC_PROTOBUF AND BUILD_UMUNDO_TOOLS)
 	find_package(Protobuf REQUIRED)
 # 	LIST(APPEND UMUNDORPC_LIBRARIES optimized ${PROTOBUF_LIBRARY})
 # 	LIST(APPEND UMUNDORPC_LIBRARIES debug ${PROTOBUF_LIBRARY_DEBUG})

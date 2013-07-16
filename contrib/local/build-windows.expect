@@ -32,22 +32,48 @@ expect {
 	"CMakeLists.txt\r\n" { set redeploy 1; }
 	-re $local_prompt        { }
 }
-#set redeploy 0;
+set redeploy 1;
 
 puts $redeploy;
 
 if {$redeploy} {
-# eval spawn rm umundo-win.tar
-# eval spawn tar --exclude='__*' --exclude=umundo/contrib/prebuilt/darwin --exclude=umundo/docs/html --exclude=umundo/examples/ios --exclude=umundo/contrib/archives --exclude=umundo/.git --exclude=umundo/build* --exclude=umundo/lib/ios-5.0 --exclude=umundo/lib/linux* --exclude=umundo/lib/darwin* --exclude=umundo/installer/uMundo* --exclude=umundo/contrib/prebuilt/linux* --exclude=umundo/contrib/prebuilt/ios -cf umundo-win.tar umundo/
-eval spawn rm umundo-win.zip
-eval spawn zip -r umundo-win.zip umundo/ --exclude __\* umundo/contrib/prebuilt/darwin\* umundo/contrib/prebuilt/ios\* umundo/contrib/prebuilt/linux\* umundo/docs/html\* umundo/examples/ios umundo/contrib/archives\* umundo/.git/\* umundo/build\* umundo/installer/uMundo* umundo/contrib/prebuilt/linux*
-	expect {
-		"a umundo/"        { exp_continue }
-		timeout            { puts "Timeout when packaging source code"; exit; }
-		-re $local_prompt  { }
-	}
+	eval spawn rm umundo-win.zip
+	expect -re $local_prompt
 
-#	eval spawn scp -4 umundo-win.tar sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.tar
+	eval spawn \
+		zip -r umundo-win.zip umundo/ --exclude \
+		__\* \
+		umundo/contrib\* \
+		umundo/.git/\* \
+		umundo/build\* \
+		umundo/installer/umundo\* \
+		umundo/package\* \
+		umundo/docs/html\* \
+		umundo/examples/ios\*
+	expect -re $local_prompt
+
+	eval spawn \
+		zip -r umundo-win.zip \
+			umundo/contrib/cmake \
+			umundo/contrib/snippets \
+			umundo/contrib/csharp \
+			umundo/contrib/java \
+			umundo/contrib/prebuilt/include
+	expect -re $local_prompt
+
+	if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
+		eval spawn \
+			zip -r umundo-win.zip \
+				umundo/contrib/prebuilt/windows-x86
+		expect -re $local_prompt
+
+	} else {
+		eval spawn \
+			zip -r umundo-win.zip \
+				umundo/contrib/prebuilt/windows-x86_64
+		expect -re $local_prompt
+	
+	}
 	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.zip
 	expect {
 		"ETA"              { exp_continue }
@@ -76,7 +102,6 @@ if {$redeploy} {
 	send "rmdir \/S \/Q umundo\r"
 	expect -re $remote_prompt
 
-#	send "tar xf umundo-win.tar\r"
 	send "unzip umundo-win.zip\r"
 	expect "umundo/"          { exp_continue } \
 	       -re $remote_prompt { }
@@ -108,7 +133,15 @@ if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 ##############################
 # compile in debug configuration
 
-send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" ..\\umundo\r"
+send \
+	"\"cmake.exe\" -G \"NMake Makefiles\" \
+	-DCMAKE_BUILD_TYPE=Debug \
+	-DBUILD_SHARED_LIBS=OFF \
+	-DBUILD_TESTS=${BUILD_TESTS} \
+	-DDIST_PREPARE=ON \
+	-DCMAKE_VERBOSE_MAKEFILE=OFF \
+	-DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" \
+	..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\r"
@@ -119,7 +152,7 @@ expect {
   -re $remote_prompt      { }
 }
 
-send "nmake java\r"
+send "nmake java VERBOSE=1\r"
 expect {
 	"Building" { exp_continue; }
 	"Linking" { exp_continue; }
@@ -138,7 +171,13 @@ expect {
 ##############################
 # compile in release configuration
 
-send "\"cmake\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send \
+	"\"cmake\" -G \"NMake Makefiles\" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DBUILD_SHARED_LIBS=OFF \
+	-DBUILD_TESTS=${BUILD_TESTS} \
+	-DDIST_PREPARE=ON \
+	-DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\n\r"

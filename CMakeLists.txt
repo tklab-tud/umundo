@@ -2,12 +2,33 @@
 # To cross compile, choose a toolchain file (e.g. iOS):
 # build$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../contrib/cmake/CrossCompile-iOS.cmake
 #
+
+#
+# CMAKE_BUILD_TYPE:STRING              Supported are Debug and Release
+# BUILD_PREFER_PREBUILT_LIBS:BOOL      Look for our dependencies in contrib/prebuilt first
+# BUILD_PREFER_STATIC_LIBRARIES:BOOL   Prefer static libraries to resolve dependencies
+# BUILD_PREFER_STATIC_PROTOBUF:BOOL    Prefer static protobuf libraries
+# BUILD_PREFER_STATIC_PCRE:BOOL        Prefer static pcre libraries
+# BUILD_PREFER_STATIC_ZEROMQ:BOOL      Prefer static zeromq libraries
+# BUILD_SHARED_LIBS:BOOL               Whether to build shared or static libraries
+# BUILD_TESTS:BOOL                     Build the tests
+# BUILD_CONVENIENCE_LIB:BOOL           Build libumundo convenience library
+# BUILD_BINDINGS:BOOL                  Build the language bindings as well
+# BUILD_UMUNDO_S11N:BOOL               Build the C++ serialization layer
+# BUILD_UMUNDO_RPC:BOOL                Build the C++ remote procedure call layer
+# BUILD_UMUNDO_UTIL:BOOL               Build the C++ utility library
+# BUILD_UMUNDO_APPS:BOOL               Build some example applications
+# BUILD_UMUNDO_TOOLS:BOOL              Build the command-line tools
+# DIST_PREPARE:BOOL                    Prepare a distribution, everything ends up in SRC/package/PLATFORM
+# CMAKE_CUSTOM_FIND_PATH:STRING        Append the given path when searching for dependencies
+#
+
 cmake_minimum_required(VERSION 2.8.4)
 
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "3")
-SET(UMUNDO_VERSION_PATCH "4")
+SET(UMUNDO_VERSION_PATCH "5")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -56,9 +77,11 @@ string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CMAKE_CXX_COMPILER_ID_LC)
 # $ cmake -DDIST_PREPARE=ON -DBUILD_BINDINGS=OFF
 #
 
-OPTION(BUILD_TESTS    "Build umundo tests" OFF)
-OPTION(BUILD_BINDINGS "Build umundo language bindings" ON)
-OPTION(DIST_PREPARE   "Put libraries into the lib folder of the source tree" OFF)
+
+OPTION(BUILD_CONVENIENCE_LIB  "Build umundo convenience library" OFF)
+OPTION(BUILD_TESTS            "Build umundo tests" OFF)
+OPTION(BUILD_BINDINGS         "Build umundo language bindings" ON)
+OPTION(DIST_PREPARE           "Put libraries into the lib folder of the source tree" OFF)
 
 # setup defaults
 if (CMAKE_CROSSCOMPILING AND ANDROID)
@@ -95,7 +118,7 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 # Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
 # http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
-if (NOT 64BIT_HOST AND CMAKE_CROSSCOMPILING OR WIN32)
+if (NOT HOST_64BIT AND CMAKE_CROSSCOMPILING OR WIN32)
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
 else()
 	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
@@ -117,7 +140,7 @@ endif()
 
 # is this a 64Bit host?
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(64BIT_HOST ON)
+	set(HOST_64BIT ON)
 	set(64BIT_LIB_POSTFIX 64)
 	# additional library paths to be searched
 	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
@@ -159,7 +182,7 @@ else ()
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH")
-	if (WIN32 AND 64BIT_HOST)
+	if (WIN32 AND HOST_64BIT)
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC}")
 	else()
 		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC}")
@@ -180,7 +203,7 @@ if (CMAKE_CROSSCOMPILING)
 	else()
 	endif()
 else()
-	if (WIN32 AND 64BIT_HOST)
+	if (WIN32 AND HOST_64BIT)
 		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64.tgz)
 	else()
 		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}.tgz)
@@ -360,7 +383,7 @@ add_definitions("-DBUILD_${BUILD_TYPE}")
 
 
 # Enable verbose Makefiles to debug the build process itself
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+#set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 if (CMAKE_BUILD_TYPE MATCHES Release)
 	SET(LOGLEVEL_S11N "1" CACHE STRING "Log-level for serialization - higher is more verbose" FORCE)
@@ -407,7 +430,7 @@ else()
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
 	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
 	if(CMAKE_CROSSCOMPILING AND ANDROID)
-		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF)
+		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 		# required in patched bonjour headers
 		add_definitions("-DTARGET_OS_ANDROID")
 	elseif(WIN32)
@@ -468,10 +491,15 @@ endif()
 if (DIST_PREPARE)
 	if (CMAKE_CROSSCOMPILING)
 		string(TOLOWER ${CMAKE_CROSSCOMPILING_TARGET} CMAKE_CROSSCOMPILING_TARGET_LC)
-		set(OUTPUT_DIR
-			${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}/${CMAKE_SYSTEM_PROCESSOR})
+		if (IOS)
+			set(OUTPUT_DIR
+				${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}-${CMAKE_SYSTEM_VERSION}/${CMAKE_SYSTEM_PROCESSOR})
+		elseif(ANDROID)
+			set(OUTPUT_DIR
+				${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC}/${CMAKE_SYSTEM_PROCESSOR})
+		endif()
 	else()
-		if (WIN32 AND 64BIT_HOST)
+		if (WIN32 AND HOST_64BIT)
 			set(OUTPUT_DIR
 				${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC})
 		else()
@@ -498,9 +526,15 @@ endforeach()
 # their link type in a central place
 ############################################################
 
-OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" ON)
-OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" ON)
-OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
+if (BUILD_PREFER_STATIC_LIBRARIES)
+	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" ON)
+	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" ON)
+	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
+else()
+	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" OFF)
+	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" OFF)
+	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" OFF)
+endif()
 
 # Boost
 FIND_PATH(Boost_INCLUDE_DIR boost/version.hpp PATHS /usr/include)
@@ -613,119 +647,135 @@ endif()
 # Convenience libraries
 ############################################################
 
-if(NOT BUILD_SHARED_LIBS)
-	# Build one huge static library (not implemented for all platforms)
-	set(UMUNDO_STATIC_LIBRARIES "")
-	set(UMUNDO_STATIC_LIBRARIES_SUFFIX)
-	if(WIN32)
-		set(UMUNDO_STATIC_LIBRARIES_SUFFIX "lib")
-	else()
-		set(UMUNDO_STATIC_LIBRARIES_SUFFIX "a")
-	endif()
 
-	set(UMUNDO_STATIC_LIBRARIES_TMP "")
-	set(UMUNDO_COMP_BUILT "")
-	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
-	foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
-		string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
-		GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
-		#message("${_UMUNDO_COMP_NAME}: ${UMUNDOCOMP_LOCATION}")
- 		if (UMUNDOCOMP_LOCATION)
-			if (_UMUNDO_COMP_NAME STREQUAL "SERIAL")
-				set(_UMUNDO_COMP_NAME S11N)
-			endif()
-			list(APPEND UMUNDO_COMP_BUILT umundo${_UMUNDO_COMP_NAME_LC})
-			list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDO${_UMUNDO_COMP_NAME}_LIBRARIES})
-			# cmake does not add the CMAKE_LIBRARY_POSTFIX to the location
-			# see: http://www.itk.org/Bug/print_bug_page.php?bug_id=7868
-			STRING(REGEX REPLACE 
-				"\\.${UMUNDO_STATIC_LIBRARIES_SUFFIX}" 
-				"${CMAKE_LIBRARY_POSTFIX}.${UMUNDO_STATIC_LIBRARIES_SUFFIX}" 
-				UMUNDOCOMP_LOCATION ${UMUNDOCOMP_LOCATION})
-			if (WIN32)
-				STRING(REGEX REPLACE "\\$\\(Configuration\\)/" "" UMUNDOCOMP_LOCATION ${UMUNDOCOMP_LOCATION})
-			endif()
-			list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDOCOMP_LOCATION})
-		endif()
-	endforeach()
-
-	# filter out static libraries for the current build type
-	set(SKIP_NEXT_LIB OFF)
-	foreach(UMUNDO_STATIC_LIBRARY ${UMUNDO_STATIC_LIBRARIES_TMP})
-		if (SKIP_NEXT_LIB)
-			set(SKIP_NEXT_LIB OFF)
+if(BUILD_CONVENIENCE_LIB)
+	if(NOT BUILD_SHARED_LIBS)
+		# Build one huge static library (not implemented for all platforms)
+		set(UMUNDO_STATIC_LIBRARIES "")
+		set(UMUNDO_STATIC_LIBRARIES_SUFFIX)
+		if(WIN32)
+			set(UMUNDO_STATIC_LIBRARIES_SUFFIX "lib")
 		else()
-			if (UMUNDO_STATIC_LIBRARY STREQUAL "debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-				set(SKIP_NEXT_LIB ON)
-			endif()
-			if (UMUNDO_STATIC_LIBRARY STREQUAL "optimized" AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-				set(SKIP_NEXT_LIB ON)
-			endif()
-
-			get_filename_component(SUFFIX ${UMUNDO_STATIC_LIBRARY} EXT)
-			if (SUFFIX STREQUAL ".${UMUNDO_STATIC_LIBRARIES_SUFFIX}")
-				list(APPEND UMUNDO_STATIC_LIBRARIES ${UMUNDO_STATIC_LIBRARY})
-			endif()
+			set(UMUNDO_STATIC_LIBRARIES_SUFFIX "a")
 		endif()
-	endforeach()
 
-	list(SORT UMUNDO_STATIC_LIBRARIES)
-	list(REMOVE_DUPLICATES UMUNDO_STATIC_LIBRARIES)
-	#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
-	# message("UMUNDO_COMP_BUILT: ${UMUNDO_COMP_BUILT}")
-
-	if (IOS)
-		set(LIPO_INPUT_FILES "")
-		foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
-			# message("ARCH: ${ARCH}")
-			# @TODO: we should only depend on targets that are actually being built
-			ADD_CUSTOM_COMMAND(
-				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a
-				COMMAND   libtool
-				ARGS      -arch_only ${ARCH} -static -o ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a ${UMUNDO_STATIC_LIBRARIES} 1>/dev/null 2>/dev/null
-				DEPENDS   ${UMUNDO_COMP_BUILT}
-				COMMENT   "Running libtool on static libraries for ${ARCH}"
-			)
-			list(APPEND LIPO_INPUT_FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a)
+		set(UMUNDO_STATIC_LIBRARIES_TMP "")
+		set(UMUNDO_COMP_BUILT "")
+		set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
+		foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
+			string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
+			GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
+			#message("${_UMUNDO_COMP_NAME}: ${UMUNDOCOMP_LOCATION}")
+	 		if (UMUNDOCOMP_LOCATION)
+				if (_UMUNDO_COMP_NAME STREQUAL "SERIAL")
+					set(_UMUNDO_COMP_NAME S11N)
+				endif()
+				list(APPEND UMUNDO_COMP_BUILT umundo${_UMUNDO_COMP_NAME_LC})
+				list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDO${_UMUNDO_COMP_NAME}_LIBRARIES})
+				# cmake does not add the CMAKE_LIBRARY_POSTFIX to the location
+				# see: http://www.itk.org/Bug/print_bug_page.php?bug_id=7868
+				STRING(REGEX REPLACE 
+					"\\.${UMUNDO_STATIC_LIBRARIES_SUFFIX}" 
+					"${CMAKE_LIBRARY_POSTFIX}.${UMUNDO_STATIC_LIBRARIES_SUFFIX}" 
+					UMUNDOCOMP_LOCATION ${UMUNDOCOMP_LOCATION})
+				if (WIN32)
+					STRING(REGEX REPLACE "\\$\\(Configuration\\)/" "" UMUNDOCOMP_LOCATION ${UMUNDOCOMP_LOCATION})
+				endif()
+				list(APPEND UMUNDO_STATIC_LIBRARIES_TMP ${UMUNDOCOMP_LOCATION})
+			endif()
 		endforeach()
-		ADD_CUSTOM_TARGET(umundo ALL
-			DEPENDS ${LIPO_INPUT_FILES} umundocore
-			COMMAND lipo -create -output ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a ${LIPO_INPUT_FILES} && rm ${LIPO_INPUT_FILES}
-			COMMENT "Building libumundo${CMAKE_LIBRARY_POSTFIX}.a convenience library")
 
-	elseif(WIN32)
-		if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
-			message(STATUS "Not building convenience umundo.lib as we do not know the build type at configure time")
-		else()
+		# filter out static libraries for the current build type
+		set(SKIP_NEXT_LIB OFF)
+		foreach(UMUNDO_STATIC_LIBRARY ${UMUNDO_STATIC_LIBRARIES_TMP})
+			if (SKIP_NEXT_LIB)
+				set(SKIP_NEXT_LIB OFF)
+			else()
+				if (UMUNDO_STATIC_LIBRARY STREQUAL "debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+					set(SKIP_NEXT_LIB ON)
+				endif()
+				if (UMUNDO_STATIC_LIBRARY STREQUAL "optimized" AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+					set(SKIP_NEXT_LIB ON)
+				endif()
+
+				get_filename_component(SUFFIX ${UMUNDO_STATIC_LIBRARY} EXT)
+				if (SUFFIX STREQUAL ".${UMUNDO_STATIC_LIBRARIES_SUFFIX}")
+					list(APPEND UMUNDO_STATIC_LIBRARIES ${UMUNDO_STATIC_LIBRARY})
+				endif()
+			endif()
+		endforeach()
+
+		list(SORT UMUNDO_STATIC_LIBRARIES)
+		list(REMOVE_DUPLICATES UMUNDO_STATIC_LIBRARIES)
+		#	message("UMUNDO_STATIC_LIBRARIES: ${UMUNDO_STATIC_LIBRARIES}")
+		# message("UMUNDO_COMP_BUILT: ${UMUNDO_COMP_BUILT}")
+
+		if (IOS OR APPLE)
+			set(LIPO_INPUT_FILES "")
+			foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
+				# message("ARCH: ${ARCH}")
+				# @TODO: we should only depend on targets that are actually being built
+				ADD_CUSTOM_COMMAND(
+					OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a
+					COMMAND   libtool
+					ARGS      -arch_only ${ARCH} -static -o ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a ${UMUNDO_STATIC_LIBRARIES} 1>/dev/null 2>/dev/null
+					DEPENDS   ${UMUNDO_COMP_BUILT}
+					COMMENT   "Running libtool on static libraries for ${ARCH}"
+				)
+				list(APPEND LIPO_INPUT_FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a)
+			endforeach()
+			ADD_CUSTOM_TARGET(umundo ALL
+				DEPENDS ${LIPO_INPUT_FILES} umundocore
+				COMMAND lipo -create -output ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a ${LIPO_INPUT_FILES} && rm ${LIPO_INPUT_FILES}
+				COMMENT "Building libumundo${CMAKE_LIBRARY_POSTFIX}.a convenience library")
+		elseif(CMAKE_CROSSCOMPILING)
+			# do nothing
+		elseif(WIN32)
+			if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
+				message(STATUS "Not building convenience umundo.lib as we do not know the build type at configure time")
+			else()
+				ADD_CUSTOM_COMMAND(
+					OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
+					COMMAND   lib.exe
+					ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
+					DEPENDS   ${UMUNDO_COMP_BUILT}
+					COMMENT   "Running lib.exe on static libraries"
+				)
+				ADD_CUSTOM_TARGET(umundo ALL
+					DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
+					COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
+			endif()
+		elseif(UNIX)
 			ADD_CUSTOM_COMMAND(
-				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
-				COMMAND   lib.exe
-				ARGS      /OUT:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\\umundo${CMAKE_LIBRARY_POSTFIX}.lib ${UMUNDO_STATIC_LIBRARIES}
+				OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a
+				COMMAND   ar
+				ARGS      qf ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a ${UMUNDO_STATIC_LIBRARIES}
 				DEPENDS   ${UMUNDO_COMP_BUILT}
-				COMMENT   "Running lib.exe on static libraries"
+				COMMENT   "Running ar on static libraries"
 			)
 			ADD_CUSTOM_TARGET(umundo ALL
-				DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo${CMAKE_LIBRARY_POSTFIX}.lib
-				COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.lib convenience library")
+				DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a
+				COMMENT "Building umundo${CMAKE_LIBRARY_POSTFIX}.a convenience library")
 		endif()
-	endif()
-	
-else()
+	else()
 
-	set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
-	set(_UMUNDO_COMP_BUILD)
-	foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
-		string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
-		GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
-		if (UMUNDOCOMP_LOCATION)
-			list(APPEND _UMUNDO_COMP_BUILD "umundo${_UMUNDO_COMP_NAME_LC}")
-		endif()
-	endforeach()
+		set(_UMUNDO_COMP_NAMES "CORE;SERIAL;RPC;UTIL")
+		set(_UMUNDO_COMP_BUILD)
+		foreach(_UMUNDO_COMP_NAME ${_UMUNDO_COMP_NAMES})
+			string(TOLOWER ${_UMUNDO_COMP_NAME} _UMUNDO_COMP_NAME_LC)
+			GET_TARGET_PROPERTY(UMUNDOCOMP_LOCATION umundo${_UMUNDO_COMP_NAME_LC} LOCATION) # VAR target property
+			if (UMUNDOCOMP_LOCATION)
+				list(APPEND _UMUNDO_COMP_BUILD "umundo${_UMUNDO_COMP_NAME_LC}")
+			endif()
+		endforeach()
 	
-	add_library(umundo "core/src/umundo/common/Debug.cpp")
-	target_link_libraries(umundo ${_UMUNDO_COMP_BUILD})
-	INSTALL_LIBRARY(TARGETS umundo COMPONENT libraryCore)
-	set_target_properties(umundo PROPERTIES FOLDER "Libraries")
+		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp "// auto-generated dummy to link shared libraries together\n" )
+		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp "#include <string>\n" )
+		add_library(umundo ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
+		target_link_libraries(umundo ${_UMUNDO_COMP_BUILD})
+		INSTALL_LIBRARY(TARGETS umundo COMPONENT libraryCore)
+		set_target_properties(umundo PROPERTIES FOLDER "Libraries")
+	endif()
 endif()
 
 ############################################################

@@ -36,12 +36,48 @@ set redeploy 1;
 
 
 if {$redeploy} {
-eval spawn rm umundo-linux.zip
-eval spawn zip -qr umundo-linux.zip umundo/ --exclude __\* umundo/contrib/prebuilt/darwin\* umundo/contrib/prebuilt/ios\* umundo/contrib/prebuilt/win\* umundo/docs/html\* umundo/examples/ios umundo/contrib/archives\* umundo/.git/\* umundo/build\* umundo/installer/umundo* umundo/contrib/prebuilt/win*
-	expect {
-		"a umundo/"        { exp_continue }
-		timeout            { puts "Timeout when packaging source code"; exit; }
-		-re $prompt  { }
+	eval spawn rm umundo-linux.zip
+	expect -re $prompt
+
+	eval spawn \
+		zip -r umundo-linux.zip umundo/ --exclude \
+		__\* \
+		umundo/contrib\* \
+		umundo/.git/\* \
+		umundo/build\* \
+		umundo/installer/umundo\* \
+		umundo/package\* \
+		umundo/docs/html\* \
+		umundo/examples/ios\*
+	expect -re $prompt
+	eval spawn \
+		zip -r umundo-linux.zip \
+			umundo/contrib/cmake \
+			umundo/contrib/java \
+			umundo/contrib/prebuilt/include
+	expect -re $prompt
+	
+	if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
+
+		eval spawn \
+			zip -r umundo-linux.zip \
+				umundo/contrib/prebuilt/linux-armv6l
+		expect -re $prompt
+		
+	} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
+
+		eval spawn \
+			zip -r umundo-linux.zip \
+				umundo/contrib/prebuilt/linux-x86_64
+		expect -re $prompt
+	
+	} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
+
+		eval spawn \
+			zip -r umundo-linux.zip \
+				umundo/contrib/prebuilt/linux-i686
+		expect -re $prompt
+	
 	}
 
 	eval spawn scp -4 umundo-linux.zip sradomski@${UMUNDO_BUILD_HOST}.local:~/umundo-linux.zip
@@ -78,9 +114,24 @@ if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
 }
 
 ##############################
-# static umundo in debug configuration with language bindings
+# static umundo in debug configuration for language bindings
+
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DBUILD_UMUNDO_APPS=OFF -DBUILD_UMUNDO_TOOLS=OFF -DCMAKE_BUILD_TYPE=Debug -DBUILD_UMUNDO_S11N=OFF -DBUILD_UMUNDO_RPC=OFF -DBUILD_UMUNDO_UTIL=OFF -DBUILD_BINDINGS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DBUILD_PREFER_STATIC_LIBRARIES=ON -DCMAKE_CUSTOM_FIND_PATH=/usr/local ~/umundo\n" }
+expect -re $prompt { 
+	send \
+		"cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DCMAKE_BUILD_TYPE=Debug \
+	  -DBUILD_CONVENIENCE_LIB=ON \
+		-DBUILD_BINDINGS=ON \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
+		~/umundo\n"
+}
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
@@ -99,9 +150,24 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
 }
 
 ##############################
-# static umundo in release configuration with language bindings
+# static umundo in release configuration for language bindings anc convenience lib
+
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DBUILD_UMUNDO_APPS=OFF -DBUILD_UMUNDO_TOOLS=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_UMUNDO_S11N=OFF -DBUILD_UMUNDO_RPC=OFF -DBUILD_UMUNDO_UTIL=OFF -DBUILD_BINDINGS=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON -DBUILD_PREFER_STATIC_LIBRARIES=ON -DCMAKE_CUSTOM_FIND_PATH=/usr/local ~/umundo\n" }
+expect -re $prompt { 
+	send \
+		"cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+	  -DBUILD_CONVENIENCE_LIB=ON \
+		-DBUILD_BINDINGS=ON \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
+		~/umundo\n"
+}
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
@@ -120,9 +186,51 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
 }
 
 ##############################
-# shared umundo in release configuration
+# static umundo in debug configuration
+
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_BINDINGS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON ~/umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n"
+}
+expect -re $prompt { send "make\n" }
+
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+
+##############################
+# static umundo in release configuration
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=ON \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n"
+}
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
@@ -137,8 +245,21 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
 
 ##############################
 # shared umundo in debug configuration
+
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { send "cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_BINDINGS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=${BUILD_TESTS} -DDIST_PREPARE=ON ~/umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=ON \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n" 
+}
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
@@ -151,7 +272,40 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
          -re $prompt { send "\n" }
 }
 
+##############################
+# shared umundo in release configuration
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_APPS=OFF \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=ON \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n" 
+}
+expect -re $prompt { send "make\n" }
+
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+
+
 send "cd \n"
+expect -re $prompt
+
+send "rm linux-package*.zip\n"
 expect -re $prompt
 
 if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {

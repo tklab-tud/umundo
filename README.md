@@ -231,9 +231,29 @@ being used. This applies to all umundo.core objects.
 		 	<li>a native extension named <tt>umundoNative&lt;LANGUAGE>&lt;LIB_SUFFIX></tt>.
 			<li>a language specific wrapper that (loads and) provides access to this library.
 		</ul>
-		It depends on the actual language how to register/load extensions. There are a few 
+		<p>It depends on the actual language how to register/load extensions. There are a few 
 		<a href="/tklab-tud/umundo/tree/master/examples">examples</a>. The exceptions are the 
-		Java language bindings build for desktop systems, the JAR contains all required files.</dd>
+		Java language bindings built for desktop systems, here the JAR contains all required files.</p>
+	
+		<p>If you built a recent version, the CSharp/Mono managed code dll will always try to load 
+		its unmanaged code from <tt>umundoNative[CSharp|Mono].dll</tt>, without the 64Bit or debug suffix.
+		Just copy the various <tt>umundoNativeCSharp[64[_d]].dll</tt> into seperate directories and
+		use a 64Bit switch programmatically:
+		<pre>
+[DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+private static extern void SetDllDirectory(string lpPathName);
+
+if (System.Environment.Is64BitOperatingSystem) {
+	SetDllDirectory("..\\..\\..\\lib\\win64");
+} else {
+	SetDllDirectory("..\\..\\..\\lib\\win32");
+}
+		</pre></p>
+	</dd>
+
+	<dt><b>When using umundo from the installers on linux <tt>libpcre.so.3</tt> was not found, what gives?</b></dt>
+	<dd>Some distributions, such as Fedora or Gentoo will not create <tt>libpcre.so.3</tt> but only <tt>libpcre.so.1.2.0</tt>.
+		Just symlink the actual library to libpcre.so.3 and rerun <tt>ldconfig</tt>.</dd>
 		
 	<dt><b>Does uMundo support IPv6?</b></dt>
 	<dd>No, but only because I couldn't get ZeroMQ to compile with IPv6 on Android

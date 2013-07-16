@@ -8,9 +8,9 @@ SET(CMAKE_SWIG_FLAGS "")
 SET(UMUNDO_CSHARP_NAMESPACE "org.umundo.core")
 SET(UMUNDO_CSHARP_DIR "org/umundo/core")
 
-if (HOST_64BIT)
-	list(APPEND CMAKE_SWIG_FLAGS "-DHOST_64BIT")
-endif()
+# if (HOST_64BIT)
+# 	list(APPEND CMAKE_SWIG_FLAGS "-DHOST_64BIT")
+# endif()
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	list(APPEND CMAKE_SWIG_FLAGS "-DDEBUG")
 endif()
@@ -23,9 +23,9 @@ SET(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/${UMUNDO_CSHARP_DIR}")
 SWIG_ADD_MODULE(umundoNativeCSharp csharp umundocore.i)
 set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 
-if (HOST_64BIT)
-	set_target_properties(umundoNativeCSharp PROPERTIES COMPILE_FLAGS "-DHOST_64BIT")
-endif()
+# if (HOST_64BIT)
+# 	set_target_properties(umundoNativeCSharp PROPERTIES COMPILE_FLAGS "-DHOST_64BIT")
+# endif()
 
 
 # I am not sure why we need it twice, but we do at least on android

@@ -213,7 +213,15 @@ being used. This applies to all umundo.core objects.
 		(<tt>ulimit -n</tt> gives 256).</dd>
 
 	<dt><b>Why am I not receiving messages?</b></dt>
-	<dd>There are a few things to check if you are not receiving published messages:
+	<dd>First make sure that your network is setup correctly by running two instances of <tt>umundo-pingpong</tt>.
+		If you do not receive <tt>i</tt>'s to your <tt>o</tt>'s make sure that:
+		<ul>
+			<li>Multicast messages can be delivered.
+			<li>The firewall does not block tcp/4242 and upwards.
+			<li>You actually ran more than one instance of <tt>umundo-pingpong</tt>.
+		</ul>
+		If you do receive messages with <tt>umundo-pingpong</tt>, there are a few things
+		you should check:
 		<ul>
 			<li>Are the subscriber and publisher added to different nodes?
 			<li>Are the nodes in the same (or default) domain?

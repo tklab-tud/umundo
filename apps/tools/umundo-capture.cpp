@@ -91,8 +91,7 @@ class LoggingReceiver : public Receiver {
 		fwrite(msg->data(), msg->size(), 1, fp); // data
 		
 		if (verbose)
-			std::cout << "Received " << msgSize << " bytes" << ".";
-		std::flush(std::cout);
+			std::cout << "Received " << msgSize << " bytes" << std::endl;
 		
 	}
 };
@@ -137,10 +136,8 @@ int main(int argc, char** argv) {
 	sub.setReceiver(new LoggingReceiver());
 	node.addSubscriber(sub);
 
-	startedAt = Thread::getTimeStampMs();
-	
-	std::cout << "Capturing packets from channel '" << channel << "'" << std::endl;
-	std::cout << "Press return to exit" << std::endl;
+	startedAt = Thread::getTimeStampMs();	
+	std::cout << "Capturing packets from channel '" << channel << "' (press return to exit)" << std::endl;
 	
 	std::string line;
 	std::getline(std::cin, line);

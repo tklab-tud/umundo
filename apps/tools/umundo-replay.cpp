@@ -41,6 +41,7 @@ FILE *fp;
 bool verbose = false;
 bool interactive = false;
 bool trim = false;
+bool loop = false;
 uint64_t startedAt = 0;
 int minSubs = 0;
 
@@ -54,6 +55,7 @@ void printUsageAndExit() {
 	printf("\t-d <domain>        : join domain\n");
 	printf("\t-w <number>        : wait for given number of subscribers before publishing\n");
 	printf("\t-v                 : be more verbose\n");
+	printf("\t-l                 : play input file in loop\n");
 	printf("\t-i                 : interactive mode (ignore timestamp, send after after return pressed)\n");
 	printf("\t-t                 : trim initial delay, start with first message immediately\n");
 	printf("\tfile               : filename to read captured data from\n");
@@ -62,7 +64,7 @@ void printUsageAndExit() {
 
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "vitd:f:c:w:p:")) != -1) {
+	while ((option = getopt(argc, argv, "viltd:f:c:w:p:")) != -1) {
 		switch(option) {
 		case 'c':
 			channel = optarg;
@@ -78,6 +80,9 @@ int main(int argc, char** argv) {
 			break;
 		case 'i':
 			interactive = true;
+			break;
+		case 'l':
+			loop = true;
 			break;
 		case 't':
 			trim = true;
@@ -113,60 +118,69 @@ int main(int argc, char** argv) {
 			std::cout << "Waiting for " << minSubs << " subscribers" << std::endl;
 		pub.waitForSubscribers(minSubs);
 	}
-	
-	startedAt = Thread::getTimeStampMs();
-	
+		
 	if (verbose)
 		std::cout << "Writing packets to channel '" << channel << "'" << std::endl;
 
-	while(true) {
-		uint64_t msgSize;
-		size_t read = 0;
-		read = fread(&msgSize, sizeof(uint64_t), 1, fp);
-		if (!read)
-			break;
+  do {
+    startedAt = Thread::getTimeStampMs();
+    fseek(fp, 0, 0);
+    
+  	while(true) {
+  		uint64_t msgSize;
+  		size_t read = 0;
+  		read = fread(&msgSize, sizeof(uint64_t), 1, fp);
+  		if (!read)
+  			break;
 		
-		char* buffer = new char[msgSize];
-		char* readPos = buffer;
-		read = fread(buffer, msgSize, 1, fp);
-		if (!read)
-			break;
+  		char* buffer = new char[msgSize];
+  		char* readPos = buffer;
+  		read = fread(buffer, msgSize, 1, fp);
+  		if (!read)
+  			break;
 
-		uint64_t timeDiff = *(uint64_t*)(readPos);
-		readPos += sizeof(uint64_t);
+  		uint64_t timeDiff = *(uint64_t*)(readPos);
+  		readPos += sizeof(uint64_t);
 
-		Message* msg = new Message();
+  		if (trim) {
+  			startedAt -= timeDiff;
+  			trim = false;
+  		}
 		
-		while (*readPos) {
-			std::string key(readPos);
-			readPos += key.length() + 1;
-			std::string value(readPos);
-			readPos += value.length() + 1;
-			msg->putMeta(key, value);
-		}
+  		Message* msg = new Message();
 		
-		readPos += 2;
-		uint64_t dataSize = *(uint64_t*)(readPos);
-		readPos += sizeof(uint64_t);
-		msg->setData(readPos, dataSize);
+  		while (*readPos) {
+  			std::string key(readPos);
+  			readPos += key.length() + 1;
+  			std::string value(readPos);
+  			readPos += value.length() + 1;
+  			msg->putMeta(key, value);
+  		}
 		
-		uint64_t now = Thread::getTimeStampMs();
-		if (interactive) {
-			std::cout << "Press return to send next message" << std::endl;
-			std::string line;
-			std::getline(std::cin, line);
-		} else if (now < startedAt + timeDiff && !trim) {
-			Thread::sleepMs((startedAt + timeDiff) - now);
-			trim = false;
-		}
+  		readPos += 2;
+  		uint64_t dataSize = *(uint64_t*)(readPos);
+  		readPos += sizeof(uint64_t);
+  		msg->setData(readPos, dataSize);
 		
-		pub.send(msg);
-		if (verbose)
-			std::cout << "Published " << msgSize << " bytes" << std::endl;
+  		uint64_t now = Thread::getTimeStampMs();
+  		if (interactive) {
+  			std::cout << "Press return to send next message" << std::endl;
+  			std::string line;
+  			std::getline(std::cin, line);
+  		} else if (now < startedAt + timeDiff) {
+  			if (verbose)
+  				std::cout << "Waiting " << (startedAt + timeDiff) - now << "ms" << std::endl;
+  			Thread::sleepMs((startedAt + timeDiff) - now);
+  		}
 		
-		delete(msg);
-		free(buffer);
-	}
+  		pub.send(msg);
+  		if (verbose)
+  			std::cout << "Published " << msgSize << " bytes" << std::endl;
+		
+  		delete(msg);
+  		free(buffer);
+  	}
+  } while(loop);
 	
 // triggers an assert otherwise?
 	Thread::sleepMs(200);

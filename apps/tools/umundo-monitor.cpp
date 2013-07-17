@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
 			interactive = true;
 			break;
 		case 'v':
-			interactive = true;
+			verbose = true;
 			break;
 		case 'p':
 			protoPath = optarg;

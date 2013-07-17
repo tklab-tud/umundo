@@ -89,7 +89,7 @@ Factory::Factory() {
 	_prototypes["discovery"] = new AvahiNodeDiscovery();
 #endif
 #ifdef DISC_BROADCAST
-	_prototypes["discovery"] = new BroadcastNodeDiscovery();
+//	_prototypes["discovery"] = new BroadcastNodeDiscovery();
 #endif
 }
 

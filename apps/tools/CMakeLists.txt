@@ -52,7 +52,7 @@ target_link_libraries(umundo-replay umundocore)
 set_target_properties(umundo-replay PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
-	TARGETS umundo-capture
+	TARGETS umundo-replay
 	COMPONENT tools 
 )
 

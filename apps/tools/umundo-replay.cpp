@@ -148,6 +148,7 @@ int main(int argc, char** argv) {
 		}
 		
 		readPos++;
+		readPos++;
 		uint64_t dataSize = *(uint64_t*)(readPos);
 		readPos += sizeof(uint64_t);
 		msg->setData(readPos, dataSize);

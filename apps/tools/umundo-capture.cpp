@@ -40,6 +40,7 @@ std::string file;
 FILE *fp;
 bool verbose = false;
 uint64_t startedAt = 0;
+uint64_t totalMsgs = 0;
 
 void printUsageAndExit() {
 	printf("umundo-capture version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
@@ -56,7 +57,8 @@ void printUsageAndExit() {
 
 class LoggingReceiver : public Receiver {
 	void receive(Message* msg) {
-		
+		totalMsgs++;
+
 		uint64_t timeDiff = Thread::getTimeStampMs() - startedAt;
 		map<string, string>::const_iterator metaIter;
 
@@ -88,7 +90,8 @@ class LoggingReceiver : public Receiver {
 		fwrite(&size, sizeof(msg->size()), 1, fp); // length prefix
 		fwrite(msg->data(), msg->size(), 1, fp); // data
 		
-		std::cout << msgSize << "B" << ".";
+		if (verbose)
+			std::cout << "Received " << msgSize << " bytes" << ".";
 		std::flush(std::cout);
 		
 	}
@@ -136,7 +139,7 @@ int main(int argc, char** argv) {
 
 	startedAt = Thread::getTimeStampMs();
 	
-	std::cout << "Capturing packets from " << channel << std::endl;
+	std::cout << "Capturing packets from channel '" << channel << "'" << std::endl;
 	std::cout << "Press return to exit" << std::endl;
 	
 	std::string line;
@@ -144,6 +147,9 @@ int main(int argc, char** argv) {
 
 	node.removeSubscriber(sub);
 	sub.setReceiver(NULL); // make sure receiver gets no more messages
+
+	if (verbose)
+		std::cout << "Received " << totalMsgs << " messages" << std::endl;
 
 	fclose(fp);
 

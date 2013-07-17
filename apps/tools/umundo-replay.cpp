@@ -39,44 +39,30 @@ std::string domain;
 std::string file;
 FILE *fp;
 bool verbose = false;
+bool interactive = false;
+bool trim = false;
 uint64_t startedAt = 0;
 int minSubs = 0;
 
 void printUsageAndExit() {
 	printf("umundo-replay version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-replay -c channel [-w N] [-v] [-d domain] -f file\n");
+	printf("\tumundo-replay -c channel [-w N] [-vit] [-d domain] -f file\n");
 	printf("\n");
 	printf("Options\n");
 	printf("\t-c <channel>       : use channel\n");
 	printf("\t-d <domain>        : join domain\n");
 	printf("\t-w <number>        : wait for given number of subscribers before publishing\n");
 	printf("\t-v                 : be more verbose\n");
+	printf("\t-i                 : interactive mode (ignore timestamp, send after after return pressed)\n");
+	printf("\t-t                 : trim initial delay, start with first message immediately\n");
 	printf("\tfile               : filename to read captured data from\n");
 	exit(1);
 }
 
-class LoggingReceiver : public Receiver {
-	void receive(Message* msg) {
-		uint64_t timeDiff = Thread::getTimeStampMs() - startedAt;
-		fwrite(&timeDiff, sizeof(timeDiff), 1, fp); // time difference
-		
-		map<string, string>::const_iterator metaIter = msg->getMeta().begin();
-		while(metaIter != msg->getMeta().end()) {
-			fwrite(&metaIter->first, metaIter->first.size() + 1, 1, fp);
-			fwrite(&metaIter->second, metaIter->second.size() + 1, 1, fp);
-			metaIter++;
-		}
-		fwrite("\0\0", 2, 1, fp); // meta / data seperator
-		size_t size = msg->size();
-		fwrite(&size, sizeof(msg->size()), 1, fp); // length prefix
-		fwrite(msg->data(), msg->size(), 1, fp); // data
-	}
-};
-
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "vd:f:c:w:p:")) != -1) {
+	while ((option = getopt(argc, argv, "vitd:f:c:w:p:")) != -1) {
 		switch(option) {
 		case 'c':
 			channel = optarg;
@@ -89,6 +75,12 @@ int main(int argc, char** argv) {
 			break;
 		case 'v':
 			verbose = true;
+			break;
+		case 'i':
+			interactive = true;
+			break;
+		case 't':
+			trim = true;
 			break;
 		case 'w':
 			minSubs = atoi((const char*)optarg);
@@ -115,11 +107,17 @@ int main(int argc, char** argv) {
 	}
 
 	node.addPublisher(pub);
-	pub.waitForSubscribers(minSubs);
+	
+	if (minSubs) {
+		if (verbose)
+			std::cout << "Waiting for " << minSubs << " subscribers" << std::endl;
+		pub.waitForSubscribers(minSubs);
+	}
 	
 	startedAt = Thread::getTimeStampMs();
 	
-	std::cout << "Writing packets to channel " << channel << std::endl;
+	if (verbose)
+		std::cout << "Writing packets to channel '" << channel << "'" << std::endl;
 
 	while(true) {
 		uint64_t msgSize;
@@ -147,23 +145,31 @@ int main(int argc, char** argv) {
 			msg->putMeta(key, value);
 		}
 		
-		readPos++;
-		readPos++;
+		readPos += 2;
 		uint64_t dataSize = *(uint64_t*)(readPos);
 		readPos += sizeof(uint64_t);
 		msg->setData(readPos, dataSize);
 		
 		uint64_t now = Thread::getTimeStampMs();
-		if (now < startedAt + timeDiff) {
+		if (interactive) {
+			std::cout << "Press return to send next message" << std::endl;
+			std::string line;
+			std::getline(std::cin, line);
+		} else if (now < startedAt + timeDiff && !trim) {
 			Thread::sleepMs((startedAt + timeDiff) - now);
+			trim = false;
 		}
 		
 		pub.send(msg);
+		if (verbose)
+			std::cout << "Published " << msgSize << " bytes" << std::endl;
 		
 		delete(msg);
 		free(buffer);
 	}
 	
+// triggers an assert otherwise?
+	Thread::sleepMs(200);
 	node.removePublisher(pub);
 
 	fclose(fp);

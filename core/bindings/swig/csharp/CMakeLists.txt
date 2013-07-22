@@ -27,6 +27,9 @@ set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 # 	set_target_properties(umundoNativeCSharp PROPERTIES COMPILE_FLAGS "-DHOST_64BIT")
 # endif()
 
+# if (CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+# 	set_target_properties(umundoNativeCSharp PROPERTIES OUTPUT_NAME umundoNativeCSharp_d) 
+# endif()
 
 # I am not sure why we need it twice, but we do at least on android
 SWIG_LINK_LIBRARIES(umundoNativeCSharp umundocore)

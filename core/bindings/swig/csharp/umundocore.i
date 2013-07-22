@@ -1,8 +1,4 @@
-#	ifdef DEBUG
-%module(directors="1", allprotected="1") umundoNativeCSharp_d
-#else
 %module(directors="1", allprotected="1") umundoNativeCSharp
-#endif
 
 // import swig typemaps
 %include <arrays_csharp.i>

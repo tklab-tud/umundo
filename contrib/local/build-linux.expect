@@ -48,13 +48,15 @@ if {$redeploy} {
 		umundo/installer/umundo\* \
 		umundo/package\* \
 		umundo/docs/html\* \
-		umundo/examples/ios\*
+		umundo/examples/ios\* \
+		umundo/examples/android\*
 	expect -re $prompt
 	eval spawn \
 		zip -r umundo-linux.zip \
 			umundo/contrib/cmake \
 			umundo/contrib/java \
 			umundo/contrib/prebuilt/include
+			
 	expect -re $prompt
 	
 	if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
@@ -68,14 +70,20 @@ if {$redeploy} {
 
 		eval spawn \
 			zip -r umundo-linux.zip \
-				umundo/contrib/prebuilt/linux-x86_64
+				umundo/contrib/prebuilt/linux-x86_64 \
+				umundo/package/cross-compiled/android \
+				umundo/examples/android
+				
 		expect -re $prompt
 	
 	} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
 
 		eval spawn \
 			zip -r umundo-linux.zip \
-				umundo/contrib/prebuilt/linux-i686
+				umundo/contrib/prebuilt/linux-i686 \
+				umundo/package/cross-compiled/android \
+				umundo/examples/android
+				
 		expect -re $prompt
 	
 	}
@@ -226,7 +234,7 @@ expect -re $prompt {
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_BINDINGS=OFF \
 		-DBUILD_SHARED_LIBS=OFF \
-		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_CONVENIENCE_LIB=ON \
 		-DBUILD_TESTS=${BUILD_TESTS} \
 		-DDIST_PREPARE=ON \
 		~/umundo\n"
@@ -250,12 +258,12 @@ expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo &
 expect -re $prompt { 
 	send "cmake \
 		-DBUILD_UMUNDO_APPS=OFF \
-		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_UMUNDO_TOOLS=ON \
 		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DBUILD_BINDINGS=OFF \
 		-DBUILD_SHARED_LIBS=ON \
-		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_CONVENIENCE_LIB=ON \
 		-DBUILD_TESTS=${BUILD_TESTS} \
 		-DDIST_PREPARE=ON \
 		~/umundo\n" 
@@ -279,12 +287,12 @@ expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo &
 expect -re $prompt { 
 	send "cmake \
 		-DBUILD_UMUNDO_APPS=OFF \
-		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_UMUNDO_TOOLS=ON \
 		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_BINDINGS=OFF \
 		-DBUILD_SHARED_LIBS=ON \
-		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_CONVENIENCE_LIB=ON \
 		-DBUILD_TESTS=${BUILD_TESTS} \
 		-DDIST_PREPARE=ON \
 		~/umundo\n" 

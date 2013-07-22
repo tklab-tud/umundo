@@ -100,15 +100,16 @@ install(FILES ${PROJECT_SOURCE_DIR}/contrib/cmake/UseUMundo.cmake DESTINATION sh
 ########################################
 
 GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
-if (UMUNDONATIVEJAVA_LOCATION)
-	if (DIST_PREPARE)
-		if (EXISTS "${PROJECT_SOURCE_DIR}/package/umundo.jar")
-			install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig)
-		endif()
-	else()
-		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig OPTIONAL)
+if (DIST_PREPARE)
+	if (EXISTS "${PROJECT_SOURCE_DIR}/package/umundo.jar")
+		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig)
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
 	endif()
-	list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+else()
+	if (UMUNDONATIVEJAVA_LOCATION)
+		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig OPTIONAL)
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+	endif()
 endif()
 
 # The CSharp bindings are already picked up as a host-native dll above

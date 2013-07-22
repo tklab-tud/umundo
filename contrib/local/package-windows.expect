@@ -1,5 +1,7 @@
 #!/usr/bin/expect
 
+exp_internal 0
+
 set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
@@ -10,29 +12,30 @@ set local_prompt {sradomski$ }
 # Copy JNI files over!
 #
 eval cd ~/Documents/TK/Code/
+
 eval spawn \
 	find ./umundo/package -name *NativeJava* -exec zip -r umundo-jni.zip \\{\\} \\\;
-expect -re $local_prompt
+expect eof
 
-eval spawn "scp -r umundo-jni.zip ${UMUNDO_BUILD_HOST}.local:~"
-expect -re $local_prompt
-
+eval spawn "scp -r umundo-jni.zip ${UMUNDO_BUILD_HOST}.local:\\umundo-jni.zip"
+expect eof
 
 eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
 expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
-       -re $local_prompt { }
+       eof               { }
 
 set initial_remote_prompt "C*>"
 # the default windows prompt is hard to recognize
-set remote_prompt "easy_to_recognize"
+set remote_prompt ";1Heasy_to_recognize"
 
-eval spawn scp -4 -r ../../package sradomski@epikur-win7.local:umundo
-expect {
-	"100"              { exp_continue }
-	"The authenticity" { send "yes\n"; exp_continue; }
-	timeout            { puts "Timeout when uploading source code"; exit;  }
-	-re $local_prompt  { }
-}
+# we do not need all of umundo/package ..
+# eval spawn scp -4 -r umundo/package sradomski@epikur-win7-64.local:umundo
+# expect {
+# 	"100"              { exp_continue }
+# 	"The authenticity" { send "yes\n"; exp_continue; }
+# 	timeout            { puts "Timeout when uploading source code"; exit;  }
+# 	-re $local_prompt  { }
+# }
 
 ##############################
 # ssh into remote host
@@ -40,18 +43,19 @@ expect {
 eval spawn ssh -4 sradomski@${UMUNDO_BUILD_HOST}.local.
 expect {
 	timeout            { puts "Timeout when connecting to windows"; exit;  }
-	"The authenticity" { send "yes\n"; }
+	"The authenticity" { send "yes\n"; exp_continue; }
 	-re $local_prompt  { puts "Could not connect to remote host"; exit; }
 	-re $initial_remote_prompt { }
 }
 
 send "set prompt=easy_to_recognize \r"
+expect -re $remote_prompt {  }
 
-expect -re $remote_prompt { send "unzip umundo-jni.zip\n" }
+send "unzip umundo-jni.zip\r"
 expect {
 	timeout            { puts "Timeout when unzipping JNIs"; exit;  }
-	"replace"          { send "y\n"; }
-	-re $remote_prompt { }
+	replace          { puts "REPLACING"; send "A\r"; exp_continue; }
+	-re $remote_prompt { puts "SUCCESS"; }
 }
 
 send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
@@ -82,7 +86,7 @@ expect {
 # exit and copy packages
 
 send "exit\r"
-expect -re $local_prompt
+expect eof
 
 eval cd ~/Documents/TK/Code/
 
@@ -91,6 +95,6 @@ if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 } else {
 	eval spawn "scp -r epikur-win7-64.local:build-umundo-64\\\\umundo-windows* umundo/installer/"
 }
-expect -re $local_prompt
+expect eof
 
 exit

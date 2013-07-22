@@ -200,10 +200,11 @@ being used. This applies to all umundo.core objects.
 ## FAQ
 
 <dl>
-	<dt><b>Why is the source distribution so large?</b></dt>
+	<dt><b>Why is the distribution so large?</b></dt>
 	<dd>That's the price of convenience. The distribution contains most of our
 		runtime dependencies prebuilt for every system / compiler combination and
-		as debug and release builds.</dd>
+		as debug and release builds. The cross-compiled iOS libraries contain all 
+		architectures for all iOS devices and the simulator.</dd>
 
 	<dt><b>How many umundo nodes can I realistically start at once?</b></dt>
 	<dd>Using the default ZeroMQ implementation and Bonjour discovery on MacOSX, I

@@ -30,7 +30,7 @@ expect {
 	"package\r\n"        { set redeploy 1; }
 	".h\r\n"             { set redeploy 1; }
 	"CMakeLists.txt\r\n" { set redeploy 1; }
-	-re $local_prompt        { }
+	eof                  { }
 }
 set redeploy 1;
 
@@ -50,7 +50,7 @@ if {$redeploy} {
 		umundo/package\* \
 		umundo/docs/html\* \
 		umundo/examples/ios\*
-	expect -re $local_prompt
+	expect eof
 
 	eval spawn \
 		zip -r umundo-win.zip \
@@ -58,20 +58,21 @@ if {$redeploy} {
 			umundo/contrib/snippets \
 			umundo/contrib/csharp \
 			umundo/contrib/java \
-			umundo/contrib/prebuilt/include
-	expect -re $local_prompt
+			umundo/contrib/prebuilt/include \
+			umundo/package/cross-compiled/android
+	expect eof
 
 	if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
 		eval spawn \
 			zip -r umundo-win.zip \
 				umundo/contrib/prebuilt/windows-x86
-		expect -re $local_prompt
+		expect eof
 
 	} else {
 		eval spawn \
 			zip -r umundo-win.zip \
 				umundo/contrib/prebuilt/windows-x86_64
-		expect -re $local_prompt
+		expect eof
 	
 	}
 	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.zip

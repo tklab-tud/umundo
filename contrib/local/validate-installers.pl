@@ -62,8 +62,13 @@ print STDERR "No archive for Raspberry Pi found!\n" if (!$rasp_pi_archive);
 print STDERR "No archive for Windows 32Bit found!\n" if (!$win32_archive);
 print STDERR "No archive for Windows 64Bit found!\n" if (!$win64_archive);
 
-$mac_archive =~ m/.*darwin-i386-(.*)\.tar\.gz/;
-my $version = $1;
+my $version;
+if ($mac_archive) {
+	$mac_archive =~ m/.*darwin-i386-(.*)\.tar\.gz/;
+	$version = $1;
+} else {
+	$version = shift;
+}
 
 #                    make a hash     remove first element      split into array at newline
 %{$mac_files}      = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $mac_archive`)      if $mac_archive;
@@ -218,18 +223,69 @@ sub checkFiles {
   }
   my $manifest = read_file("${script_dir}/installer-manifest/${platform}.txt") or return;
   print "Checking Manifest of $platform package\n";
-  %{$contents} = splice(@{[ map { s/: //; $_ } split(/\n(.*: )/, "\n".$manifest) ]}, 1);
-#  print Dumper($contents);
-  chdir('umundo-'.$platform.'-'.$version) or die($!);
+#  %{$contents} = splice(@{[ map { s/: //; $_ } split(/\n(.*: )/, "\n".$manifest) ]}, 1);
+  %{$contents} = map { split(/: /, $_, 2); } split(/\n\.\//, "\n".$manifest);
+#  print Dumper(map { split(/: /, $_, 2); } split(/\n\.\//, "\n".$manifest));
+
+  chdir('umundo-'.$platform.'-'.$version) or die('umundo-'.$platform.'-'.$version.': '.$!);
 
   # make sure all files are present
   foreach my $key (keys %{$contents}) {
-    my $file_info = `file $key`;
-    $file_info =~ s/^.*: //;
+    my $file_info = `file -h $key`;
+    $file_info =~ s/^[^:]*: //;
     my $a = $file_info;
     my $b = $contents->{$key};
-    $a =~ s/\W+$//;
-    $b =~ s/\W+$//;
+    $a =~ s/\s+$//;
+    $b =~ s/\s+$//;
+
+		next if $key =~ /.*Prefix.pch/ and $a !~ /no such file/i;
+		next if $key =~ /.*dylib/ and $a =~ /symbolic link to/i;
+		next if $key =~ /.*so/ and $a =~ /symbolic link to/i;
+
+		# # some normalization		
+		# $a =~ s/SYSV/GNU\/Linux/;
+		# $b =~ s/SYSV/GNU\/Linux/;
+		# 
+		# $a = "C source, ASCII text, with CRLF line terminators" if ($a eq "ASCII Java program text, with CRLF line terminators");
+		# $b = "C source, ASCII text, with CRLF line terminators" if ($b eq "ASCII Java program text, with CRLF line terminators");
+		# 
+		# $a = "ASCII text" if ($a eq "ASCII English text");
+		# $b = "ASCII text" if ($b eq "ASCII English text");
+		# $a = "ASCII text" if ($a eq "C source, ASCII text");
+		# $b = "ASCII text" if ($b eq "C source, ASCII text");
+		# $a = "ASCII text" if ($a eq "C++ source, ASCII text");
+		# $b = "ASCII text" if ($b eq "C++ source, ASCII text");
+		# $a = "ASCII text" if ($a eq "ASCII C++ program text");
+		# $b = "ASCII text" if ($b eq "ASCII C++ program text");
+		# $a = "ASCII text" if ($a eq "ASCII c program text");
+		# $b = "ASCII text" if ($b eq "ASCII c program text");
+		# $a = "ASCII text" if ($a eq "ASCII Java program text");
+		# $b = "ASCII text" if ($b eq "ASCII Java program text");
+		# 
+		# $a = "Mach-O universal binary with $1 architectures" if $a =~ /Mach-O universal binary with (\d+) architectures.*/;
+		# $b = "Mach-O universal binary with $1 architectures" if $b =~ /Mach-O universal binary with (\d+) architectures.*/;		
+		# 
+		# $a = "ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked" if $a =~ /ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked.*/;
+		# $b = "ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked" if $b =~ /ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked.*/;
+		# 
+		# $a = "ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked" if $a =~ /ELF 32-bit LSB ? shared object, ARM, EABI5 version 1 \(GNU\/Linux\), dynamically linked.*/;
+		# $b = "ELF 32-bit LSB shared object, ARM, version 1 \(GNU\/Linux\), dynamically linked" if $b =~ /ELF 32-bit LSB ? shared object, ARM, EABI5 version 1 \(GNU\/Linux\), dynamically linked.*/;
+		# 
+		# $a = "ELF $1-bit LSB executable, $2, version $3 \(GNU\/Linux\), dynamically linked \(uses shared libs\)" if $a =~ /ELF (\d+)-bit LSB ? executable, \S* ?(\S+) version (\d+) \(GNU\/Linux\), dynamically linked \(uses shared libs\).*/;
+		# $b = "ELF $1-bit LSB executable, $2, version $3 \(GNU\/Linux\), dynamically linked \(uses shared libs\)" if $b =~ /ELF (\d+)-bit LSB ? executable, \S* ?(\S+) version (\d+) \(GNU\/Linux\), dynamically linked \(uses shared libs\).*/;
+		# 
+		# $a = "ELF $1-bit LSB shared object, Intel 80386, version $2 ($3), dynamically linked" if $a =~ /ELF (\d+)-bit LSB ? shared object, Intel 80386, version (\d+) \((\S+)\), dynamically linked.*/;
+		# $b = "ELF $1-bit LSB shared object, Intel 80386, version $2 ($3), dynamically linked" if $b =~ /ELF (\d+)-bit LSB ? shared object, Intel 80386, version (\d+) \((\S+)\), dynamically linked.*/;
+		# $a = "ELF $1-bit LSB shared object, ARM, version $2 ($3), dynamically linked" if $a =~ /ELF (\d+)-bit LSB ? shared object, ARM, \w+ version (\d+) \((\S+)\), dynamically linked, not stripped.*/;
+		# $b = "ELF $1-bit LSB shared object, ARM, version $2 ($3), dynamically linked" if $b =~ /ELF (\d+)-bit LSB ? shared object, ARM, \w+ version (\d+) \((\S+)\), dynamically linked, not stripped.*/;
+		# $a = "ELF $1-bit LSB shared object, x86-64, version $2 ($3), dynamically linked" if $a =~ /ELF (\d+)-bit LSB ? shared object, x86-64, version (\d+) \((\S+)\), dynamically linked.*/;
+		# $b = "ELF $1-bit LSB shared object, x86-64, version $2 ($3), dynamically linked" if $b =~ /ELF (\d+)-bit LSB ? shared object, x86-64, version (\d+) \((\S+)\), dynamically linked.*/;
+		# 
+		# $a = "Java Jar file data (zip)" if ($a eq "Zip archive data, at least v2.0 to extract");
+		# $b = "Java Jar file data (zip)" if ($b eq "Zip archive data, at least v2.0 to extract");
+		# $a = "Java Jar file data (zip)" if ($a eq "Zip archive data, at least v1.0 to extract");
+		# $b = "Java Jar file data (zip)" if ($b eq "Zip archive data, at least v1.0 to extract");
+
     if ($a ne $b) {
       print "--- '${key}':\n";
       print "\t Expected '$b'\n";
@@ -237,9 +293,12 @@ sub checkFiles {
     }
   }
   
+	# print Dumper(keys %{$fileList});
+	# print Dumper(keys %{$contents});
+
   #make sure there is no garbage in the installers
   foreach my $file (keys %{$fileList}) {
-    unless (exists $contents->{'./'.$file}) {
+    unless (exists $contents->{$file}) {
       print "--- Superfluous file '$file' found\n"
     }
   }

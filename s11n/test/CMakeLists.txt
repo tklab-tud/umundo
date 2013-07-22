@@ -21,6 +21,5 @@ UMUNDO_PROTOBUF_GENERATE_CPP_S11N(PROTO_SRCS PROTO_HDRS "${CMAKE_CURRENT_SOURCE_
 include_directories(${CMAKE_BINARY_DIR}/protobuf/generated)
 
 add_executable(test-s11n-api test-api.cpp ${PROTO_SRCS})
-target_link_libraries(test-s11n-api ${UMUNDOCORE_LIBRARIES})
-target_link_libraries(test-s11n-api ${UMUNDOS11N_LIBRARIES})
+target_link_libraries(test-s11n-api ${UMUNDOCORE_LIBRARIES} umundocore umundoserial)
 set_target_properties(test-s11n-api PROPERTIES FOLDER "Tests")

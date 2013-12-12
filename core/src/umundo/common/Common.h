@@ -49,6 +49,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+
 // #if __cplusplus > 199711L
 // 	typedef boost::shared_ptr std::shared_ptr
 // 	typedef boost::weak_ptr std::weak_ptr
@@ -79,14 +80,13 @@
 
 namespace umundo {
 
-using std::string;
-using std::map;
-using std::set;
-using std::vector;
-using boost::shared_ptr;
-using boost::weak_ptr;
+extern std::string procUUID;
 
-extern string procUUID;
+inline bool isNumeric( const char* pszInput, int nNumberBase) {
+	std::string base = ".-0123456789ABCDEF";
+	std::string input = pszInput;
+	return (input.find_first_not_of(base.substr(0, nNumberBase + 2)) == std::string::npos);
+}
 
 // see http://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
 template <typename T> std::string toStr(T tmp) {
@@ -100,6 +100,19 @@ template <typename T> T strTo(std::string tmp) {
 	std::istringstream in(tmp);
 	in >> output;
 	return output;
+}
+
+template <typename S, typename T>
+size_t unique_keys(std::multimap<S, T> mm) {
+	size_t uniqueCount = 0;
+	typename std::multimap<S, T>::iterator end;
+	typename std::multimap<S, T>::iterator it;
+	for(it = mm.begin(), end = mm.end();
+			it != end;
+			it = mm.upper_bound(it->first)) {
+		uniqueCount++;
+	}
+	return uniqueCount;
 }
 
 }

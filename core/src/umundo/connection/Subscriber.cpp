@@ -33,18 +33,15 @@ SubscriberImpl::~SubscriberImpl() {
 	instances--;
 }
 
-shared_ptr<Configuration> SubscriberConfig::create() {
-	return shared_ptr<SubscriberConfig>(new SubscriberConfig());
-}
 
-Subscriber::Subscriber(const string& channelName, Receiver* receiver) {
+Subscriber::Subscriber(const std::string& channelName, Receiver* receiver) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
 	SubscriberStub::_impl = _impl;
-	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
+	SubscriberConfig _config;
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
 	_impl->setChannelName(channelName);
-	_impl->init(_config);
+	_impl->init(&_config);
 	_impl->setReceiver(receiver);
 }
 
@@ -54,11 +51,11 @@ Subscriber::~Subscriber() {
 Subscriber::Subscriber(const std::string& channelName) {
 	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
 	SubscriberStub::_impl = _impl;
-	_config = boost::static_pointer_cast<SubscriberConfig>(Factory::config("subscriber"));
+	SubscriberConfig _config;
 //	_config->channelName = channelName;
 //	_config->receiver = receiver;
 	_impl->setChannelName(channelName);
-	_impl->init(_config);
+	_impl->init(&_config);
 }
 
 }

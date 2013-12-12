@@ -38,8 +38,7 @@ NSObject {
 	boost::shared_ptr<umundo::Node> _cppNode;
 }
 
-- (id) initWithDomain:
-(NSString*) domain;
+- (id) init;
 - (void)addPublisher:
 (UMPublisher*)pub;
 - (void)addSubscriber:

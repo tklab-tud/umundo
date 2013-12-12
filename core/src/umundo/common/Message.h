@@ -34,36 +34,46 @@ class Type;
 class DLLEXPORT Message {
 public:
 	enum Type {
-	    VERSION       = 0xF003, // version 0.3 of the message format
-	    DATA          = 0x0000,
-	    KEEP_ALIVE    = 0x0001,
-	    PUB_ADDED     = 0x0004,
-	    PUB_REMOVED   = 0x0005,
-	    NODE_INFO     = 0x0006,
-	    SUBSCRIBE     = 0x0007,
-	    UNSUBSCRIBE   = 0x0008,
-	    DOMAIN_CHECK  = 0x0009,
+		VERSION       = 0xF004, // version 0.4 of the message format
+		CONNECT_REQ   = 0x0001, // sent to a remote node when it was added
+		CONNECT_REP   = 0x0002, // reply from a remote node
+		NODE_INFO     = 0x0003, // information about a node and its publishers
+		PUB_ADDED     = 0x0004, // sent when a node added a publisher
+		PUB_REMOVED   = 0x0005, // sent when a node removed a publisher
+		SUBSCRIBE     = 0x0007, // sent when subscribing to a publisher
+		UNSUBSCRIBE   = 0x0008, // unsusbscribing from a publisher
+		DISCONNECT    = 0x000B, // node was removed
+		SHUTDOWN      = 0x000C, // node is shutting down
+	};
+
+	enum Flags { // not used yet
+		NONE            = 0x0000,
+		ADOPT_DATA      = 0x0001,
+		ZERO_COPY       = 0x0002,
 	};
 
 	static const char* typeToString(uint16_t type) {
-		if (type == 0x0000) return "DATA";
-		if (type == 0x0001) return "KEEP_ALIVE";
-		if (type == 0x0004) return "PUB_ADDED";
-		if (type == 0x0005) return "PUB_REMOVED";
-		if (type == 0x0006) return "NODE_INFO";
-		if (type == 0x0007) return "SUBSCRIBE";
-		if (type == 0x0008) return "UNSUBSCRIBE";
+		if (type == VERSION)     return "VERSION";
+		if (type == CONNECT_REQ) return "CONNECT_REQ";
+		if (type == CONNECT_REP) return "CONNECT_REP";
+		if (type == NODE_INFO)   return "NODE_INFO";
+		if (type == PUB_ADDED)   return "PUB_ADDED";
+		if (type == PUB_REMOVED) return "PUB_REMOVED";
+		if (type == SUBSCRIBE)   return "SUBSCRIBE";
+		if (type == UNSUBSCRIBE) return "UNSUBSCRIBE";
+		if (type == DISCONNECT)  return "DISCONNECT";
+		if (type == SHUTDOWN)    return "SHUTDOWN";
 		return "UNKNOWN";
 	}
 
 	Message() : _data(NULL), _size(0), _isQueued(false) {}
-	Message(const char* data, size_t length) : _data(NULL), _size(length), _isQueued(false) {
+	Message(const char* data, size_t length, Flags flag = NONE) : _data(NULL), _size(length), _isQueued(false), _flags(flag) {
 		if (_size > 0) {
 			_data = (char*)malloc(_size);
 			memcpy(_data, data, _size);
 		}
 	}
-
+	
 	Message(const Message& other) : _data(NULL), _size(other.size()), _isQueued(other._isQueued) {
 		if (_size > 0) {
 			_data = (char*)malloc(_size);
@@ -84,13 +94,6 @@ public:
 	virtual size_t size() const                                         {
 		return _size;
 	}
-	virtual void setData(const string& data)                            {
-		if (_data)
-			free(_data);
-		_size = data.size();
-		_data = (char*)malloc(_size);
-		memcpy(_data, data.data(), _size);
-	}
 
 	virtual void setData(const char* data, size_t length)               {
 		if (_data)
@@ -99,26 +102,30 @@ public:
 		_data = (char*)malloc(_size);
 		memcpy(_data, data, _size);
 	}
-	virtual const void putMeta(const string& key, const string& value)  {
+	virtual const void putMeta(const std::string& key, const std::string& value)  {
 		_meta[key] = value;
 	}
-	virtual const map<string, string>& getMeta()                        {
+	virtual const std::map<std::string, std::string>& getMeta()                        {
 		return _meta;
 	}
-	virtual const string& getMeta(const string& key)                    {
-		return _meta[key];
+	virtual const std::string getMeta(const std::string& key)                    {
+		if (_meta.find(key) != _meta.end())
+			return _meta[key];
+		return "";
 	}
 
+#if 0
 	/// Simplified access to keyset for Java, namespace qualifiers required for swig!
 	virtual const std::vector<std::string> getKeys() {
-		vector<string> keys;
-		map<string, string>::const_iterator metaIter = _meta.begin();
+		std::vector<std::string> keys;
+		std::map<std::string, std::string>::const_iterator metaIter = _meta.begin();
 		while (metaIter != _meta.end()) {
 			keys.push_back(metaIter->first);
 			metaIter++;
 		}
 		return keys;
 	}
+#endif
 
 	void setQueued(bool isQueued) {
 		_isQueued = isQueued;
@@ -127,11 +134,11 @@ public:
 		return _isQueued;
 	}
 
-	void setReceiver(const string& uuid) {
+	void setReceiver(const std::string& uuid) {
 		putMeta("um.sub", uuid);
 	}
 
-	static Message* toSubscriber(const string& uuid) {
+	static Message* toSubscriber(const std::string& uuid) {
 		Message* msg = new Message();
 		msg->putMeta("um.sub", uuid);
 		return msg;
@@ -141,7 +148,8 @@ protected:
 	char* _data;
 	size_t _size;
 	bool _isQueued;
-	map<string, string> _meta;
+	uint32_t _flags;
+	std::map<std::string, std::string> _meta;
 };
 }
 

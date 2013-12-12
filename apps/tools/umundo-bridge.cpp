@@ -1,6 +1,7 @@
 // I feel dirty!
 #define protected public
 #include "umundo/connection/zeromq/ZeroMQNode.h"
+#include "umundo/discovery/MDNSDiscovery.h"
 
 /**
  *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
@@ -28,7 +29,6 @@
 #endif
 
 using namespace umundo;
-using namespace std;
 
 char* domain = NULL;
 bool verbose = false;
@@ -63,18 +63,18 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-
-	Node* node = NULL;
-
-	if (domain) {
-		node = new Node(domain);
-	} else {
-		node = new Node();
-	}
-
+	
 	if (optind >= argc)
 		printUsageAndExit();
 
+	MDNSDiscoveryOptions mdnsOpts;
+	if (domain)
+		mdnsOpts.setDomain(domain);
+	Discovery disc(Discovery::MDNS, &mdnsOpts);
+
+	Node node;
+	disc.add(node);
+	
 	std::string hostname(argv[optind]);
 	NodeStub endPoint;
 
@@ -96,14 +96,14 @@ int main(int argc, char** argv) {
 	}
 
 	if (pos + 1 < hostname.length()) {
-		string port(hostname.substr(oldPos));
+		std::string port(hostname.substr(oldPos));
 		endPoint.getImpl()->setPort(strTo<uint16_t>(port));
 	} else {
 		printUsageAndExit();
 	}
 
-	boost::static_pointer_cast<umundo::ZeroMQNode>(node->_impl)->added(endPoint);
-
+	node.added(endPoint);
+	
 	while (true) {
 		Thread::sleepMs(500);
 	}

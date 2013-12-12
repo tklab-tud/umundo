@@ -62,10 +62,10 @@ namespace umundo {
 # define MAX_HOST_NAME_LENGTH 1024
 #endif
 
-string hostId;
-string hostName;
+std::string hostId;
+std::string hostName;
 
-const string& Host::getHostname() {
+const std::string Host::getHostname() {
 	int err;
 	char* name = (char*)calloc(MAX_HOST_NAME_LENGTH, 1);
 
@@ -106,12 +106,12 @@ const string& Host::getHostname() {
 	} else {
 		hostName = name;
 	}
-
+	free(name);
 	return hostName;
 }
 
-const vector<Interface> Host::getInterfaces() {
-	vector<Interface> ifcs;
+const std::vector<Interface> Host::getInterfaces() {
+	std::vector<Interface> ifcs;
 	int err = 0;
 	(void)err;
 
@@ -144,7 +144,7 @@ const vector<Interface> Host::getInterfaces() {
 		err = ioctl(sock, SIOCGIFHWADDR, &ifinfo);
 		if (err == 0) {
 			if (ifinfo.ifr_hwaddr.sa_family == 1) {
-				currIfc.mac = string(ifinfo.ifr_hwaddr.sa_data, IFHWADDRLEN);
+				currIfc.mac = std::string(ifinfo.ifr_hwaddr.sa_data, IFHWADDRLEN);
 			}
 		} else {
 			UM_LOG_ERR("ioctl: %s", strerror(errno));
@@ -154,16 +154,16 @@ const vector<Interface> Host::getInterfaces() {
 			int family = ifa->ifa_addr->sa_family;
 			switch (family) {
 			case AF_INET:
-				currIfc.ipv4.insert(string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
+				currIfc.ipv4.push_back(std::string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
 				break;
 			case AF_INET6:
-				currIfc.ipv4.insert(string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
+				currIfc.ipv4.push_back(std::string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
 				break;
 # ifdef LLADDR
 			case AF_LINK:
 				struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
 				if (sdl->sdl_alen == 6) {
-					currIfc.mac = string(LLADDR(sdl), sdl->sdl_alen);
+					currIfc.mac = std::string(LLADDR(sdl), sdl->sdl_alen);
 				}
 				break;
 # endif
@@ -189,9 +189,9 @@ const vector<Interface> Host::getInterfaces() {
 		Interface currIfc;
 
 		if (pAdapterInfo->AddressLength == 6)
-			currIfc.mac = string((const char*)pAdapterInfo->Address, 6);
+			currIfc.mac = std::string((const char*)pAdapterInfo->Address, 6);
 
-		currIfc.name = string(pAdapterInfo->AdapterName);
+		currIfc.name = std::string(pAdapterInfo->AdapterName);
 		pAdapterInfo = pAdapterInfo->Next;
 		ifcs.push_back(currIfc);
 	} while(pAdapterInfo);
@@ -205,19 +205,19 @@ const vector<Interface> Host::getInterfaces() {
 }
 
 
-const string& Host::getHostId() {
+const std::string Host::getHostId() {
 
 	if (hostId.size() > 0)
 		return hostId;
 
-	string hostname = getHostname();
-	vector<Interface> interfaces = getInterfaces();
+	std::string hostname = getHostname();
+	std::vector<Interface> interfaces = getInterfaces();
 
 	std::ostringstream ss;
 	ss << std::hex << std::uppercase << std::setfill( '0' );
 
 	// first all the mac adresses
-	vector<Interface>::iterator ifIter = interfaces.begin();
+	std::vector<Interface>::iterator ifIter = interfaces.begin();
 	while(ifIter != interfaces.end()) {
 		if (ifIter->mac.length() > 0)
 			for (int i = 0; i < ifIter->mac.length(); i++)
@@ -235,7 +235,7 @@ const string& Host::getHostId() {
 	if (ss.str().length() < 36) {
 		ifIter = interfaces.begin();
 		while(ifIter != interfaces.end()) {
-			set<string>::iterator ipIter = ifIter->ipv4.begin();
+			std::vector<std::string>::iterator ipIter = ifIter->ipv4.begin();
 			while(ipIter != ifIter->ipv4.end()) {
 				if (ipIter->length() > 0)
 					for (int i = 0; i < ipIter->length(); i++)
@@ -250,7 +250,7 @@ const string& Host::getHostId() {
 	if (ss.str().length() < 36) {
 		ifIter = interfaces.begin();
 		while(ifIter != interfaces.end()) {
-			set<string>::iterator ipIter = ifIter->ipv6.begin();
+			std::vector<std::string>::iterator ipIter = ifIter->ipv6.begin();
 			while(ipIter != ifIter->ipv6.end()) {
 				if (ipIter->length() > 0)
 					for (int i = 0; i < ipIter->length(); i++)
@@ -260,7 +260,6 @@ const string& Host::getHostId() {
 			ifIter++;
 		}
 	}
-
 
 	// padding
 	if (ss.str().length() < 36)

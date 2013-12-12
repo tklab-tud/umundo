@@ -29,10 +29,6 @@ namespace umundo {
 
 int NodeImpl::instances = -1;
 
-shared_ptr<Configuration> NodeConfig::create() {
-	return shared_ptr<Configuration>(new NodeConfig());
-}
-
 NodeImpl::NodeImpl() {
 	_uuid = UUID::getUUID();
 	instances++;
@@ -46,53 +42,65 @@ Node::Node() {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
 	NodeStubBase::_impl = _impl;
 	EndPoint::_impl = _impl;
-	shared_ptr<Configuration> config = Factory::config("node");
-	_impl->init(config);
+	NodeOptions options(0, 0);
+	_impl->init(&options);
 }
 
-Node::Node(string domain) {
+Node::Node(uint16_t nodePort, uint16_t pubPort) {
 	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node"));
 	NodeStubBase::_impl = _impl;
 	EndPoint::_impl = _impl;
-	shared_ptr<Configuration> config = Factory::config("node");
-	_impl->setDomain(domain);
-	_impl->init(config);
-	// add our node query
+	NodeOptions options(nodePort, pubPort);
+	_impl->init(&options);
 }
 
 Node::~Node() {
 }
 
 void Node::connect(Connectable* conn) {
-	set<Subscriber> subs = conn->getSubscribers();
-	set<Subscriber>::iterator subIter = subs.begin();
+	std::map<std::string, Subscriber> subs = conn->getSubscribers();
+	std::map<std::string, Subscriber>::iterator subIter = subs.begin();
 	while(subIter != subs.end()) {
-		addSubscriber(*subIter);
+		addSubscriber(subIter->second);
 		subIter++;
 	}
-	set<Publisher> pubs = conn->getPublishers();
-	set<Publisher>::iterator pubIter = pubs.begin();
+	std::map<std::string, Publisher> pubs = conn->getPublishers();
+	std::map<std::string, Publisher>::iterator pubIter = pubs.begin();
 	while(pubIter != pubs.end()) {
-		addPublisher(*pubIter);
+		addPublisher(pubIter->second);
 		pubIter++;
 	}
 	conn->addedToNode(*this);
 }
 
 void Node::disconnect(Connectable* conn) {
-	set<Publisher> pubs = conn->getPublishers();
-	set<Publisher>::iterator pubIter = pubs.begin();
+	std::map<std::string, Publisher> pubs = conn->getPublishers();
+	std::map<std::string, Publisher>::iterator pubIter = pubs.begin();
 	while(pubIter != pubs.end()) {
-		removePublisher(*pubIter);
+		removePublisher(pubIter->second);
 		pubIter++;
 	}
-	set<Subscriber> subs = conn->getSubscribers();
-	set<Subscriber>::iterator subIter = subs.begin();
+	std::map<std::string, Subscriber> subs = conn->getSubscribers();
+	std::map<std::string, Subscriber>::iterator subIter = subs.begin();
 	while(subIter != subs.end()) {
-		removeSubscriber(*subIter);
+		removeSubscriber(subIter->second);
 		subIter++;
 	}
 	conn->removedFromNode(*this);
+}
+
+std::ostream & operator<<(std::ostream &os, const EndPoint& endPoint) {
+	if (endPoint.isRemote()) {
+		os << "remote";
+	} else {
+		if (endPoint.isInProcess()) {
+			os << "inproc";
+		} else {
+			os << "local";
+		}
+	}
+	os << "." << endPoint.getTransport() << "://" << endPoint.getIP() << ":" << endPoint.getPort() << " aka " << endPoint.getHost() << endPoint.getDomain();
+	return os;
 }
 
 std::ostream& operator<<(std::ostream &out, const NodeStub* n) {

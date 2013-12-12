@@ -48,7 +48,7 @@ bool testSubscriberStress() {
 
 	for(int i = 10; i < 20; i++) {
 		std::cout << "--- " << i << std::endl;
-		set<Subscriber> subs;
+		std::set<Subscriber> subs;
 		for (int j = 0; j < i; j++) {
 			Subscriber s("foo", NULL);
 			n2.addSubscriber(s);
@@ -60,7 +60,7 @@ bool testSubscriberStress() {
 		assert(SubscriberImpl::instances == i);
 		assert(p.waitForSubscribers(i) == i);
 
-		set<Subscriber>::iterator subIter = subs.begin();
+		std::set<Subscriber>::iterator subIter = subs.begin();
 		while(subIter != subs.end()) {
 			n2.removeSubscriber(*subIter);
 			subIter++;

@@ -40,8 +40,8 @@ class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public boost::enable_sha
 public:
 	virtual ~ZeroMQPublisher();
 
-	shared_ptr<Implementation> create();
-	void init(shared_ptr<Configuration>);
+	boost::shared_ptr<Implementation> create();
+	void init(Options*);
 	void suspend();
 	void resume();
 
@@ -50,17 +50,20 @@ public:
 
 protected:
 	/**
-	* Constructor used for prototype in Factory only.
-	*/
+	 * Constructor used for prototype in Factory only.
+	 */
 	ZeroMQPublisher();
-	void addedSubscriber(const string, const string);
-	void removedSubscriber(const string, const string);
+	
+	void added(const SubscriberStub& sub, const NodeStub& node);
+	void removed(const SubscriberStub& sub, const NodeStub& node);
 
 private:
 	void run();
 
 	void* _pubSocket;
-	shared_ptr<PublisherConfig> _config;
+	boost::shared_ptr<PublisherConfig> _config;
+	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
+	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
 
 	/// messages for subscribers we do not know yet
 	std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;

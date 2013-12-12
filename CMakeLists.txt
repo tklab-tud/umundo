@@ -27,8 +27,8 @@ cmake_minimum_required(VERSION 2.8.4)
 
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
-SET(UMUNDO_VERSION_MINOR "3")
-SET(UMUNDO_VERSION_PATCH "5")
+SET(UMUNDO_VERSION_MINOR "4")
+SET(UMUNDO_VERSION_PATCH "0")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -40,6 +40,11 @@ ELSE()
 ENDIF()
 
 project(umundo)
+
+# where to find the cmake modules we distribute
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
+include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
+include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
 # CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
@@ -140,6 +145,32 @@ endif()
 
 # is this a 64Bit host?
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(64BIT_HOST ON)
+	set(64BIT_LIB_POSTFIX 64)
+	# additional library paths to be searched
+	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
+# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
+# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
+endif()
+
+if (APPLE)
+	# get MacOSX version
+	execute_process(COMMAND /usr/bin/sw_vers -productVersion
+		OUTPUT_VARIABLE MACOSX_VERSION
+		ERROR_VARIABLE MACOSX_VERSION_errors
+		RESULT_VARIABLE MACOSX_VERSION_result
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (MACOSX_VERSION)
+		THREE_PART_VERSION_TO_VARS(
+			${MACOSX_VERSION}
+			MACOSX_VERSION_MAJOR 
+			MACOSX_VERSION_MINOR 
+			MACOSX_VERSION_PATCH)
+	endif()
+endif()
+
+# is this a 64Bit host?
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(HOST_64BIT ON)
 	set(64BIT_LIB_POSTFIX 64)
 	# additional library paths to be searched
@@ -160,6 +191,23 @@ endif()
 # to look in these directories in addition to the system search paths:
 # http://www.vtk.org/Wiki/CMake_Cross_Compiling#Searching_and_finding_external_software
 #
+
+SET(UMUNDO_PLATFORM_ID)
+if (CMAKE_CROSSCOMPILING)
+	if (IOS)
+		SET(UMUNDO_PLATFORM_ID "ios")
+	elseif (ANDROID)
+		SET(UMUNDO_PLATFORM_ID "android")
+	else()
+		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64")
+	endif()
+else()
+	if (WIN32 AND 64BIT_HOST)
+		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64")
+	else()
+		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}")
+	endif()
+endif()
 
 SET(UMUNDO_PREBUILT_LIBRARY_PATH)
 SET(UMUNDO_PREBUILT_HEADER_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
@@ -182,10 +230,10 @@ else ()
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
 	# SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH")
-	if (WIN32 AND HOST_64BIT)
-		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC}")
+	if (APPLE)
+		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/${MACOSX_VERSION_MAJOR}.${MACOSX_VERSION_MINOR}/${CMAKE_CXX_COMPILER_ID_LC}")
 	else()
-		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC}")
+		SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/${CMAKE_CXX_COMPILER_ID_LC}")
 	endif()
 endif()
 
@@ -203,11 +251,28 @@ if (CMAKE_CROSSCOMPILING)
 	else()
 	endif()
 else()
-	if (WIN32 AND HOST_64BIT)
-		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64.tgz)
-	else()
-		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}.tgz)
-	endif()
+  SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${UMUNDO_PLATFORM_ID}.tgz)
+endif()
+
+# delete directory if unversioned or too old
+if (EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt")
+	file (STRINGS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt" PREBUILT_INCUDES_VERSION)
+endif()
+if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_INCUDES_VERSION}")
+	message(STATUS "Prebuilt headers unversioned, too old or non-existant - downloading (again)")
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include
+	)
+endif()
+
+if (EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt")
+	file (STRINGS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt" PREBUILT_LIBRARIES_VERSION)
+endif()
+if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_LIBRARIES_VERSION}")
+	message(STATUS "Prebuilt libraries unversioned, too old or non-existant - downloading (again)")
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}
+	)
 endif()
 
 # download include directory
@@ -230,6 +295,7 @@ if (NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include)
 	else()
 		message("Downloading prebuilt library headers failed with ${STATUS_STRING} - maybe the host is down?")
 	endif()
+	file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt "${UMUNDO_VERSION}")
 endif()
 
 # download prebuilt libraries
@@ -252,8 +318,8 @@ if (NOT EXISTS ${UMUNDO_PREBUILT_LIBRARY_PATH})
 	else()
 		message("Downloading prebuilt libraries failed with ${STATUS_STRING} - maybe this platform is not supported?")
 	endif()
+	file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt "${UMUNDO_VERSION}")
 endif()
-
 
 #
 # BUILD_PREFER_PREBUILT_LIBS:
@@ -279,6 +345,8 @@ if (CMAKE_CUSTOM_FIND_PATH)
 	SET(CMAKE_FIND_ROOT_PATH "${CMAKE_CUSTOM_FIND_PATH};${CMAKE_FIND_ROOT_PATH}")
 endif()
 
+#message(FATAL_ERROR "CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
+
 message(STATUS "Searching for prebuilt libraries in: ${CMAKE_FIND_ROOT_PATH}")
 
 if (WIN32)
@@ -296,11 +364,6 @@ if (BUILD_TESTS)
 	enable_testing()
 	SET(ENV{CTEST_OUTPUT_ON_FAILURE} ON)
 endif()
-
-# where to find the cmake modules we distribute
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
-include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
-include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 
 # some compiler flags
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
@@ -423,12 +486,12 @@ if(UNIX AND NOT APPLE AND NOT IOS AND NOT ANDROID)
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
 	OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
-	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
+	OPTION(DISC_BROADCAST "Use Broadcast discovery" ON)
 else()
 	# build with bonjour everywhere else
 	OPTION(DISC_BONJOUR "Use bonjour for discovery" ON)
 	OPTION(DISC_AVAHI "Use avahi for discovery" OFF)
-	OPTION(DISC_BROADCAST "Use Broadcast discovery" OFF)
+	OPTION(DISC_BROADCAST "Use Broadcast discovery" ON)
 	if(CMAKE_CROSSCOMPILING AND ANDROID)
 		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" ON)
 		# required in patched bonjour headers

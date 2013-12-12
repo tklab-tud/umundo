@@ -26,7 +26,7 @@
 
 namespace umundo {
 
-ServiceFilter::ServiceFilter(const string& svcName) {
+ServiceFilter::ServiceFilter(const std::string& svcName) {
 	_svcName = svcName;
 	_uuid = UUID::getUUID();
 }
@@ -36,7 +36,7 @@ Message* ServiceFilter::toMessage() const  {
 	msg->putMeta("um.rpc.filter.svcName", _svcName);
 	msg->putMeta("um.rpc.filter.uuid", _uuid);
 
-	vector<Rule>::const_iterator ruleIter = _rules.begin();
+	std::vector<Rule>::const_iterator ruleIter = _rules.begin();
 	int i = 0;
 	while(ruleIter != _rules.end()) {
 		std::stringstream ssValueKey;
@@ -64,18 +64,18 @@ Message* ServiceFilter::toMessage() const  {
 ServiceFilter::ServiceFilter(Message* msg) {
 	_svcName = msg->getMeta("um.rpc.filter.svcName");
 	_uuid = msg->getMeta("um.rpc.filter.uuid");
-	map<string, string> meta = msg->getMeta();
-	map<string, string>::const_iterator metaIter = meta.begin();
+	std::map<std::string, std::string> meta = msg->getMeta();
+	std::map<std::string, std::string>::const_iterator metaIter = meta.begin();
 	while(metaIter != meta.end()) {
-		string key = metaIter->first;
-		string value = metaIter->second;
+		std::string key = metaIter->first;
+		std::string value = metaIter->second;
 
 		if (key.size() > 20 && key.compare(0, 20, "um.rpc.filter.value.") == 0) {
 			size_t dotPos = key.find(".", 20);
 			if (dotPos == std::string::npos)
 				continue;
 
-			string indexStr(key.substr(20, dotPos - 20));
+			std::string indexStr(key.substr(20, dotPos - 20));
 
 			key = key.substr(20 + 1 + indexStr.length(), key.length() - (20 + indexStr.length()));
 			assert(meta.find("um.rpc.filter.pattern." + indexStr + "." + key) != meta.end());
@@ -93,11 +93,11 @@ ServiceFilter::ServiceFilter(Message* msg) {
 	}
 }
 
-void ServiceFilter::addRule(const string& key, const string& value, int pred) {
+void ServiceFilter::addRule(const std::string& key, const std::string& value, int pred) {
 	addRule(key, ".*", value, pred);
 }
 
-void ServiceFilter::addRule(const string& key, const string& pattern, const string& value, int pred) {
+void ServiceFilter::addRule(const std::string& key, const std::string& pattern, const std::string& value, int pred) {
 	// @TODO: we cannot use a map here!
 	Rule rule;
 	rule.pattern = pattern;
@@ -117,7 +117,7 @@ bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 		return false;
 
 	// check filter
-	vector<Rule>::const_iterator ruleIter = _rules.begin();
+	std::vector<Rule>::const_iterator ruleIter = _rules.begin();
 	while(ruleIter != _rules.end()) {
 
 		/* A condition is true, if the matched substring from the value for key of
@@ -125,15 +125,15 @@ bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 		 * filter value.
 		 */
 
-		string key = ruleIter->key;                     // the key for the values
+		std::string key = ruleIter->key;                     // the key for the values
 		if (!svcDesc.hasProperty(key)) {
 			ruleIter++;
 			continue;
 		}
 
-		string actual = svcDesc.getProperty(key);      // the actual string as it is present in the description
-		string target = ruleIter->value;                // the substring from the filter
-		string pattern = ruleIter->pattern;             // the pattern that will transform the actual string into a substring
+		std::string actual = svcDesc.getProperty(key);      // the actual string as it is present in the description
+		std::string target = ruleIter->value;                // the substring from the filter
+		std::string pattern = ruleIter->pattern;             // the pattern that will transform the actual string into a substring
 		int pred = ruleIter->predicate;                 // the relation between filter and description sting
 		Regex regex(pattern);
 
@@ -150,7 +150,7 @@ bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 			return false;
 
 		// if we matched a substring with (regex) notation, use it
-		string substring;
+		std::string substring;
 		if (regex.hasSubMatches()) {
 			substring = regex.getSubMatches()[0];
 		} else {
@@ -239,8 +239,8 @@ bool ServiceFilter::matches(const ServiceDescription& svcDesc) const {
 	return true;
 }
 
-bool ServiceFilter::isNumeric(const string& test) const {
-	string::const_iterator sIter = test.begin();
+bool ServiceFilter::isNumeric(const std::string& test) const {
+	std::string::const_iterator sIter = test.begin();
 	for(; sIter != test.end(); sIter++) {
 		if (isdigit(*sIter))
 			continue;
@@ -253,7 +253,7 @@ bool ServiceFilter::isNumeric(const string& test) const {
 	return true;
 }
 
-double ServiceFilter::toNumber(const string& numberString) const {
+double ServiceFilter::toNumber(const std::string& numberString) const {
 	std::istringstream os(numberString);
 	double d;
 	os >> d;
@@ -263,7 +263,7 @@ double ServiceFilter::toNumber(const string& numberString) const {
 ServiceDescription::ServiceDescription() {
 }
 
-ServiceDescription::ServiceDescription(map<string, string> properties) {
+ServiceDescription::ServiceDescription(std::map<std::string, std::string> properties) {
 	_properties = properties;
 }
 
@@ -272,10 +272,10 @@ ServiceDescription::ServiceDescription(Message* msg) {
 	_channelName = msg->getMeta("um.rpc.desc.channel");
 	assert(_svcName.size() > 0);
 	assert(_channelName.size() > 0);
-	map<string, string>::const_iterator metaIter = msg->getMeta().begin();
+	std::map<std::string, std::string>::const_iterator metaIter = msg->getMeta().begin();
 	while(metaIter != msg->getMeta().end()) {
-		string key = metaIter->first;
-		string value = metaIter->second;
+		std::string key = metaIter->first;
+		std::string value = metaIter->second;
 		if (key.length() > 12 && key.compare(0, 12, "um.rpc.desc.") == 0) {
 			key = key.substr(12, key.length());
 			_properties[key] = value;
@@ -286,7 +286,7 @@ ServiceDescription::ServiceDescription(Message* msg) {
 
 Message* ServiceDescription::toMessage() const {
 	Message* msg = new Message();
-	map<string, string>::const_iterator propIter = _properties.begin();
+	std::map<std::string, std::string>::const_iterator propIter = _properties.begin();
 	while(propIter != _properties.end()) {
 		msg->putMeta("um.rpc.desc." + propIter->first, propIter->second);
 		propIter++;
@@ -298,13 +298,17 @@ Message* ServiceDescription::toMessage() const {
 	return msg;
 }
 
+/**
+ * Constructor for local service stubs
+ */
 ServiceStub::ServiceStub(const ServiceDescription& svcDesc) {
+	UM_LOG_INFO("Creating new service stub for '%s' at %s.[listen|serve]", svcDesc.getName().c_str(), svcDesc.getChannelName().c_str());
 	_channelName = svcDesc.getChannelName();
-	_rpcPub = TypedPublisher(_channelName);
-	_rpcSub = TypedSubscriber(_channelName, this);
+	_rpcPub = TypedPublisher(_channelName + ".listen");
+	_rpcSub = TypedSubscriber(_channelName + ".serve", this);
 
-	set<Node> nodes = svcDesc.getServiceManager()->getNodes();
-	set<Node>::iterator nodeIter = nodes.begin();
+	std::set<Node> nodes = svcDesc.getServiceManager()->getNodes();
+	std::set<Node>::iterator nodeIter = nodes.begin();
 	while(nodeIter != nodes.end()) {
 		((Node)*nodeIter).connect(this);
 		nodeIter++;
@@ -312,39 +316,38 @@ ServiceStub::ServiceStub(const ServiceDescription& svcDesc) {
 	_rpcPub.waitForSubscribers(1);
 }
 
-ServiceStub::ServiceStub(const string& channelName) {
+ServiceStub::ServiceStub(const std::string& channelName) {
 	_channelName = channelName;
-	_rpcPub = TypedPublisher(_channelName);
-	_rpcSub = TypedSubscriber(_channelName, this);
+	_rpcPub = TypedPublisher(_channelName + ".listen");
+	_rpcSub = TypedSubscriber(_channelName + ".serve", this);
 	_rpcPub.waitForSubscribers(1);
-
 }
 
 ServiceStub::~ServiceStub() {
 }
 
-std::set<umundo::Publisher> ServiceStub::getPublishers() {
-	set<Publisher> pubs;
-	pubs.insert(_rpcPub);
+std::map<std::string, Publisher> ServiceStub::getPublishers() {
+	std::map<std::string, Publisher> pubs;
+	pubs[_rpcPub.getUUID()] = _rpcPub;
 	return pubs;
 }
-std::set<umundo::Subscriber> ServiceStub::getSubscribers() {
-	set<Subscriber> subs;
-	subs.insert(_rpcSub);
+std::map<std::string, Subscriber> ServiceStub::getSubscribers() {
+	std::map<std::string, Subscriber> subs;
+	subs[_rpcSub.getUUID()] = _rpcSub;
 	return subs;
 }
 
-const string& ServiceStub::getChannelName() {
+	const std::string ServiceStub::getChannelName() {
 	return _channelName;
 }
 
-const string& ServiceStub::getName() {
+	const std::string ServiceStub::getName() {
 	return _serviceName;
 }
 
-void ServiceStub::callStubMethod(const string& name, void* in, const string& inType, void* &out, const string& outType) {
+void ServiceStub::callStubMethod(const std::string& name, void* in, const std::string& inType, void* &out, const std::string& outType) {
 	Message* rpcReqMsg = _rpcPub.prepareMsg(inType, in);
-	string reqId = UUID::getUUID();
+	std::string reqId = UUID::getUUID();
 	rpcReqMsg->putMeta("um.rpc.reqId", reqId);
 	rpcReqMsg->putMeta("um.rpc.method", name);
 	rpcReqMsg->putMeta("um.rpc.outType", outType);
@@ -376,7 +379,7 @@ void ServiceStub::callStubMethod(const string& name, void* in, const string& inT
 
 void ServiceStub::receive(void* obj, Message* msg) {
 	if (msg->getMeta().find("um.rpc.respId") != msg->getMeta().end()) {
-		string respId = msg->getMeta("um.rpc.respId");
+		std::string respId = msg->getMeta("um.rpc.respId");
 		ScopeLock lock(_mutex);
 		if (_requests.find(respId) != _requests.end()) {
 			_responses[respId] = obj;
@@ -386,10 +389,14 @@ void ServiceStub::receive(void* obj, Message* msg) {
 }
 
 
+/**
+ * This constructor is called for local service instantiations
+ */
 Service::Service() {
 	_channelName = UUID::getUUID();
-	_rpcPub = TypedPublisher(_channelName);
-	_rpcSub = TypedSubscriber(_channelName, this);
+	_rpcPub = TypedPublisher(_channelName + ".serve");
+	_rpcSub = TypedSubscriber(_channelName + ".listen", this);
+	UM_LOG_INFO("Creating new service at %s.[listen|serve]", _channelName.c_str());
 }
 
 Service::~Service() {
@@ -399,9 +406,9 @@ Service::~Service() {
 void Service::receive(void* obj, Message* msg) {
 	// somone wants a method called
 	if (msg->getMeta().find("um.rpc.method") != msg->getMeta().end()) {
-		string methodName = msg->getMeta("um.rpc.method");
-		string inType = msg->getMeta("um.s11n.type");
-		string outType = msg->getMeta("um.rpc.outType");
+		std::string methodName = msg->getMeta("um.rpc.method");
+		std::string inType = msg->getMeta("um.s11n.type");
+		std::string outType = msg->getMeta("um.rpc.outType");
 		void* out = NULL;
 		callMethod(methodName, obj, inType, out, outType);
 		if (out != NULL) {

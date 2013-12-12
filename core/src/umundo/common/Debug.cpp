@@ -368,7 +368,7 @@ void Traceable::replay(const std::string& filename) {
 		UM_LOG_WARN("Replaying %s: Cannot open file", filename.c_str());
 		return;
 	}
-	string line = "";
+	std::string line = "";
 	while (!traceFile.eof()) {
 		std::getline(traceFile, line);
 		//std::cout << line << std::endl;
@@ -382,26 +382,26 @@ void Traceable::replay(const std::string& filename) {
 		// match message
 		lastMatch += 2;
 		currMatch = line.find(" ###", lastMatch);
-		if (currMatch == string::npos)
+		if (currMatch == std::string::npos)
 			continue;
-		string msg = line.substr(lastMatch, currMatch - lastMatch);
+		std::string msg = line.substr(lastMatch, currMatch - lastMatch);
 		lastMatch = currMatch;
 
 		// match info
 		std::map<std::string, std::string> info;
 		currMatch = line.find(" [ ", lastMatch);
-		if (currMatch != string::npos) {
+		if (currMatch != std::string::npos) {
 			lastMatch = currMatch + 3;
 			while(true) {
 				currMatch = line.find("=", lastMatch);
-				if (currMatch == string::npos)
+				if (currMatch == std::string::npos)
 					break;
 
-				string key = line.substr(lastMatch, currMatch - lastMatch);
+				std::string key = line.substr(lastMatch, currMatch - lastMatch);
 				lastMatch = currMatch + 1;
 				currMatch = line.find(" ## ", lastMatch);
 
-				string value = line.substr(lastMatch, currMatch - lastMatch);
+				std::string value = line.substr(lastMatch, currMatch - lastMatch);
 				info[key] = value;
 				lastMatch = currMatch + 4;
 			}

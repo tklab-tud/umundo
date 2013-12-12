@@ -8,15 +8,15 @@
 unset MACOSX_DEPLOYMENT_TARGET
 
 # be ridiculously conservative with regard to ios features
-export IPHONEOS_DEPLOYMENT_TARGET="1.0"
+export IPHONEOS_DEPLOYMENT_TARGET="4.3"
 
 # exit on error
 set -e
 
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )"
-#SDK_VER="6.1"
-SDK_VER="5.1"
+SDK_VER="7.0"
+#SDK_VER="5.1"
 DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}-zeromq-build"
 
 if [ ! -f src/zmq.cpp ]; then
@@ -31,7 +31,9 @@ fi
 mkdir -p ${DEST_DIR} &> /dev/null
 
 # see http://stackoverflow.com/questions/2424770/floating-point-comparison-in-shell-script
-if [ $(bc <<< "$SDK_VER >= 6.1") -eq 1 ]; then
+if [ $(bc <<< "$SDK_VER >= 7.0") -eq 1 ]; then
+  DEV_ARCHS="-arch armv7 -arch armv7s -arch arm64"
+elif [ $(bc <<< "$SDK_VER >= 6.1") -eq 1 ]; then
   DEV_ARCHS="-arch armv7 -arch armv7s"
 elif [ $(bc <<< "$SDK_VER >= 5.1") -eq 1 ]; then
   DEV_ARCHS="-arch armv6 -arch armv7"
@@ -48,6 +50,22 @@ if [ ! -d ${DEST_DIR}/device ]; then
 
   TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer" 
   SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneOS${SDK_VER}.sdk"
+  
+  if [ $(bc <<< "$SDK_VER >= 7.0") -eq 1 ]; then
+    # export CC="/Applications/Xcode.app/Contents/Developer/usr/bin/gcc"
+    # export CXX="/Applications/Xcode.app/Contents/Developer/usr/bin/g++"
+    # export CPPFLAGS="-sysroot ${SYSROOT}"
+    # export CXXCPPFLAGS="-sysroot ${SYSROOT}"
+    # export LD=${TOOLCHAIN_ROOT}/usr/bin/ld
+    echo "asdf"
+  else
+    export CC=${TOOLCHAIN_ROOT}/usr/bin/gcc
+    export CXX=${TOOLCHAIN_ROOT}/usr/bin/g++
+    export LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r
+    export CPP=${TOOLCHAIN_ROOT}/usr/bin/cpp
+    export CXXCPP=${TOOLCHAIN_ROOT}/usr/bin/cpp
+    export LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS}"
+  fi
 
   if [ ! -d ${SYSROOT} ]; then
     echo
@@ -65,16 +83,12 @@ if [ ! -d ${DEST_DIR}/device ]; then
   ./configure \
   CPP="cpp" \
   CXXCPP="cpp" \
-  CXX=${TOOLCHAIN_ROOT}/usr/bin/g++ \
-  CC=${TOOLCHAIN_ROOT}/usr/bin/gcc \
-  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
   CFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
   CXXFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
   --host=arm-apple-darwin10 \
   --target=arm-apple-darwin10 \
   --disable-shared \
   --disable-dependency-tracking \
-  LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS}" \
   AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
   AS=${TOOLCHAIN_ROOT}/usr/bin/as \
   LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
@@ -83,11 +97,14 @@ if [ ! -d ${DEST_DIR}/device ]; then
   --prefix=${DEST_DIR}/device
 
   make -j2 install
+
 else
   echo
   echo "${DEST_DIR}/device already exists - not rebuilding."
   echo
 fi
+
+exit
 
 #
 # Simulator
@@ -96,6 +113,26 @@ if [ ! -d ${DEST_DIR}/simulator ]; then
 
   TOOLCHAIN_ROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer" 
   SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneSimulator${SDK_VER}.sdk"
+
+  if [ $(bc <<< "$SDK_VER >= 7.0") -eq 1 ]; then
+    export CXX=${TOOLCHAIN_ROOT}/usr/bin/g++wdf
+    export CC=${TOOLCHAIN_ROOT}/usr/bin/gcc-qwef
+    export AR=/Applications/Xcode.app/Contents/Developer/usr/bin/ar
+    export AS=/Applications/Xcode.app/Contents/Developer/usr/bin/as
+    export LIBTOOL=/Applications/Xcode.app/Contents/Developer/usr/bin/libtool
+    export STRIP=/Applications/Xcode.app/Contents/Developer/usr/bin/strip
+    export RANLIB=/Applications/Xcode.app/Contents/Developer/usr/bin/ranlib
+    export LD=${TOOLCHAIN_ROOT}/usr/bin/ld
+  else
+    export CXX=${TOOLCHAIN_ROOT}/usr/bin/llvm-g++
+    export CC=${TOOLCHAIN_ROOT}/usr/bin/llvm-gcc
+    export AR=${TOOLCHAIN_ROOT}/usr/bin/ar
+    export AS=${TOOLCHAIN_ROOT}/usr/bin/as
+    export LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool
+    export STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip
+    export RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib
+    export LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r
+  fi
 
   if [ ! -d ${SYSROOT} ]; then
     echo
@@ -111,19 +148,11 @@ if [ ! -d ${DEST_DIR}/simulator ]; then
   mkdir -p ${DEST_DIR}/simulator &> /dev/null
 
   ./configure \
-  CXX=${TOOLCHAIN_ROOT}/usr/bin/llvm-g++ \
-  CC=${TOOLCHAIN_ROOT}/usr/bin/llvm-gcc \
-  LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r \
   CFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
   CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
   --disable-shared \
   --disable-dependency-tracking \
   LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
-  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
-  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
-  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
-  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
-  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
   --prefix=${DEST_DIR}/simulator
 
   make -j2 install

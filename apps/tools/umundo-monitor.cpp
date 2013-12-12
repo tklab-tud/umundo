@@ -27,18 +27,6 @@
 #include "XGetopt.h"
 #endif
 
-#ifdef DISC_BONJOUR
-#include "umundo/discovery/bonjour/BonjourNodeDiscovery.h"
-#define DISC_IMPL BonjourNodeDiscovery
-#endif
-#ifdef DISC_AVAHI
-#include "umundo/discovery/avahi/AvahiNodeDiscovery.h"
-#define DISC_IMPL AvahiNodeDiscovery
-#endif
-#if !(defined DISC_AVAHI || defined DISC_BONJOUR)
-#error "No discovery implementation choosen"
-#endif
-
 #ifdef S11N_PROTOBUF
 #include "umundo/s11n/TypedSubscriber.h"
 #include <google/protobuf/descriptor.pb.h>
@@ -67,7 +55,6 @@ std::string pathSeperator = "/";
 #endif
 
 using namespace umundo;
-using namespace std;
 
 std::string channel;
 std::string domain;
@@ -76,11 +63,6 @@ std::string protoPath;
 bool interactive = false;
 bool verbose = false;
 int minSubs = 0;
-
-class DiscoveryMonitor : public DISC_IMPL {};
-class NodeMonitor : public NET_NODE_IMPL {};
-class PublisherMonitor : public NET_PUB_IMPL {};
-class SubscriberMonitor : public NET_SUB_IMPL {};
 
 void printUsageAndExit() {
 	printf("umundo-monitor version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
@@ -100,7 +82,7 @@ void printUsageAndExit() {
 
 class PlainDumpingReceiver : public TypedReceiver {
 	void receive(void* object, Message* msg) {
-		map<string, string>::const_iterator metaIter = msg->getMeta().begin();
+		std::map<std::string, std::string>::const_iterator metaIter = msg->getMeta().begin();
 		while(metaIter != msg->getMeta().end()) {
 			std::cout << metaIter->first << ": " << metaIter->second << std::endl;
 			metaIter++;
@@ -173,10 +155,13 @@ int main(int argc, char** argv) {
 	if (!channel.length() > 0)
 		printUsageAndExit();
 
-	Node node(domain);
+	Discovery disc(Discovery::MDNS, domain);
+	
+	Node node;
 	TypedPublisher pub(channel);
 	TypedSubscriber sub(channel);
 
+	disc.add(node);
 	/**
 	 * Send file content
 	 */
@@ -232,7 +217,7 @@ int main(int argc, char** argv) {
 		node.addPublisher(pub);
 
 		//pub->waitForSubscribers(minSubs);
-		string line;
+		std::string line;
 
 		Message* msg = new Message();
 		while(std::cin) {
@@ -243,9 +228,9 @@ int main(int argc, char** argv) {
 				size_t valueStart = line.find_first_not_of(" =", keyEnd);
 				size_t valueEnd = line.length();
 
-				string key = line.substr(keyStart, keyEnd - keyStart);
-				string value = line.substr(valueStart, valueEnd - valueStart);
-				cout << key << " = " << value << endl;
+				std::string key = line.substr(keyStart, keyEnd - keyStart);
+				std::string value = line.substr(valueStart, valueEnd - valueStart);
+				std::cout << key << " = " << value << std::endl;
 				msg->putMeta(key, value);
 				continue;
 			} else {

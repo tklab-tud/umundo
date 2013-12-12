@@ -15,6 +15,7 @@
 
 #include "umundo/config.h"
 #include "umundo/core.h"
+#include "umundo/discovery/MDNSDiscovery.h"
 #include <cstdio>
 #include <string.h>
 #include <iostream>
@@ -32,7 +33,6 @@ std::string pathSeperator = "/";
 #endif
 
 using namespace umundo;
-using namespace std;
 
 std::string channel;
 std::string domain;
@@ -102,7 +102,14 @@ int main(int argc, char** argv) {
 	if (!file.length() > 0)
 		printUsageAndExit();
 
-	Node node(domain);
+	MDNSDiscoveryOptions mdnsOpts;
+	if (domain.length() > 0)
+		mdnsOpts.setDomain(domain);
+	Discovery disc(Discovery::MDNS, &mdnsOpts);
+	
+	Node node;
+	disc.add(node);
+
 	Publisher pub(channel);
 
 	fp = fopen(file.c_str(), "r");

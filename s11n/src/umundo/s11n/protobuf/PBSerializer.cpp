@@ -38,22 +38,22 @@ PBSerializer::PBSerializer() {}
 
 PBSerializer::~PBSerializer() {}
 
-shared_ptr<Implementation> PBSerializer::create() {
-	shared_ptr<Implementation> instance(new PBSerializer());
+boost::shared_ptr<Implementation> PBSerializer::create() {
+	boost::shared_ptr<Implementation> instance(new PBSerializer());
 	return instance;
 }
 
-void PBSerializer::init(shared_ptr<Configuration> config) {
+void PBSerializer::init(Options* config) {
 }
 
-string PBSerializer::serialize(const string& type, void* obj) {
+std::string PBSerializer::serialize(const std::string& type, void* obj) {
 	MessageLite* pbObj = (MessageLite*)obj;
 	//  MessageLite* pbObj = _serializers[type]->New();
 	//  pbObj->CheckTypeAndMergeFrom(*((MessageLite*)obj));
 	return pbObj->SerializeAsString();
 }
 
-void PBSerializer::registerType(const string& type, void* serializer) {
+void PBSerializer::registerType(const std::string& type, void* serializer) {
 	_serializers[type] = (MessageLite*)serializer;
 }
 
@@ -200,7 +200,7 @@ bool PBSerializer::isDir(const std::string& dirOrFile) {
 	return((bool)(S_ISDIR (dirStat.st_mode)));
 }
 
-void PBErrorReporter::AddError(const string & filename, int line, int column, const string & message) {
+void PBErrorReporter::AddError(const std::string& filename, int line, int column, const std::string & message) {
 	UM_LOG_ERR("filename %s:%d:%d: %s", filename.c_str(), line, column, message.c_str());
 }
 

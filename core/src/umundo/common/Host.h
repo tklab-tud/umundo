@@ -31,10 +31,10 @@ namespace umundo {
  */
 struct Interface {
 public:
-	set<string> ipv4;
-	set<string> ipv6;
-	string mac;
-	string name;
+	std::vector<std::string> ipv4;
+	std::vector<std::string> ipv6;
+	std::string mac;
+	std::string name;
 };
 
 /**
@@ -42,9 +42,9 @@ public:
  */
 class Host {
 public:
-	static const string& getHostname();  ///< hostname
-	static const vector<Interface> getInterfaces();  ///< get a list of all the hosts network interfaces
-	static const string& getHostId();    ///< 36 byte string unique to the host
+	static const std::string getHostname();  ///< hostname
+	static const std::vector<Interface> getInterfaces();  ///< get a list of all the hosts network interfaces
+	static const std::string getHostId();    ///< 36 byte string unique to the host
 };
 
 }

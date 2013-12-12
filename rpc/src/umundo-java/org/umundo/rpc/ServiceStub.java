@@ -22,8 +22,8 @@ import java.util.UUID;
 import org.umundo.core.Connectable;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
-import org.umundo.core.PublisherSet;
-import org.umundo.core.SubscriberSet;
+import org.umundo.core.PublisherMap;
+import org.umundo.core.SubscriberMap;
 import org.umundo.s11n.ITypedReceiver;
 import org.umundo.s11n.TypedPublisher;
 import org.umundo.s11n.TypedSubscriber;
@@ -111,16 +111,16 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 	}
 
 	@Override
-	public PublisherSet getPublishers() {
-		PublisherSet pubs = new PublisherSet();
-		pubs.insert(_rpcPub);
+	public PublisherMap getPublishers() {
+		PublisherMap pubs = new PublisherMap();
+		pubs.set(_rpcPub.getUUID(), _rpcPub);
 		return pubs;
 	}
 
 	@Override
-	public SubscriberSet getSubscribers() {
-		SubscriberSet subs = new SubscriberSet();
-		subs.insert(_rpcSub);
+	public SubscriberMap getSubscribers() {
+		SubscriberMap subs = new SubscriberMap();
+		subs.set(_rpcSub.getUUID(), _rpcSub);
 		return subs;
 	}
 

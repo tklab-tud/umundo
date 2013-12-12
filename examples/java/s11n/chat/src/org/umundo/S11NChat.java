@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
+import org.umundo.core.Discovery;
+import org.umundo.core.Discovery.DiscoveryType;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
+import org.umundo.core.SubscriberStub;
 import org.umundo.protobuf.ChatS11N.ChatMsg;
 import org.umundo.s11n.ITypedGreeter;
 import org.umundo.s11n.ITypedReceiver;
@@ -18,13 +21,14 @@ import org.umundo.s11n.TypedSubscriber;
  * want to use ant!
  */
 
-public class Chat {
+public class S11NChat {
 
 	/**
 	 * Send and receive serialized chat message objects. This sample uses
 	 * protobuf serialization to send chat messages.
 	 */
 
+	public Discovery disc;
 	public Node chatNode;
 	public TypedSubscriber chatSub;
 	public TypedPublisher chatPub;
@@ -36,8 +40,12 @@ public class Chat {
 	public BufferedReader reader = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	public Chat() {
+	public S11NChat() {
+		disc = new Discovery(DiscoveryType.MDNS);
+		
 		chatNode = new Node();
+		disc.add(chatNode);
+		
 		chatRcv = new ChatReceiver();
 		chatSub = new TypedSubscriber("s11nChat", chatRcv);
 		chatPub = new TypedPublisher("s11nChat");
@@ -66,7 +74,7 @@ public class Chat {
 				ChatMsg chatMsg = (ChatMsg) object;
 
 				if (chatMsg.getType() == ChatMsg.Type.JOINED) {
-					Chat.this.participants.put(msg.getMeta("subscriber"),
+					S11NChat.this.participants.put(msg.getMeta("subscriber"),
 							chatMsg.getUsername());
 					System.out.println(chatMsg.getUsername()
 							+ " joined the chat");
@@ -82,22 +90,22 @@ public class Chat {
 		public String userName;
 
 		@Override
-		public void welcome(TypedPublisher pub, String nodeId, String subId) {
+		public void welcome(TypedPublisher pub, SubscriberStub subStub) {
 			ChatMsg welcomeMsg = ChatMsg.newBuilder().setUsername(userName)
 					.setType(ChatMsg.Type.JOINED).build();
 			Message greeting = pub.prepareMessage("ChatMsg", welcomeMsg);
-			greeting.setReceiver(subId);
-			greeting.putMeta("subscriber", Chat.this.chatSub.getUUID());
+			greeting.setReceiver(subStub.getUUID());
+			greeting.putMeta("subscriber", S11NChat.this.chatSub.getUUID());
 			pub.send(greeting);
 		}
 
 		@Override
-		public void farewell(TypedPublisher pub, String nodeId, String subId) {
-			if (Chat.this.participants.containsKey(subId)) {
-				System.out.println(Chat.this.participants.get(subId)
+		public void farewell(TypedPublisher pub, SubscriberStub subStub) {
+			if (S11NChat.this.participants.containsKey(subStub.getUUID())) {
+				System.out.println(S11NChat.this.participants.get(subStub.getUUID())
 						+ " left the chat");
 			} else {
-				System.out.println("An unknown user left the chat: " + subId);
+				System.out.println("An unknown user left the chat: " + subStub.getUUID());
 			}
 		}
 	}
@@ -123,7 +131,8 @@ public class Chat {
 	}
 
 	public static void main(String[] args) {
-		Chat chat = new Chat();
+		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+		S11NChat chat = new S11NChat();
 		chat.run();
 	}
 }

@@ -59,6 +59,8 @@ mDNSexport int embedded_mDNSInit() {
 	mDNSPlatformMemZero( &mDNSStorage, sizeof(mDNSStorage));
 	mDNSPlatformMemZero( &platformSupport, sizeof(platformSupport));
 
+//	mDNSStorage.AutoTargetServices = 1;
+
 	err = mDNS_Init(
 		&mDNSStorage,
 		&platformSupport,

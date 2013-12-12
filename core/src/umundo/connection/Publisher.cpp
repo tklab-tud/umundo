@@ -35,24 +35,21 @@ PublisherImpl::~PublisherImpl() {
 	instances--;
 }
 
-shared_ptr<Configuration> PublisherConfig::create() {
-	return shared_ptr<Configuration>(new PublisherConfig());
+Publisher::Publisher(const std::string& channelName) {
+	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
+	PublisherStub::_impl = _impl;
+	EndPoint::_impl = _impl;
+	_impl->setChannelName(channelName);
+	PublisherConfig config;
+	config.channelName = channelName;
+	_impl->init(&config);
 }
 
-Publisher::Publisher(const string& channelName) {
+Publisher::Publisher(const std::string& channelName, Greeter* greeter) {
 	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
 	PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
-	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
-	config->channelName = channelName;
-	_impl->init(config);
-}
-
-Publisher::Publisher(const string& channelName, Greeter* greeter) {
-	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
-	PublisherStub::_impl = _impl;
-	_impl->setChannelName(channelName);
-	shared_ptr<PublisherConfig> config = boost::static_pointer_cast<PublisherConfig>(Factory::config("publisher"));
+	PublisherConfig* config = new PublisherConfig();
 	config->channelName = channelName;
 	_impl->setGreeter(greeter);
 	_impl->init(config);

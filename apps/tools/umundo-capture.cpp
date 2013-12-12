@@ -32,7 +32,6 @@ std::string pathSeperator = "/";
 #endif
 
 using namespace umundo;
-using namespace std;
 
 std::string channel;
 std::string domain;
@@ -60,7 +59,7 @@ class LoggingReceiver : public Receiver {
 		totalMsgs++;
 
 		uint64_t timeDiff = Thread::getTimeStampMs() - startedAt;
-		map<string, string>::const_iterator metaIter;
+		std::map<std::string, std::string>::const_iterator metaIter;
 
 		// get size of message
 		uint64_t msgSize = 0;
@@ -124,9 +123,13 @@ int main(int argc, char** argv) {
 	if (!file.length() > 0)
 		printUsageAndExit();
 
-	Node node(domain);
+	Discovery disc(Discovery::MDNS, domain);
+	
+	Node node;
 	Subscriber sub(channel);
 
+	disc.add(node);
+	
 	fp = fopen(file.c_str(), "w");
 	if (fp == NULL) {
 		printf("Failed to open file %s: %s\n", file.c_str(), strerror(errno));

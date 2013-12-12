@@ -43,7 +43,7 @@ public:
 	static shared_ptr<AvahiNodeDiscovery> getInstance();
 
 	shared_ptr<Implementation> create();
-	void init(shared_ptr<Configuration>);
+	void init(shared_ptr<Options>);
 	void suspend();
 	void resume();
 

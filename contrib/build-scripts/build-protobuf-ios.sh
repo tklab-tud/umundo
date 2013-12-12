@@ -17,7 +17,7 @@ set -e
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 #SDK_VER="6.1"
-SDK_VER="5.1"
+SDK_VER="7.0"
 DEST_DIR="${DIR}/../prebuilt/ios/${SDK_VER}-protobuf-build"
 
 if [ ! -d src/google/protobuf ]; then

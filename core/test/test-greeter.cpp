@@ -6,24 +6,26 @@ using namespace umundo;
 int instances = 0;
 
 class TestGreeter : public Greeter {
-	void welcome(Publisher, const string& nodeId, const string& subId) {
+	void welcome(const Publisher& pub, const SubscriberStub& subStub) {
 		instances++;
 	}
 
-	void farewell(Publisher, const string& nodeId, const string& subId) {
+	void farewell(const Publisher& pub, const SubscriberStub& subStub) {
 		instances--;
 	}
 
 };
 
 bool testGreeter() {
-	Node node1(Host::getHostId());
-	Node node2(Host::getHostId());
+	Node node1;
+	Node node2;
 
 	Publisher pub1("foobar", new TestGreeter());
-
 	node1.addPublisher(pub1);
 
+	node1.added(node2);
+	node2.added(node1);
+	
 	Subscriber sub1("f");
 	node2.addSubscriber(sub1);
 

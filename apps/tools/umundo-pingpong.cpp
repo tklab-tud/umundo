@@ -34,14 +34,16 @@ int main(int argc, char** argv) {
 	Publisher pubFoo("pingpong");
 	Subscriber subFoo("pingpong", testRecv);
 
+	Discovery disc(Discovery::MDNS);
 	Node node;
+	disc.add(node);
 	node.addPublisher(pubFoo);
 	node.addSubscriber(subFoo);
 
 	while(1) {
 		Thread::sleepMs(1000);
 		Message* msg = new Message();
-		msg->setData("ping");
+		msg->setData("ping", 4);
 		std::cout << "o" << std::flush;
 		pubFoo.send(msg);
 		delete(msg);

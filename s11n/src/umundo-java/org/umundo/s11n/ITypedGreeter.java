@@ -16,9 +16,11 @@
 
 package org.umundo.s11n;
 
+import org.umundo.core.SubscriberStub;
+
 public interface ITypedGreeter {
 
-	void welcome(TypedPublisher atPub, String nodeId, String subId);
-	void farewell(TypedPublisher fromPub, String nodeId, String subId);
+	void welcome(TypedPublisher atPub, SubscriberStub subStub);
+	void farewell(TypedPublisher fromPub, SubscriberStub subStub);
 
 }

@@ -36,7 +36,6 @@
 #include "umundo/connection/Publisher.h"
 #include "umundo/connection/Subscriber.h"
 #include "umundo/discovery/Discovery.h"
-#include "umundo/discovery/NodeQuery.h"
 #include "umundo/thread/Thread.h"
 
 #endif /* end of include guard: CORE_H_BPUC93BU */

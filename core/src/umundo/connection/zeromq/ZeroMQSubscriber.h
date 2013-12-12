@@ -29,14 +29,15 @@
 namespace umundo {
 
 class PublisherStub;
+class NodeStub;
 
 /**
  * Concrete subscriber implementor for 0MQ (bridge pattern).
  */
 class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl, public Thread {
 public:
-	shared_ptr<Implementation> create();
-	void init(shared_ptr<Configuration>);
+	boost::shared_ptr<Implementation> create();
+	void init(Options*);
 	virtual ~ZeroMQSubscriber();
 	void suspend();
 	void resume();
@@ -44,10 +45,10 @@ public:
 	void setReceiver(umundo::Receiver* receiver);
 	virtual Message* getNextMsg();
 	virtual bool hasNextMsg();
+	virtual bool matches(const std::string& channelName);
 
-	void added(PublisherStub);
-	void removed(PublisherStub);
-	void changed(PublisherStub);
+	void added(const PublisherStub& pub, const NodeStub& node);
+	void removed(const PublisherStub& pub, const NodeStub& node);
 
 	// Thread
 	void run();

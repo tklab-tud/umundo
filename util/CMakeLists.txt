@@ -23,7 +23,9 @@ target_link_libraries(umundoutil ${UMUNDOUTIL_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOUTIL_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundoutil COMPONENT libraryUtil)
 set_target_properties(umundoutil PROPERTIES FOLDER "Libraries")
-set_target_properties(umundoutil PROPERTIES SOVERSION ${UMUNDO_VERSION})
+if (DIST_PREPARE)
+  set_target_properties(umundoutil PROPERTIES SOVERSION ${UMUNDO_VERSION})
+endif()
 
 # ok to have in IDEs, but do not install
 LIST(APPEND UMUNDOUTIL_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)

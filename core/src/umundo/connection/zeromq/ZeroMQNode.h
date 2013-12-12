@@ -27,7 +27,7 @@
 #include "umundo/thread/Thread.h"
 #include "umundo/common/ResultSet.h"
 #include "umundo/connection/Node.h"
-#include "umundo/discovery/NodeQuery.h"
+#include "umundo/common/Message.h"
 
 /// Send uuid as first message in envelope
 #define ZMQ_SEND_IDENTITY(msg, uuid, socket) \
@@ -83,59 +83,15 @@ class NodeQuery;
 /**
  * Concrete node implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQNode : public Thread, public ResultSet<NodeStub>, public NodeImpl {
+	class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public boost::enable_shared_from_this<ZeroMQNode> {
 public:
-	class PendingNode {
-	public:
-		PendingNode() :
-			lastSeen(Thread::getTimeStampMs()),
-			zmqConfirmed(false) {}
-
-		NodeStub nodeStub;
-		long lastSeen;
-		/// TODO: A node may not have publishers initially and might be garbage collected eventually.
-		bool zmqConfirmed;
-		/// A pending node is confirmed if we found it the nodeStub via mDNS and seen a publisher.
-		bool isConfirmed() const {
-			return zmqConfirmed && nodeStub;
-		}
-	};
-
-	class PendingSubscriber {
-	public:
-		PendingSubscriber() :
-			lastSeen(Thread::getTimeStampMs()),
-			zmqConfirmed(false) {}
-
-		SubscriberStub subStub;
-		NodeStub nodeStub;
-		long lastSeen;
-		bool zmqConfirmed;
-		bool isConfirmed() const {
-			return nodeStub && zmqConfirmed;
-		}
-	};
-
-	class PendingPublisher {
-	public:
-		PendingPublisher() :
-			lastSeen(Thread::getTimeStampMs()) {}
-
-		PublisherStub pubStub;
-		NodeStub nodeStub;
-		long lastSeen;
-		/// A pending publisher is confirmed if we found its node as well
-		bool isConfirmed() const {
-			return nodeStub;
-		}
-	};
 
 	virtual ~ZeroMQNode();
 
 	/** @name Implementor */
 	//@{
-	shared_ptr<Implementation> create();
-	void init(shared_ptr<Configuration>);
+	boost::shared_ptr<Implementation> create();
+	void init(Options*);
 	void suspend();
 	void resume();
 	//@}
@@ -146,81 +102,120 @@ public:
 	void removeSubscriber(Subscriber&);
 	void addPublisher(Publisher&);
 	void removePublisher(Publisher&);
+	std::map<std::string, NodeStub> connectedFrom();
+	std::map<std::string, NodeStub> connectedTo();
 	//@}
 
 	/** @name Callbacks from Discovery */
 	//@{
-	void added(NodeStub);    ///< A node was added, connect to its router socket and list our publishers.
-	void removed(NodeStub);  ///< A node was removed, notify local subscribers and clean up.
-	void changed(NodeStub);  ///< Never happens.
+	void added(EndPoint);    ///< A node was added, connect to its router socket and list our publishers.
+	void removed(EndPoint);  ///< A node was removed, notify local subscribers and clean up.
+	void changed(EndPoint);  ///< Never happens.
 	//@}
 
-	/** @name Confirm entities as we receive them via mDNS and/or ZeroMQ */
-	//@{
-	void processConfirmedNode(const PendingNode& node);
-	void processConfirmedSubscription(const PendingSubscriber& sub);
-	void processConfirmedPublisher(const PendingPublisher& pub);
-
-	void processRemotePubRemoval(const NodeStub& nodeStub, const PublisherStub& pubStub);
-	void processRemoteSubRemoval(const NodeStub& nodeStub, const SubscriberStub& pubStub);
-	//@}
 
 	static uint16_t bindToFreePort(void* socket, const std::string& transport, const std::string& address);
 	static void* getZeroMQContext();
 
 protected:
+	class NodeConnection {
+	public:
+		NodeConnection();
+		NodeConnection(const std::string& _address, const std::string& thisUUID);
+		virtual ~NodeConnection();
+		
+		bool connectedTo; ///< are we connected to this node?
+		bool connectedFrom; ///< are we connected from this node?
+		
+		void* socket; ///< when connect to, the connection to the remote node socket
+		std::string socketId; ///< the nodes uuid
+		std::string address; ///< when connect to, the address of the remote node socket
+		uint64_t startedAt; ///< when connect to, a timestamp when we initially tried to connect
+		NodeStub node; /// always a representation about the remote node
+		int refCount; ///< when connect to, how many times this address was added as an endpoint
+		bool isConfirmed; ///< when connect to, whether we received any node info reply
+		
+	};
+	
+	class Subscription {
+	public:
+		Subscription();
+		
+		bool isZMQConfirmed; ///< Whether we have seen this subscriber on the XPUB socket
+		std::string nodeUUID; ///< the remote node uuid
+		SubscriberStub subStub; ///< local representation of remote subscriber
+		std::map<std::string, Publisher> pending; ///< Subscription pending
+		std::map<std::string, Publisher> confirmed; ///< Subscription confirmed
+		uint64_t startedAt; ///< Timestamp when we noticed this subscription attempt
+	};
+
 	ZeroMQNode();
+
+	std::map<std::string, std::string> _options;
+	
+	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
+	std::map<std::string, NodeConnection*> _connFrom; ///< other node uuids connected to us have seen
+	std::map<std::string, NodeConnection*> _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
+	std::map<std::string, NodeConnection*> _connPending;
+		
+	std::map<std::string, Subscription> _subscriptions;
+	
+	Mutex _mutex;
+	uint64_t _lastNodeInfoBroadCast;
+	uint64_t _lastDeadNodeRemoval;
+	bool _allowLocalConns;
+	
+	zmq_pollitem_t sockets[4]; // standard sockets to poll for this node
+	
+	void* _nodeSocket; ///< global node socket for off-band communication
+	void* _pubSocket; ///< node-global publisher to wrap added publishers
+	void* _writeOpSocket; ///< node-internal communication pair to guard zeromq operations from threads
+	void* _readOpSocket; ///< node-internal communication pair to guard zeromq operations from threads
+	void* _subSocket; ///< umundo internal socket to receive publications from publishers
+	void* _monitorSocket;
 
 	void run(); ///< see Thread
 
-	bool validateState();
-
 	/** @name Remote publisher / subscriber maintenance */
 	//@{
-	void sendPubRemoved(void* socket, const umundo::Publisher& pub, bool hasMore);
-	void sendPubAdded(void* socket, const umundo::Publisher& pub, bool hasMore);
-	void sendSubAdded(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
-	void sendSubRemoved(void* socket, const umundo::Subscriber& sub, const umundo::PublisherStub& pub, bool hasMore);
+	void sendSubRemoved(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
+	void sendSubAdded(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
+	void confirmSub(const std::string& subUUID);
+	void processRemotePubAdded(char* nodeUUID, uint16_t port, char* channelName, char* pubUUID);
+	void processRemotePubRemoved(char* nodeUUID, uint16_t port, char* channelName, char* pubUUID);
 	//@}
 
 	/** @name Read / Write to raw byte arrays */
 	//@{
-	char* writePubInfo(char* buffer, const umundo::PublisherStub& pub);
+	char* writePubInfo(char* buffer, const PublisherStub& pub);
 	char* readPubInfo(char* buffer, uint16_t& port, char*& channelName, char*& uuid);
-	char* writeSubInfo(char* buffer, const umundo::Subscriber& sub);
+	char* writeSubInfo(char* buffer, const Subscriber& sub);
 	char* readSubInfo(char* buffer, char*& channelName, char*& uuid);
-
+	char* writeVersionAndType(char* buffer, Message::Type type);
+	char* readVersionAndType(char* buffer, uint16_t& version, umundo::Message::Type& type);
+	char* writeString(char* buffer, const char* content, size_t length);
+	char* readString(char* buffer, char*& content, size_t maxLength);
+	char* writeUInt16(char* buffer, uint16_t value);
+	char* readUInt16(char* buffer, uint16_t& value);
 	//@}
+
+	void disconnectRemoteNode(NodeStub& stub);
+	void processNodeComm();
+	void processPubComm();
+	void processOpComm();
+	void processClientComm(NodeConnection* client);
+	void processNodeInfo(char* recvBuffer, size_t msgSize);
+	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
+	
+	void processConnectedFrom(const std::string& uuid);
+	void processConnectedTo(const std::string& uuid, NodeConnection* client);
+	
+	void broadCastNodeInfo(uint64_t now);
+	void removeStaleNodes(uint64_t now);
 
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 
-	void* _pubSocket; ///< public socket for outgoing external communication
-	void* _subSocket; ///< umundo internal socket to receive publications from publishers
-	void* _nodeSocket; ///< socket for node meta information
-	void* _readOpSocket;
-	void* _writeOpSocket;
-	uint16_t _pubPort; ///< port of our public publisher socket
-
-	shared_ptr<NodeQuery> _nodeQuery; ///< the NodeQuery which we registered for Discovery.
-	Mutex _mutex;
-
-	map<string, NodeStub> _nodes; ///< UUIDs to other NodeStub%s
-	typedef map<string, NodeStub> _nodes_t;
-
-	std::multiset<std::string> _subscriptions; ///< subscriptions as we received them from zeromq
-	map<string, void*> _sockets;  ///< UUIDs to ZeroMQ Node Sockets.
-
-	map<string, PendingNode> _pendingNodes;
-	typedef map<string, PendingNode> _pendingNodes_t;
-
-	std::multimap<std::string, PendingSubscriber> _pendingSubscriptions;
-	typedef std::multimap<std::string, PendingSubscriber> _pendingSubs_t;
-
-	std::multimap<std::string, PendingPublisher> _pendingPublishers;
-	typedef std::multimap<std::string, PendingPublisher> _pendingPubs_t;
-
-	shared_ptr<NodeConfig> _config;
 
 	friend class Factory;
 };

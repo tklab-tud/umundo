@@ -27,10 +27,11 @@ import org.umundo.core.Greeter;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
 import org.umundo.core.Publisher;
-import org.umundo.core.PublisherSet;
+import org.umundo.core.PublisherMap;
 import org.umundo.core.Receiver;
-import org.umundo.core.SubscriberSet;
 import org.umundo.core.Subscriber;
+import org.umundo.core.SubscriberMap;
+import org.umundo.core.SubscriberStub;
 
 public class ServiceManager extends Connectable {
 
@@ -54,14 +55,14 @@ public class ServiceManager extends Connectable {
 			if (msg.getMeta().containsKey("um.rpc.type") && msg.getMeta("um.rpc.type").compareTo("discover") == 0) {
 				ServiceFilter filter = new ServiceFilter(msg);
 				Vector<ServiceDescription> foundSvcs = findLocal(filter);
-				
+
 				if (!foundSvcs.isEmpty()) {
 					for (ServiceDescription desc : foundSvcs) {
 						Message foundMsg = desc.toMessage();
 						foundMsg.setReceiver(msg.getMeta("um.rpc.mgrId"));
 						foundMsg.putMeta("um.rpc.respId", msg.getMeta("um.rpc.reqId"));
 						foundMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
-						
+
 						if (_svcPub.isPublishingTo(msg.getMeta("um.rpc.mgrId"))) {
 							_svcPub.send(foundMsg);
 						} else {
@@ -90,16 +91,15 @@ public class ServiceManager extends Connectable {
 					_svcPub.send(foundMsg);
 				}
 			}
-			
+
 			// is this the end of a continuous query?
-			if (msg.getMeta().containsKey("um.rpc.type") && 
-					(msg.getMeta("um.rpc.type").compareTo("discovered") == 0 || msg.getMeta("um.rpc.type").compareTo("vanished") == 0)) {
+			if (msg.getMeta().containsKey("um.rpc.type") && (msg.getMeta("um.rpc.type").compareTo("discovered") == 0 || msg.getMeta("um.rpc.type").compareTo("vanished") == 0)) {
 				ServiceFilter filter = null;
 				for (ServiceFilter currFilter : _localQueries.keySet()) {
 					if (currFilter.getUUID().compareTo(msg.getMeta("um.rpc.filterId")) == 0) {
 						filter = currFilter;
 					}
-				} 
+				}
 				if (filter != null) {
 					IServiceListener listener = _localQueries.get(filter);
 					String svcChannel = msg.getMeta("um.rpc.desc.channel");
@@ -125,43 +125,48 @@ public class ServiceManager extends Connectable {
 	}
 
 	class ServiceGreeter extends Greeter {
-		  public void welcome(Publisher arg0, String nodeId, String subId) {
-			  for (ServiceFilter filter : _localQueries.keySet()) {
-				  Message queryMsg = filter.toMessage();
-				  queryMsg.setReceiver(subId);
-				  queryMsg.putMeta("um.rpc.type", "startDiscovery");
-				  queryMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
-				  _svcPub.send(queryMsg);
-			  }
-			  if (_pendingMessages.containsKey(subId)) {
-				  for (Message msg : _pendingMessages.get(subId)) {
-					  _svcPub.send(msg);
-				  }
-				  _pendingMessages.remove(subId);
-			  }
-		  }
-		  
-		  public void farewell(Publisher arg0, String nodeId, String subId) {
-			  if (_remoteSvcDesc.containsKey(subId)) {
-				  for (ServiceFilter filter : _localQueries.keySet()) {
-					  for (String svcChannel : _remoteSvcDesc.get(subId).keySet()) {
-						  if (filter.matches(_remoteSvcDesc.get(subId).get(svcChannel))) {
-							  _localQueries.get(filter).removedService(_remoteSvcDesc.get(subId).get(svcChannel));
-						  }
-					  }
-				  }
-				  _remoteSvcDesc.remove(subId);
-			  }
-		  }
+		@Override
+		public void welcome(Publisher pub, SubscriberStub subStub) {
+			String subId = subStub.getUUID();
+			for (ServiceFilter filter : _localQueries.keySet()) {
+				Message queryMsg = filter.toMessage();
+				queryMsg.setReceiver(subId);
+				queryMsg.putMeta("um.rpc.type", "startDiscovery");
+				queryMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
+				_svcPub.send(queryMsg);
+			}
+			if (_pendingMessages.containsKey(subId)) {
+				for (Message msg : _pendingMessages.get(subId)) {
+					_svcPub.send(msg);
+				}
+				_pendingMessages.remove(subId);
+			}
+		}
+
+		@Override
+		public void farewell(Publisher pub, SubscriberStub subStub) {
+			String subId = subStub.getUUID();
+			if (_remoteSvcDesc.containsKey(subId)) {
+				for (ServiceFilter filter : _localQueries.keySet()) {
+					for (String svcChannel : _remoteSvcDesc.get(subId).keySet()) {
+						if (filter.matches(_remoteSvcDesc.get(subId).get(svcChannel))) {
+							_localQueries.get(filter).removedService(_remoteSvcDesc.get(subId).get(svcChannel));
+						}
+					}
+				}
+				_remoteSvcDesc.remove(subId);
+			}
+		}
 	}
-	
+
 	Map<String, Object> _findRequests = new HashMap<String, Object>();
 	Map<String, Message> _findResponses = new HashMap<String, Message>();
 	Map<Service, ServiceDescription> _svc = new HashMap<Service, ServiceDescription>();
 	Map<ServiceFilter, IServiceListener> _localQueries = new HashMap<ServiceFilter, IServiceListener>();
 	Map<String, Vector<Message>> _pendingMessages = new HashMap<String, Vector<Message>>();
 	Map<String, ServiceFilter> _remoteQueries = new HashMap<String, ServiceFilter>();
-	Map<String, Map<String, ServiceDescription > > _remoteSvcDesc = new HashMap<String, Map<String, ServiceDescription > >(); ///< Remote mgrIds to channel names to descriptions of remote services
+	/// Remote mgrIds to channel names to descriptions of remote services
+	Map<String, Map<String, ServiceDescription>> _remoteSvcDesc = new HashMap<String, Map<String, ServiceDescription>>();
 
 	Publisher _svcPub;
 	Subscriber _svcSub;
@@ -186,8 +191,9 @@ public class ServiceManager extends Connectable {
 		for (Node node : _nodes) {
 			node.connect(svc);
 		}
-		
-		// iterate continuous queries and notify other service managers about matches.
+
+		// iterate continuous queries and notify other service managers about
+		// matches.
 		for (ServiceFilter filter : _remoteQueries.values()) {
 			if (filter.matches(desc)) {
 				Message foundMsg = desc.toMessage();
@@ -205,10 +211,11 @@ public class ServiceManager extends Connectable {
 		for (Node node : _nodes) {
 			node.disconnect(svc);
 		}
-		
+
 		ServiceDescription desc = _svc.get(svc);
 
-		// iterate continuous queries and notify other service managers about removals.
+		// iterate continuous queries and notify other service managers about
+		// removals.
 		for (ServiceFilter filter : _remoteQueries.values()) {
 			if (filter.matches(desc)) {
 				Message foundMsg = desc.toMessage();
@@ -229,7 +236,7 @@ public class ServiceManager extends Connectable {
 		queryMsg.putMeta("um.rpc.mgrId", _svcSub.getUUID());
 		_svcPub.send(queryMsg);
 	}
-	
+
 	public void stopQuery(ServiceFilter filter) {
 		if (_localQueries.containsKey(filter)) {
 			Message unqueryMsg = filter.toMessage();
@@ -242,7 +249,7 @@ public class ServiceManager extends Connectable {
 
 	Vector<ServiceDescription> findLocal(ServiceFilter svcFilter) {
 		Vector<ServiceDescription> foundSvcs = new Vector<ServiceDescription>();
-		for(ServiceDescription desc : _svc.values()) {
+		for (ServiceDescription desc : _svc.values()) {
 			if (svcFilter.matches(desc)) {
 				foundSvcs.add(desc);
 			}
@@ -294,16 +301,16 @@ public class ServiceManager extends Connectable {
 	}
 
 	@Override
-	public PublisherSet getPublishers() {
-		PublisherSet pubs = new PublisherSet();
-		pubs.insert(_svcPub);
+	public PublisherMap getPublishers() {
+		PublisherMap pubs = new PublisherMap();
+		pubs.set(_svcPub.getUUID(), _svcPub);
 		return pubs;
 	}
 
 	@Override
-	public SubscriberSet getSubscribers() {
-		SubscriberSet subs = new SubscriberSet();
-		subs.insert(_svcSub);
+	public SubscriberMap getSubscribers() {
+		SubscriberMap subs = new SubscriberMap();
+		subs.set(_svcSub.getUUID(), _svcSub);
 		return subs;
 	}
 

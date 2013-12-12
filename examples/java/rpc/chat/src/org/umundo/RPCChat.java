@@ -7,28 +7,31 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.umundo.core.Discovery;
+import org.umundo.core.Discovery.DiscoveryType;
 import org.umundo.core.Node;
 import org.umundo.protobuf.ChatS11N.ChatMsg;
-import org.umundo.protobuf.ChatS11N.Void;
 import org.umundo.protobuf.ChatService;
 import org.umundo.protobuf.ChatServiceStub;
 import org.umundo.rpc.IServiceListener;
 import org.umundo.rpc.ServiceDescription;
 import org.umundo.rpc.ServiceFilter;
 import org.umundo.rpc.ServiceManager;
+import org.umundo.protobuf.ChatS11N.Void;
 
 /**
  * Make sure to set the correct path to umundo.jar in build.properties if you
  * want to use ant!
  */
 
-public class Chat implements IServiceListener {
+public class RPCChat implements IServiceListener {
 
 	/**
 	 * Send and receive chat message via services. This sample uses
 	 * the rpc layer to send chat messages.
 	 */
 
+	public Discovery disc;
 	public Node chatNode;
 	public ChatServiceImpl localChatService;
 	public ServiceManager svcMgr;
@@ -39,9 +42,11 @@ public class Chat implements IServiceListener {
 	public BufferedReader reader = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	public Chat() {
+	public RPCChat() {
+		disc = new Discovery(DiscoveryType.MDNS);
 		chatNode = new Node();
-
+		disc.add(chatNode);
+		
 		System.out.println("Username:");
 		try {
 			userName = reader.readLine();
@@ -108,7 +113,8 @@ public class Chat implements IServiceListener {
 	}
 
 	public static void main(String[] args) {
-		Chat chat = new Chat();
+		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+		RPCChat chat = new RPCChat();
 		try {
 			chat.run();
 		} catch (InterruptedException e) {

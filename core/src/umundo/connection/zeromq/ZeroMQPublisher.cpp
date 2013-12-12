@@ -41,7 +41,7 @@ namespace umundo {
 
 ZeroMQPublisher::ZeroMQPublisher() {}
 
-void ZeroMQPublisher::init(boost::shared_ptr<Configuration> config) {
+void ZeroMQPublisher::init(Options* config) {
 	ScopeLock lock(_mutex);
 
 	_transport = "tcp";
@@ -98,7 +98,7 @@ void ZeroMQPublisher::resume() {
 int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 	ScopeLock lock(_mutex);
 	uint64_t now = Thread::getTimeStampMs();
-	while (_subUUIDs.size() < (unsigned int)count) {
+	while (unique_keys(_domainSubs) < (unsigned int)count) {
 		_pubLock.wait(_mutex, timeoutMs);
 		if (timeoutMs > 0 && Thread::getTimeStampMs() - timeoutMs > now)
 			break;
@@ -111,41 +111,65 @@ int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 	 * Update: I use a late alphabetical order to get the subscriber id last
 	 */
 //  Thread::sleepMs(20);
-	return _subUUIDs.size();
+	return unique_keys(_domainSubs);
 }
 
-void ZeroMQPublisher::addedSubscriber(const std::string remoteId, const std::string subId) {
+void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
-	_subUUIDs.insert(subId);
+	
+	_subs[sub.getUUID()] = sub;
 
-	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
+	// do we already now about this sub via this node?
+	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
+	while(subIter.first != subIter.second) {
+		if (subIter.first->second.first.getUUID() == node.getUUID())
+			return; // we already know about this sub from this node
+		subIter.first++;
+	}
+	
+	_domainSubs.insert(std::make_pair(sub.getUUID(), std::make_pair(node, sub)));
+	
+	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
-	if (_greeter != NULL)
-		_greeter->welcome(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), remoteId, subId);
+	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) // only perform greeting for first occurence of subscriber
+		_greeter->welcome(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
 
-	if (_queuedMessages.find(subId) != _queuedMessages.end()) {
-		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[subId].size());
-		std::list<std::pair<uint64_t, Message*> >::iterator msgIter = _queuedMessages[subId].begin();
-		while(msgIter != _queuedMessages[subId].end()) {
+	if (_queuedMessages.find(sub.getUUID()) != _queuedMessages.end()) {
+		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[sub.getUUID()].size());
+		std::list<std::pair<uint64_t, Message*> >::iterator msgIter = _queuedMessages[sub.getUUID()].begin();
+		while(msgIter != _queuedMessages[sub.getUUID()].end()) {
 			send(msgIter->second);
 			msgIter++;
 		}
-		_queuedMessages.erase(subId);
+		_queuedMessages.erase(sub.getUUID());
 	}
 	UMUNDO_SIGNAL(_pubLock);
 }
 
-void ZeroMQPublisher::removedSubscriber(const std::string remoteId, const std::string subId) {
+void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
-
-	if (_subUUIDs.find(subId) == _subUUIDs.end())
+	
+	// do we now about this sub via this node?
+	bool subscriptionFound = false;
+	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
+	while(subIter.first != subIter.second) {
+		if (subIter.first->second.first.getUUID() == node.getUUID()) {
+			subscriptionFound = true;
+			break;
+		}
+		subIter.first++;
+	}
+	if (!subscriptionFound)
 		return;
-	_subUUIDs.erase(subId);
+	
+	UM_LOG_INFO("Publisher %s lost subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
-	UM_LOG_INFO("Publisher %s lost subscriber %s from node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subId).c_str(), SHORT_UUID(remoteId).c_str(), _channelName.c_str());
-
-	if (_greeter != NULL)
-		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), remoteId, subId);
+	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {// only farewell for the last vanishing occurence
+		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
+		_subs.erase(sub.getUUID());
+	}
+	
+	_domainSubs.erase(subIter.first);
 	UMUNDO_SIGNAL(_pubLock);
 }
 
@@ -159,7 +183,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_msg_t channelEnvlp;
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
-		if (_subUUIDs.find(msg->getMeta("um.sub")) == _subUUIDs.end() && !msg->isQueued()) {
+		if (_domainSubs.count(msg->getMeta("um.sub")) == 0 && !msg->isQueued()) {
 			UM_LOG_INFO("Subscriber %s is not (yet) connected on %s - queuing message", msg->getMeta("um.sub").c_str(), _channelName.c_str());
 			Message* queuedMsg = new Message(*msg); // copy message
 			queuedMsg->setQueued(true);

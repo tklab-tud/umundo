@@ -32,6 +32,8 @@ template<class T>
  */
 class DLLEXPORT ResultSet {
 public:
+	virtual ~ResultSet() {}
+	
 	virtual void added(T) = 0;
 	virtual void removed(T) = 0;
 	virtual void changed(T) = 0;

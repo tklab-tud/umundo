@@ -33,13 +33,13 @@ namespace umundo {
 using namespace google::protobuf::compiler::cpp;
 
 bool ServiceGeneratorCPP::Generate(const FileDescriptor* file,
-                                   const string& parameter,
+                                   const std::string& parameter,
                                    GeneratorContext* generator_context,
-                                   string* error) const {
-	vector<pair<string, string> > options;
+                                   std::string* error) const {
+	vector<pair<std::string, std::string> > options;
 	ParseGeneratorParameter(parameter, &options);
 
-	string dllexport_decl;
+	std::string dllexport_decl;
 	for (size_t i = 0; i < options.size(); i++) {
 		if (options[i].first == "dllexport_decl") {
 			dllexport_decl = options[i].second;
@@ -49,8 +49,8 @@ bool ServiceGeneratorCPP::Generate(const FileDescriptor* file,
 		}
 	}
 
-	string basename = StripProto(file->name());
-	string filenameID = FilenameIdentifier(file->name());
+	std::string basename = StripProto(file->name());
+	std::string filenameID = FilenameIdentifier(file->name());
 
 	// Generate header.
 	{
@@ -175,8 +175,8 @@ void ServiceGeneratorCPP::writeServiceHeader(io::Printer &printer, const Service
 
 		printer.Print(
 		    "protected:\n"
-		    "\tvoid callMethod(string&, void*, string&, void*&, string&);\n"
-		    "\tvoid cleanUpObjects(string&, void*, void*);\n"
+		    "\tvoid callMethod(std::string&, void*, std::string&, void*&, std::string&);\n"
+		    "\tvoid cleanUpObjects(std::string&, void*, void*);\n"
 		);
 	}
 	printer.Print("};\n");
@@ -193,10 +193,10 @@ const Descriptor* ServiceGeneratorCPP::container(const Descriptor* desc) {
 
 void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, const ServiceDescriptor* svcDesc) const {
 
-	std::set<string> inTypes;
-	std::set<string> outTypes;
-	std::set<string>::iterator inTypeIter;
-	std::set<string>::iterator outTypeIter;
+	std::set<std::string> inTypes;
+	std::set<std::string> outTypes;
+	std::set<std::string>::iterator inTypeIter;
+	std::set<std::string>::iterator outTypeIter;
 
 	if (svcDesc->method_count() > 0) {
 		for (int i = 0; i < svcDesc->method_count(); i++) {
@@ -255,7 +255,7 @@ void ServiceGeneratorCPP::writeServiceImplConstructor(io::Printer& printer, cons
 void ServiceGeneratorCPP::writeServiceImplDispatcher(io::Printer& printer, const ServiceDescriptor* svcDesc) const {
 
 	printer.Print(
-	    "void $className$Base::callMethod(string& methodName, void* in, string& inType, void* &out, string& outType) {\n"
+	    "void $className$Base::callMethod(std::string& methodName, void* in, std::string& inType, void* &out, std::string& outType) {\n"
 	    "\tif (false) {\n",
 	    "className", svcDesc->name()
 	);
@@ -279,7 +279,7 @@ void ServiceGeneratorCPP::writeServiceImplDispatcher(io::Printer& printer, const
 
 void ServiceGeneratorCPP::writeServiceImplCleanUp(io::Printer& printer, const ServiceDescriptor* svcDesc) const {
 	printer.Print(
-	    "void $className$Base::cleanUpObjects(string& methodName, void* in, void* out) {\n"
+	    "void $className$Base::cleanUpObjects(std::string& methodName, void* in, void* out) {\n"
 	    "\tif (false) {\n",
 	    "className", svcDesc->name()
 	);

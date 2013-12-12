@@ -33,7 +33,7 @@ fi
 # fi
 # touch ispatched
 
-CC_COMMON_FLAGS="-I. -DANDROID -DTARGET_OS_ANDROID -fno-strict-aliasing -fno-omit-frame-pointer -fno-rtti -fno-exceptions -fdata-sections -ffunction-sections"
+CC_COMMON_FLAGS="-I. -DANDROID -DTARGET_OS_ANDROID -fno-strict-aliasing -fno-omit-frame-pointer -fno-exceptions -fdata-sections -ffunction-sections"
 
 # build for x86
 
@@ -42,21 +42,23 @@ CC_X86_FLAGS="${CC_COMMON_FLAGS} \
 -finline-limit=300"
 
 X86_SYSROOT="${ANDROID_NDK}/platforms/android-9/arch-x86"
-X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.6/prebuilt/darwin-x86"
+X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.7/prebuilt/darwin-x86_64"
 X86_TOOL_PREFIX="i686-linux-android"
 X86_COMMON_FLAGS="\
 -isystem ${ANDROID_NDK}/platforms/android-9/arch-x86/usr/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/x86/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86/include \
 "
 
 ./configure \
-CPP="cpp" \
-CXXCPP="cpp" \
+CPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp" \
+CXXCPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp" \
+CPPFLAGS="--sysroot=${X86_SYSROOT}" \
+CXXCPPFLAGS="--sysroot=${X86_SYSROOT}" \
 CC="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-gcc" \
 CXX="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-g++" \
 LD="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ld" \
-CXXFLAGS="-Os -s ${CC_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}" \
+CXXFLAGS="-Os -s ${CC_X86_FLAGS} -fno-rtti --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}" \
 CFLAGS="-Os -s ${CC_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}" \
 LDFLAGS="--sysroot=${X86_SYSROOT}" \
 AR="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ar" \
@@ -64,6 +66,7 @@ AS="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-as" \
 LIBTOOL="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-libtool" \
 STRIP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-strip" \
 RANLIB="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ranlib" \
+--prefix=${DEST_DIR}/x86 \
 --disable-dependency-tracking \
 --target=arm-linux-androideabi \
 --host=arm-linux-androideabi \
@@ -73,8 +76,11 @@ RANLIB="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ranlib" \
 
 set +e
 make -j2
-mkdir -p ${DEST_DIR}/x86/lib &> /dev/null
-cp .libs/*.a ${DEST_DIR}/x86/lib
+make install
+rm -rf ${DEST_DIR}/x86/bin
+rm -rf ${DEST_DIR}/x86/share
+rm -rf ${DEST_DIR}/x86/lib/pkgconfig
+rm -rf ${DEST_DIR}/x86/lib/libpcre*.la
 set -e
 
 
@@ -94,21 +100,23 @@ CC_ARMEABI_FLAGS="${CC_ARMEABI_FLAGS} \
 -finline-limit=64"
 
 ARM_SYSROOT="${ANDROID_NDK}/platforms/android-8/arch-arm"
-ARMEABI_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/darwin-x86"
+ARMEABI_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/arm-linux-androideabi-4.7/prebuilt/darwin-x86_64"
 ARMEABI_TOOL_PREFIX="arm-linux-androideabi"
 ARMEABI_COMMON_FLAGS="\
 -isystem ${ANDROID_NDK}/platforms/android-8/arch-arm/usr/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/armeabi/include \
 "
 
 ./configure \
-CPP="cpp" \
-CXXCPP="cpp" \
+CPP="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-cpp" \
+CXXCPP="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-cpp" \
+CPPFLAGS="--sysroot=${ARM_SYSROOT}" \
+CXXCPPFLAGS="--sysroot=${ARM_SYSROOT}" \
 CC="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-gcc" \
 CXX="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-g++" \
 LD="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ld" \
-CXXFLAGS="-Os -s ${CC_ARMEABI_FLAGS} --sysroot=${ARM_SYSROOT} ${ARMEABI_COMMON_FLAGS}" \
+CXXFLAGS="-Os -s ${CC_ARMEABI_FLAGS} -fno-rtti --sysroot=${ARM_SYSROOT} ${ARMEABI_COMMON_FLAGS}" \
 CFLAGS="-Os -s ${CC_ARMEABI_FLAGS} --sysroot=${ARM_SYSROOT} ${ARMEABI_COMMON_FLAGS}" \
 LDFLAGS="--sysroot=${ARM_SYSROOT}" \
 AR="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ar" \
@@ -116,6 +124,7 @@ AS="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-as" \
 LIBTOOL="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-libtool" \
 STRIP="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-strip" \
 RANLIB="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ranlib" \
+--prefix=${DEST_DIR}/armeabi \
 --disable-dependency-tracking \
 --target=arm-linux-androideabi \
 --host=arm-linux-androideabi \
@@ -125,8 +134,11 @@ RANLIB="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ranlib" \
 
 set +e
 make -j2
-mkdir -p ${DEST_DIR}/armeabi/lib &> /dev/null
-cp .libs/*.a ${DEST_DIR}/armeabi/lib
+make install
+rm -rf ${DEST_DIR}/armeabi/bin
+rm -rf ${DEST_DIR}/armeabi/share
+rm -rf ${DEST_DIR}/armeabi/lib/pkgconfig
+rm -rf ${DEST_DIR}/armeabi/lib/libpcre*.la
 set -e
 
 # build for mips

@@ -27,7 +27,7 @@
 namespace umundo {
 
 class Implementation;
-class Configuration;
+class Options;
 
 /**
  * Creates instances of implementations for subsystems at runtime (factory pattern).
@@ -40,21 +40,19 @@ class Configuration;
 class DLLEXPORT Factory {
 public:
 	static Factory* getInstance();
-	static shared_ptr<Implementation> create(string);
-	static shared_ptr<Configuration> config(string);
+	static boost::shared_ptr<Implementation> create(const std::string&);
 
 	static void suspendInstances(); ///< Suspend all instances for device sleep
 	static void resumeInstances(); ///< Resume all instances from device sleep
 
-	static void registerPrototype(string, Implementation*, Configuration*);
+	static void registerPrototype(const std::string&, Implementation*);
 
 protected:
 	Factory();
 
 private:
-	map<string, Implementation*> _prototypes;
-	map<string, Configuration*> _configures;
-	vector<weak_ptr<Implementation> > _implementations;
+	std::map<std::string, Implementation*> _prototypes;
+	std::vector<boost::weak_ptr<Implementation> > _implementations;
 	Mutex _mutex;
 	static Factory* _instance;
 

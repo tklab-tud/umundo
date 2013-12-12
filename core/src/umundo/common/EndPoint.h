@@ -29,18 +29,27 @@ namespace umundo {
 
 class DLLEXPORT EndPointImpl {
 public:
+	EndPointImpl() :
+		_port(0),
+		_isRemote(true),
+		_isInProcess(false),
+		_lastSeen(Thread::getTimeStampMs()) {}
+	
 	virtual ~EndPointImpl() {}
 
-	virtual const string getIP() const            {
+	virtual const std::string getAddress() const            {
+		return _transport + "://" + _ip + ":" + toStr(_port);
+	}
+	virtual const std::string getIP() const            {
 		return _ip;
 	}
-	virtual void setIP(string ip)                 {
+	virtual void setIP(std::string ip)                 {
 		_ip = ip;
 	}
-	virtual const string getTransport() const     {
+	virtual const std::string getTransport() const     {
 		return _transport;
 	}
-	virtual void setTransport(string transport)   {
+	virtual void setTransport(std::string transport)   {
 		_transport = transport;
 	}
 	virtual uint16_t getPort() const              {
@@ -61,16 +70,16 @@ public:
 	virtual void setInProcess(bool isInProcess)   {
 		_isInProcess = isInProcess;
 	}
-	virtual const string getHost() const          {
+	virtual const std::string getHost() const          {
 		return _host;
 	}
-	virtual void setHost(string host)             {
+	virtual void setHost(std::string host)             {
 		_host = host;
 	}
-	virtual const string getDomain() const        {
+	virtual const std::string getDomain() const        {
 		return _domain;
 	}
-	virtual void setDomain(string domain)         {
+	virtual void setDomain(std::string domain)         {
 		_domain = domain;
 	}
 	virtual const long getLastSeen() const        {
@@ -79,15 +88,18 @@ public:
 	virtual void setLastSeen(long lastSeen)       {
 		_lastSeen = lastSeen;
 	}
+	virtual void updateLastSeen() {
+		_lastSeen = Thread::getTimeStampMs();
+	}
 
 protected:
-	string _ip;
-	string _transport;
+	std::string _ip;
+	std::string _transport;
 	uint16_t _port;
 	bool _isRemote;
 	bool _isInProcess;
-	string _host;
-	string _domain;
+	std::string _host;
+	std::string _domain;
 	long _lastSeen;
 
 };
@@ -98,11 +110,43 @@ protected:
 class DLLEXPORT EndPoint {
 public:
 
+	/**
+	 * Convineince constructor for tcp://1.2.3.4:8080 style addresses
+	 */
+	EndPoint(const std::string& address) {
+		size_t colonPos = address.find_last_of(":");
+		if(colonPos == std::string::npos || address.length() < 6 + 8 + 1 + 1) {
+			UM_LOG_ERR("Endpoint address '%s' invalid", address.c_str());
+			return;
+		}
+		
+		std::string transport = address.substr(0,3);
+		std::string ip = address.substr(6, colonPos - 6);
+		std::string port = address.substr(colonPos + 1, address.length() - colonPos + 1);
+		
+		if (transport != "tcp" && transport != "udp") {
+			UM_LOG_ERR("Endpoint transport '%s' invalid", transport.c_str());
+			return;
+		}
+		
+		if (!isNumeric(port.c_str(), 10) ||
+				port.find("-") != std::string::npos ||
+				port.find(".") != std::string::npos) {
+			UM_LOG_ERR("Endpoint port '%s' invalid", port.c_str());
+			return;
+		}
+		
+		_impl = boost::shared_ptr<EndPointImpl>(new EndPointImpl());
+		_impl->setTransport(transport);
+		_impl->setIP(ip);
+		_impl->setPort(strTo<uint16_t>(port));
+	}
+	
 	EndPoint() : _impl() { }
 	EndPoint(boost::shared_ptr<EndPointImpl> const impl) : _impl(impl) { }
 	EndPoint(const EndPoint& other) : _impl(other._impl) { }
 	virtual ~EndPoint() { }
-
+	
 	operator bool() const {
 		return _impl;
 	}
@@ -112,11 +156,19 @@ public:
 	bool operator!=(const EndPoint& other) const {
 		return _impl != other._impl;
 	}
+	bool operator<(const EndPoint& other) const {
+		return _impl < other._impl;
+	}
 
+	
 	EndPoint& operator=(const EndPoint& other) {
 		_impl = other._impl;
 		return *this;
 	} // operator=
+
+	virtual std::string getAddress() const {
+		return _impl->getAddress();
+	}
 
 	virtual const std::string getIP() const {
 		return _impl->getIP();
@@ -142,28 +194,19 @@ public:
 	virtual const long getLastSeen() const {
 		return _impl->getLastSeen();
 	}
-
+	virtual void updateLastSeen() {
+		return _impl->updateLastSeen();
+	}
+	
 	boost::shared_ptr<EndPointImpl> getImpl() const {
 		return _impl;
 	}
 
 protected:
 	boost::shared_ptr<EndPointImpl> _impl;
-};
+	friend std::ostream& operator<< (std::ostream& os, const EndPoint& endPoint);
 
-#if 0
-std::ostream & operator<<(std::ostream &os, const EndPoint& endPoint) {
-	os << "EndPoint:" << std::endl;
-	os << "\tIP: " << endPoint.getIP() << std::endl;
-	os << "\tTransport: " << endPoint.getTransport() << std::endl;
-	os << "\tPort: " << endPoint.getPort() << std::endl;
-	os << "\tisRemote: " << endPoint.isRemote() << std::endl;
-	os << "\tisInProcess: " << endPoint.isInProcess() << std::endl;
-	os << "\tHost: " << endPoint.getHost() << std::endl;
-	os << "\tDomain: " << endPoint.getDomain() << std::endl;
-	return os;
-}
-#endif
+};
 
 }
 

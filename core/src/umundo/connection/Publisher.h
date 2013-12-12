@@ -23,12 +23,14 @@
 
 #include "umundo/common/Common.h"
 #include "umundo/common/UUID.h"
+#include "umundo/connection/PublisherStub.h"
+#include "umundo/connection/SubscriberStub.h"
+#include "umundo/connection/NodeStub.h"
 #include "umundo/common/EndPoint.h"
 #include "umundo/common/Implementation.h"
 
 namespace umundo {
 
-class NodeStub;
 class Message;
 class Publisher;
 
@@ -41,40 +43,19 @@ class Publisher;
 class DLLEXPORT Greeter {
 public:
 	virtual ~Greeter() {};
-	virtual void welcome(Publisher, const string& nodeId, const string& subId) = 0;
-	virtual void farewell(Publisher, const string& nodeId, const string& subId) = 0;
+	virtual void welcome(const Publisher&, const SubscriberStub&) = 0;
+	virtual void farewell(const Publisher&, const SubscriberStub&) = 0;
 };
 
-class DLLEXPORT PublisherConfig : public Configuration {
+class DLLEXPORT PublisherConfig : public Options {
 public:
-	shared_ptr<Configuration> create();
-	virtual ~PublisherConfig() {}
+	std::string getType() {
+		return "PublisherConfig";
+	}
 
-	string channelName;
-	string transport;
+	std::string channelName;
+	std::string transport;
 	uint16_t port;
-};
-
-class PublisherStubImpl : public EndPointImpl {
-public:
-	PublisherStubImpl() : _uuid(UUID::getUUID()) {}
-	virtual std::string getChannelName() const            {
-		return _channelName;
-	}
-	virtual void setChannelName(const std::string& channelName) {
-		_channelName = channelName;
-	}
-
-	virtual std::string getUUID() const            {
-		return _uuid;
-	}
-	virtual void setUUID(const std::string& uuid) {
-		_uuid = uuid;
-	}
-
-protected:
-	std::string _channelName;
-	std::string _uuid;
 };
 
 /**
@@ -86,7 +67,7 @@ public:
 	virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
-	void putMeta(const string& key, const string& value) {
+	void putMeta(const std::string& key, const std::string& value) {
 		_mandatoryMeta[key] = value;
 	}
 
@@ -98,8 +79,11 @@ public:
 	virtual void setGreeter(Greeter* greeter)        {
 		_greeter = greeter;
 	}
-	std::set<string> getSubscriberUUIDs()             {
-		return _subUUIDs;
+	std::map<std::string, SubscriberStub> getSubscribers() {
+		return _subs;
+	}
+	bool isPublishingTo(const std::string& subUUID) {
+		return _subs.find(subUUID) != _subs.end();
 	}
 
 	//@}
@@ -107,78 +91,19 @@ public:
 	static int instances;
 
 protected:
-	/** @name Optional subscriber awareness */
+	/** @name Subscriber awareness */
 	//@{
-	virtual void addedSubscriber(const string, const string)   {
-		/* Ignore or overwrite */
-	}
-	virtual void removedSubscriber(const string, const string) {
-		/* Ignore or overwrite */
-	}
+	virtual void added(const SubscriberStub& sub, const NodeStub& node) = 0;
+	virtual void removed(const SubscriberStub& sub, const NodeStub& node) = 0;
 	//@}
 
-	std::map<string, string> _mandatoryMeta;
-	std::set<string> _subUUIDs;
+	std::map<std::string, std::string> _mandatoryMeta;
+	std::map<std::string, SubscriberStub> _subs;
+	
 	Greeter* _greeter;
 	friend class Publisher;
 
 };
-
-/**
- * Representation of a remote Publisher.
- */
-class DLLEXPORT PublisherStub : public EndPoint {
-public:
-	PublisherStub() : _impl() { }
-	PublisherStub(boost::shared_ptr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
-	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
-
-	operator bool() const {
-		return _impl;
-	}
-	bool operator< (const PublisherStub& other) const {
-		return _impl < other._impl;
-	}
-	bool operator==(const PublisherStub& other) const {
-		return _impl == other._impl;
-	}
-	bool operator!=(const PublisherStub& other) const {
-		return _impl != other._impl;
-	}
-
-	PublisherStub& operator=(const PublisherStub& other) {
-		_impl = other._impl;
-		EndPoint::_impl = _impl;
-		return *this;
-	} // operator=
-
-	boost::shared_ptr<PublisherStubImpl> getImpl() const {
-		return _impl;
-	}
-
-	/** @name Functionality of local *and* remote Publishers */
-	//@{
-	virtual const std::string getChannelName() const      {
-		return _impl->getChannelName();
-	}
-	virtual const std::string getUUID() const             {
-		return _impl->getUUID();
-	}
-	//@}
-
-protected:
-	boost::shared_ptr<PublisherStubImpl> _impl;
-};
-
-#if 0
-std::ostream & operator<<(std::ostream &os, const PublisherStub& pubStub) {
-	os << "PublisherStub:" << std::endl;
-	os << "\tchannelName: " << pubStub.getChannelName() << std::endl;
-	os << "\tuuid: " << pubStub.getUUID() << std::endl;
-	os << static_cast<EndPoint>(pubStub);
-	return os;
-}
-#endif
 
 /**
  * Abstraction for publishing byte-arrays on channels (bridge pattern).
@@ -226,17 +151,19 @@ public:
 	void setGreeter(Greeter* greeter)                    {
 		return _impl->setGreeter(greeter);
 	}
-	void putMeta(const string& key, const string& value) {
+	void putMeta(const std::string& key, const std::string& value) {
 		return _impl->putMeta(key, value);
-	}
-	std::set<string> getSubscriberUUIDs() const          {
-		return _impl->getSubscriberUUIDs();
-	}
-	bool isPublishingTo(const string& uuid) {
-		return _impl->getSubscriberUUIDs().find(uuid) != _impl->getSubscriberUUIDs().end();
 	}
 	//@}
 
+	bool isPublishingTo(const std::string& subUUID) {
+		return _impl->isPublishingTo(subUUID);
+	}
+	
+	std::map<std::string, SubscriberStub> getSubscribers() {
+		return _impl->getSubscribers();
+	}
+	
 	void suspend() {
 		return _impl->suspend();
 	}
@@ -244,16 +171,16 @@ public:
 		return _impl->resume();
 	}
 
-	void addedSubscriber(const string nodeId, const string subId)   {
-		_impl->addedSubscriber(nodeId, subId);
+	void added(const SubscriberStub& sub, const NodeStub& node)   {
+		_impl->added(sub, node);
 	}
-	void removedSubscriber(const string nodeId, const string subId) {
-		_impl->removedSubscriber(nodeId, subId);
+	void removed(const SubscriberStub& sub, const NodeStub& node) {
+		_impl->removed(sub, node);
 	}
 
 protected:
-	shared_ptr<PublisherImpl> _impl;
-	shared_ptr<PublisherConfig> _config;
+	boost::shared_ptr<PublisherImpl> _impl;
+	boost::shared_ptr<PublisherConfig> _config;
 	friend class Node;
 };
 

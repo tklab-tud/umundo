@@ -5,7 +5,7 @@ set -e
 
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )" 
-BUILD_DIR="/tmp/build-pcre-android/"
+BUILD_DIR="/tmp/build-bonjour-android/"
 DEST_DIR="${DIR}/../prebuilt/android"
 
 if [ ! -d mDNSPosix ]; then
@@ -47,16 +47,20 @@ CC_X86_FLAGS="${CC_COMMON_FLAGS} \
 -finline-limit=300"
 
 X86_SYSROOT="${ANDROID_NDK}/platforms/android-9/arch-x86"
-X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.6/prebuilt/darwin-x86"
+X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.7/prebuilt/darwin-x86_64"
 X86_TOOL_PREFIX="i686-linux-android"
 X86_COMMON_FLAGS="\
 -isystem ${ANDROID_NDK}/platforms/android-9/arch-x86/usr/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/x86/include"
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86/include"
 
 AR="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ar"
 CC="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-gcc"
 LD="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ld"
+CPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp" \
+CXXCPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp" \
+CPPFLAGS="--sysroot=${X86_SYSROOT}" \
+CXXCPPFLAGS="--sysroot=${X86_SYSROOT}" \
 
 if [ -d build ]; then
 	rm -rf build
@@ -82,9 +86,16 @@ done
 echo ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 
+mkdir -p ${DEST_DIR}/x86/include/bonjour &> /dev/null
 mkdir -p ${DEST_DIR}/x86/lib &> /dev/null
 cp build/prod/*.a ${DEST_DIR}/x86/lib
-
+cp mDNSShared/CommonServices.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSShared/dns_sd.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSCore/DNSCommon.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSCore/mDNSDebug.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSCore/mDNSEmbeddedAPI.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSPosix/mDNSPosix.h ${DEST_DIR}/x86/include/bonjour
+cp mDNSCore/uDNS.h ${DEST_DIR}/x86/include/bonjour
 
 # build for arm
 
@@ -100,16 +111,20 @@ CC_ARMEABI_FLAGS="${CC_COMMON_FLAGS} \
 -finline-limit=64"
 
 ARM_SYSROOT="${ANDROID_NDK}/platforms/android-8/arch-arm"
-ARMEABI_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/darwin-x86"
+ARMEABI_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/arm-linux-androideabi-4.7/prebuilt/darwin-x86_64"
 ARMEABI_TOOL_PREFIX="arm-linux-androideabi"
 ARMEABI_COMMON_FLAGS="\
 -isystem ${ANDROID_NDK}/platforms/android-8/arch-arm/usr/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include \
--isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include"
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/armeabi/include"
 
 AR="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ar"
 CC="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-gcc"
 LD="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-ld"
+CPP="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-cpp" \
+CXXCPP="${ARMEABI_TOOLCHAIN_ROOT}/bin/${ARMEABI_TOOL_PREFIX}-cpp" \
+CPPFLAGS="--sysroot=${ARM_SYSROOT}" \
+CXXCPPFLAGS="--sysroot=${ARM_SYSROOT}" \
 
 if [ -d build ]; then
 	rm -rf build
@@ -135,5 +150,13 @@ done
 echo ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 
+mkdir -p ${DEST_DIR}/armeabi/include/bonjour &> /dev/null
 mkdir -p ${DEST_DIR}/armeabi/lib &> /dev/null
 cp build/prod/*.a ${DEST_DIR}/armeabi/lib
+cp mDNSShared/CommonServices.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSShared/dns_sd.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSCore/DNSCommon.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSCore/mDNSDebug.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSCore/mDNSEmbeddedAPI.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSPosix/mDNSPosix.h ${DEST_DIR}/armeabi/include/bonjour
+cp mDNSCore/uDNS.h ${DEST_DIR}/armeabi/include/bonjour

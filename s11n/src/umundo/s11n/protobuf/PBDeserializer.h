@@ -36,15 +36,15 @@ public:
 	PBDeserializer() {}
 	virtual ~PBDeserializer() {}
 
-	void init(shared_ptr<Configuration>);
-	shared_ptr<Implementation> create();
-	void* deserialize(const string& type, Message* msg);
+	void init(Options*);
+	boost::shared_ptr<Implementation> create();
+	void* deserialize(const std::string& type, Message* msg);
 	void destroyObj(void* obj);
 
 	void registerType(const std::string&, void*);
 
 protected:
-	map<string, MessageLite*> _deserializers;
+	std::map<std::string, MessageLite*> _deserializers;
 
 };
 }

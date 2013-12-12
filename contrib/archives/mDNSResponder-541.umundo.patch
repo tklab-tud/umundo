@@ -1,0 +1,252 @@
+diff -rubp mDNSResponder-541/mDNSCore/mDNS.c mDNSResponder-541.patched/mDNSCore/mDNS.c
+--- mDNSResponder-541/mDNSCore/mDNS.c	2013-10-20 18:55:01.000000000 +0200
++++ mDNSResponder-541.patched/mDNSCore/mDNS.c	2013-12-10 17:44:44.000000000 +0100
+@@ -1181,6 +1181,7 @@ mDNSexport mStatus mDNS_Register_interna
+     AuthRecord *r;
+     AuthRecord **p = &m->ResourceRecords;
+     AuthRecord **d = &m->DuplicateRecords;
++	mDNSAddr   raddr;
+ 
+     if ((mDNSs32)rr->resrec.rroriginalttl <= 0)
+     { LogMsg("mDNS_Register_internal: TTL %X should be 1 - 0x7FFFFFFF %s", rr->resrec.rroriginalttl, ARDisplayString(m, rr)); return(mStatus_BadParamErr); }
+@@ -1478,7 +1479,6 @@ mDNSexport mStatus mDNS_Register_interna
+         // Also make sure we do not announce the keepalive records.
+        rr->resrec.RecordType = kDNSRecordTypeKnownUnique;
+        rr->AnnounceCount     = 0;
+-       mDNSAddr   raddr;
+        getKeepaliveRaddr(m, rr, &raddr);
+        // This is an asynchronous call. Once the remote MAC address is available, helper will schedule an
+        // asynchronous task to update the resource record
+@@ -5530,6 +5530,7 @@ mDNSexport void mDNS_UpdateAllowSleep(mD
+ {
+ #ifndef IDLESLEEPCONTROL_DISABLED
+     mDNSBool allowSleep = mDNStrue;
++	const CacheRecord *cr;
+     char reason[128];
+ 
+     reason[0] = 0;
+@@ -5562,7 +5563,7 @@ mDNSexport void mDNS_UpdateAllowSleep(mD
+                     }
+ 
+                     // Disallow sleep if there is no sleep proxy server
+-                    const CacheRecord *cr = FindSPSInCache1(m, &intf->NetWakeBrowse, mDNSNULL, mDNSNULL);
++                    cr = FindSPSInCache1(m, &intf->NetWakeBrowse, mDNSNULL, mDNSNULL);
+                     if ( cr == mDNSNULL)
+                     {
+                         allowSleep = mDNSfalse;
+@@ -9902,11 +9903,6 @@ mDNSlocal void mDNS_SendKeepalives(mDNS 
+ 
+ mDNSlocal void mDNS_SendKeepaliveACK(mDNS *const m, AuthRecord *ar)
+ {
+-    if (ar != mDNSNULL)
+-    {
+-        LogInfo("mDNS_SendKeepalivesACK: AuthRecord is NULL");
+-        return;
+-    }
+     mDNSu32     timeout, seq, ack;
+     mDNSu16     win;
+     mDNSAddr    laddr, raddr;
+@@ -9919,6 +9915,12 @@ mDNSlocal void mDNS_SendKeepaliveACK(mDN
+     laddr = raddr = zeroAddr;
+     lport = rport = zeroIPPort;
+ 
++	if (ar != mDNSNULL)
++    {
++        LogInfo("mDNS_SendKeepalivesACK: AuthRecord is NULL");
++        return;
++    }
++
+     mDNS_ExtractKeepaliveInfo(ar, &timeout, &laddr, &raddr, &eth, &seq, &ack, &lport, &rport, &win);
+ 
+     if (!timeout || mDNSAddressIsZero(&laddr) || mDNSAddressIsZero(&raddr) || !seq || !ack || mDNSIPPortIsZero(lport) || mDNSIPPortIsZero(rport) || !win)
+@@ -10088,6 +10090,9 @@ mDNSlocal void mDNSCoreReceiveUpdate(mDN
+ 
+ mDNSlocal void mDNSCoreReceiveUpdateR(mDNS *const m, const DNSMessage *const msg, const mDNSu8 *end, const mDNSAddr *srcaddr, const mDNSInterfaceID InterfaceID)
+ {
++    mDNSAddr spsaddr;
++	char *ifname;
++
+     if (InterfaceID)
+     {
+         mDNSu32 updatelease = 60 * 60;      // If SPS fails to indicate lease time, assume one hour
+@@ -10141,8 +10146,7 @@ mDNSlocal void mDNSCoreReceiveUpdateR(mD
+         }
+ 
+         // Update the dynamic store with the IP Address and MAC address of the sleep proxy
+-        char *ifname = InterfaceNameForID(m, InterfaceID);
+-        mDNSAddr spsaddr;
++        ifname = InterfaceNameForID(m, InterfaceID);
+         mDNSPlatformMemCopy(&spsaddr, srcaddr, sizeof (mDNSAddr));
+         mDNSPlatformStoreSPSMACAddr(&spsaddr, ifname);
+     }
+@@ -12446,6 +12450,7 @@ mDNSlocal void AdvertiseInterface(mDNS *
+ {
+     char buffer[MAX_REVERSE_MAPPING_NAME];
+     NetworkInterfaceInfo *primary;
++	mDNSu8 recordType;
+ 
+     if (!set->McastTxRx)
+     {
+@@ -12465,7 +12470,7 @@ mDNSlocal void AdvertiseInterface(mDNS *
+ 
+     // If interface is marked as a direct link, we can assume the address record is unique
+     // and does not need to go through the probe phase of the probe/announce packet sequence.
+-    mDNSu8 recordType = (set->DirectLink ? kDNSRecordTypeKnownUnique : kDNSRecordTypeUnique);
++    recordType = (set->DirectLink ? kDNSRecordTypeKnownUnique : kDNSRecordTypeUnique);
+ 
+     if (set->DirectLink)
+         LogInfo("AdvertiseInterface: Marking address record as kDNSRecordTypeKnownUnique for %s", set->ifname);
+diff -rubp mDNSResponder-541/mDNSCore/mDNSEmbeddedAPI.h mDNSResponder-541.patched/mDNSCore/mDNSEmbeddedAPI.h
+--- mDNSResponder-541/mDNSCore/mDNSEmbeddedAPI.h	2013-10-20 18:55:01.000000000 +0200
++++ mDNSResponder-541.patched/mDNSCore/mDNSEmbeddedAPI.h	2013-12-10 17:24:32.000000000 +0100
+@@ -1327,6 +1327,10 @@ enum
+     McastResolver_FlagNew    = 2
+ };
+ 
++#ifdef _MSC_VER
++#undef interface
++#endif
++
+ typedef struct McastResolver
+ {
+     struct McastResolver *next;
+diff -rubp mDNSResponder-541/mDNSPosix/mDNSPosix.h mDNSResponder-541.patched/mDNSPosix/mDNSPosix.h
+--- mDNSResponder-541/mDNSPosix/mDNSPosix.h	2011-12-02 01:39:45.000000000 +0100
++++ mDNSResponder-541.patched/mDNSPosix/mDNSPosix.h	2013-12-10 17:25:47.000000000 +0100
+@@ -25,6 +25,10 @@
+ extern "C" {
+ #endif
+ 
++#ifdef TARGET_OS_ANDROID
++#include <fcntl.h>
++#endif
++
+ // PosixNetworkInterface is a record extension of the core NetworkInterfaceInfo
+ // type that supports extra fields needed by the Posix platform.
+ //
+diff -rubp mDNSResponder-541/mDNSShared/PlatformCommon.c mDNSResponder-541.patched/mDNSShared/PlatformCommon.c
+--- mDNSResponder-541/mDNSShared/PlatformCommon.c	2012-06-30 06:52:35.000000000 +0200
++++ mDNSResponder-541.patched/mDNSShared/PlatformCommon.c	2013-12-10 17:28:25.000000000 +0100
+@@ -27,6 +27,10 @@
+ #include "DNSCommon.h"
+ #include "PlatformCommon.h"
+ 
++#ifdef TARGET_OS_ANDROID
++#include <android/log.h>
++#endif
++
+ #ifdef NOT_HAVE_SOCKLEN_T
+ typedef unsigned int socklen_t;
+ #endif
+@@ -143,13 +147,21 @@ badf:
+ #if MDNS_DEBUGMSGS
+ mDNSexport void mDNSPlatformWriteDebugMsg(const char *msg)
+ {
++#ifdef TARGET_OS_ANDROID
++    __android_log_print(ANDROID_LOG_DEBUG, "bonjour", "%s", msg);
++#else
+     fprintf(stderr,"%s\n", msg);
+     fflush(stderr);
++#endif
+ }
+ #endif
+ 
+ mDNSexport void mDNSPlatformWriteLogMsg(const char *ident, const char *buffer, mDNSLogLevel_t loglevel)
+ {
++#ifdef TARGET_OS_ANDROID
++  __android_log_print(ANDROID_LOG_DEBUG, "bonjour", "%s", buffer);
++#else
++  
+ #if APPLE_OSX_mDNSResponder && LogTimeStamps
+     extern mDNS mDNSStorage;
+     extern mDNSu32 mDNSPlatformClockDivisor;
+@@ -196,4 +208,5 @@ mDNSexport void mDNSPlatformWriteLogMsg(
+         syslog(syslog_level, "%s", buffer);
+ #endif
+     }
++#endif
+ }
+diff -rubp mDNSResponder-541/mDNSShared/dns_sd.h mDNSResponder-541.patched/mDNSShared/dns_sd.h
+--- mDNSResponder-541/mDNSShared/dns_sd.h	2013-10-29 16:04:59.000000000 +0100
++++ mDNSResponder-541.patched/mDNSShared/dns_sd.h	2013-12-10 17:29:32.000000000 +0100
+@@ -93,7 +93,7 @@ extern "C" {
+ /* standard calling convention under Win32 is __stdcall */
+ /* Note: When compiling Intel EFI (Extensible Firmware Interface) under MS Visual Studio, the */
+ /* _WIN32 symbol is defined by the compiler even though it's NOT compiling code for Windows32 */
+-#if defined(_WIN32) && !defined(EFI32) && !defined(EFI64)
++#if defined(_WIN32) && !defined(EFI32) && !defined(EFI64) && !defined(DISC_BONJOUR_EMBED)
+ #define DNSSD_API __stdcall
+ #else
+ #define DNSSD_API
+diff -rubp mDNSResponder-541/mDNSShared/dnssd_clientshim.c mDNSResponder-541.patched/mDNSShared/dnssd_clientshim.c
+--- mDNSResponder-541/mDNSShared/dnssd_clientshim.c	2013-10-29 16:04:59.000000000 +0100
++++ mDNSResponder-541.patched/mDNSShared/dnssd_clientshim.c	2013-12-10 17:30:19.000000000 +0100
+@@ -25,6 +25,13 @@
+ 
+ #include "dns_sd.h"             // Defines the interface to the client layer above
+ #include "mDNSEmbeddedAPI.h"        // The interface we're building on top of
++#ifndef _MSC_VER
++#include <sys/socket.h>
++#include <netinet/in.h>
++#else
++#include <winsock2.h>
++#endif
++
+ extern mDNS mDNSStorage;        // We need to pass the address of this storage to the lower-layer functions
+ 
+ #if MDNS_BUILDINGSHAREDLIBRARY || MDNS_BUILDINGSTUBLIBRARY
+@@ -71,6 +78,15 @@ typedef struct
+ typedef struct
+ {
+     mDNS_DirectOP_Dispose  *disposefn;
++	DNSServiceRef                aQuery;
++	DNSServiceGetAddrInfoReply   callback;
++	void                         *context;
++} mDNS_DirectOP_GetAddrInfo;
++
++
++typedef struct
++{
++    mDNS_DirectOP_Dispose  *disposefn;
+     DNSServiceResolveReply callback;
+     void                   *context;
+     const ResourceRecord   *SRV;
+@@ -674,7 +690,7 @@ DNSServiceErrorType DNSServiceQueryRecor
+     x->q.ExpectUnique        = mDNSfalse;
+     x->q.ForceMCast          = (flags & kDNSServiceFlagsForceMulticast) != 0;
+     x->q.ReturnIntermed      = (flags & kDNSServiceFlagsReturnIntermediates) != 0;
+-    x->q.SuppressUnsable     = (flags & kDNSServiceFlagsSuppressUnusable) != 0;
++    x->q.SuppressUnusable     = (flags & kDNSServiceFlagsSuppressUnusable) != 0;
+     x->q.SearchListIndex     = 0;
+     x->q.AppendSearchDomains = 0;
+     x->q.RetryWithSearchDomains = mDNSfalse;
+diff -rubp mDNSResponder-541/mDNSShared/dnssd_ipc.h mDNSResponder-541.patched/mDNSShared/dnssd_ipc.h
+--- mDNSResponder-541/mDNSShared/dnssd_ipc.h	2013-04-30 00:16:33.000000000 +0200
++++ mDNSResponder-541.patched/mDNSShared/dnssd_ipc.h	2013-12-10 17:31:32.000000000 +0100
+@@ -29,6 +29,11 @@
+ #ifndef DNSSD_IPC_H
+ #define DNSSD_IPC_H
+ 
++#ifdef TARGET_OS_ANDROID
++#include <sys/socket.h>
++#include <sys/un.h>
++#endif
++
+ #include "dns_sd.h"
+ 
+ //
+diff -rubp mDNSResponder-541/mDNSShared/uds_daemon.h mDNSResponder-541.patched/mDNSShared/uds_daemon.h
+--- mDNSResponder-541/mDNSShared/uds_daemon.h	2013-03-15 23:04:54.000000000 +0100
++++ mDNSResponder-541.patched/mDNSShared/uds_daemon.h	2013-12-10 17:32:30.000000000 +0100
+@@ -22,6 +22,11 @@
+ 
+  */
+ 
++#ifdef TARGET_OS_ANDROID
++#include <sys/socket.h>
++#include <sys/un.h>
++#endif
++
+ #include "mDNSEmbeddedAPI.h"
+ #include "dnssd_ipc.h"
+ 

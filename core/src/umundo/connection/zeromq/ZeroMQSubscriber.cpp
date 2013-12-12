@@ -35,8 +35,8 @@ namespace umundo {
 
 ZeroMQSubscriber::ZeroMQSubscriber() {}
 
-void ZeroMQSubscriber::init(boost::shared_ptr<Configuration> config) {
-	_config = boost::static_pointer_cast<SubscriberConfig>(config);
+void ZeroMQSubscriber::init(Options* config) {
+//	_config = boost::static_pointer_cast<SubscriberConfig>(config);
 
 	(_subSocket     = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB))     || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 	(_readOpSocket  = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR))    || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
@@ -100,12 +100,13 @@ void ZeroMQSubscriber::resume() {
 	_isSuspended = false;
 };
 
-void ZeroMQSubscriber::added(PublisherStub pub) {
-	ScopeLock lock(_mutex);
-	if (_pubUUIDs.find(pub.getUUID()) != _pubUUIDs.end())
-		return;
+bool ZeroMQSubscriber::matches(const std::string& channelName) {
+	// is our channel a prefix of the given channel?
+	return channelName.substr(0, _channelName.size()) == _channelName;
+}
 
-	_pubUUIDs.insert(pub.getUUID());
+void ZeroMQSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
+	ScopeLock lock(_mutex);
 
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		std::stringstream ss;
@@ -130,17 +131,22 @@ void ZeroMQSubscriber::added(PublisherStub pub) {
 		}
 	}
 
-	_pubUUIDs.insert(pub.getUUID());
+	_pubs[pub.getUUID()] = pub;
 	_domainPubs.insert(std::make_pair(pub.getDomain(), pub.getUUID()));
 }
 
-void ZeroMQSubscriber::removed(PublisherStub pub) {
+void ZeroMQSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
-	if (_pubUUIDs.find(pub.getUUID()) == _pubUUIDs.end())
+
+	// TODO: This fails for publishers added via different nodes
+	if (_pubs.find(pub.getUUID()) != _pubs.end())
+		_pubs.erase(pub.getUUID());
+
+	if (_domainPubs.count(pub.getDomain()) == 0)
 		return;
 
-	assert(_domainPubs.count(pub.getDomain()) != 0);
 	std::multimap<std::string, std::string>::iterator domIter = _domainPubs.find(pub.getDomain());
+
 	while(domIter != _domainPubs.end()) {
 		if (domIter->second == pub.getUUID()) {
 			_domainPubs.erase(domIter++);
@@ -148,7 +154,6 @@ void ZeroMQSubscriber::removed(PublisherStub pub) {
 			domIter++;
 		}
 	}
-	_pubUUIDs.erase(pub.getUUID());
 
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		std::stringstream ss;
@@ -173,11 +178,9 @@ void ZeroMQSubscriber::removed(PublisherStub pub) {
 	}
 }
 
-void ZeroMQSubscriber::changed(PublisherStub pub) {
-}
-
 void ZeroMQSubscriber::setReceiver(Receiver* receiver) {
 	stop();
+	ZMQ_INTERNAL_SEND("",""); // just unblock
 	join();
 	_receiver = receiver;
 	if (_receiver != NULL) {
@@ -192,7 +195,7 @@ void ZeroMQSubscriber::run() {
 	};
 
 	while(isStarted()) {
-		int rc = zmq_poll(items, 2, 20);
+		int rc = zmq_poll(items, 2, -1);
 		if (rc < 0) {
 			UM_LOG_ERR("zmq_poll: %s", zmq_strerror(errno));
 		}

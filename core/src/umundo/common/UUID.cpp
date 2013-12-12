@@ -27,8 +27,8 @@
 namespace umundo {
 
 boost::uuids::random_generator UUID::randomGen;
-const string UUID::getUUID() {
-	return boost::lexical_cast<string>(randomGen());
+const std::string UUID::getUUID() {
+	return boost::lexical_cast<std::string>(randomGen());
 }
 
 bool UUID::isUUID(const std::string& uuid) {

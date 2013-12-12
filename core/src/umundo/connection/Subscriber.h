@@ -24,16 +24,18 @@
 #include "umundo/common/Common.h"
 #include "umundo/common/UUID.h"
 #include "umundo/connection/Publisher.h"
-#include "umundo/common/ResultSet.h"
+#include "umundo/connection/SubscriberStub.h"
+#include "umundo/common/EndPoint.h"
 #include "umundo/common/Implementation.h"
-#include "umundo/thread/Thread.h"
 
 #include <list>
 
 namespace umundo {
 
+class NodeStub;
 class Message;
-class SubscriberImpl;
+class Publisher;
+class PublisherStub;
 
 /**
  * Interface for client classes to get byte-arrays from subscribers.
@@ -45,41 +47,17 @@ public:
 	friend class Subscriber;
 };
 
-class DLLEXPORT SubscriberConfig : public Configuration {
+class DLLEXPORT SubscriberConfig : public Options {
 public:
-	virtual ~SubscriberConfig() {}
-	shared_ptr<Configuration> create();
-	string channelName;
-	string uuid;
-};
-
-class DLLEXPORT SubscriberStubImpl : public EndPointImpl {
-public:
-	SubscriberStubImpl() : _uuid(UUID::getUUID()) {}
-	virtual ~SubscriberStubImpl() {}
-	virtual std::string getChannelName() const            {
-		return _channelName;
-	}
-	virtual void setChannelName(const std::string& channelName) {
-		_channelName = channelName;
-	}
-
-	virtual std::string getUUID() const            {
-		return _uuid;
-	}
-	virtual void setUUID(const std::string& uuid) {
-		_uuid = uuid;
-	}
-
-protected:
-	std::string _channelName;
-	std::string _uuid;
+	std::string getType() { return "SubscriberConfig"; }
+	std::string channelName;
+	std::string uuid;
 };
 
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberImpl : public SubscriberStubImpl, public Implementation, public ResultSet<PublisherStub> {
+class DLLEXPORT SubscriberImpl : public SubscriberStubImpl, public Implementation {
 public:
 	SubscriberImpl();
 	virtual ~SubscriberImpl();
@@ -90,64 +68,26 @@ public:
 
 	virtual void setReceiver(Receiver* receiver) = 0;
 
-	std::set<string> getPublisherUUIDs() {
-		return _pubUUIDs;
+	std::map<std::string, PublisherStub> getPublishers() {
+		return _pubs;
 	}
 	virtual void setChannelName(const std::string& channelName) {
 		_channelName = channelName;
 	}
 
+	virtual void added(const PublisherStub& pub, const NodeStub& node) = 0;
+	virtual void removed(const PublisherStub& pub, const NodeStub& node) = 0;
+
 	virtual Message* getNextMsg() = 0;
 	virtual bool hasNextMsg() = 0;
+
+	virtual bool matches(const std::string& channelName) = 0;
 
 	static int instances;
 
 protected:
 	Receiver* _receiver;
-	std::set<string> _pubUUIDs;
-};
-
-/**
- * Subscriber implementor basis class (bridge pattern).
- */
-class DLLEXPORT SubscriberStub {
-public:
-	virtual ~SubscriberStub() {}
-	SubscriberStub() : _impl() { }
-	SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : _impl(impl) { }
-	SubscriberStub(const SubscriberStub& other) : _impl(other._impl) { }
-
-	operator bool() const {
-		return _impl;
-	}
-	bool operator< (const SubscriberStub& other) const {
-		return _impl < other._impl;
-	}
-	bool operator==(const SubscriberStub& other) const {
-		return _impl == other._impl;
-	}
-	bool operator!=(const SubscriberStub& other) const {
-		return _impl != other._impl;
-	}
-
-	SubscriberStub& operator=(const SubscriberStub& other) {
-		_impl = other._impl;
-		return *this;
-	} // operator=
-
-	virtual const std::string getChannelName() const     {
-		return _impl->getChannelName();
-	}
-	virtual const std::string getUUID() const            {
-		return _impl->getUUID();
-	}
-
-	shared_ptr<SubscriberStubImpl> getImpl() const {
-		return _impl;
-	}
-
-protected:
-	shared_ptr<SubscriberStubImpl> _impl;
+	std::map<std::string, PublisherStub> _pubs;
 };
 
 
@@ -159,7 +99,7 @@ protected:
  * constructor without a receiver and the setReceiver method are required for Java as we cannot
  * inherit publishers while being its receiver at the same time as is used for the TypedSubscriber.
  */
-class DLLEXPORT Subscriber : public SubscriberStub, public ResultSet<PublisherStub> {
+class DLLEXPORT Subscriber : public SubscriberStub {
 public:
 	Subscriber() : _impl() {}
 	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
@@ -204,21 +144,23 @@ public:
 		return _impl->hasNextMsg();
 	}
 
-	std::set<string> getPublisherUUIDs()             {
-		return _impl->getPublisherUUIDs();
-	}
-	bool isSubscribedTo(const string& uuid) {
-		return _impl->getPublisherUUIDs().find(uuid) != _impl->getPublisherUUIDs().end();
+	virtual bool matches(const std::string& channelName) {
+		return _impl->matches(channelName);
 	}
 
-	void added(PublisherStub pub) {
-		_impl->added(pub);
+	std::map<std::string, PublisherStub> getPublishers()             {
+		return _impl->getPublishers();
 	}
-	void changed(PublisherStub pub) {
-		_impl->changed(pub);
+	bool isSubscribedTo(const std::string& uuid) {
+		std::map<std::string, PublisherStub> pubs = _impl->getPublishers();
+		return pubs.find(uuid) != pubs.end();
 	}
-	void removed(PublisherStub pub) {
-		_impl->removed(pub);
+
+	void added(const PublisherStub& pub, const NodeStub& node) {
+		_impl->added(pub, node);
+	}
+	void removed(const PublisherStub& pub, const NodeStub& node) {
+		_impl->removed(pub, node);
 	}
 
 	void suspend() {
@@ -228,14 +170,14 @@ public:
 		return _impl->resume();
 	}
 
-	shared_ptr<SubscriberImpl> getImpl() const {
+	boost::shared_ptr<SubscriberImpl> getImpl() const {
 		return _impl;
 	}
 
 protected:
 
-	shared_ptr<SubscriberImpl> _impl;
-	shared_ptr<SubscriberConfig> _config;
+	boost::shared_ptr<SubscriberImpl> _impl;
+	boost::shared_ptr<SubscriberConfig> _config;
 	friend class Node;
 };
 

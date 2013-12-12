@@ -32,7 +32,7 @@ endif()
 ###########################################
 file(GLOB COMMON_FILES src/umundo/common/*.cpp)
 file(GLOB CONN_FILES src/umundo/connection/*.cpp)
-file(GLOB DISC_FILES src/umundo/discovery/*.cpp)
+file(GLOB DISC_FILES src/umundo/discovery/Discovery*.cpp)
 file(GLOB TREAD_FILES src/umundo/thread/*.cpp)
 
 list(APPEND UMUNDOCORE_FILES
@@ -69,8 +69,14 @@ LIST(APPEND UMUNDOCORE_LIBRARIES ${PCRE_LIBRARIES})
 ###########################################
 # Bonjour
 ###########################################
+if (DISC_BONJOUR OR DISC_AVAHI)
+  file(GLOB DISC_MDNS_FILES src/umundo/discovery/MDNS*.cpp)
+	list(APPEND UMUNDOCORE_FILES ${DISC_MDNS_FILES})
+endif()
+
 if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
-	file(GLOB_RECURSE DISC_BONJOUR_FILES src/umundo/discovery/bonjour/*.cpp)
+
+	file(GLOB_RECURSE DISC_BONJOUR_FILES src/umundo/discovery/mdns/bonjour/*.cpp)
 	list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_FILES})
 
 	if (DISC_BONJOUR_EMBED)
@@ -78,7 +84,7 @@ if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
 		include_directories(${BonjourEmbedded_INCLUDE_DIR})
 		LIST(APPEND UMUNDOCORE_LIBRARIES ${BonjourEmbedded_LIBRARY})
 
-		file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES src/umundo/discovery/bonjour/mDNSEmbedded.c)
+		file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES src/umundo/discovery/mdns/bonjour/mDNSEmbedded.c)
 		list(APPEND UMUNDOCORE_FILES ${DISC_BONJOUR_EMBED_FILES})
 
 		if (WIN32)
@@ -105,7 +111,7 @@ if(DISC_AVAHI)
 	LIST(APPEND UMUNDOCORE_LIBRARIES ${Avahi_LIBRARIES})
 	include_directories(${Avahi_INCLUDE_DIR})
 
-	file(GLOB_RECURSE DISC_AVAHI_FILES src/umundo/discovery/avahi/*.cpp)
+	file(GLOB_RECURSE DISC_AVAHI_FILES src/umundo/discovery/mdns/avahi/*.cpp)
 	list(APPEND UMUNDOCORE_FILES ${DISC_AVAHI_FILES})
 endif()
 
@@ -113,7 +119,7 @@ endif()
 # Broadcast
 ###########################################
 if(DISC_BROADCAST)
-	file(GLOB_RECURSE DISC_BROADCAST_FILES src/umundo/discovery/broadcast/*.cpp)
+	file(GLOB_RECURSE DISC_BROADCAST_FILES src/umundo/discovery/Broadcast*.cpp)
 	list(APPEND UMUNDOCORE_FILES ${DISC_BROADCAST_FILES})
 endif()
 
@@ -162,7 +168,9 @@ endif()
 LIST(SORT UMUNDOCORE_HEADER_FILES)
 
 add_library(umundocore ${UMUNDOCORE_FILES} ${UMUNDOCORE_HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
-set_target_properties(umundocore PROPERTIES SOVERSION ${UMUNDO_VERSION})
+if (DIST_PREPARE)
+  set_target_properties(umundocore PROPERTIES SOVERSION ${UMUNDO_VERSION})
+endif()
 target_link_libraries(umundocore ${UMUNDOCORE_LIBRARIES})
 INSTALL_HEADERS(HEADERS ${UMUNDOCORE_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundocore COMPONENT libraryCore)

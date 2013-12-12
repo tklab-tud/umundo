@@ -7,7 +7,7 @@ using namespace umundo;
 
 class TestTypedReceiver : public TypedReceiver {
 	void receive(void* obj, Message* msg) {
-		std::cout << msg->getMeta("um.s11n.type") << std::endl;
+		std::cout << msg->getMeta("um.s11n.type") << ": ";
 		if (msg->getMeta("um.s11n.type").compare("Test1Msg") == 0) {
 			// we got an explicit type from tSub->registerType
 			Test1Msg* tMsg = (Test1Msg*)obj;
@@ -21,33 +21,43 @@ class TestTypedReceiver : public TypedReceiver {
 };
 
 int main(int argc, char** argv) {
-	Node mainNode;
-	Node otherNode;
-	TestTypedReceiver* tts = new TestTypedReceiver();
-	TypedPublisher tPub("fooChannel");
-	TypedSubscriber tSub("fooChannel", tts);
+	for (int i = 0; i < 10; i++) {
+		setenv("UMUNDO_LOGLEVEL", "4", 1);
 
-//  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
+		Node mainNode;
+		Node otherNode;
+		
+		Discovery disc(Discovery::MDNS);
+		disc.add(mainNode);
+		disc.add(otherNode);
+		
+		TestTypedReceiver* tts = new TestTypedReceiver();
+		TypedPublisher tPub("fooChannel");
+		TypedSubscriber tSub("fooChannel", tts);
 
-	tSub.registerType("Test1Msg", new Test1Msg());
-	tPub.registerType("Test1Msg", new Test1Msg());
+	//  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
 
-	mainNode.addPublisher(tPub);
-	otherNode.addSubscriber(tSub);
+		tSub.registerType("Test1Msg", new Test1Msg());
+		tPub.registerType("Test1Msg", new Test1Msg());
 
-	// try a typed message for atomic types
-	Test1Msg* tMsg1 = new Test1Msg();
-	tPub.waitForSubscribers(1);
+		mainNode.addPublisher(tPub);
+		otherNode.addSubscriber(tSub);
 
-	int iterations = 10;
-	while(iterations--) {
-		Thread::sleepMs(10);
-		tMsg1->set_doubletype(iterations);
-		tMsg1->set_stringtype("foo");
-		tPub.sendObj("Test1Msg", tMsg1);
+		// try a typed message for atomic types
+		Test1Msg* tMsg1 = new Test1Msg();
+		tPub.waitForSubscribers(1);
+
+		int iterations = 1000;
+		while(iterations--) {
+			tMsg1->set_doubletype(iterations);
+			tMsg1->set_stringtype("foo");
+			tPub.sendObj("Test1Msg", tMsg1);
+		}
+		delete tMsg1;
+
+		Thread::sleepMs(100);
+
+	//	mainNode.removePublisher(tPub);
+	//	otherNode.removeSubscriber(tSub);
 	}
-
-	mainNode.removePublisher(tPub);
-	otherNode.removeSubscriber(tSub);
-
 }

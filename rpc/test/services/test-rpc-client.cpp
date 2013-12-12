@@ -8,13 +8,19 @@
 using namespace umundo;
 
 #define BUFFER_SIZE 1024 * 1024
-static string hostId;
+static std::string hostId;
 
 bool testEchoClient() {
 	Node n;
 	ServiceManager svcMgr;
+
+	Discovery disc(Discovery::MDNS);
+	disc.add(n);
+
 	n.connect(&svcMgr);
 
+#if 0
+	// some regex tests
 	Regex re("(\\d+)");
 	if (re.matches("this is some random string with 123 numbers inside")) {
 		if (re.hasSubMatches()) {
@@ -23,7 +29,7 @@ bool testEchoClient() {
 			std::cout << re.getMatch() << std::endl;
 		}
 	}
-
+#endif
 	ServiceFilter echoSvcFilter("EchoService");
 	echoSvcFilter.addRule("someString", "(\\d+)", "200", ServiceFilter::OP_LESS);
 	echoSvcFilter.addRule("someString", "(\\d+)", "123", ServiceFilter::OP_EQUALS);

@@ -31,7 +31,7 @@ namespace umundo {
  */
 class DLLEXPORT UUID {
 public:
-	static const string getUUID();
+	static const std::string getUUID();
 	static bool isUUID(const std::string& uuid);
 
 private:

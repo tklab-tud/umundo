@@ -1,8 +1,8 @@
 %module(directors="1", allprotected="1") umundoNativeJava
 // import swig typemaps
+// %include "stl_map.i"
 %include <arrays_java.i>
 %include <stl.i>
-%include <std_map.i>
 %include <inttypes.i>
 %include "stl_set.i"
 
@@ -12,16 +12,11 @@
 // set DLLEXPORT macro to empty string
 #define DLLEXPORT
 
-
-// SWIG does not recognize 'using std::string' from an include
-typedef std::string string;
-typedef std::vector vector;
-typedef std::map map;
-typedef std::set set;
-typedef std::list list;
+// this needs to be up here for the template
+%include "../../../../core/src/umundo/common/ResultSet.h"
 
 %rename(equals) operator==; 
-%rename(isValid) operator bool;
+%ignore operator bool;
 %ignore operator!=;
 %ignore operator<;
 %ignore operator=;
@@ -33,13 +28,19 @@ typedef std::list list;
 //**************************************************
 
 %{
+#include "../../../../core/src/umundo/common/Host.h"
 #include "../../../../core/src/umundo/common/EndPoint.h"
+#include "../../../../core/src/umundo/connection/NodeStub.h"
 #include "../../../../core/src/umundo/connection/Node.h"
 #include "../../../../core/src/umundo/common/Message.h"
 #include "../../../../core/src/umundo/common/Regex.h"
+#include "../../../../core/src/umundo/common/ResultSet.h"
 #include "../../../../core/src/umundo/thread/Thread.h"
+#include "../../../../core/src/umundo/connection/PublisherStub.h"
+#include "../../../../core/src/umundo/connection/SubscriberStub.h"
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
+#include "../../../../core/src/umundo/discovery/Discovery.h"
 
 #ifdef ANDROID
 // google forgot imaxdiv in the android ndk r7 libc?!
@@ -57,10 +58,6 @@ imaxdiv_t imaxdiv(intmax_t numer, intmax_t denom) {
 #endif
 #endif
 
-using std::string;
-using std::vector;
-using std::map;
-using boost::shared_ptr;
 using namespace umundo;
 %}
 
@@ -72,16 +69,16 @@ using namespace umundo;
 //*************************************************/
 
 // Provide a nicer Java interface to STL containers
-%template(StringVector) std::vector<std::string>;
-%template(StringSet)    std::set<std::string>;
-%template(PublisherSet) std::set<umundo::Publisher>;
-%template(SubscriberSet) std::set<umundo::Subscriber>;
+%template(StringArray) std::vector<std::string>;
+%template(StringMap) std::map<std::string, std::string>;
 %template(PublisherMap) std::map<std::string, umundo::Publisher>;
 %template(SubscriberMap) std::map<std::string, umundo::Subscriber>;
-%template(PublisherStubSet) std::set<umundo::PublisherStub>;
-%template(SubscriberStubSet) std::set<umundo::SubscriberStub>;
 %template(PublisherStubMap) std::map<std::string, umundo::PublisherStub>;
 %template(SubscriberStubMap) std::map<std::string, umundo::SubscriberStub>;
+%template(NodeStubMap) std::map<std::string, umundo::NodeStub>;
+%template(EndPointResultSet) umundo::ResultSet<umundo::EndPoint>;
+%template(EndPointArray) std::vector<umundo::EndPoint>;
+%template(InterfaceArray) std::vector<umundo::Interface>;
 
 // allow Java classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
@@ -112,66 +109,23 @@ using namespace umundo;
 %rename(waitSignal) wait;
 
 //******************************
-// Prevent premature GC
+// WARNING - Prevent premature GC!
 //******************************
 
 // this is helpful:
 // http://stackoverflow.com/questions/9817516/swig-java-retaining-class-information-of-the-objects-bouncing-from-c
 
 // The Java GC will eat receivers and greeters as the wrapper code never
-// holds a reference to their Java objects.
+// holds a reference to their Java objects. See respective typemaps for
+// Publisher and Subscriber below
 
-//***************
-// Save the receiver in the subscriber
-
-// Do not generate this constructor - substitute by the one in the javacode typemap below
-%ignore umundo::Subscriber::Subscriber(const std::string&, Receiver*);
-
-// hide this constructor to enforce the one below
-%javamethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
-
-// rename setter an wrap by setter in javacode typemap below
-%rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
-%javamethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
-
-%typemap(javacode) umundo::Subscriber %{
-  // keep receiver as a reference to prevent premature GC
-  private Receiver _receiver;
-
-  public Subscriber(String channelName, Receiver receiver) {
-    this(umundoNativeJavaJNI.new_Subscriber__SWIG_2(channelName), true);
-    setReceiver(receiver);
-  }
-
-  public void setReceiver(Receiver receiver) {
-    // it is important to keep the reference, otherwise the Java GC will eat it!
-    _receiver = receiver;
-    setReceiverNative(receiver);
-  }
-%}
-
-//***************
-// Save the greeter in the publisher (same approach as above)
-
-%rename(setGreeterNative) umundo::Publisher::setGreeter(Greeter*);
-%javamethodmodifiers umundo::Publisher::setGreeter(Greeter* greeter) "private";
-
-%typemap(javacode) umundo::Publisher %{
-  // keep receiver as a reference to prevent premature GC
-  private Greeter _greeter;
-
-  public void setGreeter(Greeter greeter) {
-    // it is important to keep the reference, otherwise the Java GC will eat it!
-    _greeter = greeter;
-    setGreeterNative(greeter);
-  }
-%}
 
 //***************
 // Always copy messages into the JVM
 
 # messages are destroyed upon return, always pass copies to Java
 %typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
+
 
 //******************************
 // Beautify Node class
@@ -185,8 +139,9 @@ using namespace umundo;
 %extend umundo::Node {
 	std::vector<std::string> getPubKeys() {
 		std::vector<std::string> keys;
-		std::map<std::string, Publisher>::iterator pubIter = self->getPublishers().begin();
-		while(pubIter != self->getPublishers().end()) {
+		std::map<std::string, Publisher> pubs = self->getPublishers();
+		std::map<std::string, Publisher>::iterator pubIter = pubs.begin();
+		while(pubIter != pubs.end()) {
 			keys.push_back(pubIter->first);
 			pubIter++;
 		}
@@ -194,8 +149,9 @@ using namespace umundo;
 	}
 	std::vector<std::string> getSubKeys() {
 		std::vector<std::string> keys;
-		std::map<std::string, Subscriber>::iterator subIter = self->getSubscribers().begin();
-		while(subIter != self->getSubscribers().end()) {
+		std::map<std::string, Subscriber> subs = self->getSubscribers();
+		std::map<std::string, Subscriber>::iterator subIter = subs.begin();
+		while(subIter != subs.end()) {
 			keys.push_back(subIter->first);
 			subIter++;
 		}
@@ -211,7 +167,7 @@ import java.util.HashMap;
 	public HashMap<String, Publisher> getPublishers() {
 		HashMap<String, Publisher> pubs = new HashMap<String, Publisher>();
 		PublisherMap pubMap = getPublishersNative();
-		StringVector pubKeys = getPubKeys();
+		StringArray pubKeys = getPubKeys();
 		for (int i = 0; i < pubKeys.size(); i++) {
 			pubs.put(pubKeys.get(i), pubMap.get(pubKeys.get(i)));
 		}
@@ -220,7 +176,7 @@ import java.util.HashMap;
 	public HashMap<String, Subscriber> getSubscribers() {
 		HashMap<String, Subscriber> subs = new HashMap<String, Subscriber>();
 		SubscriberMap subMap = getSubscribersNative();
-		StringVector subKeys = getSubKeys();
+		StringArray subKeys = getSubKeys();
 		for (int i = 0; i < subKeys.size(); i++) {
 			subs.put(subKeys.get(i), subMap.get(subKeys.get(i)));
 		}
@@ -240,24 +196,26 @@ import java.util.HashMap;
 %javamethodmodifiers umundo::NodeStub::getPublishers() "private";
 
 %extend umundo::NodeStub {
-	std::vector<std::string> getPubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, PublisherStub>::iterator pubIter = self->getPublishers().begin();
-		while(pubIter != self->getPublishers().end()) {
-			keys.push_back(pubIter->first);
-			pubIter++;
-		}
-		return keys;
-	}
-	std::vector<std::string> getSubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, SubscriberStub>::iterator subIter = self->getSubscribers().begin();
-		while(subIter != self->getSubscribers().end()) {
-			keys.push_back(subIter->first);
-			subIter++;
-		}
-		return keys;
-	}
+  std::vector<std::string> getPubKeys() {
+  	std::vector<std::string> keys;
+  	std::map<std::string, PublisherStub> pubs = self->getPublishers();
+  	std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
+  	while(pubIter != pubs.end()) {
+  		keys.push_back(pubIter->first);
+  		pubIter++;
+  	}
+  	return keys;
+  }
+  std::vector<std::string> getSubKeys() {
+  	std::vector<std::string> keys;
+  	std::map<std::string, SubscriberStub> subs = self->getSubscribers();
+  	std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
+  	while(subIter != subs.end()) {
+  		keys.push_back(subIter->first);
+  		subIter++;
+  	}
+  	return keys;
+  }
 };
 
 %typemap(javaimports) umundo::NodeStub %{
@@ -268,7 +226,7 @@ import java.util.HashMap;
 	public HashMap<String, PublisherStub> getPublishers() {
 		HashMap<String, PublisherStub> pubs = new HashMap<String, PublisherStub>();
 		PublisherStubMap pubMap = getPublishersNative();
-		StringVector pubKeys = getPubKeys();
+		StringArray pubKeys = getPubKeys();
 		for (int i = 0; i < pubKeys.size(); i++) {
 			pubs.put(pubKeys.get(i), pubMap.get(pubKeys.get(i)));
 		}
@@ -277,13 +235,121 @@ import java.util.HashMap;
 	public HashMap<String, SubscriberStub> getSubscribers() {
 		HashMap<String, SubscriberStub> subs = new HashMap<String, SubscriberStub>();
 		SubscriberStubMap subMap = getSubscribersNative();
-		StringVector subKeys = getSubKeys();
+		StringArray subKeys = getSubKeys();
 		for (int i = 0; i < subKeys.size(); i++) {
 			subs.put(subKeys.get(i), subMap.get(subKeys.get(i)));
 		}
 		return subs;
 	}
 
+%}
+
+//******************************
+// Beautify Publisher class
+//******************************
+
+%rename(setGreeterNative) umundo::Publisher::setGreeter(Greeter*);
+%javamethodmodifiers umundo::Publisher::setGreeter(Greeter* greeter) "private";
+%rename(getSubscribersNative) umundo::Publisher::getSubscribers();
+%javamethodmodifiers umundo::Publisher::getSubscribers() "private";
+
+%extend umundo::Publisher {
+	std::vector<std::string> getSubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, SubscriberStub> subs = self->getSubscribers();
+		std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
+		while(subIter != subs.end()) {
+			keys.push_back(subIter->first);
+			subIter++;
+		}
+		return keys;
+	}
+};
+
+%typemap(javaimports) umundo::Publisher %{
+import java.util.HashMap;
+%}
+
+%typemap(javacode) umundo::Publisher %{
+  // keep receiver as a reference to prevent premature GC
+  private Greeter _greeter;
+
+  public void setGreeter(Greeter greeter) {
+    // it is important to keep the reference, otherwise the Java GC will eat it!
+    _greeter = greeter;
+    setGreeterNative(greeter);
+  }
+
+	public HashMap<String, SubscriberStub> getSubscribers() {
+		HashMap<String, SubscriberStub> subs = new HashMap<String, SubscriberStub>();
+		SubscriberStubMap subMap = getSubscribersNative();
+		StringArray subKeys = getSubKeys();
+		for (int i = 0; i < subKeys.size(); i++) {
+			subs.put(subKeys.get(i), subMap.get(subKeys.get(i)));
+		}
+		return subs;
+	}
+%}
+
+
+//******************************
+// Beautify Subscriber class
+//******************************
+
+%rename(getPublishersNative) umundo::Subscriber::getPublishers();
+%javamethodmodifiers umundo::Subscriber::getPublishers() "private";
+
+// Do not generate this constructor - substitute by the one in the javacode typemap below
+%ignore umundo::Subscriber::Subscriber(const std::string&, Receiver*);
+
+// hide this constructor to enforce the one below
+%javamethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
+
+// rename setter and wrap by setter in javacode typemap below
+%rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
+%javamethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
+
+%extend umundo::Subscriber {
+	std::vector<std::string> getPubKeys() {
+		std::vector<std::string> keys;
+		std::map<std::string, PublisherStub> pubs = self->getPublishers();
+		std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
+		while(pubIter != pubs.end()) {
+			keys.push_back(pubIter->first);
+			pubIter++;
+		}
+		return keys;
+	}
+};
+
+%typemap(javaimports) umundo::Subscriber %{
+import java.util.HashMap;
+%}
+
+%typemap(javacode) umundo::Subscriber %{
+  // keep receiver as a reference to prevent premature GC
+  private Receiver _receiver;
+
+  public Subscriber(String channelName, Receiver receiver) {
+    this(umundoNativeJavaJNI.new_Subscriber__SWIG_2(channelName), true);
+    setReceiver(receiver);
+  }
+
+  public void setReceiver(Receiver receiver) {
+    // it is important to keep the reference, otherwise the Java GC will eat it!
+    _receiver = receiver;
+    setReceiverNative(receiver);
+  }
+
+	public HashMap<String, PublisherStub> getPublishers() {
+		HashMap<String, PublisherStub> pubs = new HashMap<String, PublisherStub>();
+		PublisherStubMap pubMap = getPublishersNative();
+		StringArray pubKeys = getPubKeys();
+		for (int i = 0; i < pubKeys.size(); i++) {
+			pubs.put(pubKeys.get(i), pubMap.get(pubKeys.get(i)));
+		}
+		return pubs;
+	}
 %}
 
 //******************************
@@ -301,7 +367,7 @@ import java.util.Vector;
 
 	public Vector<String> getSubMatches() {
 		Vector<String> subMatches = new Vector<String>();
-		StringVector subMatchesNative = getSubMatchesNative();
+		StringArray subMatchesNative = getSubMatchesNative();
 		for (int i = 0; i < subMatchesNative.size(); i++) {
 			subMatches.add(subMatchesNative.get(i));
 		}
@@ -314,42 +380,50 @@ import java.util.Vector;
 // Beautify Message class
 //******************************
 
-// ignore ugly std::map return
-%ignore umundo::Message::getMeta();
+%ignore umundo::Message::Message(string);
 //%ignore umundo::Message::Message(const Message&);
-%ignore umundo::Message::setData(string const &);
-%ignore umundo::Message::Message(string);
-%ignore umundo::Message::Message(string);
+%ignore umundo::Message::setData(const std::string&);
+%ignore umundo::Message::isQueued();
+%ignore umundo::Message::setQueued(bool);
+%ignore umundo::Message::typeToString(uint16_t type);
+%javamethodmodifiers umundo::Message::getKeys() "private";
+
 %rename(getData) umundo::Message::data;
 %rename(getSize) umundo::Message::size;
+%rename(getMetaNative) umundo::Message::getMeta();
+%javamethodmodifiers umundo::Message::getMeta() "private";
 
 // import java.util.HashMap
 %typemap(javaimports) umundo::Message %{
 import java.util.HashMap;
 %}
 
-#if 0
-	public Message(Message other) {
-		this(); // call actual constructor from SWIG
-		setData(other.getData());
-		HashMap<String, String> meta = other.getMeta();
-		if (meta != null)
-			for (String k : meta.keySet()) {
-				putMeta(k, meta.get(k));
-			}
-	}
-#endif
+%extend umundo::Message {
+  std::vector<std::string> getMetaKeys() {
+  	std::vector<std::string> keys;
+  	std::map<std::string, std::string> metas = self->getMeta();
+  	std::map<std::string, std::string>::iterator metaIter = metas.begin();
+  	while(metaIter != metas.end()) {
+  		keys.push_back(metaIter->first);
+  		metaIter++;
+  	}
+  	return keys;
+  }
+};
 
 // provide convinience methods within Message Java class for meta keys
 %typemap(javacode) umundo::Message %{
-
-	public HashMap<String, String> getMeta() {
-		HashMap<String, String> keys = new HashMap<String, String>();
-		for (int i = 0; i < getKeys().size(); i++) {
-			keys.put(getKeys().get(i), getMeta(getKeys().get(i)));
-		}
-		return keys;
+public HashMap<String, String> getMeta() {
+	HashMap<String, String> metas = new HashMap<String, String>();
+	StringMap metaMap = getMetaNative();
+	StringArray metaKeys = getMetaKeys();
+	for (int i = 0; i < metaKeys.size(); i++) {
+	  String key = metaKeys.get(i);
+		metas.put(key, metaMap.get(key));
 	}
+	return metas;
+}
+
 %}
 
 // passing a jbytearray into C++ is done by applying the STRING, LENGTH conversion above
@@ -380,6 +454,7 @@ import java.util.HashMap;
 %ignore PublisherConfig;
 %ignore SubscriberConfig;
 %ignore EndPointImpl;
+%ignore DiscoveryImpl;
 %ignore NodeImpl;
 %ignore NodeStubImpl;
 %ignore NodeStubBaseImpl;
@@ -393,6 +468,20 @@ import java.util.HashMap;
 %ignore Monitor;
 %ignore MemoryBuffer;
 %ignore ScopeLock;
+
+//******************************
+// Make some C++ classes package local
+//******************************
+
+//%pragma(java) moduleclassmodifiers="public final class"
+%pragma(java) jniclassclassmodifiers="class"
+%pragma(java) moduleclassmodifiers="class"
+%typemap(javaclassmodifiers) SWIGTYPE "public class"
+
+// not working :(
+// %template(PublisherSet) std::set<umundo::Publisher>;
+// %typemap(javaclassmodifiers) PublisherSet "class"
+// %typemap(javaclassmodifiers) std::set<umundo::Publisher> "class"
 
 //******************************
 // Ignore PIMPL Constructors
@@ -418,16 +507,27 @@ import java.util.HashMap;
 %ignore SubscriberStub(const boost::shared_ptr<SubscriberStubImpl>);
 %ignore SubscriberStub(const SubscriberStub&);
 
+%ignore Discovery(const boost::shared_ptr<DiscoveryImpl>);
+%ignore Discovery(const Discovery&);
+
+%ignore umundo::Options::getKVPs;
+
 //***********************************************
 // Parse the header file to generate wrappers
 //***********************************************
 
+%include "../../../../core/src/umundo/common/Host.h"
 %include "../../../../core/src/umundo/common/Message.h"
 %include "../../../../core/src/umundo/thread/Thread.h"
 %include "../../../../core/src/umundo/common/Implementation.h"
 %include "../../../../core/src/umundo/common/EndPoint.h"
 %include "../../../../core/src/umundo/common/Regex.h"
+%include "../../../../core/src/umundo/common/ResultSet.h"
+%include "../../../../core/src/umundo/connection/PublisherStub.h"
+%include "../../../../core/src/umundo/connection/SubscriberStub.h"
+%include "../../../../core/src/umundo/connection/NodeStub.h"
 %include "../../../../core/src/umundo/connection/Publisher.h"
 %include "../../../../core/src/umundo/connection/Subscriber.h"
 %include "../../../../core/src/umundo/connection/Node.h"
+%include "../../../../core/src/umundo/discovery/Discovery.h"
 

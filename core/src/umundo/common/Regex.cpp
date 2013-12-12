@@ -22,7 +22,7 @@
 
 namespace umundo {
 
-Regex::Regex(const string& pattern) : _re(NULL) {
+Regex::Regex(const std::string& pattern) : _re(NULL) {
 	setPattern(pattern);
 }
 
@@ -32,7 +32,7 @@ Regex::~Regex() {
 	}
 }
 
-void Regex::setPattern(const string& pattern) {
+void Regex::setPattern(const std::string& pattern) {
 	_pattern = pattern;
 	_error.clear();
 
@@ -52,7 +52,7 @@ bool Regex::hasError() {
 	return _error.size() > 0;
 }
 
-bool Regex::matches(const string& text) {
+bool Regex::matches(const std::string& text) {
 	_text = text;
 	_error.clear();
 	_matchIndex = std::make_pair(0, 0);

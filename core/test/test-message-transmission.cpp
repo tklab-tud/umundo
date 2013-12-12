@@ -6,19 +6,18 @@
 #define BUFFER_SIZE 1024*1024
 
 using namespace umundo;
-using namespace std;
 
 static int nrReceptions = 0;
 static int bytesRecvd = 0;
 static int nrMissing = 0;
-static string hostId;
+static std::string hostId;
 
 class TestReceiver : public Receiver {
 	void receive(Message* msg) {
 		// std::cout << "md5: '" << msg->getMeta("md5") << "'" << std::endl;
 		// std::cout << "md5: '" << md5(msg->data(), msg->size()) << "'" << std::endl;
 		// std::cout << "equals: " << msg->getMeta("md5").compare(md5(msg->data(), msg->size())) << std::endl;
-		if (msg->size() > 0)
+		if (msg->size() > 0 && msg->getMeta("md5").length() > 0)
 			assert(msg->getMeta("md5").compare(md5(msg->data(), msg->size())) == 0);
 		if (nrReceptions + nrMissing == strTo<int>(msg->getMeta("seq"))) {
 			std::cout << ".";
@@ -41,16 +40,19 @@ bool testMessageTransmission() {
 		nrMissing = 0;
 		bytesRecvd = 0;
 
-		Node pubNode(hostId + "foo");
+		Node pubNode;
 		Publisher pub("foo");
 		pubNode.addPublisher(pub);
 
 		TestReceiver* testRecv = new TestReceiver();
-		Node subNode(hostId + "foo");
+		Node subNode;
 		Subscriber sub("foo", testRecv);
 		sub.setReceiver(testRecv);
 		subNode.addSubscriber(sub);
 
+		subNode.added(pubNode);
+		pubNode.added(subNode);
+		
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
 
@@ -77,7 +79,6 @@ bool testMessageTransmission() {
 
 		subNode.removeSubscriber(sub);
 		pubNode.removePublisher(pub);
-
 	}
 	return true;
 }
@@ -89,15 +90,18 @@ bool testDataTransmission() {
 		nrMissing = 0;
 		bytesRecvd = 0;
 
-		Node pubNode(hostId + "foo");
+		Node pubNode;
 		Publisher pub("foo");
 		pubNode.addPublisher(pub);
 
 		TestReceiver* testRecv = new TestReceiver();
-		Node subNode(hostId + "foo");
+		Node subNode;
 		Subscriber sub("foo", testRecv);
 		sub.setReceiver(testRecv);
 		subNode.addSubscriber(sub);
+
+		subNode.added(pubNode);
+		pubNode.added(subNode);
 
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
@@ -108,8 +112,8 @@ bool testDataTransmission() {
 		int iterations = 1000;
 
 		for (int j = 0; j < iterations; j++) {
-			Message* msg = new Message(Message(buffer, BUFFER_SIZE));
-			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
+			Message* msg = new Message(buffer, BUFFER_SIZE);
+//			msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
 			msg->putMeta("seq",toStr(j));
 			pub.send(msg);
 			delete msg;
@@ -119,12 +123,12 @@ bool testDataTransmission() {
 		Thread::sleepMs(500);
 
 		// sometimes there is some weird latency
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 20; i++) {
 			if (nrReceptions < iterations)
-				Thread::sleepMs(2000);
+				Thread::sleepMs(500);
 		}
 
-		std::cout << "expected " << iterations << " messages, received " << nrReceptions << std::endl;
+		std::cout << "expected " << nrReceptions * BUFFER_SIZE << " bytes, received " << bytesRecvd << std::endl;
 		assert(nrReceptions == iterations);
 		assert(bytesRecvd == nrReceptions * BUFFER_SIZE);
 

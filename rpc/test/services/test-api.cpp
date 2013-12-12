@@ -10,7 +10,7 @@
 using namespace umundo;
 
 #define BUFFER_SIZE 1024 * 1024
-static string hostId;
+static std::string hostId;
 
 class EchoService : public EchoServiceBase {
 public:
@@ -38,12 +38,22 @@ bool findServices() {
 
 	for (int i = 0; i < 2; i++) {
 		UM_LOG_INFO("Instantiating nodes");
-		Node node1(hostId);
-		Node node2(hostId);
+		Node node1;
+		Node node2;
 
+		Discovery disc(Discovery::MDNS);
+				
+		disc.add(node1);
+		disc.add(node2);
+
+//		node1.added(node2);
+//		node2.added(node1);
+//		node1.added(node1);
+		
 		UM_LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
 		PingService* localPingService = new PingService();
+
 
 		UM_LOG_INFO("Connecting ServiceManagers");
 		ServiceManager svcMgr1;
@@ -55,7 +65,7 @@ bool findServices() {
 		UM_LOG_INFO("Adding Services to ServiceManager1");
 		svcMgr1.addService(localEchoService);
 		svcMgr1.addService(localPingService);
-
+		
 		UM_LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter pingSvcFilter("PingService");
 		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter, 0);
@@ -63,7 +73,7 @@ bool findServices() {
 
 		PingServiceStub* pingSvc = new PingServiceStub(pingSvcDesc);
 
-		int iterations = 5;
+		int iterations = 10;
 		int sends = 0;
 
 		time_t now;
@@ -82,7 +92,7 @@ bool findServices() {
 			time(&now);
 			if ((now - start) > 0) {
 				iterations--;
-				std::cout << sends << " requests per second " << iterations << " iterations remaining" << std::endl;
+				std::cout << sends << " pingpongs per second - " << iterations << " iterations remaining" << std::endl;
 				time(&start);
 				sends = 0;
 			}
@@ -92,7 +102,7 @@ bool findServices() {
 
 		}
 		// test rpc throughput with the echo service
-		iterations = 5;
+		iterations = 10;
 		sends = 0;
 
 		ServiceFilter echoSvcFilter("EchoService");
@@ -114,7 +124,7 @@ bool findServices() {
 			time(&now);
 			if ((now - start) > 0) {
 				iterations--;
-				std::cout << sends << " requests per second " << iterations << " iterations remaining" << std::endl;
+				std::cout << "2*" << sends << "MB echos per second - " << iterations << " iterations remaining" << std::endl;
 				time(&start);
 				sends = 0;
 			}
@@ -344,14 +354,20 @@ public:
 
 	virtual void changed(ServiceDescription desc) {}
 
-	set<ServiceDescription> _instances;
+	std::set<ServiceDescription> _instances;
 };
 
 bool continuousQueries() {
 	int iterations = 5;
-	Node hostNode(hostId);
-	Node queryNode(hostId);
-
+	
+	Discovery disc(Discovery::MDNS);
+	
+	Node hostNode;
+	Node queryNode;
+	
+	disc.add(hostNode);
+	disc.add(queryNode);
+	
 	while (iterations) {
 		std::cout << "Starting continuous query test" << std::endl;
 
@@ -449,24 +465,6 @@ bool continuousQueries() {
 bool stlContainerTests() {
 	{
 		// single item in container
-		NodeQuery n("foo", NULL);
-		std::set<NodeQuery> nodeQuerySet;
-		nodeQuerySet.insert(n);
-		assert(nodeQuerySet.find(n) != nodeQuerySet.end());
-		nodeQuerySet.erase(n);
-		assert(nodeQuerySet.size() == 0);
-		// copy of item ought to be identical
-		NodeQuery n2 = n;
-		assert(n == n2);
-		assert(!(n != n2));
-		nodeQuerySet.insert(n2);
-		assert(nodeQuerySet.find(n) != nodeQuerySet.end());
-		assert(nodeQuerySet.find(n2) != nodeQuerySet.end());
-		nodeQuerySet.erase(n);
-		assert(nodeQuerySet.size() == 0);
-	}
-	{
-		// single item in container
 		ServiceFilter sf("foo");
 		std::set<ServiceFilter> serviceFilterSet;
 		serviceFilterSet.insert(sf);
@@ -507,6 +505,8 @@ bool stlContainerTests() {
 
 int main(int argc, char** argv) {
 	hostId = Host::getHostId();
+	setenv("UMUNDO_LOGLEVEL", "4", 1);
+
 //	if (!stlContainerTests())
 //		return EXIT_FAILURE;
 //	if (!queryTests())

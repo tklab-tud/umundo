@@ -1,5 +1,6 @@
 #define protected public
 #include "umundo/core.h"
+#include "umundo/discovery/MDNSDiscovery.h"
 #include <iostream>
 #include <stdio.h>
 
@@ -9,7 +10,7 @@ using namespace umundo;
 
 static int receives = 0;
 static Mutex mutex;
-static string hostId;
+static std::string hostId;
 
 
 class TestReceiver : public Receiver {
@@ -27,10 +28,16 @@ public:
 };
 
 void testDifferentDomain() {
-	Node fooNode(hostId + "foo");
-	Node barNode(hostId + "bar");
+	Discovery fooDisc(Discovery::MDNS, "foo.local.");
+	Discovery barDisc(Discovery::MDNS, "bar.local.");
+
+	Node fooNode;
+	Node barNode;
 	assert(NodeImpl::instances == 2);
 
+	fooDisc.add(fooNode);
+	barDisc.add(barNode);
+	
 	// this will leak memory as none deletes the receiver
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
@@ -43,10 +50,16 @@ void testDifferentDomain() {
 }
 
 void testSameDomain() {
-	Node fooNode(hostId + "foo");
-	Node barNode(hostId + "foo");
+	Discovery foo1Disc(Discovery::MDNS, "foo.local.");
+	Discovery foo2Disc(Discovery::MDNS, "foo.local.");
+
+	Node fooNode;
+	Node barNode;
 	assert(NodeImpl::instances == 2);
 
+	foo1Disc.add(fooNode);
+	foo2Disc.add(barNode);
+	
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
 
@@ -56,11 +69,19 @@ void testSameDomain() {
 }
 
 void testDomainReception() {
-	Node fooNode1(hostId + "foo");
-	Node fooNode2(hostId + "foo");
-	Node barNode(hostId + "bar");
+	
+	Discovery fooDisc(Discovery::MDNS, "foo.local.");
+	Discovery barDisc(Discovery::MDNS, "bar.local.");
+
+	Node fooNode1;
+	Node fooNode2;
+	Node barNode;
 	assert(NodeImpl::instances == 3);
 
+	fooDisc.add(fooNode1);
+	fooDisc.add(fooNode2);
+	barDisc.add(barNode);
+	
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
 
@@ -99,7 +120,7 @@ void testDomainReception() {
 
 int main(int argc, char** argv, char** envp) {
 	hostId = Host::getHostId();
-//	setenv("UMUNDO_LOGLEVEL_DISC", "4", 1);
+	setenv("UMUNDO_LOGLEVEL", "4", 1);
 //	setenv("UMUNDO_LOGLEVEL_NET", "2", 1);
 	int i = 1;
 	while(i-- > 0) {

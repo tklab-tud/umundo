@@ -29,8 +29,6 @@
 
 namespace umundo {
 
-using std::string;
-
 /**
  * Match a regular expression against a string.
  *
@@ -38,14 +36,14 @@ using std::string;
  */
 class DLLEXPORT Regex {
 public:
-	Regex(const string&);
+	Regex(const std::string&);
 	~Regex();
 
 	bool hasError();
-	bool matches(const string&);
-	void setPattern(const string&);
+	bool matches(const std::string&);
+	void setPattern(const std::string&);
 
-	const string getPattern()                         {
+	const std::string getPattern()                         {
 		return _pattern;
 	}
 	bool hasSubMatches()                              {
@@ -57,13 +55,13 @@ public:
 
 protected:
 	void* _re;
-	string _pattern;
+	std::string _pattern;
 	int _ovector[OVECCOUNT];
 	std::pair<int, int> _matchIndex;
 	std::vector<std::pair<int, int> > _subMatchIndex;
 
-	string _text;
-	string _error;
+	std::string _text;
+	std::string _error;
 	int _errorOffset;
 };
 

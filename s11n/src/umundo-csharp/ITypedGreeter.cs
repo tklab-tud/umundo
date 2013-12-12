@@ -18,13 +18,14 @@
  *  @endcond
  */
 
+using org.umundo.core;
 
 namespace org.umundo.s11n
 {
     public interface ITypedGreeter
     {
-        void Welcome(TypedPublisher publisher, string nodeId, string subId);
-        void Farewell(TypedPublisher publisher, string nodeId, string subId);
+        void Welcome(TypedPublisher publisher, SubscriberStub subStub);
+        void Farewell(TypedPublisher publisher, SubscriberStub subStub);
     }
 
 }

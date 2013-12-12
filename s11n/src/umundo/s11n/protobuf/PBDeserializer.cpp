@@ -23,15 +23,15 @@
 
 namespace umundo {
 
-void PBDeserializer::init(shared_ptr<Configuration>) {}
+void PBDeserializer::init(Options*) {}
 
-shared_ptr<Implementation> PBDeserializer::create() {
-	shared_ptr<Implementation> instance(new PBDeserializer());
+boost::shared_ptr<Implementation> PBDeserializer::create() {
+	boost::shared_ptr<Implementation> instance(new PBDeserializer());
 	return instance;
 }
 
-void* PBDeserializer::deserialize(const string& type, Message* msg) {
-	const string data(msg->data(), msg->size());
+void* PBDeserializer::deserialize(const std::string& type, Message* msg) {
+	const std::string data(msg->data(), msg->size());
 
 	if (type.length() == 0) {
 		return NULL;

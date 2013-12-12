@@ -36,7 +36,7 @@ class ServiceStub;
  */
 class DLLEXPORT ServiceDescription {
 public:
-	ServiceDescription(map<string, string>);
+	ServiceDescription(std::map<std::string, std::string>);
 	ServiceDescription();
 
 	operator bool() const {
@@ -52,25 +52,25 @@ public:
 		return _channelName != other._channelName;
 	}
 
-	const string getName() const                      {
+	const std::string getName() const                      {
 		return _svcName;
 	}
-	const string getChannelName() const               {
+	const std::string getChannelName() const               {
 		return _channelName;
 	}
-	const map<string, string>& getProperties() const  {
+	const std::map<std::string, std::string> getProperties() const  {
 		return _properties;
 	}
-	const bool hasProperty(const string& key) const   {
+	const bool hasProperty(const std::string& key) const   {
 		return _properties.find(key) != _properties.end();
 	}
-	const string getProperty(const string& key) const {
-		std::map<string, string>::const_iterator iter = _properties.find(key);
+	const std::string getProperty(const std::string& key) const {
+		std::map<std::string, std::string>::const_iterator iter = _properties.find(key);
 		if (iter != _properties.end())
 			return iter->second;
 		return "";
 	}
-	void setProperty(const string& key, const string& value)   {
+	void setProperty(const std::string& key, const std::string& value)   {
 		_properties[key] = value;
 	}
 
@@ -84,9 +84,9 @@ protected:
 
 	Message* toMessage() const;
 
-	string _svcName;
-	string _channelName;
-	std::map<string, string> _properties;
+	std::string _svcName;
+	std::string _channelName;
+	std::map<std::string, std::string> _properties;
 	ServiceManager* _svcManager;
 
 	friend class ServiceManager;
@@ -99,9 +99,9 @@ protected:
 class DLLEXPORT ServiceFilter {
 public:
 	struct Rule {
-		string key;
-		string pattern;
-		string value;
+		std::string key;
+		std::string pattern;
+		std::string value;
 		int predicate;
 	};
 
@@ -132,33 +132,33 @@ public:
 	    MASK_MOD        = 0xf000,
 	};
 
-	ServiceFilter(const string&);
+	ServiceFilter(const std::string&);
 	ServiceFilter(Message* msg);
 
 	Message* toMessage() const;
 
-	void addRule(const string& key, const string& value, int pred = OP_EQUALS);
-	void addRule(const string& key, const string& pattern, const string& value, int pred = OP_EQUALS);
+	void addRule(const std::string& key, const std::string& value, int pred = OP_EQUALS);
+	void addRule(const std::string& key, const std::string& pattern, const std::string& value, int pred = OP_EQUALS);
 	void clearRules();
 	bool matches(const ServiceDescription&) const;
 
-	const string& getServiceName() const {
+	const std::string getServiceName() const {
 		return _svcName;
 	}
-	const string& getUUID() const {
+	const std::string getUUID() const {
 		return _uuid;
 	}
 
-	vector<Rule> _rules;
+	std::vector<Rule> _rules;
 
 private:
-	string _uuid;
-	string _svcName;
+	std::string _uuid;
+	std::string _svcName;
 
-	bool isNumeric(const string& test) const;
-	double toNumber(const string& numberString) const;
+	bool isNumeric(const std::string& test) const;
+	double toNumber(const std::string& numberString) const;
 
-	friend class std::map<string, ServiceFilter>;
+	friend class std::map<std::string, ServiceFilter>;
 	friend class ServiceManager;
 };
 
@@ -167,31 +167,31 @@ private:
  */
 class DLLEXPORT ServiceStub : public TypedReceiver, public Connectable {
 public:
-	ServiceStub(const string& channel);
+	ServiceStub(const std::string& channel);
 	ServiceStub(const ServiceDescription& svcDesc);
 	virtual ~ServiceStub();
-	virtual const string& getName();
-	virtual const string& getChannelName();
+	virtual const std::string getName();
+	virtual const std::string getChannelName();
 
 	// Connectable interface
-	virtual std::set<umundo::Publisher> getPublishers();
-	virtual std::set<umundo::Subscriber> getSubscribers();
+	virtual std::map<std::string, Publisher> getPublishers();
+	virtual std::map<std::string, Subscriber> getSubscribers();
 
 	virtual void receive(void* object, Message* msg);
 
-	void callStubMethod(const string&, void*, const string&, void*&, const string&);
+	void callStubMethod(const std::string&, void*, const std::string&, void*&, const std::string&);
 
 protected:
 	ServiceStub() {};
 
 
-	string _channelName;
-	string _serviceName;
+	std::string _channelName;
+	std::string _serviceName;
 	TypedPublisher _rpcPub;
 	TypedSubscriber _rpcSub;
 
-	map<string, Monitor*> _requests;
-	map<string, void*> _responses;
+	std::map<std::string, Monitor*> _requests;
+	std::map<std::string, void*> _responses;
 
 	Mutex _mutex;
 
@@ -209,7 +209,7 @@ public:
 	virtual void receive(void* object, Message* msg);
 
 protected:
-	virtual void callMethod(string& methodName, void* in, string& inType, void*& out, string& outType) = 0;
+	virtual void callMethod(std::string& methodName, void* in, std::string& inType, void*& out, std::string& outType) = 0;
 	/**< Generated classes overwrite this function for demarshalling.
 		@param methodName The method someone is calling on a connected ServiceStub.
 		@param in The argument, only one argument is allowed (Just use a compound object).
@@ -219,7 +219,7 @@ protected:
 		@sa ServiceGeneratorCPP
 	*/
 
-	virtual void cleanUpObjects(string& methodName, void* in, void* out) = 0;
+	virtual void cleanUpObjects(std::string& methodName, void* in, void* out) = 0;
 	/**< Deallocate argument and return value after we sent our rpc reply.
 		@param methodName The method someone is calling on a connected ServiceStub.
 		@param in The argument, only one argument is allowed (Just use a compound object).

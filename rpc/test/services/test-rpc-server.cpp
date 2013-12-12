@@ -8,7 +8,7 @@
 using namespace umundo;
 
 #define BUFFER_SIZE 1024 * 1024
-static string hostId;
+static std::string hostId;
 
 class EchoService : public EchoServiceBase {
 public:
@@ -33,6 +33,9 @@ int main(int argc, char** argv) {
 	Node n;
 	ServiceManager svcMgr;
 
+	Discovery disc(Discovery::MDNS);
+	disc.add(n);
+	
 	// set some random properties to query for
 	ServiceDescription echoSvcDesc;
 	echoSvcDesc.setProperty("host", Host::getHostId());

@@ -43,12 +43,12 @@ public:
 	PBSerializer();
 	virtual ~PBSerializer();
 
-	virtual shared_ptr<Implementation> create();
-	virtual void init(shared_ptr<Configuration>);
+	virtual boost::shared_ptr<Implementation> create();
+	virtual void init(Options*);
 
-	virtual string serialize(const string& type, void* obj);
+	virtual std::string serialize(const std::string& type, void* obj);
 //		virtual string serialize(void* obj);
-	virtual void registerType(const string& type, void* serializer);
+	virtual void registerType(const std::string& type, void* serializer);
 
 	static void addProto(const std::string& dirOrFile);
 	static const google::protobuf::Message* getProto(const std::string& type);
@@ -57,7 +57,7 @@ private:
 	static void addProtoRecurse(const std::string& dirRoot, const std::string& dirOrFile, google::protobuf::compiler::Importer* importer);
 	static bool isDir(const std::string& dirOrFile);
 
-	map<string, MessageLite*> _serializers;
+	std::map<std::string, MessageLite*> _serializers;
 	static std::map<std::string, const google::protobuf::Descriptor*> descs;
 	static std::map<std::string, google::protobuf::compiler::Importer*> descImporters;
 	static DynamicMessageFactory* descFactory;
@@ -72,7 +72,7 @@ class DLLEXPORT PBErrorReporter : public google::protobuf::compiler::MultiFileEr
 public:
 	PBErrorReporter() {}
 	virtual ~PBErrorReporter() {}
-	virtual void AddError(const string & filename, int line, int column, const string & message);
+	virtual void AddError(const std::string & filename, int line, int column, const std::string & message);
 };
 
 

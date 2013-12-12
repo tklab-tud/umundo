@@ -22,19 +22,9 @@
 @implementation UMNode
 
 - (id) init {
-  NSLog(@"Use UMNode::initWithDomain");
-  return nil;
-}
-
-- (id) initWithDomain:(NSString*) domain {
   self = [super init];
   if(self) {
-    if(domain == nil) {
-      return nil;
-    } else {
-      std::string cppDomain([domain cStringUsingEncoding: NSASCIIStringEncoding]);
-      _cppNode = boost::shared_ptr<umundo::Node>(new umundo::Node(cppDomain));
-    }
+		_cppNode = boost::shared_ptr<umundo::Node>(new umundo::Node());
   }
   return self;
 }

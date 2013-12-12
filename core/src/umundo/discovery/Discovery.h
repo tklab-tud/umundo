@@ -30,25 +30,25 @@ class NodeImpl;
 class NodeQuery;
 class Node;
 
-class DLLEXPORT DiscoveryConfig : public Configuration {
-	// at the moment, there is nothing we need to configure
-};
-
 /**
  * Discovery implementor basis class (bridge pattern).
  * \see Discovery
  */
 class DLLEXPORT DiscoveryImpl : public Implementation {
 public:
+	virtual ~DiscoveryImpl() {}
+	
+	virtual void advertise(const EndPoint& node) = 0;
+	virtual void add(Node& node) = 0;
+	virtual void unadvertise(const EndPoint& node) = 0;
+	virtual void remove(Node& node) = 0;
 
-	virtual void add(NodeImpl* node) = 0;
-	virtual void remove(NodeImpl* node) = 0;
+	virtual void browse(ResultSet<EndPoint>* query) = 0;
+	virtual void unbrowse(ResultSet<EndPoint>* query) = 0;
 
-	virtual void browse(shared_ptr<NodeQuery> discovery) = 0;
-	virtual void unbrowse(shared_ptr<NodeQuery> discovery) = 0;
-
+	virtual std::vector<EndPoint> list() = 0;
 };
-
+	
 /**
  * Abstraction of the discovery subsystem (bridge pattern).
  *
@@ -65,41 +65,130 @@ public:
  */
 class DLLEXPORT Discovery {
 public:
+	
+	enum DiscoveryType {
+		MDNS,
+		BROADCAST
+	};
+	
 	/**
 	 * Create a new discovery subsystem.
 	 *
 	 * This will call the Factory to instantiate a new concrete implementor from its registered prototype.
 	 *
 	 */
-	Discovery(); ///< Create a new discovery subsystem
-	~Discovery();
+	Discovery(DiscoveryType, Options* = NULL); ///< Get the discovery subsystem with given type
+	Discovery(DiscoveryType, const std::string domain); ///< Convenience constructor to pass a domain
+	Discovery(boost::shared_ptr<DiscoveryImpl> const impl) : _impl(impl) { }
+	Discovery(const Discovery& other) : _impl(other._impl) { }
+	virtual ~Discovery();
+	operator bool() const {
+		return _impl;
+	}
+	bool operator< (const Discovery& other) const {
+		return _impl < other._impl;
+	}
+	bool operator==(const Discovery& other) const {
+		return _impl == other._impl;
+	}
+	bool operator!=(const Discovery& other) const {
+		return _impl != other._impl;
+	}
+	
+	Discovery& operator=(const Discovery& other) {
+		_impl = other._impl;
+		return *this;
+	} // operator=
 
 	/** @name Node management */
 	//@{
-	static void add(NodeImpl* node);    /**< Add a Node to multicast domain discovery.
+
+	/** Add a Node to multicast domain discovery.
 		@param node Node to be added.
-	*/
-	static void add(Node* node) {
-		add(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+	 */
+	void advertise(const EndPoint& endpoint) {
+		return _impl->advertise(endpoint);
 	}
 
-	static void remove(NodeImpl* node); /**< Remove a Node from multicast domain discovery.
+	void add(Node& node) {
+		return _impl->add(node);
+	}
+
+	/** Remove a Node from multicast domain discovery.
 		@param node Previously added Node to be removed.
-	*/
-	static void remove(Node* node) {
-		remove(boost::static_pointer_cast<NodeImpl>(node->getImpl()).get());
+	 */
+	void unadvertise(const EndPoint& endpoint) {
+		return _impl->unadvertise(endpoint);
+	}
+
+	void remove(Node& node) {
+		return _impl->remove(node);
 	}
 
 	//@}
 
 	/** @name Query for nodes */
 	//@{
-	static void browse(shared_ptr<NodeQuery> query); ///< Add a query for NodeStub%s
-	static void unbrowse(shared_ptr<NodeQuery> query); ///< Remove a query for NodeStub%s
+	
+	/// Add a listener for EndPoint%s
+	void browse(ResultSet<EndPoint>* query) {
+		return _impl->browse(query);
+	}
+	
+	/// Remove a listener for EndPoint%s
+	void unbrowse(ResultSet<EndPoint>* query) {
+		return _impl->unbrowse(query);
+	}
+
+	/// List all currently known EndPoint%s
+	std::vector<EndPoint> list() {
+		return _impl->list();
+	}
 	//@}
 
 protected:
-	shared_ptr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
+	boost::shared_ptr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
+};
+
+	
+class DLLEXPORT MDNSDiscoveryOptions : public Options {
+public:
+	enum Protocol {
+		TCP, UDP
+	};
+	
+	MDNSDiscoveryOptions() {
+		options["mdns.domain"] = "local.";
+		options["mdns.protocol"] = "tcp";
+		options["mdns.serviceType"] = "umundo";
+	}
+	
+	std::string getType() {
+		return "mdns";
+	}
+	
+	void setDomain(const std::string& domain) {
+		options["mdns.domain"] = domain;
+	}
+	
+	void setProtocol(Protocol protocol) {
+		switch (protocol) {
+			case UDP:
+				options["mdns.protocol"] = "udp";
+				break;
+			case TCP:
+				options["mdns.protocol"] = "tcp";
+				break;
+				
+			default:
+				break;
+		}
+	}
+	
+	void setServiceType(const std::string& serviceType) {
+		options["mdns.serviceType"] = serviceType;
+	}
+	
 };
 
 }

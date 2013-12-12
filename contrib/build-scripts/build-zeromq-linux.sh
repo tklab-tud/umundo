@@ -27,19 +27,20 @@ fi
 ./configure \
 CXXFLAGS="-s -fPIC" \
 --prefix=${BUILD_DIR} \
---enable-static \
---disable-eventfd
+--enable-static
+
+mkdir -p ${DEST_DIR}/include 2>&1 > /dev/null
 
 make -j2
 make install
 cp ${BUILD_DIR}/lib/libzmq.a ${DEST_DIR}/lib/libzmq.a
+cp ${BUILD_DIR}/include/* ${DEST_DIR}/include
 
 make clean
 ./configure \
 CXXFLAGS="-g -fPIC" \
 --prefix=${BUILD_DIR} \
---enable-static \
---disable-eventfd
+--enable-static
 
 make -j2
 make install

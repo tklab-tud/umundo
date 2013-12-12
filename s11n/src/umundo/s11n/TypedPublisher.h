@@ -35,8 +35,8 @@ class TypedPublisher;
  */
 class DLLEXPORT TypeSerializerImpl : public Implementation {
 public:
-	virtual string serialize(const string& type, void* obj) = 0;
-	virtual void registerType(const string& type, void* serializer) = 0;
+	virtual std::string serialize(const std::string& type, void* obj) = 0;
+	virtual void registerType(const std::string& type, void* serializer) = 0;
 };
 
 /**
@@ -44,8 +44,8 @@ public:
  */
 class DLLEXPORT TypedGreeter {
 public:
-	virtual void welcome(TypedPublisher atPub, const std::string& nodeId, const std::string& subId) = 0;
-	virtual void farewell(TypedPublisher fromPub, const std::string& nodeId, const std::string& subId) = 0;
+	virtual void welcome(TypedPublisher atPub, const SubscriberStub& sub) = 0;
+	virtual void farewell(TypedPublisher fromPub, const SubscriberStub& sub) = 0;
 };
 
 /**
@@ -60,8 +60,8 @@ private:
 	public:
 		GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
 		virtual ~GreeterWrapper();
-		void welcome(Publisher atPub, const std::string& nodeId, const std::string& subId);
-		void farewell(Publisher fromPub, const std::string& nodeId, const std::string& subId);
+		void welcome(const Publisher& atPub, const SubscriberStub& sub);
+		void farewell(const Publisher& fromPub, const SubscriberStub& sub);
 
 	protected:
 		TypedGreeter* _typedGreeter;
@@ -97,13 +97,13 @@ public:
 		return *this;
 	} // operator=
 
-	Message* prepareMsg(const string&, void* obj);
-	void prepareMsg(Message* msg, const string& type, void* obj);
-	void sendObj(const string& type, void* obj);
-	void registerType(const string& type, void* serializer);
+	Message* prepareMsg(const std::string&, void* obj);
+	void prepareMsg(Message* msg, const std::string& type, void* obj);
+	void sendObj(const std::string& type, void* obj);
+	void registerType(const std::string& type, void* serializer);
 	void setGreeter(TypedGreeter* greeter);
 private:
-	shared_ptr<TypeSerializerImpl> _impl;
+	boost::shared_ptr<TypeSerializerImpl> _impl;
 
 	GreeterWrapper* _greeterWrapper;
 	static TypeSerializerImpl* _registeredPrototype; ///< The instance we registered at the factory

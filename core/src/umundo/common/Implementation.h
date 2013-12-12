@@ -24,10 +24,10 @@
 #include "umundo/common/Common.h"
 
 namespace umundo {
-class Configuration;
+class Options;
 
 /**
- * Abstract base class for concrete implementations (bridge pattern).
+ * Abstract base class for concrete implementations in the Factory.
  *
  * Concrete implementors are registered at program initialization at the Factory and
  * instantiated for every Abstraction that needs an implementation.
@@ -37,7 +37,7 @@ public:
 	Implementation() : _isSuspended(false) {}
 	/** @name Life Cycle Management */
 	//@{
-	virtual void init(shared_ptr<Configuration>) = 0; ///< initialize instance after creation
+	virtual void init(Options*) = 0; ///< initialize instance after creation
 	virtual void suspend() {}; ///< Optional hook to suspend implementations
 	virtual void resume() {}; ///< Optional hook to resume implementations
 	//@}
@@ -46,23 +46,28 @@ protected:
 	bool _isSuspended;
 
 private:
-	virtual shared_ptr<Implementation> create() = 0; ///< Factory method called by the Factory class
+	virtual boost::shared_ptr<Implementation> create() = 0; ///< Factory method called by the Factory class
 	friend class Factory; ///< In C++ friends can see your privates!
 };
 
 /**
- * Abstract base class for configuration of Implementation%s.
+ * Abstract base class for options of Implementation%s.
  *
  * C++ does not allow Implementation::init() to take non-PODs as a variadic function, we need
- * some way to abstract configuration data. We could also pass it to Factory::create(), but I
+ * some way to abstract option data. We could also pass it to Factory::create(), but I
  * like the idea of a dedicated init phase.
- *
- * \todo The Configuration is shared between the Abstraction and the concrete Implementor - we might need a mutex.
  */
-class DLLEXPORT Configuration {
-private:
-	virtual shared_ptr<Configuration> create() = 0;
-	friend class Factory;
+class DLLEXPORT Options {
+public:
+	virtual ~Options() {}
+	virtual std::string getType() = 0;
+	
+	std::map<std::string, std::string> getKVPs() {
+		return options;
+	}
+	
+protected:
+	std::map<std::string, std::string> options;
 };
 }
 

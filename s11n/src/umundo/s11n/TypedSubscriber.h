@@ -39,9 +39,9 @@ class DLLEXPORT TypeDeserializerImpl : public Implementation, public Receiver {
 public:
 	TypeDeserializerImpl() : _recv(NULL) {}
 	virtual ~TypeDeserializerImpl();
-	virtual void* deserialize(const string& type, Message* msg) = 0;
+	virtual void* deserialize(const std::string& type, Message* msg) = 0;
 	virtual void destroyObj(void* obj) = 0;
-	virtual void registerType(const string& type, void* deserializer) = 0;
+	virtual void registerType(const std::string& type, void* deserializer) = 0;
 	void receive(Message* msg);
 
 	virtual void setReceiver(TypedReceiver* recv) {
@@ -84,18 +84,18 @@ public:
 		return *this;
 	} // operator=
 
-	void registerType(const string& type, void* serializer);
+	void registerType(const std::string& type, void* serializer);
 
 	virtual void setReceiver(TypedReceiver* recv) {
 		_impl->setReceiver(recv);
 		Subscriber::setReceiver(_impl.get());
 	}
 
-	virtual string getType(Message* msg);
+	virtual std::string getType(Message* msg);
 	virtual void* deserialize(Message* msg);
 
 private:
-	shared_ptr<TypeDeserializerImpl> _impl;
+	boost::shared_ptr<TypeDeserializerImpl> _impl;
 	static TypeDeserializerImpl* _registeredPrototype; ///< The instance we registered at the factory
 };
 

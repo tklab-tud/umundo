@@ -27,6 +27,7 @@ import java.util.Map;
 import org.umundo.core.Greeter;
 import org.umundo.core.Message;
 import org.umundo.core.Publisher;
+import org.umundo.core.SubscriberStub;
 
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
@@ -46,17 +47,17 @@ public class TypedPublisher extends Publisher {
 	private GreeterDecorator greeterDecorator;
 
 	class GreeterDecorator extends Greeter {
-		public void welcome(Publisher pub, String nodeId, String subId) {
+		@Override
+		public void welcome(Publisher pub, SubscriberStub subStub) {
 			if (TypedPublisher.this.typedGreeter != null) {
-				TypedPublisher.this.typedGreeter.welcome(TypedPublisher.this,
-						nodeId, subId);
+				TypedPublisher.this.typedGreeter.welcome(TypedPublisher.this, subStub);
 			}
 		}
 
-		public void farewell(Publisher pub, String nodeId, String subId) {
+		@Override
+		public void farewell(Publisher pub, SubscriberStub subStub) {
 			if (TypedPublisher.this.typedGreeter != null) {
-				TypedPublisher.this.typedGreeter.farewell(TypedPublisher.this,
-						nodeId, subId);
+				TypedPublisher.this.typedGreeter.farewell(TypedPublisher.this, subStub);
 			}
 		}
 	}

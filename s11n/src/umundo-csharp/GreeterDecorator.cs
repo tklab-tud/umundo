@@ -27,19 +27,19 @@ namespace org.umundo.s11n
         public ITypedGreeter Greeter { get; set; }
         public TypedPublisher TypedPublisher { get; set; }
 
-        public override void welcome(Publisher publisher, string nodeId, string subId)
+        public override void welcome(Publisher publisher, SubscriberStub subStub)
         {
             if (Greeter != null)
             {
-                Greeter.Welcome(TypedPublisher, nodeId, subId);
+                Greeter.Welcome(TypedPublisher, subStub);
             }
         }
 
-        public override void farewell(Publisher publisher, string nodeId, string subId)
+        public override void farewell(Publisher publisher, SubscriberStub subStub)
         {
             if (Greeter != null)
             {
-                Greeter.Farewell(TypedPublisher, nodeId, subId);
+                Greeter.Farewell(TypedPublisher, subStub);
             }
         }
     }

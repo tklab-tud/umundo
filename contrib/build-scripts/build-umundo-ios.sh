@@ -24,7 +24,7 @@ rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 #
 # Build device with older SDK for old architectures
 #
-export IOS_SDK_VERSION=5.1
+#export IOS_SDK_VERSION=5.1
 
 mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug &> /dev/null
 cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug
@@ -47,43 +47,43 @@ make -j2
 #
 # Build device with current SDK
 #
-export IOS_SDK_VERSION=6.1
-
-mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug &> /dev/null
-cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
--DDIST_PREPARE=ON \
--DCMAKE_BUILD_TYPE=Debug \
--DBUILD_CONVENIENCE_LIB=ON
-make -j2
-
-mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
-cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
--DDIST_PREPARE=ON \
--DCMAKE_BUILD_TYPE=Debug \
--DBUILD_CONVENIENCE_LIB=ON
-make -j2
-
-mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release &> /dev/null
-cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
--DDIST_PREPARE=ON \
--DCMAKE_BUILD_TYPE=Release \
--DBUILD_CONVENIENCE_LIB=ON
-make -j2
-
-mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release &> /dev/null
-cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
--DDIST_PREPARE=ON \
--DCMAKE_BUILD_TYPE=Release \
--DBUILD_CONVENIENCE_LIB=ON
-make -j2
+# export IOS_SDK_VERSION=6.1
+# 
+# mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug &> /dev/null
+# cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-debug
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
+# -DDIST_PREPARE=ON \
+# -DCMAKE_BUILD_TYPE=Debug \
+# -DBUILD_CONVENIENCE_LIB=ON
+# make -j2
+# 
+# mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
+# cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
+# -DDIST_PREPARE=ON \
+# -DCMAKE_BUILD_TYPE=Debug \
+# -DBUILD_CONVENIENCE_LIB=ON
+# make -j2
+# 
+# mkdir -p ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release &> /dev/null
+# cd ${BUILD_DIR}/device-${IOS_SDK_VERSION}-release
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
+# -DDIST_PREPARE=ON \
+# -DCMAKE_BUILD_TYPE=Release \
+# -DBUILD_CONVENIENCE_LIB=ON
+# make -j2
+# 
+# mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release &> /dev/null
+# cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
+# -DDIST_PREPARE=ON \
+# -DCMAKE_BUILD_TYPE=Release \
+# -DBUILD_CONVENIENCE_LIB=ON
+# make -j2
 
 #
 # Create universal binary

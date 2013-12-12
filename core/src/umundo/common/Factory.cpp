@@ -26,19 +26,19 @@
 #include "umundo/config.h"
 
 #ifdef DISC_BONJOUR
-#include "umundo/discovery/bonjour/BonjourNodeDiscovery.h"
+#include "umundo/discovery/mdns/bonjour/BonjourDiscovery.h"
 #endif
 
 #ifdef DISC_AVAHI
-#include "umundo/discovery/avahi/AvahiNodeDiscovery.h"
+#include "umundo/discovery/mdns/avahi/AvahiNodeDiscovery.h"
 #endif
 
 #ifdef DISC_BROADCAST
-#include "umundo/discovery/broadcast/BroadcastNodeDiscovery.h"
+#include "umundo/discovery/BroadcastDiscovery.h"
 #endif
 
-#if !(defined DISC_AVAHI || defined DISC_BONJOUR)
-#error "No discovery implementation choosen"
+#if (defined DISC_AVAHI || defined DISC_BONJOUR)
+#include "umundo/discovery/MDNSDiscovery.h"
 #endif
 
 #if !(defined NET_ZEROMQ)
@@ -51,7 +51,7 @@
 
 namespace umundo {
 
-string procUUID;
+std::string procUUID;
 Factory* Factory::_instance = NULL;
 
 Factory* Factory::getInstance() {
@@ -69,7 +69,7 @@ Factory* Factory::getInstance() {
 		Factory::_instance = new Factory();
 		assert(_instance->_prototypes["publisher"] != NULL);
 		assert(_instance->_prototypes["subscriber"] != NULL);
-		assert(_instance->_prototypes["discovery"] != NULL);
+//		assert(_instance->_prototypes["discovery"] != NULL);
 		assert(_instance->_prototypes["node"] != NULL);
 	}
 	return Factory::_instance;
@@ -77,53 +77,41 @@ Factory* Factory::getInstance() {
 
 Factory::Factory() {
 	_prototypes["publisher"] = new ZeroMQPublisher();
-	_configures["publisher"] = new PublisherConfig();
 	_prototypes["subscriber"] = new ZeroMQSubscriber();
-	_configures["subscriber"] = new SubscriberConfig();
 	_prototypes["node"] = new ZeroMQNode();
-	_configures["node"] = new NodeConfig();
+#if (defined DISC_AVAHI || defined DISC_BONJOUR)
+	_prototypes["discovery.mdns"] = new MDNSDiscovery();
+#endif
 #ifdef DISC_BONJOUR
-	_prototypes["discovery"] = new BonjourNodeDiscovery();
+	_prototypes["discovery.mdns.impl"] = new BonjourDiscovery();
 #endif
 #ifdef DISC_AVAHI
-	_prototypes["discovery"] = new AvahiNodeDiscovery();
+	_prototypes["discovery.mdns.impl"] = new AvahiNodeDiscovery();
 #endif
 #ifdef DISC_BROADCAST
-//	_prototypes["discovery"] = new BroadcastNodeDiscovery();
+	_prototypes["discovery.broadcast"] = new BroadcastDiscovery();
 #endif
 }
 
-shared_ptr<Configuration> Factory::config(string name) {
-	Factory* factory = getInstance();
-	ScopeLock lock(factory->_mutex);
-	if (factory->_configures.find(name) == factory->_configures.end()) {
-		UM_LOG_WARN("No configuration registered for %s", name.c_str());
-		return shared_ptr<Configuration>();
-	}
-	shared_ptr<Configuration> config = factory->_configures[name]->create();
-	return config;
-}
-
-shared_ptr<Implementation> Factory::create(string name) {
+boost::shared_ptr<Implementation> Factory::create(const std::string& name) {
 	Factory* factory = getInstance();
 	ScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) == factory->_prototypes.end()) {
 		UM_LOG_WARN("No prototype registered for %s", name.c_str());
-		return shared_ptr<Implementation>();
+		return boost::shared_ptr<Implementation>();
 	}
-	shared_ptr<Implementation> implementation = factory->_prototypes[name]->create();
+	boost::shared_ptr<Implementation> implementation = factory->_prototypes[name]->create();
 	factory->_implementations.push_back(implementation);
 	return implementation;
 }
 
-void Factory::registerPrototype(string name, Implementation* prototype, Configuration* config) {
+void Factory::registerPrototype(const std::string& name, Implementation* prototype) {
 	Factory* factory = getInstance();
 	ScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) != factory->_prototypes.end()) {
 		UM_LOG_WARN("Overwriting existing prototype for %s", name.c_str());
 	}
 	factory->_prototypes[name] = prototype;
-	factory->_configures[name] = config;
 }
 
 /**
@@ -132,9 +120,9 @@ void Factory::registerPrototype(string name, Implementation* prototype, Configur
 void Factory::suspendInstances() {
 	Factory* factory = getInstance();
 	UMUNDO_LOCK(factory->_mutex);
-	vector<weak_ptr<Implementation> >::reverse_iterator implIter = factory->_implementations.rbegin();
+	std::vector<boost::weak_ptr<Implementation> >::reverse_iterator implIter = factory->_implementations.rbegin();
 	while(implIter != factory->_implementations.rend()) {
-		shared_ptr<Implementation> implementation = implIter->lock();
+		boost::shared_ptr<Implementation> implementation = implIter->lock();
 		if (implementation.get() != NULL) {
 			implementation->suspend();
 		} else {
@@ -152,9 +140,9 @@ void Factory::resumeInstances() {
 	return;
 	Factory* factory = getInstance();
 	UMUNDO_LOCK(factory->_mutex);
-	vector<weak_ptr<Implementation> >::iterator implIter = factory->_implementations.begin();
+	std::vector<boost::weak_ptr<Implementation> >::iterator implIter = factory->_implementations.begin();
 	while(implIter != factory->_implementations.end()) {
-		shared_ptr<Implementation> implementation = implIter->lock();
+		boost::shared_ptr<Implementation> implementation = implIter->lock();
 		if (implementation.get() != NULL) {
 			implementation->resume();
 			implIter++;

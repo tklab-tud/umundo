@@ -56,8 +56,8 @@ for file in ${mDNSEmbedded[@]}; do
 	fi
 done
 
-echo ${CC} -shared -o build/prod/libmDNSEmbedded.so $OBJS
-${CC} -shared -o build/prod/libmDNSEmbedded.so $OBJS
+# echo ${CC} -shared -o build/prod/libmDNSEmbedded.so $OBJS
+# ${CC} -shared -o build/prod/libmDNSEmbedded.so $OBJS
 echo ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded.a $OBJS
 
@@ -71,9 +71,19 @@ for file in ${mDNSEmbedded[@]}; do
 	fi
 done
 
-echo ${CC} -g -shared -o build/prod/libmDNSEmbedded_d.so $OBJS
-${CC} -g -shared -o build/prod/libmDNSEmbedded_d.so $OBJS
+# echo ${CC} -g -shared -o build/prod/libmDNSEmbedded_d.so $OBJS
+# ${CC} -g -shared -o build/prod/libmDNSEmbedded_d.so $OBJS
 echo ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 
 cp build/prod/* ${DEST_DIR}/lib
+
+# copy header files
+mkdir -p ${DEST_DIR}/include/bonjour
+cp mDNSShared/CommonServices.h ${DEST_DIR}/include/bonjour
+cp mDNSShared/dns_sd.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/DNSCommon.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/mDNSDebug.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/mDNSEmbeddedAPI.h ${DEST_DIR}/include/bonjour
+cp mDNSPosix/mDNSPosix.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/uDNS.h ${DEST_DIR}/include/bonjour

@@ -31,7 +31,6 @@
 namespace umundo {
 
 TypeDeserializerImpl::~TypeDeserializerImpl() {
-	std::cout << "GONE!" << std::endl;
 }
 
 void TypeDeserializerImpl::receive(Message* msg) {
@@ -47,23 +46,23 @@ void TypeDeserializerImpl::receive(Message* msg) {
 	}
 }
 
-TypedSubscriber::TypedSubscriber(const string& channelName) : Subscriber(channelName) {
+TypedSubscriber::TypedSubscriber(const std::string& channelName) : Subscriber(channelName) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();
 #endif
-		Factory::registerPrototype("typeDeserializer", _registeredPrototype, NULL);
+		Factory::registerPrototype("typeDeserializer", _registeredPrototype);
 	}
 	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
 	assert(_impl != NULL);
 }
 
-TypedSubscriber::TypedSubscriber(const string& channelName, TypedReceiver* recv) : Subscriber(channelName) {
+TypedSubscriber::TypedSubscriber(const std::string& channelName, TypedReceiver* recv) : Subscriber(channelName) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();
 #endif
-		Factory::registerPrototype("typeDeserializer", _registeredPrototype, NULL);
+		Factory::registerPrototype("typeDeserializer", _registeredPrototype);
 	}
 	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
 	_impl->setReceiver(recv);
@@ -73,14 +72,17 @@ TypedSubscriber::TypedSubscriber(const string& channelName, TypedReceiver* recv)
 TypeDeserializerImpl* TypedSubscriber::_registeredPrototype = NULL;
 
 TypedSubscriber::~TypedSubscriber() {
-//  Subscriber::setReceiver(NULL);
+	// TODO: Copying will unset received, but destroying will segfault otherwise - we need ref counting
+	if (Subscriber::_impl.use_count() <= 2) { // oh my, what a hack
+		Subscriber::setReceiver(NULL);
+	}
 }
 
-void TypedSubscriber::registerType(const string& type, void* deserializer) {
+void TypedSubscriber::registerType(const std::string& type, void* deserializer) {
 	_impl->registerType(type, deserializer);
 }
 
-string TypedSubscriber::getType(Message* msg) {
+std::string TypedSubscriber::getType(Message* msg) {
 	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
 		return msg->getMeta("um.s11n.type");
 	}

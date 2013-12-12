@@ -199,7 +199,6 @@ class FooTracer : public Traceable, public Thread {
 	void retrace(const std::string& msg, std::map<std::string, std::string> info) {
 	};
 
-
 };
 
 bool testTracing() {

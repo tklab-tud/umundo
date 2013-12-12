@@ -40,8 +40,8 @@ public:
 	void removeService(Service*);
 
 	// Connectable interface
-	std::set<umundo::Publisher> getPublishers();
-	std::set<umundo::Subscriber> getSubscribers();
+	std::map<std::string, Publisher> getPublishers();
+	std::map<std::string, Subscriber> getSubscribers();
 	void addedToNode(Node& node);
 	void removedFromNode(Node& node);
 	std::set<Node> getNodes() {
@@ -49,8 +49,8 @@ public:
 	}
 
 	// Greeter Interface
-	void welcome(Publisher, const string& nodeId, const string& subId);
-	void farewell(Publisher, const string& nodeId, const string& subId);
+	void welcome(const Publisher&, const SubscriberStub&);
+	void farewell(const Publisher&, const SubscriberStub&);
 
 	void receive(Message* msg);
 
@@ -60,20 +60,20 @@ public:
 	void startQuery(const ServiceFilter&, ResultSet<ServiceDescription>*);
 	void stopQuery(const ServiceFilter&);
 
-	map<string, Monitor*> _findRequests;
-	map<string, Message*> _findResponses;
-	map<intptr_t, Service*> _svc; ///< Instances of local services
-	map<intptr_t, ServiceDescription> _localSvcDesc; ///< Descriptions of local services
-	map<ServiceFilter, ResultSet<ServiceDescription>*> _localQueries; ///< filters for local continuous service queries
+	std::map<std::string, Monitor*> _findRequests;
+	std::map<std::string, Message*> _findResponses;
+	std::map<intptr_t, Service*> _svc; ///< Instances of local services
+	std::map<intptr_t, ServiceDescription> _localSvcDesc; ///< Descriptions of local services
+	std::map<ServiceFilter, ResultSet<ServiceDescription>*> _localQueries; ///< filters for local continuous service queries
 
 	std::set<Node> _nodes; ///< all the nodes we were added to
-	std::map<string, ServiceFilter> _remoteQueries; ///< UUID to remote continuous query
-	map<string, map<string, ServiceDescription> > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
+	std::map<std::string, ServiceFilter> _remoteQueries; ///< UUID to remote continuous query
+	std::map<std::string, std::map<std::string, ServiceDescription> > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
 	Mutex _mutex;
 
-	map<string, std::list<std::pair<uint64_t, Message*> > > _pendingMessages;
+	std::map<std::string, std::list<std::pair<uint64_t, Message*> > > _pendingMessages;
 };
 
 }

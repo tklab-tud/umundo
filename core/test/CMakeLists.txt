@@ -40,23 +40,8 @@ add_test(test-stack-api ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-greeter)
 set_target_properties(test-core-greeter PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-core-greeter)
 
-# add_executable(test-zeromq-layout test-zeromq-layout.cpp)
-# target_link_libraries(test-zeromq-layout ${UMUNDOCORE_LIBRARIES})
-# set_target_properties(test-zeromq-layout PROPERTIES FOLDER "Tests")
-# add_dependencies(ALL_TESTS test-zeromq-layout)
-
-add_executable(test-zeromq-server test-zeromq-server.cpp)
-target_link_libraries(test-zeromq-server ${UMUNDOCORE_LIBRARIES} umundocore)
-set_target_properties(test-zeromq-server PROPERTIES FOLDER "Tests")
-add_dependencies(ALL_TESTS test-zeromq-server)
-
-add_executable(test-zeromq-client test-zeromq-client.cpp)
-target_link_libraries(test-zeromq-client ${UMUNDOCORE_LIBRARIES} umundocore)
-set_target_properties(test-zeromq-client PROPERTIES FOLDER "Tests")
-add_dependencies(ALL_TESTS test-zeromq-client)
-
 add_executable(test-zeromq-nodecomm test-zeromq-nodecomm.cpp)
-target_link_libraries(test-zeromq-nodecomm ${UMUNDOCORE_LIBRARIES})
+target_link_libraries(test-zeromq-nodecomm ${UMUNDOCORE_LIBRARIES} umundocore)
 set_target_properties(test-zeromq-nodecomm PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-zeromq-nodecomm)
 

@@ -41,9 +41,11 @@ void RTPSubscriber::resume() {
 }
 
 void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
+	UM_LOG_DEBUG("%s: received a new publisher", SHORT_UUID(_uuid).c_str());
 }
 
 void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
+	UM_LOG_DEBUG("%s: lost a publisher", SHORT_UUID(_uuid).c_str());
 }
 
 void RTPSubscriber::setReceiver(Receiver* receiver) {

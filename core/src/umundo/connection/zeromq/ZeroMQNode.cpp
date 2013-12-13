@@ -138,9 +138,12 @@ ZeroMQNode::~ZeroMQNode() {
 	// delete all connection information
 	while(_connTo.size() > 0) {
 		NodeStub node = _connTo.begin()->second->node;
-		assert(node);
-		removed(node);
-		processOpComm();
+		if(node) {
+			removed(node);
+			processOpComm();
+		} else {
+			_connTo.erase(_connTo.begin());
+		}
 	}
 
 	std::map<std::string, NodeConnection*>::iterator connIter = _connFrom.begin();
@@ -547,11 +550,12 @@ void ZeroMQNode::processNodeComm() {
 					_subscriptions[subUUID].subStub = SubscriberStub(boost::shared_ptr<SubscriberStubImpl>(new SubscriberStubImpl()));
 					_subscriptions[subUUID].subStub.getImpl()->setChannelName(subChannelName);
 					_subscriptions[subUUID].subStub.getImpl()->setUUID(subUUID);
+					_subscriptions[subUUID].subStub.getImpl()->implType = subType;
 				}
 				_subscriptions[subUUID].nodeUUID = from;
 				_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
-				if (_subscriptions[subUUID].isZMQConfirmed)
+				if (_subscriptions[subUUID].isZMQConfirmed || subType != Subscriber::ZEROMQ)
 					confirmSub(subUUID);
 			} else {
 				// remove a subscription
@@ -1090,7 +1094,11 @@ void ZeroMQNode::confirmSub(const std::string& subUUID) {
 	if (_subscriptions.find(subUUID) == _subscriptions.end())
 		return;
 
-	if (!_subscriptions[subUUID].subStub || !_subscriptions[subUUID].isZMQConfirmed)
+	if (!_subscriptions[subUUID].subStub)
+		return;
+	
+	if (_subscriptions[subUUID].subStub.getImpl()->implType == Subscriber::ZEROMQ &&
+			!_subscriptions[subUUID].isZMQConfirmed)
 		return;
 
 	Subscription& pendSub = _subscriptions[subUUID];
@@ -1188,6 +1196,7 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID,
 	pubStub.getImpl()->setRemote(nodeStub.isRemote());
 	pubStub.getImpl()->setIP(nodeStub.getIP());
 	pubStub.getImpl()->setTransport(nodeStub.getTransport());
+	pubStub.getImpl()->implType = type;
 
 	nodeStub.getImpl()->addPublisher(pubStub);
 

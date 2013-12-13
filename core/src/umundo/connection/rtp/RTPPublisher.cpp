@@ -45,9 +45,11 @@ int RTPPublisher::waitForSubscribers(int count, int timeoutMs) {
 }
 
 void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
+	UM_LOG_DEBUG("%s: received a new subscriber", SHORT_UUID(_uuid).c_str());
 }
 
 void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
+	UM_LOG_DEBUG("%s: lost a subscriber", SHORT_UUID(_uuid).c_str());
 }
 
 void RTPPublisher::send(Message* msg) {

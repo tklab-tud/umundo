@@ -13,41 +13,41 @@ class NodeQuery;
 class BroadcastDiscoveryOptions : public Options {
 public:
 	enum Protocol {
-		TCP, UDP
+	    TCP, UDP
 	};
-	
+
 	BroadcastDiscoveryOptions() {
 		options["broadcast.domain"] = "local.";
 		options["broadcast.protocol"] = "tcp";
 		options["broadcast.serviceType"] = "umundo";
 	}
-	
+
 	std::string getType() {
 		return "broadcast";
 	}
-	
+
 	void setDomain(const std::string& domain) {
 		options["broadcast.domain"] = domain;
 	}
-	
+
 	void setProtocol(Protocol protocol) {
 		switch (protocol) {
-			case UDP:
-				options["broadcast.protocol"] = "udp";
-				break;
-			case TCP:
-				options["broadcast.protocol"] = "tcp";
-				break;
-				
-			default:
-				break;
+		case UDP:
+			options["broadcast.protocol"] = "udp";
+			break;
+		case TCP:
+			options["broadcast.protocol"] = "tcp";
+			break;
+
+		default:
+			break;
 		}
 	}
-	
+
 	void setServiceType(const std::string& serviceType) {
 		options["broadcast.serviceType"] = serviceType;
 	}
-	
+
 };
 
 /**

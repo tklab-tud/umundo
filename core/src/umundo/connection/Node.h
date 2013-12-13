@@ -55,7 +55,7 @@ public:
 
 	virtual std::map<std::string, NodeStub> connectedFrom() = 0;
 	virtual std::map<std::string, NodeStub> connectedTo() = 0;
-	
+
 	virtual std::map<std::string, Subscriber> getSubscribers() {
 		return _subs;
 	}
@@ -133,7 +133,7 @@ public:
 	void removePublisher(Publisher pub) {
 		return _impl->removePublisher(pub);
 	}
-	
+
 	std::map<std::string, NodeStub> connectedTo() {
 		return _impl->connectedTo();
 	}
@@ -191,7 +191,7 @@ public:
 
 protected:
 	void init();
-	
+
 	boost::shared_ptr<NodeImpl> _impl;
 
 	friend class Discovery;
@@ -219,13 +219,13 @@ public:
 	virtual void removedFromNode(Node& node) {
 	}
 };
-	
+
 class DLLEXPORT NodeOptions : public Options {
 public:
 	enum Protocol {
-		TCP, UDP
+	    TCP, UDP
 	};
-	
+
 	NodeOptions(uint16_t nodePort, uint16_t pubPort) {
 		setNodePort(nodePort);
 		setPubPort(pubPort);
@@ -235,19 +235,19 @@ public:
 	NodeOptions() {
 		options["node.allowLocal"] = toStr(false);
 	}
-	
+
 	std::string getType() {
 		return "NodeConfig";
 	}
-	
+
 	void setPubPort(uint16_t pubPort) {
 		options["node.port.pub"] = toStr(pubPort);
 	}
-	
+
 	void setNodePort(uint16_t nodePort) {
 		options["node.port.node"] = toStr(nodePort);
 	}
-	
+
 	void allowLocalConnections(bool allow) {
 		options["node.allowLocal"] = toStr(allow);
 	}

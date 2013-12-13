@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
 		printUsageAndExit();
 
 	Discovery disc(Discovery::MDNS, domain);
-	
+
 	Node node;
 	TypedPublisher pub(channel);
 	TypedSubscriber sub(channel);

@@ -6,20 +6,20 @@ using namespace umundo;
 
 bool testNodeConnections() {
 	int iterations = 10;
-	
+
 	// simple connection from node to node
 	while (iterations--) {
 		Node* node1 = new Node();
 		Node* node2 = new Node();
-		
+
 		// connect both nodes and make sure they know each other
 		node1->added(*node2);
 		node2->added(*node1);
-		
+
 		usleep(100000);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
 		std::map<std::string, NodeStub> peers2 = node2->connectedTo();
-		
+
 		assert(peers1.size() == 1);
 		assert(peers1.find(node2->getUUID()) != peers1.end());
 		assert(peers1.begin()->second.getUUID() == node2->getUUID());
@@ -35,32 +35,32 @@ bool testNodeConnections() {
 
 		peers2 = node2->connectedTo();
 		assert(peers2.size() == 0);
-		
+
 		delete node2;
 	}
-	
+
 	// half connection with one node connected to the other one
 	iterations = 10;
 	while (iterations--) {
 		Node* node1 = new Node();
 		Node* node2 = new Node();
-		
+
 		// connect both nodes and make sure they know each other
 		node1->added(*node2);
-		
+
 		usleep(100000);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
 		std::map<std::string, NodeStub> peers2 = node2->connectedFrom();
-		
+
 		assert(peers1.size() == 1);
 		assert(peers1.find(node2->getUUID()) != peers1.end());
 		assert(peers1.begin()->second.getUUID() == node2->getUUID());
 		assert(peers1.begin()->second.getAddress() == node2->getAddress());
-		
+
 		assert(peers2.size() == 1);
 		assert(peers2.find(node1->getUUID()) != peers2.end());
 		assert(peers2.begin()->second.getUUID() == node1->getUUID());
-		
+
 
 		// add other node just now
 		node2->added(*node1);
@@ -70,7 +70,7 @@ bool testNodeConnections() {
 		assert(peers1.find(node2->getUUID()) != peers1.end());
 		assert(peers1.begin()->second.getUUID() == node2->getUUID());
 		assert(peers1.begin()->second.getAddress() == node2->getAddress());
-		
+
 		assert(peers2.size() == 1);
 		assert(peers2.find(node1->getUUID()) != peers2.end());
 		assert(peers2.begin()->second.getUUID() == node1->getUUID());
@@ -87,23 +87,23 @@ bool testGeneralStuff() {
 	Node* node1 = new Node();
 	int iterations = 10;
 	while (iterations--) {
-		
+
 		Publisher pub1("channel1");
 		Publisher pub2("channel2");
 		Subscriber sub1("channel1");
 		Node* node2 = new Node();
-		
+
 		assert(node2->getUUID().length() == 36);
 		assert(node2->getTransport() == "tcp");
 		assert(node2->getIP() == "127.0.0.1");
 //		assert(node2->getPort() == 20001);
-		
+
 		node2->addPublisher(pub1);
 		usleep(10000);
 
 		Publisher pub = node2->getPublisher(pub1.getUUID());
 		assert(pub == pub1);
-		
+
 		node1->added(*node2);
 		usleep(100000);
 
@@ -116,11 +116,11 @@ bool testGeneralStuff() {
 		assert(peers.begin()->second.getTransport() == node2->getTransport());
 		assert(peers.begin()->second.getIP() == node2->getIP());
 		assert(peers.begin()->second.getPort() == node2->getPort());
-		
+
 		pubs = peers.begin()->second.getPublishers();
 		assert(pubs.size() == 1);
 		assert(pubs.begin()->second.getUUID() == pub1.getUUID());
-		
+
 		// node2 knows node1 as an unqualified peer
 		peers = node2->connectedFrom();
 		assert(peers.size() == 1);
@@ -136,7 +136,7 @@ bool testGeneralStuff() {
 		std::map<std::string, PublisherStub> otherPubs = sub1.getPublishers();
 		assert(otherPubs.size() == 1);
 		assert(otherPubs.find(pub1.getUUID()) != otherPubs.end());
-		
+
 		// assert that we can send and receive
 		pub1.send("asdf", 4);
 		usleep(10000);
@@ -145,7 +145,7 @@ bool testGeneralStuff() {
 		assert(msg->size() == 4);
 		assert(strcmp(msg->data(), "asdf") == 0);
 		delete msg;
-		
+
 		node1->removeSubscriber(sub1);
 		usleep(10000);
 		otherPubs = sub1.getPublishers();
@@ -159,7 +159,7 @@ bool testGeneralStuff() {
 		assert(pubs.size() == 2);
 		assert(pubs.find(pub1.getUUID()) != pubs.end());
 		assert(pubs.find(pub2.getUUID()) != pubs.end());
-		
+
 		node2->removePublisher(pub1);
 		usleep(10000);
 
@@ -170,7 +170,7 @@ bool testGeneralStuff() {
 		// now connect the other way around
 		node2->added(*node1);
 		usleep(10000);
-		
+
 		// both nodes know each other fully qualified now
 		peers = node1->connectedTo();
 		assert(peers.size() == 1);

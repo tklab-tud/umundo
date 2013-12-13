@@ -99,7 +99,7 @@ protected:
 
 	std::map<std::string, std::string> _mandatoryMeta;
 	std::map<std::string, SubscriberStub> _subs;
-	
+
 	Greeter* _greeter;
 	friend class Publisher;
 
@@ -112,9 +112,17 @@ protected:
  */
 class DLLEXPORT Publisher : public PublisherStub {
 public:
+	enum PublisherType {
+	    // these have to fit the subscriber types!
+	    ZEROMQ = 0x0001,
+	    RTP    = 0x0002
+	};
+
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);
+	Publisher(PublisherType type, const std::string& channelName);
+	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter);
 	Publisher(const boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
 	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
@@ -159,11 +167,11 @@ public:
 	bool isPublishingTo(const std::string& subUUID) {
 		return _impl->isPublishingTo(subUUID);
 	}
-	
+
 	std::map<std::string, SubscriberStub> getSubscribers() {
 		return _impl->getSubscribers();
 	}
-	
+
 	void suspend() {
 		return _impl->suspend();
 	}
@@ -179,26 +187,12 @@ public:
 	}
 
 protected:
+	void init(PublisherType type, const std::string& channelName, Greeter* greeter);
+
 	boost::shared_ptr<PublisherImpl> _impl;
 	boost::shared_ptr<PublisherConfig> _config;
 	friend class Node;
 };
-
-#if 0
-std::ostream & operator<<(std::ostream &os, const Publisher& pub) {
-	os << "Publisher:" << std::endl;
-	os << "\tpublishing to: ";
-	std::set<string> subIds = pub.getSubscriberUUIDs();
-	std::set<string>::iterator subIdIter = subIds.begin();
-	while(subIdIter != subIds.end()) {
-		os << *subIdIter << ", ";
-		subIdIter++;
-	}
-	os << std::endl;
-	os << static_cast<PublisherStub>(pub);
-	return os;
-}
-#endif
 
 }
 

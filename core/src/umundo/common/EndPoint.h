@@ -34,7 +34,7 @@ public:
 		_isRemote(true),
 		_isInProcess(false),
 		_lastSeen(Thread::getTimeStampMs()) {}
-	
+
 	virtual ~EndPointImpl() {}
 
 	virtual const std::string getAddress() const            {
@@ -92,6 +92,8 @@ public:
 		_lastSeen = Thread::getTimeStampMs();
 	}
 
+	uint16_t implType; // this ought to be in the Implementation class. but class hierarchy won't fit
+
 protected:
 	std::string _ip;
 	std::string _transport;
@@ -119,34 +121,34 @@ public:
 			UM_LOG_ERR("Endpoint address '%s' invalid", address.c_str());
 			return;
 		}
-		
+
 		std::string transport = address.substr(0,3);
 		std::string ip = address.substr(6, colonPos - 6);
 		std::string port = address.substr(colonPos + 1, address.length() - colonPos + 1);
-		
+
 		if (transport != "tcp" && transport != "udp") {
 			UM_LOG_ERR("Endpoint transport '%s' invalid", transport.c_str());
 			return;
 		}
-		
+
 		if (!isNumeric(port.c_str(), 10) ||
-				port.find("-") != std::string::npos ||
-				port.find(".") != std::string::npos) {
+		        port.find("-") != std::string::npos ||
+		        port.find(".") != std::string::npos) {
 			UM_LOG_ERR("Endpoint port '%s' invalid", port.c_str());
 			return;
 		}
-		
+
 		_impl = boost::shared_ptr<EndPointImpl>(new EndPointImpl());
 		_impl->setTransport(transport);
 		_impl->setIP(ip);
 		_impl->setPort(strTo<uint16_t>(port));
 	}
-	
+
 	EndPoint() : _impl() { }
 	EndPoint(boost::shared_ptr<EndPointImpl> const impl) : _impl(impl) { }
 	EndPoint(const EndPoint& other) : _impl(other._impl) { }
 	virtual ~EndPoint() { }
-	
+
 	operator bool() const {
 		return _impl;
 	}
@@ -160,7 +162,7 @@ public:
 		return _impl < other._impl;
 	}
 
-	
+
 	EndPoint& operator=(const EndPoint& other) {
 		_impl = other._impl;
 		return *this;
@@ -197,7 +199,7 @@ public:
 	virtual void updateLastSeen() {
 		return _impl->updateLastSeen();
 	}
-	
+
 	boost::shared_ptr<EndPointImpl> getImpl() const {
 		return _impl;
 	}

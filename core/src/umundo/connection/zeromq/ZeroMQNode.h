@@ -54,14 +54,6 @@ zmq_msg_init(&msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno)); \
 zmq_msg_init_size (&msg, size + 1) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno)); \
 memcpy(zmq_msg_data(&msg), data, size + 1);
 
-/// Size of a publisher info on wire
-#define PUB_INFO_SIZE(pub) \
-pub.getChannelName().length() + 1 + pub.getUUID().length() + 1 + 2
-
-/// Size of a subcriber info on wire
-#define SUB_INFO_SIZE(sub) \
-sub.getChannelName().length() + 1 + sub.getUUID().length() + 1
-
 /// send a message to break a zmq_poll and alter some socket
 #define ZMQ_INTERNAL_SEND(command, parameter) \
 zmq_msg_t socketOp; \
@@ -83,7 +75,7 @@ class NodeQuery;
 /**
  * Concrete node implementor for 0MQ (bridge pattern).
  */
-	class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public boost::enable_shared_from_this<ZeroMQNode> {
+class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public boost::enable_shared_from_this<ZeroMQNode> {
 public:
 
 	virtual ~ZeroMQNode();
@@ -123,10 +115,10 @@ protected:
 		NodeConnection();
 		NodeConnection(const std::string& _address, const std::string& thisUUID);
 		virtual ~NodeConnection();
-		
+
 		bool connectedTo; ///< are we connected to this node?
 		bool connectedFrom; ///< are we connected from this node?
-		
+
 		void* socket; ///< when connect to, the connection to the remote node socket
 		std::string socketId; ///< the nodes uuid
 		std::string address; ///< when connect to, the address of the remote node socket
@@ -134,13 +126,13 @@ protected:
 		NodeStub node; /// always a representation about the remote node
 		int refCount; ///< when connect to, how many times this address was added as an endpoint
 		bool isConfirmed; ///< when connect to, whether we received any node info reply
-		
+
 	};
-	
+
 	class Subscription {
 	public:
 		Subscription();
-		
+
 		bool isZMQConfirmed; ///< Whether we have seen this subscriber on the XPUB socket
 		std::string nodeUUID; ///< the remote node uuid
 		SubscriberStub subStub; ///< local representation of remote subscriber
@@ -152,21 +144,21 @@ protected:
 	ZeroMQNode();
 
 	std::map<std::string, std::string> _options;
-	
+
 	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
 	std::map<std::string, NodeConnection*> _connFrom; ///< other node uuids connected to us have seen
 	std::map<std::string, NodeConnection*> _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
 	std::map<std::string, NodeConnection*> _connPending;
-		
+
 	std::map<std::string, Subscription> _subscriptions;
-	
+
 	Mutex _mutex;
 	uint64_t _lastNodeInfoBroadCast;
 	uint64_t _lastDeadNodeRemoval;
 	bool _allowLocalConns;
-	
+
 	zmq_pollitem_t sockets[4]; // standard sockets to poll for this node
-	
+
 	void* _nodeSocket; ///< global node socket for off-band communication
 	void* _pubSocket; ///< node-global publisher to wrap added publishers
 	void* _writeOpSocket; ///< node-internal communication pair to guard zeromq operations from threads
@@ -181,16 +173,16 @@ protected:
 	void sendSubRemoved(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void sendSubAdded(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void confirmSub(const std::string& subUUID);
-	void processRemotePubAdded(char* nodeUUID, uint16_t port, char* channelName, char* pubUUID);
-	void processRemotePubRemoved(char* nodeUUID, uint16_t port, char* channelName, char* pubUUID);
+	void processRemotePubAdded(char* nodeUUID, uint16_t port, uint16_t type, char* channelName, char* pubUUID);
+	void processRemotePubRemoved(char* nodeUUID, uint16_t port, uint16_t type, char* channelName, char* pubUUID);
 	//@}
 
 	/** @name Read / Write to raw byte arrays */
 	//@{
 	char* writePubInfo(char* buffer, const PublisherStub& pub);
-	char* readPubInfo(char* buffer, uint16_t& port, char*& channelName, char*& uuid);
+	char* readPubInfo(char* buffer, uint16_t& type, uint16_t& port, char*& channelName, char*& uuid);
 	char* writeSubInfo(char* buffer, const Subscriber& sub);
-	char* readSubInfo(char* buffer, char*& channelName, char*& uuid);
+	char* readSubInfo(char* buffer, uint16_t& type, char*& channelName, char*& uuid);
 	char* writeVersionAndType(char* buffer, Message::Type type);
 	char* readVersionAndType(char* buffer, uint16_t& version, umundo::Message::Type& type);
 	char* writeString(char* buffer, const char* content, size_t length);
@@ -206,10 +198,10 @@ protected:
 	void processClientComm(NodeConnection* client);
 	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
-	
+
 	void processConnectedFrom(const std::string& uuid);
 	void processConnectedTo(const std::string& uuid, NodeConnection* client);
-	
+
 	void broadCastNodeInfo(uint64_t now);
 	void removeStaleNodes(uint64_t now);
 

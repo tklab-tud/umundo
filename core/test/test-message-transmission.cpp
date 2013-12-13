@@ -52,7 +52,7 @@ bool testMessageTransmission() {
 
 		subNode.added(pubNode);
 		pubNode.added(subNode);
-		
+
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
 

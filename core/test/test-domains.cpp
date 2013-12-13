@@ -37,7 +37,7 @@ void testDifferentDomain() {
 
 	fooDisc.add(fooNode);
 	barDisc.add(barNode);
-	
+
 	// this will leak memory as none deletes the receiver
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
@@ -59,7 +59,7 @@ void testSameDomain() {
 
 	foo1Disc.add(fooNode);
 	foo2Disc.add(barNode);
-	
+
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
 
@@ -69,7 +69,7 @@ void testSameDomain() {
 }
 
 void testDomainReception() {
-	
+
 	Discovery fooDisc(Discovery::MDNS, "foo.local.");
 	Discovery barDisc(Discovery::MDNS, "bar.local.");
 
@@ -81,7 +81,7 @@ void testDomainReception() {
 	fooDisc.add(fooNode1);
 	fooDisc.add(fooNode2);
 	barDisc.add(barNode);
-	
+
 	Subscriber sub("test1", new TestReceiver("test1"));
 	Publisher pub("test1");
 

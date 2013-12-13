@@ -337,11 +337,11 @@ std::map<std::string, Subscriber> ServiceStub::getSubscribers() {
 	return subs;
 }
 
-	const std::string ServiceStub::getChannelName() {
+const std::string ServiceStub::getChannelName() {
 	return _channelName;
 }
 
-	const std::string ServiceStub::getName() {
+const std::string ServiceStub::getName() {
 	return _serviceName;
 }
 

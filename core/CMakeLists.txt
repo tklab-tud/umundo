@@ -59,6 +59,15 @@ if(NET_ZEROMQ)
 endif()
 
 ###########################################
+# RTP
+###########################################
+
+if(NET_RTP)
+	file(GLOB_RECURSE NET_RTP_FILES src/umundo/connection/rtp/*.cpp)
+	list(APPEND UMUNDOCORE_FILES ${NET_RTP_FILES})
+endif()
+
+###########################################
 # PCRE
 ###########################################
 

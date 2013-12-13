@@ -1,7 +1,7 @@
 /**
  *  @file
- *  @brief      Subscriber implementation with 0MQ.
- *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @author     2013 Thilo Molitor (thilo@eightysoft.de)
+ *  @author     2013 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
  *  @copyright  Simplified BSD
  *
  *  @cond
@@ -18,12 +18,11 @@
  *  @endcond
  */
 
+#ifndef RTPSUBSCRIBER_H_HQPJWLQR
+#define RTPSUBSCRIBER_H_HQPJWLQR
 
-#ifndef ZEROMQSUBSCRIBER_H_6DV3QJUH
-#define ZEROMQSUBSCRIBER_H_6DV3QJUH
-
+#include "umundo/config.h"
 #include "umundo/common/Common.h"
-#include "umundo/common/ResultSet.h"
 #include "umundo/connection/Subscriber.h"
 
 namespace umundo {
@@ -31,14 +30,11 @@ namespace umundo {
 class PublisherStub;
 class NodeStub;
 
-/**
- * Concrete subscriber implementor for 0MQ (bridge pattern).
- */
-class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl, public Thread {
+class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread {
 public:
 	boost::shared_ptr<Implementation> create();
 	void init(Options*);
-	virtual ~ZeroMQSubscriber();
+	virtual ~RTPSubscriber();
 	void suspend();
 	void resume();
 
@@ -53,20 +49,15 @@ public:
 	void run();
 
 protected:
-	ZeroMQSubscriber();
-
-	void* _subSocket;
-	void* _readOpSocket;
-	void* _writeOpSocket;
-	std::multimap<std::string, std::string> _domainPubs;
-	Mutex _mutex;
+	RTPSubscriber();
 
 private:
 
-	boost::shared_ptr<umundo::SubscriberConfig> _config;
 	friend class Factory;
+
 };
 
 }
 
-#endif /* end of include guard: ZEROMQSUBSCRIBER_H_6DV3QJUH */
+
+#endif /* end of include guard: RTPSUBSCRIBER_H_HQPJWLQR */

@@ -61,11 +61,11 @@ class DLLEXPORT Options {
 public:
 	virtual ~Options() {}
 	virtual std::string getType() = 0;
-	
+
 	std::map<std::string, std::string> getKVPs() {
 		return options;
 	}
-	
+
 protected:
 	std::map<std::string, std::string> options;
 };

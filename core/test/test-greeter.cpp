@@ -25,7 +25,7 @@ bool testGreeter() {
 
 	node1.added(node2);
 	node2.added(node1);
-	
+
 	Subscriber sub1("f");
 	node2.addSubscriber(sub1);
 

@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 
 	Discovery disc(Discovery::MDNS);
 	disc.add(n);
-	
+
 	// set some random properties to query for
 	ServiceDescription echoSvcDesc;
 	echoSvcDesc.setProperty("host", Host::getHostId());

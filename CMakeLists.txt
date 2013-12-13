@@ -50,6 +50,9 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 endif()
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+  set(CMAKE_SYSTEM_PROCESSOR "i686")
+endif()
 
 # use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -503,6 +506,7 @@ else()
 		OPTION(DISC_BONJOUR_EMBED "Embed mDNS discovery service" OFF)
 	endif()
 endif()
+OPTION(NET_RTP "Allow pub/sub via RTP" ON)
 
 # CMake does not allow explicit dependencies
 if (DISC_BONJOUR_EMBED AND NOT DISC_BONJOUR)

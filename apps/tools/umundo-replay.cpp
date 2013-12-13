@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 	if (domain.length() > 0)
 		mdnsOpts.setDomain(domain);
 	Discovery disc(Discovery::MDNS, &mdnsOpts);
-	
+
 	Node node;
 	disc.add(node);
 
@@ -119,76 +119,76 @@ int main(int argc, char** argv) {
 	}
 
 	node.addPublisher(pub);
-	
+
 	if (minSubs) {
 		if (verbose)
 			std::cout << "Waiting for " << minSubs << " subscribers" << std::endl;
 		pub.waitForSubscribers(minSubs);
 	}
-		
+
 	if (verbose)
 		std::cout << "Writing packets to channel '" << channel << "'" << std::endl;
 
-  do {
-    startedAt = Thread::getTimeStampMs();
-    fseek(fp, 0, 0);
-    
-  	while(true) {
-  		uint64_t msgSize;
-  		size_t read = 0;
-  		read = fread(&msgSize, sizeof(uint64_t), 1, fp);
-  		if (!read)
-  			break;
-		
-  		char* buffer = new char[msgSize];
-  		char* readPos = buffer;
-  		read = fread(buffer, msgSize, 1, fp);
-  		if (!read)
-  			break;
+	do {
+		startedAt = Thread::getTimeStampMs();
+		fseek(fp, 0, 0);
 
-  		uint64_t timeDiff = *(uint64_t*)(readPos);
-  		readPos += sizeof(uint64_t);
+		while(true) {
+			uint64_t msgSize;
+			size_t read = 0;
+			read = fread(&msgSize, sizeof(uint64_t), 1, fp);
+			if (!read)
+				break;
 
-  		if (trim) {
-  			startedAt -= timeDiff;
-  			trim = false;
-  		}
-		
-  		Message* msg = new Message();
-		
-  		while (*readPos) {
-  			std::string key(readPos);
-  			readPos += key.length() + 1;
-  			std::string value(readPos);
-  			readPos += value.length() + 1;
-  			msg->putMeta(key, value);
-  		}
-		
-  		readPos += 2;
-  		uint64_t dataSize = *(uint64_t*)(readPos);
-  		readPos += sizeof(uint64_t);
-  		msg->setData(readPos, dataSize);
-		
-  		uint64_t now = Thread::getTimeStampMs();
-  		if (interactive) {
-  			std::cout << "Press return to send next message" << std::endl;
-  			std::string line;
-  			std::getline(std::cin, line);
-  		} else if (now < startedAt + timeDiff) {
-  			if (verbose)
-  				std::cout << "Waiting " << (startedAt + timeDiff) - now << "ms" << std::endl;
-  			Thread::sleepMs((startedAt + timeDiff) - now);
-  		}
-		
-  		pub.send(msg);
-  		if (verbose)
-  			std::cout << "Published " << msgSize << " bytes" << std::endl;
-		
-  		delete(msg);
-  		free(buffer);
-  	}
-  } while(loop);
-	
+			char* buffer = new char[msgSize];
+			char* readPos = buffer;
+			read = fread(buffer, msgSize, 1, fp);
+			if (!read)
+				break;
+
+			uint64_t timeDiff = *(uint64_t*)(readPos);
+			readPos += sizeof(uint64_t);
+
+			if (trim) {
+				startedAt -= timeDiff;
+				trim = false;
+			}
+
+			Message* msg = new Message();
+
+			while (*readPos) {
+				std::string key(readPos);
+				readPos += key.length() + 1;
+				std::string value(readPos);
+				readPos += value.length() + 1;
+				msg->putMeta(key, value);
+			}
+
+			readPos += 2;
+			uint64_t dataSize = *(uint64_t*)(readPos);
+			readPos += sizeof(uint64_t);
+			msg->setData(readPos, dataSize);
+
+			uint64_t now = Thread::getTimeStampMs();
+			if (interactive) {
+				std::cout << "Press return to send next message" << std::endl;
+				std::string line;
+				std::getline(std::cin, line);
+			} else if (now < startedAt + timeDiff) {
+				if (verbose)
+					std::cout << "Waiting " << (startedAt + timeDiff) - now << "ms" << std::endl;
+				Thread::sleepMs((startedAt + timeDiff) - now);
+			}
+
+			pub.send(msg);
+			if (verbose)
+				std::cout << "Published " << msgSize << " bytes" << std::endl;
+
+			delete(msg);
+			free(buffer);
+		}
+	} while(loop);
+
 // triggers an assert otherwise?
 	Thread::sleepMs(200);
 	node.removePublisher(pub);

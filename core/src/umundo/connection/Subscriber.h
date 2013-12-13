@@ -49,7 +49,9 @@ public:
 
 class DLLEXPORT SubscriberConfig : public Options {
 public:
-	std::string getType() { return "SubscriberConfig"; }
+	std::string getType() {
+		return "SubscriberConfig";
+	}
 	std::string channelName;
 	std::string uuid;
 };
@@ -81,7 +83,10 @@ public:
 	virtual Message* getNextMsg() = 0;
 	virtual bool hasNextMsg() = 0;
 
-	virtual bool matches(const std::string& channelName) = 0;
+	virtual bool matches(const std::string& channelName) {
+		// is our channel a prefix of the given channel?
+		return channelName.substr(0, _channelName.size()) == _channelName;
+	}
 
 	static int instances;
 
@@ -101,10 +106,18 @@ protected:
  */
 class DLLEXPORT Subscriber : public SubscriberStub {
 public:
+	enum SubscriberType {
+	    // these have to fit the publisher types!
+	    ZEROMQ = 0x0001,
+	    RTP    = 0x0002
+	};
+
 	Subscriber() : _impl() {}
 	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);
 	Subscriber(const std::string& channelName, Receiver* receiver);
+	Subscriber(SubscriberType type, const std::string& channelName);
+	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver);
 	Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
 	Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
@@ -175,6 +188,8 @@ public:
 	}
 
 protected:
+
+	void init(SubscriberType type, const std::string& channelName, Receiver* receiver);
 
 	boost::shared_ptr<SubscriberImpl> _impl;
 	boost::shared_ptr<SubscriberConfig> _config;

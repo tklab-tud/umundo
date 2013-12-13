@@ -33,29 +33,47 @@ SubscriberImpl::~SubscriberImpl() {
 	instances--;
 }
 
+Subscriber::Subscriber(SubscriberType type, const std::string& channelName) {
+	init(type, channelName, NULL);
+}
+
+Subscriber::Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver) {
+	init(type, channelName, receiver);
+}
+
+Subscriber::Subscriber(const std::string& channelName) {
+	init(ZEROMQ, channelName, NULL);
+}
 
 Subscriber::Subscriber(const std::string& channelName, Receiver* receiver) {
-	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
-	SubscriberStub::_impl = _impl;
-	SubscriberConfig _config;
-//	_config->channelName = channelName;
-//	_config->receiver = receiver;
-	_impl->setChannelName(channelName);
-	_impl->init(&_config);
-	_impl->setReceiver(receiver);
+	init(ZEROMQ, channelName, receiver);
 }
+
 
 Subscriber::~Subscriber() {
 }
 
-Subscriber::Subscriber(const std::string& channelName) {
-	_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("subscriber"));
+void Subscriber::init(SubscriberType type, const std::string& channelName, Receiver* receiver) {
+	switch (type) {
+	case RTP:
+		_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("sub.rtp"));
+		_impl->implType = RTP;
+		break;
+	case ZEROMQ:
+		_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("sub.zmq"));
+		_impl->implType = ZEROMQ;
+		break;
+	default:
+		break;
+	}
+
 	SubscriberStub::_impl = _impl;
 	SubscriberConfig _config;
-//	_config->channelName = channelName;
-//	_config->receiver = receiver;
 	_impl->setChannelName(channelName);
 	_impl->init(&_config);
+	if (receiver != NULL)
+		_impl->setReceiver(receiver);
 }
+
 
 }

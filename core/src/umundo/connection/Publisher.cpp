@@ -36,23 +36,44 @@ PublisherImpl::~PublisherImpl() {
 }
 
 Publisher::Publisher(const std::string& channelName) {
-	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
-	PublisherStub::_impl = _impl;
-	EndPoint::_impl = _impl;
-	_impl->setChannelName(channelName);
-	PublisherConfig config;
-	config.channelName = channelName;
-	_impl->init(&config);
+	init(ZEROMQ, channelName, NULL);
 }
 
 Publisher::Publisher(const std::string& channelName, Greeter* greeter) {
-	_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("publisher"));
+	init(ZEROMQ, channelName, greeter);
+}
+
+Publisher::Publisher(PublisherType type, const std::string& channelName) {
+	init(type, channelName, NULL);
+}
+
+Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter* greeter) {
+	init(type, channelName, greeter);
+}
+
+void Publisher::init(PublisherType type, const std::string& channelName, Greeter* greeter) {
+	switch (type) {
+	case ZEROMQ:
+		_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("pub.zmq"));
+		_impl->implType = ZEROMQ;
+		break;
+	case RTP:
+		_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("pub.rtp"));
+		_impl->implType = RTP;
+		break;
+
+	default:
+		break;
+	}
+
 	PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
-	PublisherConfig* config = new PublisherConfig();
-	config->channelName = channelName;
-	_impl->setGreeter(greeter);
-	_impl->init(config);
+	PublisherConfig config;
+	config.channelName = channelName;
+	if (greeter != NULL)
+		_impl->setGreeter(greeter);
+
+	_impl->init(&config);
 }
 
 void Publisher::send(const char* data, size_t length) {

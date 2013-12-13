@@ -116,7 +116,7 @@ int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 
 void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
-	
+
 	_subs[sub.getUUID()] = sub;
 
 	// do we already now about this sub via this node?
@@ -126,9 +126,9 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 			return; // we already know about this sub from this node
 		subIter.first++;
 	}
-	
+
 	_domainSubs.insert(std::make_pair(sub.getUUID(), std::make_pair(node, sub)));
-	
+
 	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) // only perform greeting for first occurence of subscriber
@@ -148,7 +148,7 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
-	
+
 	// do we now about this sub via this node?
 	bool subscriptionFound = false;
 	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
@@ -161,14 +161,14 @@ void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	}
 	if (!subscriptionFound)
 		return;
-	
+
 	UM_LOG_INFO("Publisher %s lost subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {// only farewell for the last vanishing occurence
 		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
 		_subs.erase(sub.getUUID());
 	}
-	
+
 	_domainSubs.erase(subIter.first);
 	UMUNDO_SIGNAL(_pubLock);
 }
@@ -208,7 +208,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		metaIter++;
 	}
 
-	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// all our meta information

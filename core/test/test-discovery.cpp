@@ -29,7 +29,7 @@ public:
 	void changed(EndPoint node) {
 		assert(_endPoints.find(node) != _endPoints.end());
 	}
-	
+
 	std::set<EndPoint> _endPoints;
 };
 
@@ -46,7 +46,7 @@ public:
 	void changed(MDNSAd* node) {
 		assert(_endPoints.find(node) != _endPoints.end());
 	}
-	
+
 	std::set<MDNSAd*> _endPoints;
 };
 
@@ -63,7 +63,7 @@ public:
 	void changed(EndPoint node) {
 		std::cout << "changed '" << _type << "': " << node << std::endl;
 	}
-	
+
 	std::string _type;
 };
 
@@ -93,11 +93,11 @@ bool testDiscoveryObject() {
 	services.push_back(std::make_pair("workstation", MDNSDiscoveryOptions::TCP));
 	services.push_back(std::make_pair("servermgr", MDNSDiscoveryOptions::TCP));
 	services.push_back(std::make_pair("raop", MDNSDiscoveryOptions::TCP));
-	
-	
+
+
 	for (std::list<std::pair<std::string, MDNSDiscoveryOptions::Protocol> >::iterator svcIter = services.begin();
-			 svcIter != services.end();
-			 svcIter++) {
+	        svcIter != services.end();
+	        svcIter++) {
 		MDNSDiscoveryOptions mdnsConfig;
 		mdnsConfig.setServiceType(svcIter->first);
 		mdnsConfig.setProtocol(svcIter->second);
@@ -108,14 +108,14 @@ bool testDiscoveryObject() {
 		mdnsDisc.browse(&rs);
 		discoveries.push_back(mdnsDisc);
 	}
-		
+
 	tthread::this_thread::sleep_for(tthread::chrono::seconds(3));
-	
+
 	for (std::list<Discovery>::iterator discIter = discoveries.begin();
-			 discIter != discoveries.end();) {
+	        discIter != discoveries.end();) {
 		discoveries.erase(discIter++);
 	}
-		
+
 	return true;
 }
 
@@ -124,9 +124,9 @@ bool testMulticastDNSDiscovery() {
 
 	std::string domain = "foo.local.";
 	std::string regType = "_umundo._tcp.";
-	
+
 	MDNSAdResultSet* rs = new MDNSAdResultSet();
-	
+
 	MDNSQuery query;
 	query.domain = domain;
 	query.regType = regType;
@@ -149,14 +149,14 @@ bool testMulticastDNSDiscovery() {
 			mdnsImpl->advertise(ad);
 			ads.insert(ad);
 		}
-		
+
 		retries = 100;
 		while(rs->_endPoints.size() != nrAds) {
 			Thread::sleepMs(100);
 			if (retries-- == 0)
 				assert(false);
 		}
-				
+
 		std::set<MDNSAd*>::iterator adIter = ads.begin();
 		while(adIter != ads.end()) {
 			mdnsImpl->unadvertise(*adIter);
@@ -172,33 +172,33 @@ bool testMulticastDNSDiscovery() {
 		}
 
 		ads.clear();
-		
+
 		std::cout << std::endl << std::endl;
-	
+
 	}
 	mdnsImpl->unbrowse(&query);
 	return true;
 }
 
 bool testEndpointDiscovery() {
-	
+
 	MDNSDiscoveryOptions mdnsOuterOpts;
 	mdnsOuterOpts.setDomain("foo.local.");
 	Discovery discOuter(Discovery::MDNS, &mdnsOuterOpts);
-	
+
 	EndPoint ep1("tcp://127.0.0.1:400");
 	discOuter.advertise(ep1);
-	
+
 	int iterations = 4;
 	int nrEndPoints = 3;
 	for (int i = 0; i < iterations; ++i) {
-		
+
 		EndPointResultSet eprs;
 		Discovery discInner(Discovery::MDNS);
-		
+
 		discInner.browse(&eprs);
 		discOuter.browse(&eprs);
-		
+
 		std::set<EndPoint> endPoints;
 		for (int j = 0; j < nrEndPoints; ++j) {
 			std::stringstream epAddress;
@@ -208,23 +208,23 @@ bool testEndpointDiscovery() {
 			discInner.advertise(ep);
 			//			discOuter.advertise(ep);
 		}
-		
+
 		int retries = 50;
 		while(eprs._endPoints.size() != nrEndPoints + 1) {
 			Thread::sleepMs(100);
 			if (retries-- == 0)
 				assert(false);
 		}
-		
+
 		std::set<EndPoint>::iterator epIter = endPoints.begin();
 		while(epIter != endPoints.end()) {
 			discInner.unadvertise(*epIter);
 			epIter++;
 		}
-		
+
 		discOuter.unbrowse(&eprs);
 		endPoints.clear();
-		
+
 		std::cout << std::endl << std::endl;
 	}
 	return true;
@@ -236,9 +236,9 @@ bool testNodeDiscovery() {
 	int nrNodes = 2;
 	std::vector<EndPoint> foundNodes;
 	for (int i = 0; i < iterations; ++i) {
-		
+
 		Discovery disc(Discovery::MDNS);
-		
+
 		// make sure there are no pending nodes
 		retries = 100;
 		foundNodes = disc.list();
@@ -256,7 +256,7 @@ bool testNodeDiscovery() {
 			disc.add(node);
 			nodes.insert(node);
 		}
-		
+
 		retries = 100;
 		foundNodes = disc.list();
 		while(foundNodes.size() != nrNodes) {
@@ -266,7 +266,7 @@ bool testNodeDiscovery() {
 			foundNodes = disc.list();
 		}
 		assert(disc.list().size() == nrNodes);
-		
+
 		std::map<std::string, NodeStub> peers;
 		std::set<Node>::iterator nodeIter1 = nodes.begin();
 		while(nodeIter1 != nodes.end()) {

@@ -42,14 +42,14 @@ bool findServices() {
 		Node node2;
 
 		Discovery disc(Discovery::MDNS);
-				
+
 		disc.add(node1);
 		disc.add(node2);
 
 //		node1.added(node2);
 //		node2.added(node1);
 //		node1.added(node1);
-		
+
 		UM_LOG_INFO("Instantiating local services");
 		EchoService* localEchoService = new EchoService();
 		PingService* localPingService = new PingService();
@@ -65,7 +65,7 @@ bool findServices() {
 		UM_LOG_INFO("Adding Services to ServiceManager1");
 		svcMgr1.addService(localEchoService);
 		svcMgr1.addService(localPingService);
-		
+
 		UM_LOG_INFO("Querying from ServiceManager2 for a PingService");
 		ServiceFilter pingSvcFilter("PingService");
 		ServiceDescription pingSvcDesc = svcMgr2.find(pingSvcFilter, 0);
@@ -359,15 +359,15 @@ public:
 
 bool continuousQueries() {
 	int iterations = 5;
-	
+
 	Discovery disc(Discovery::MDNS);
-	
+
 	Node hostNode;
 	Node queryNode;
-	
+
 	disc.add(hostNode);
 	disc.add(queryNode);
-	
+
 	while (iterations) {
 		std::cout << "Starting continuous query test" << std::endl;
 

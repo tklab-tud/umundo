@@ -63,19 +63,19 @@ class LoggingReceiver : public Receiver {
 
 		// get size of message
 		uint64_t msgSize = 0;
-		
+
 		msgSize += sizeof(timeDiff);
 		metaIter = msg->getMeta().begin();
 		while(metaIter != msg->getMeta().end()) {
 			msgSize += metaIter->first.size() + 1;
-			msgSize += metaIter->second.size() + 1;			
+			msgSize += metaIter->second.size() + 1;
 			metaIter++;
 		}
 		msgSize += 2;
 		msgSize += sizeof(msg->size());
 		msgSize += msg->size();
-		
-		fwrite(&msgSize, sizeof(msgSize), 1, fp); // size of overall message 
+
+		fwrite(&msgSize, sizeof(msgSize), 1, fp); // size of overall message
 		fwrite(&timeDiff, sizeof(timeDiff), 1, fp); // time difference
 
 		metaIter = msg->getMeta().begin();
@@ -88,10 +88,10 @@ class LoggingReceiver : public Receiver {
 		size_t size = msg->size();
 		fwrite(&size, sizeof(msg->size()), 1, fp); // length prefix
 		fwrite(msg->data(), msg->size(), 1, fp); // data
-		
+
 		if (verbose)
 			std::cout << "Received " << msgSize << " bytes" << std::endl;
-		
+
 	}
 };
 
@@ -124,12 +124,12 @@ int main(int argc, char** argv) {
 		printUsageAndExit();
 
 	Discovery disc(Discovery::MDNS, domain);
-	
+
 	Node node;
 	Subscriber sub(channel);
 
 	disc.add(node);
-	
+
 	fp = fopen(file.c_str(), "w");
 	if (fp == NULL) {
 		printf("Failed to open file %s: %s\n", file.c_str(), strerror(errno));
@@ -139,9 +139,9 @@ int main(int argc, char** argv) {
 	sub.setReceiver(new LoggingReceiver());
 	node.addSubscriber(sub);
 
-	startedAt = Thread::getTimeStampMs();	
+	startedAt = Thread::getTimeStampMs();
 	std::cout << "Capturing packets from channel '" << channel << "' (press return to exit)" << std::endl;
-	
+
 	std::string line;
 	std::getline(std::cin, line);
 

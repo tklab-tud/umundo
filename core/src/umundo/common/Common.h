@@ -108,8 +108,8 @@ size_t unique_keys(std::multimap<S, T> mm) {
 	typename std::multimap<S, T>::iterator end;
 	typename std::multimap<S, T>::iterator it;
 	for(it = mm.begin(), end = mm.end();
-			it != end;
-			it = mm.upper_bound(it->first)) {
+	        it != end;
+	        it = mm.upper_bound(it->first)) {
 		uniqueCount++;
 	}
 	return uniqueCount;

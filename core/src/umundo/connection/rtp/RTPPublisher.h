@@ -1,7 +1,7 @@
 /**
  *  @file
- *  @brief      Publisher implementation with 0MQ.
- *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  @author     2013 Thilo Molitor (thilo@eightysoft.de)
+ *  @author     2013 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
  *  @copyright  Simplified BSD
  *
  *  @cond
@@ -18,27 +18,21 @@
  *  @endcond
  */
 
-#ifndef ZEROMQPUBLISHER_H_AX5HLY5Q
-#define ZEROMQPUBLISHER_H_AX5HLY5Q
-
-#include <boost/enable_shared_from_this.hpp>
+#ifndef RTPPUBLISHER_H_H9LXV94P
+#define RTPPUBLISHER_H_H9LXV94P
 
 #include "umundo/common/Common.h"
 #include "umundo/connection/Publisher.h"
 #include "umundo/thread/Thread.h"
 
-#include <list>
-
 namespace umundo {
-
-class ZeroMQNode;
 
 /**
  * Concrete publisher implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public boost::enable_shared_from_this<ZeroMQPublisher>  {
+class DLLEXPORT RTPPublisher : public PublisherImpl {
 public:
-	virtual ~ZeroMQPublisher();
+	virtual ~RTPPublisher();
 
 	boost::shared_ptr<Implementation> create();
 	void init(Options*);
@@ -52,7 +46,7 @@ protected:
 	/**
 	 * Constructor used for prototype in Factory only.
 	 */
-	ZeroMQPublisher();
+	RTPPublisher();
 
 	void added(const SubscriberStub& sub, const NodeStub& node);
 	void removed(const SubscriberStub& sub, const NodeStub& node);
@@ -60,20 +54,13 @@ protected:
 private:
 	void run();
 
-	void* _pubSocket;
-	boost::shared_ptr<PublisherConfig> _config;
-	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
-	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
-
-	/// messages for subscribers we do not know yet
-	std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;
-
-	Monitor _pubLock;
 	Mutex _mutex;
 
 	friend class Factory;
+
 };
 
 }
 
-#endif /* end of include guard: ZEROMQPUBLISHER_H_AX5HLY5Q */
+
+#endif /* end of include guard: RTPPUBLISHER_H_H9LXV94P */

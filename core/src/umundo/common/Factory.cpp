@@ -41,9 +41,16 @@
 #include "umundo/discovery/MDNSDiscovery.h"
 #endif
 
+#ifdef NET_RTP
+#include "umundo/connection/rtp/RTPPublisher.h"
+#include "umundo/connection/rtp/RTPSubscriber.h"
+#endif
+
 #if !(defined NET_ZEROMQ)
 #error "No discovery implementation choosen"
 #endif
+
+
 
 #ifdef BUILD_DEBUG
 #include <signal.h>
@@ -67,18 +74,14 @@ Factory* Factory::getInstance() {
 #endif
 #endif
 		Factory::_instance = new Factory();
-		assert(_instance->_prototypes["publisher"] != NULL);
-		assert(_instance->_prototypes["subscriber"] != NULL);
-//		assert(_instance->_prototypes["discovery"] != NULL);
-		assert(_instance->_prototypes["node"] != NULL);
 	}
 	return Factory::_instance;
 }
 
 Factory::Factory() {
-	_prototypes["publisher"] = new ZeroMQPublisher();
-	_prototypes["subscriber"] = new ZeroMQSubscriber();
-	_prototypes["node"] = new ZeroMQNode();
+	_prototypes["pub.zmq"] = new ZeroMQPublisher();
+	_prototypes["sub.zmq"] = new ZeroMQSubscriber();
+	_prototypes["node.zmq"] = new ZeroMQNode();
 #if (defined DISC_AVAHI || defined DISC_BONJOUR)
 	_prototypes["discovery.mdns"] = new MDNSDiscovery();
 #endif
@@ -90,6 +93,10 @@ Factory::Factory() {
 #endif
 #ifdef DISC_BROADCAST
 	_prototypes["discovery.broadcast"] = new BroadcastDiscovery();
+#endif
+#ifdef NET_RTP
+	_prototypes["pub.rtp"] = new RTPPublisher();
+	_prototypes["sub.rtp"] = new RTPSubscriber();
 #endif
 }
 

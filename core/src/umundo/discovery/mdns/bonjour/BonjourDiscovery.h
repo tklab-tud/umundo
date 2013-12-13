@@ -64,7 +64,7 @@ public:
 
 	void advertise(MDNSAd* node);
 	void unadvertise(MDNSAd* node);
-	
+
 	void browse(MDNSQuery* query);
 	void unbrowse(MDNSQuery* query);
 
@@ -133,24 +133,24 @@ protected:
 	struct BonjourBrowseReply {
 		uint32_t ifIndex;
 		DNSServiceFlags flags;
-    DNSServiceErrorType errorCode;
+		DNSServiceErrorType errorCode;
 		std::string serviceName;
-    std::string regtype;
-    std::string domain;
-    void *context;
+		std::string regtype;
+		std::string domain;
+		void *context;
 	};
-	
+
 	struct BonjourAddrInfoReply {
 		DNSServiceFlags flags;
-    uint32_t interfaceIndex;
-    DNSServiceErrorType errorCode;
+		uint32_t interfaceIndex;
+		DNSServiceErrorType errorCode;
 		std::string hostname;
 		std::string ipv4;
 		std::string ipv6;
-    uint32_t ttl;
-    void *context;
+		uint32_t ttl;
+		void *context;
 	};
-	
+
 	/// All the mdns service refs for a mdns advertisement
 	class BonjourServiceRefs {
 	public:
@@ -159,9 +159,9 @@ protected:
 		std::map<uint32_t, DNSServiceRef> serviceResolver; ///< used to resolve a service found via browse per interface
 		std::map<uint32_t, DNSServiceRef> serviceGetAddrInfo; ///< used to get the address of a resolved service
 	};
-	
+
 	void dumpQueries();
-	
+
 	DNSServiceRef _mainDNSHandle;
 	std::map<int, DNSServiceRef> _activeFDs;                       ///< Socket file descriptors to bonjour handle.
 
@@ -169,13 +169,13 @@ protected:
 	std::map<std::string, std::map<std::string, BonjourQuery> > _queryClients;
 	std::map<MDNSAd*, BonjourServiceRefs> _localAds;
 	std::map<MDNSAd*, BonjourServiceRefs> _remoteAds;
-	
+
 	std::list<BonjourAddrInfoReply> _pendingAddrInfoReplies;
 	std::list<BonjourBrowseReply> _pendingBrowseReplies;
-	
+
 	int _nodes;
 	int _ads;
-	
+
 	Mutex _mutex;
 	Monitor _monitor;
 

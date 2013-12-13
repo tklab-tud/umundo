@@ -36,7 +36,7 @@ void* PBDeserializer::deserialize(const std::string& type, Message* msg) {
 	if (type.length() == 0) {
 		return NULL;
 	}
-	
+
 	if (_deserializers.find(type) != _deserializers.end()) {
 		// we have an explicit deserializer type registered
 		MessageLite* pbObj = _deserializers[type]->New();

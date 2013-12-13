@@ -100,11 +100,6 @@ void ZeroMQSubscriber::resume() {
 	_isSuspended = false;
 };
 
-bool ZeroMQSubscriber::matches(const std::string& channelName) {
-	// is our channel a prefix of the given channel?
-	return channelName.substr(0, _channelName.size()) == _channelName;
-}
-
 void ZeroMQSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
 
@@ -243,7 +238,7 @@ void ZeroMQSubscriber::run() {
 		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
 			Message* msg = getNextMsg();
 			_receiver->receive(msg);
-      delete msg;
+			delete msg;
 		}
 	}
 }

@@ -37,7 +37,7 @@ class Node;
 class DLLEXPORT DiscoveryImpl : public Implementation {
 public:
 	virtual ~DiscoveryImpl() {}
-	
+
 	virtual void advertise(const EndPoint& node) = 0;
 	virtual void add(Node& node) = 0;
 	virtual void unadvertise(const EndPoint& node) = 0;
@@ -48,7 +48,7 @@ public:
 
 	virtual std::vector<EndPoint> list() = 0;
 };
-	
+
 /**
  * Abstraction of the discovery subsystem (bridge pattern).
  *
@@ -65,12 +65,12 @@ public:
  */
 class DLLEXPORT Discovery {
 public:
-	
+
 	enum DiscoveryType {
-		MDNS,
-		BROADCAST
+	    MDNS,
+	    BROADCAST
 	};
-	
+
 	/**
 	 * Create a new discovery subsystem.
 	 *
@@ -94,7 +94,7 @@ public:
 	bool operator!=(const Discovery& other) const {
 		return _impl != other._impl;
 	}
-	
+
 	Discovery& operator=(const Discovery& other) {
 		_impl = other._impl;
 		return *this;
@@ -129,12 +129,12 @@ public:
 
 	/** @name Query for nodes */
 	//@{
-	
+
 	/// Add a listener for EndPoint%s
 	void browse(ResultSet<EndPoint>* query) {
 		return _impl->browse(query);
 	}
-	
+
 	/// Remove a listener for EndPoint%s
 	void unbrowse(ResultSet<EndPoint>* query) {
 		return _impl->unbrowse(query);
@@ -150,45 +150,45 @@ protected:
 	boost::shared_ptr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
 };
 
-	
+
 class DLLEXPORT MDNSDiscoveryOptions : public Options {
 public:
 	enum Protocol {
-		TCP, UDP
+	    TCP, UDP
 	};
-	
+
 	MDNSDiscoveryOptions() {
 		options["mdns.domain"] = "local.";
 		options["mdns.protocol"] = "tcp";
 		options["mdns.serviceType"] = "umundo";
 	}
-	
+
 	std::string getType() {
 		return "mdns";
 	}
-	
+
 	void setDomain(const std::string& domain) {
 		options["mdns.domain"] = domain;
 	}
-	
+
 	void setProtocol(Protocol protocol) {
 		switch (protocol) {
-			case UDP:
-				options["mdns.protocol"] = "udp";
-				break;
-			case TCP:
-				options["mdns.protocol"] = "tcp";
-				break;
-				
-			default:
-				break;
+		case UDP:
+			options["mdns.protocol"] = "udp";
+			break;
+		case TCP:
+			options["mdns.protocol"] = "tcp";
+			break;
+
+		default:
+			break;
 		}
 	}
-	
+
 	void setServiceType(const std::string& serviceType) {
 		options["mdns.serviceType"] = serviceType;
 	}
-	
+
 };
 
 }

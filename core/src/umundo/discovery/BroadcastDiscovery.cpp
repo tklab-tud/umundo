@@ -82,7 +82,7 @@ void BroadcastDiscovery::unbrowse(ResultSet<EndPoint>* query) {
 std::vector<EndPoint> BroadcastDiscovery::list() {
 	return std::vector<EndPoint>();
 }
-	
+
 void BroadcastDiscovery::run() {
 	// your very own thread!
 }

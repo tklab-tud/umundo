@@ -265,8 +265,8 @@ void BonjourDiscovery::advertise(MDNSAd* node) {
 	uint16_t txtLen = 0;
 	std::stringstream txtSS;
 	for (std::set<std::string>::iterator txtIter = node->txtRecord.begin();
-			 txtIter != node->txtRecord.end();
-			 txtIter++) {
+	        txtIter != node->txtRecord.end();
+	        txtIter++) {
 		if (txtIter->length() > 255) {
 			if (txtLen + 255 > 0xffff)
 				break;
@@ -281,21 +281,21 @@ void BonjourDiscovery::advertise(MDNSAd* node) {
 			txtSS << *txtIter;
 		}
 	}
-	
+
 	const char* txtRData = (txtSS.str().size() > 0 ? txtSS.str().data() : NULL);
-	
+
 	err = DNSServiceRegister(&registerClient,                 // uninitialized DNSServiceRef
-													 kDNSServiceFlagsShareConnection, // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
-													 kDNSServiceInterfaceIndexAny,    // If non-zero, specifies the interface, defaults to all interfaces
-													 name,                            // If non-NULL, specifies the service name, defaults to computer name
-													 regType,                         // service type followed by the protocol
-													 domain,                          // If non-NULL, specifies the domain, defaults to default domain
-													 host,                            // If non-NULL, specifies the SRV target host name
-													 port,                            // port number, defaults to name-reserving/non-discoverable
-													 txtLen,                          // length of the txtRecord, in bytes
-													 txtRData,                        // TXT record rdata: <length byte> <data> <length byte> <data> ...
-													 registerReply,                   // called when the registration completes
-													 (void*)NULL);                    // context pointer which is passed to the callback
+	                         kDNSServiceFlagsShareConnection, // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
+	                         kDNSServiceInterfaceIndexAny,    // If non-zero, specifies the interface, defaults to all interfaces
+	                         name,                            // If non-NULL, specifies the service name, defaults to computer name
+	                         regType,                         // service type followed by the protocol
+	                         domain,                          // If non-NULL, specifies the domain, defaults to default domain
+	                         host,                            // If non-NULL, specifies the SRV target host name
+	                         port,                            // port number, defaults to name-reserving/non-discoverable
+	                         txtLen,                          // length of the txtRecord, in bytes
+	                         txtRData,                        // TXT record rdata: <length byte> <data> <length byte> <data> ...
+	                         registerReply,                   // called when the registration completes
+	                         (void*)NULL);                    // context pointer which is passed to the callback
 
 	if(registerClient && err == 0) {
 		_localAds[node].serviceRegister = registerClient;
@@ -316,7 +316,7 @@ void BonjourDiscovery::unadvertise(MDNSAd* node) {
 		UM_LOG_WARN("Ignoring removal of unregistered node from discovery");
 		return;
 	}
-	
+
 	_activeFDs.erase(DNSServiceRefSockFD(_localAds[node].serviceRegister)); // noop in embedded
 	assert(_localAds[node].serviceRegister != NULL);
 	DNSServiceRefDeallocate(_localAds[node].serviceRegister);
@@ -337,13 +337,13 @@ void BonjourDiscovery::browse(MDNSQuery* query) {
 	ScopeLock lock(_mutex);
 
 //	dumpQueries();
-	
+
 	// do we already browse for this query?
 	if (_queryClients[query->domain][query->regType].queries.find(query) != _queryClients[query->domain][query->regType].queries.end()) {
 		UM_LOG_WARN("Already browsing for given query");
 		return;
 	}
-	
+
 	// do we already browse for this regtype in this domain?
 	if (_queryClients[query->domain][query->regType].queries.size() == 0) {
 		// no -> start a new query
@@ -352,14 +352,14 @@ void BonjourDiscovery::browse(MDNSQuery* query) {
 
 		const char* regType = (query->regType.size() > 0 ? query->regType.c_str() : NULL);
 		const char* domain = (query->domain.size() > 0 ? query->domain.c_str() : NULL);
-		
+
 		err = DNSServiceBrowse(&queryClient,                    // uninitialized DNSServiceRef
-													 kDNSServiceFlagsShareConnection, // Currently ignored, reserved for future use
-													 kDNSServiceInterfaceIndexAny,    // non-zero, specifies the interface
-													 regType,                         // service type being browsed
-													 domain,                          // non-NULL, specifies the domain
-													 browseReply,                     // called when a service is found
-													 NULL);
+		                       kDNSServiceFlagsShareConnection, // Currently ignored, reserved for future use
+		                       kDNSServiceInterfaceIndexAny,    // non-zero, specifies the interface
+		                       regType,                         // service type being browsed
+		                       domain,                          // non-NULL, specifies the domain
+		                       browseReply,                     // called when a service is found
+		                       NULL);
 
 		// add in any case and remove via unbrowse if we failed
 		_queryClients[query->domain][query->regType].queries.insert(query);
@@ -377,8 +377,8 @@ void BonjourDiscovery::browse(MDNSQuery* query) {
 		_queryClients[query->domain][query->regType].queries.insert(query);
 		// report existing endpoints immediately
 		for (std::map<std::string, MDNSAd*>::iterator adIter = _queryClients[query->domain][query->regType].remoteAds.begin();
-				 adIter != _queryClients[query->domain][query->regType].remoteAds.end();
-				 adIter++) {
+		        adIter != _queryClients[query->domain][query->regType].remoteAds.end();
+		        adIter++) {
 			if (adIter->second->ipv4.size() > 0 || adIter->second->ipv6.size() > 0)
 				query->rs->added(adIter->second);
 		}
@@ -394,10 +394,10 @@ void BonjourDiscovery::unbrowse(MDNSQuery* query) {
 		UM_LOG_WARN("Unbrowsing query that was never added");
 		return;
 	}
-	
+
 	// remove query
 	_queryClients[query->domain][query->regType].queries.erase(queryIter);
-	
+
 	if (_queryClients[query->domain][query->regType].queries.size() == 0) {
 		// last browser is gone, remove this query
 		DNSServiceRef queryClient = _queryClients[query->domain][query->regType].mdnsClient;
@@ -495,12 +495,12 @@ void DNSSD_API BonjourDiscovery::browseReply(
 	reply.regtype = regtype_;
 	reply.serviceName = serviceName_;
 	myself->_pendingBrowseReplies.push_back(reply);
-	
+
 	// there are no more pending invocations for now, process what we got
 	if (~flags_ & kDNSServiceFlagsMoreComing) {
 		std::map<std::string, MDNSAd*> removed; // complete service vanished
 		std::map<std::string, MDNSAd*> changed; // some interface added or vanished
-		
+
 		// we queued a list of mdns replies, simplify first
 		std::list<BonjourBrowseReply>::iterator replyIter = myself->_pendingBrowseReplies.begin();
 		while(replyIter != myself->_pendingBrowseReplies.end()) {
@@ -511,7 +511,7 @@ void DNSSD_API BonjourDiscovery::browseReply(
 				replyIter++;
 				continue;
 			}
-			
+
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[replyIter->domain].find(replyIter->regtype);
 			if (queryIter == myself->_queryClients[replyIter->domain].end()) {
 				UM_LOG_ERR("Ignoring browseReply for service type no longer watched: %s", replyIter->regtype.c_str());
@@ -519,9 +519,9 @@ void DNSSD_API BonjourDiscovery::browseReply(
 				continue;
 			}
 			// ok, this is actually relevant to us
-			
+
 			BonjourQuery& query = myself->_queryClients[replyIter->domain][replyIter->regtype];
-			
+
 			if (replyIter->flags & kDNSServiceFlagsAdd) {
 				// is this a brand new service?
 				if (query.remoteAds.find(replyIter->serviceName) == query.remoteAds.end()) {
@@ -545,14 +545,14 @@ void DNSSD_API BonjourDiscovery::browseReply(
 
 				// Resolve service domain name, target hostname, port number and txt record
 				int err = DNSServiceResolve(&serviceResolveRef,
-																		kDNSServiceFlagsShareConnection,
-																		replyIter->ifIndex,
-																		replyIter->serviceName.c_str(),
-																		replyIter->regtype.c_str(),
-																		replyIter->domain.c_str(),
-																		serviceResolveReply,
-																		(void*)ad);
-				
+				                            kDNSServiceFlagsShareConnection,
+				                            replyIter->ifIndex,
+				                            replyIter->serviceName.c_str(),
+				                            replyIter->regtype.c_str(),
+				                            replyIter->domain.c_str(),
+				                            serviceResolveReply,
+				                            (void*)ad);
+
 				if (err != kDNSServiceErr_NoError) {
 					UM_LOG_ERR("DNSServiceResolve returned with error: %s", errCodeToString(err).c_str());
 					replyIter++;
@@ -590,30 +590,30 @@ void DNSSD_API BonjourDiscovery::browseReply(
 
 		// notify listeners about changes
 		for(std::map<std::string, MDNSAd*>::iterator changeIter = changed.begin();
-				changeIter != changed.end();
-				changeIter++) {
+		        changeIter != changed.end();
+		        changeIter++) {
 			assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
 			UM_LOG_INFO("browseReply:%s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
 
 			for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-					 listIter != queryIter->second.queries.end();
-					 listIter++) {
+			        listIter != queryIter->second.queries.end();
+			        listIter++) {
 				(*listIter)->rs->changed(changeIter->second);
 			}
 		}
-		
+
 		// notify listeners about removals
 		for(std::map<std::string, MDNSAd*>::iterator removeIter = removed.begin();
-				removeIter != removed.end();
-				removeIter++) {
+		        removeIter != removed.end();
+		        removeIter++) {
 			assert(myself->_queryClients.find(removeIter->second->domain) != myself->_queryClients.end());
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[removeIter->second->domain].find(removeIter->second->regType);
 			UM_LOG_INFO("browseReply:%s/%s of type %s was removed", removeIter->second->name.c_str(), removeIter->second->domain.c_str(), removeIter->second->regType.c_str());
 
 			for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-					 listIter != queryIter->second.queries.end();
-					 listIter++) {
+			        listIter != queryIter->second.queries.end();
+			        listIter++) {
 
 				(*listIter)->rs->removed(removeIter->second);
 				assert(queryIter->second.remoteAds.find(removeIter->first) != queryIter->second.remoteAds.end());
@@ -632,11 +632,11 @@ void DNSSD_API BonjourDiscovery::browseReply(
 				svcRefIter++;
 			}
 			myself->_remoteAds.erase(queryIter->second.remoteAds[removeIter->first]);
-			
+
 			// get rid of vanished MDNSAd
 			delete queryIter->second.remoteAds[removeIter->first];
 			queryIter->second.remoteAds.erase(removeIter->first);
-						 
+
 		}
 
 	}
@@ -722,13 +722,13 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 
 	boost::shared_ptr<BonjourDiscovery> myself = getInstance();
 	ScopeLock lock(myself->_mutex);
-	
+
 	UM_LOG_INFO("serviceResolveReply: info on node %s at %p on %s:%d at if %d",
-							fullname,
-							context,
-							hosttarget,
-							ntohs(opaqueport),
-							interfaceIndex);
+	            fullname,
+	            context,
+	            hosttarget,
+	            ntohs(opaqueport),
+	            interfaceIndex);
 
 	if (errorCode != 0) {
 		UM_LOG_ERR("serviceResolveReply called with error: %s", errCodeToString(errorCode).c_str());
@@ -740,7 +740,7 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 		UM_LOG_WARN("serviceResolveReply called for node %p already gone", context);
 		return;
 	}
-	
+
 	MDNSAd* ad = (MDNSAd*)context;
 	ad->port = ntohs(opaqueport);
 	ad->host = hosttarget;
@@ -749,7 +749,7 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 		// was removed already
 		return;
 	}
-	
+
 	size_t txtOffset = 0;
 	while (txtOffset < txtLen) {
 		uint8_t length = txtRecord[txtOffset++];
@@ -758,17 +758,17 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 			txtOffset += length;
 		}
 	}
-		
+
 	DNSServiceRef addrInfoRef = myself->_mainDNSHandle;
-	
+
 	int err = DNSServiceGetAddrInfo(&addrInfoRef,
-																	kDNSServiceFlagsShareConnection,     // kDNSServiceFlagsForceMulticast, kDNSServiceFlagsLongLivedQuery, kDNSServiceFlagsReturnIntermediates
-																	interfaceIndex,
-																	0,                                       // kDNSServiceProtocol_IPv4, kDNSServiceProtocol_IPv6, 0
-																	hosttarget,
-																	addrInfoReply,
-																	(void*)ad                           // address of node
-																	);
+	                                kDNSServiceFlagsShareConnection,     // kDNSServiceFlagsForceMulticast, kDNSServiceFlagsLongLivedQuery, kDNSServiceFlagsReturnIntermediates
+	                                interfaceIndex,
+	                                0,                                       // kDNSServiceProtocol_IPv4, kDNSServiceProtocol_IPv6, 0
+	                                hosttarget,
+	                                addrInfoReply,
+	                                (void*)ad                           // address of node
+	                               );
 	if (err != kDNSServiceErr_NoError) {
 		UM_LOG_ERR("DNSServiceGetAddrInfo returned with error: %s", errCodeToString(errorCode).c_str());
 		return;
@@ -797,7 +797,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
     uint32_t ttl_,
     void *context_  // address of node
 ) {
-	
+
 	/* DNSServiceGetAddrInfo
 	 *
 	 * Queries for the IP address of a hostname by using either Multicast or Unicast DNS.
@@ -847,7 +847,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		UM_LOG_WARN("Ignoring addrInfoReply for removed address, relying on browseReply");
 		return;
 	}
-	
+
 	// do we still care about this node?
 	if (myself->_remoteAds.find((MDNSAd*)context_) == myself->_remoteAds.end()) {
 		UM_LOG_WARN("addrInfoReply called for node %p already gone", context_);
@@ -867,7 +867,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 	reply.hostname = hostname_;
 	reply.interfaceIndex = interfaceIndex_;
 	reply.ttl = ttl_;
-	
+
 	// get ip address from struct
 	char* addr = NULL;
 	if (address_ && address_->sa_family == AF_INET) {
@@ -879,18 +879,18 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		const struct sockaddr_in6 *s6 = (const struct sockaddr_in6 *)address_;
 		const unsigned char *b = (const unsigned char*)&s6->sin6_addr;
 		asprintf(&addr, "%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X",
-						 b[0x0], b[0x1], b[0x2], b[0x3], b[0x4], b[0x5], b[0x6], b[0x7],
-						 b[0x8], b[0x9], b[0xA], b[0xB], b[0xC], b[0xD], b[0xE], b[0xF]);
+		         b[0x0], b[0x1], b[0x2], b[0x3], b[0x4], b[0x5], b[0x6], b[0x7],
+		         b[0x8], b[0x9], b[0xA], b[0xB], b[0xC], b[0xD], b[0xE], b[0xF]);
 		reply.ipv6 = addr;
 		free(addr);
 	}
 	myself->_pendingAddrInfoReplies.push_back(reply);
-	
+
 	// there are no more pending invocations for now, process what we got
 	if (~flags_ & kDNSServiceFlagsMoreComing) {
 		std::map<std::string, MDNSAd*> added;   // new service appeared
 		std::map<std::string, MDNSAd*> changed; // some interface added or vanished
-		
+
 		// we queued a list of mdns replies, simplify first
 		std::list<BonjourAddrInfoReply>::iterator replyIter = myself->_pendingAddrInfoReplies.begin();
 		while(replyIter != myself->_pendingAddrInfoReplies.end()) {
@@ -904,12 +904,12 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 				DNSServiceRefDeallocate(myself->_remoteAds[ad].serviceGetAddrInfo[replyIter->interfaceIndex]);
 				myself->_remoteAds[ad].serviceGetAddrInfo.erase(replyIter->interfaceIndex);
 			}
-			
+
 			if (myself->_queryClients.find(ad->domain) == myself->_queryClients.end()) {
 				UM_LOG_ERR("Ignoring addrInfoReply for domain no longer watched: %s", ad->domain.c_str());
 				return;
 			}
-			
+
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[ad->domain].find(ad->regType);
 			if (queryIter == myself->_queryClients[ad->domain].end()) {
 				UM_LOG_ERR("Ignoring addrInfoReply for service type no longer watched: %s", ad->regType.c_str());
@@ -928,35 +928,35 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 				ad->ipv4[replyIter->interfaceIndex] = replyIter->ipv4;
 			if (replyIter->ipv6.size() > 0)
 				ad->ipv6[replyIter->interfaceIndex] = replyIter->ipv6;
-			
+
 			replyIter++;
 		}
 		myself->_pendingAddrInfoReplies.clear();
 		//myself->dumpQueries();
-		
+
 		// notify listeners about changes
 		for(std::map<std::string, MDNSAd*>::iterator changeIter = changed.begin();
-				changeIter != changed.end();
-				changeIter++) {
+		        changeIter != changed.end();
+		        changeIter++) {
 			assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
 			for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-					 listIter != queryIter->second.queries.end();
-					 listIter++) {
+			        listIter != queryIter->second.queries.end();
+			        listIter++) {
 				UM_LOG_INFO("addrInfoReply:%s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
 				(*listIter)->rs->changed(changeIter->second);
 			}
 		}
-		
+
 		// notify listeners about aditions
 		for(std::map<std::string, MDNSAd*>::iterator addIter = added.begin();
-				addIter != added.end();
-				addIter++) {
+		        addIter != added.end();
+		        addIter++) {
 			assert(myself->_queryClients.find(addIter->second->domain) != myself->_queryClients.end());
 			std::map<std::string, BonjourQuery>::iterator queryIter = myself->_queryClients[addIter->second->domain].find(addIter->second->regType);
 			for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-					 listIter != queryIter->second.queries.end();
-					 listIter++) {
+			        listIter != queryIter->second.queries.end();
+			        listIter++) {
 				UM_LOG_INFO("addrInfoReply:%s/%s of type %s was added", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
 				(*listIter)->rs->added(addIter->second);
 			}
@@ -1041,7 +1041,7 @@ void BonjourDiscovery::dumpQueries() {
 		std::cout << std::endl;
 	}
 }
-	
+
 const std::string BonjourDiscovery::errCodeToString(DNSServiceErrorType errType) {
 	switch (errType) {
 	case kDNSServiceErr_NoError:

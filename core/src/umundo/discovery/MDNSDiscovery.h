@@ -39,7 +39,7 @@ public:
 	std::set<uint32_t> interfaces;
 	std::map<uint32_t, std::string> ipv4;
 	std::map<uint32_t, std::string> ipv6;
-	
+
 	std::string getTransport() {
 		size_t firstDot = regType.find_first_of(".");
 		if (firstDot != std::string::npos && regType.length() >= firstDot + 5) {
@@ -47,7 +47,7 @@ public:
 		}
 		return "";
 	}
-	
+
 	std::string getServiceType() {
 		size_t firstDot = regType.find_first_of(".");
 		if (firstDot != std::string::npos) {
@@ -73,7 +73,7 @@ class MDNSDiscoveryImpl : public Implementation {
 public:
 	virtual void advertise(MDNSAd* node) = 0;
 	virtual void unadvertise(MDNSAd* node) = 0;
-	
+
 	virtual void browse(MDNSQuery* query) = 0;
 	virtual void unbrowse(MDNSQuery* query) = 0;
 };
@@ -89,7 +89,7 @@ public:
 	MDNSDiscovery();
 	boost::shared_ptr<Implementation> create();
 	virtual ~MDNSDiscovery();
-	
+
 	void suspend();
 	void resume();
 
@@ -97,10 +97,10 @@ public:
 	void add(Node& node);
 	void unadvertise(const EndPoint& node);
 	void remove(Node& node);
-	
+
 	void browse(ResultSet<EndPoint>* query);
 	void unbrowse(ResultSet<EndPoint>* query);
-	
+
 	void added(MDNSAd*);
 	void removed(MDNSAd*);
 	void changed(MDNSAd*);
@@ -115,11 +115,11 @@ protected:
 	std::map<EndPoint, MDNSAd*> _localAds;
 	std::map<MDNSAd*, EndPoint> _remoteAds;
 	std::set<ResultSet<EndPoint>*> _queries;
-	
+
 	Mutex _mutex;
 	boost::shared_ptr<MDNSDiscoveryImpl> _mdnsImpl;
 };
-	
+
 }
 
 #endif /* end of include guard: MULTICASTDNSDISCOVERY_H_P5FY838U */

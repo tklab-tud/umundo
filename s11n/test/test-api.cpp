@@ -26,16 +26,16 @@ int main(int argc, char** argv) {
 
 		Node mainNode;
 		Node otherNode;
-		
+
 		Discovery disc(Discovery::MDNS);
 		disc.add(mainNode);
 		disc.add(otherNode);
-		
+
 		TestTypedReceiver* tts = new TestTypedReceiver();
 		TypedPublisher tPub("fooChannel");
 		TypedSubscriber tSub("fooChannel", tts);
 
-	//  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
+		//  PBSerializer::addProto("/Users/sradomski/Documents/TK/Code/umundo/s11n/test/proto/Test1.proto");
 
 		tSub.registerType("Test1Msg", new Test1Msg());
 		tPub.registerType("Test1Msg", new Test1Msg());
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
 		Thread::sleepMs(100);
 
-	//	mainNode.removePublisher(tPub);
-	//	otherNode.removeSubscriber(tSub);
+		//	mainNode.removePublisher(tPub);
+		//	otherNode.removeSubscriber(tSub);
 	}
 }

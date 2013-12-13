@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-	
+
 	if (optind >= argc)
 		printUsageAndExit();
 
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 
 	Node node;
 	disc.add(node);
-	
+
 	std::string hostname(argv[optind]);
 	NodeStub endPoint;
 
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 	}
 
 	node.added(endPoint);
-	
+
 	while (true) {
 		Thread::sleepMs(500);
 	}

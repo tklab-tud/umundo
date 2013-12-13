@@ -31,6 +31,7 @@
 
 /** Implementation macros */
 #cmakedefine NET_ZEROMQ
+#cmakedefine NET_RTP
 #cmakedefine S11N_PROTOBUF
 #cmakedefine DISC_BONJOUR
 #cmakedefine DISC_BONJOUR_EMBED

@@ -35,6 +35,7 @@ public:
 	static bool isUUID(const std::string& uuid);
 
 private:
+	UUID() {}
 	static boost::uuids::random_generator randomGen;
 };
 

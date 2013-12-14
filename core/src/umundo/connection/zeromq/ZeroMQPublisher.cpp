@@ -29,7 +29,6 @@
 #include "umundo/connection/zeromq/ZeroMQNode.h"
 #include "umundo/common/Message.h"
 #include "umundo/common/UUID.h"
-#include "umundo/common/Host.h"
 
 #include "umundo/config.h"
 #if defined UNIX || defined IOS || defined IOSSIM
@@ -199,7 +198,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	// mandatory meta fields
 	msg->putMeta("um.pub", _uuid);
 	msg->putMeta("um.proc", procUUID);
-	msg->putMeta("um.host", Host::getHostId());
+	msg->putMeta("um.host", hostUUID);
 
 	std::map<std::string, std::string>::const_iterator metaIter = _mandatoryMeta.begin();
 	while(metaIter != _mandatoryMeta.end()) {

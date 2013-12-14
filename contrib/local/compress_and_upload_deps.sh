@@ -36,7 +36,7 @@ for FILE in ${PLATFORMS}; do
   PLATFORM=`basename $FILE`
   echo $FILE
   if [ "$PLATFORM" != "include" ]; then
-    if [ "$PLATFORM" == windows* ]; then
+    if [[ "$PLATFORM" == windows* ]]; then
       tar cvzf umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='VERSION.txt' ${FILE}
     else
       tar cvzf umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='VERSION.txt' --exclude='lib/*_d.a' ${FILE}

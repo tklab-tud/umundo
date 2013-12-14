@@ -28,6 +28,15 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
+add_executable(umundo-debug umundo-debug.cpp)
+target_link_libraries(umundo-debug umundocore)
+set_target_properties(umundo-debug PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-debug
+	COMPONENT tools 
+)
+
 
 if (WIN32)
 	add_executable(umundo-capture umundo-capture.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)

@@ -81,6 +81,7 @@
 namespace umundo {
 
 extern std::string procUUID;
+extern std::string hostUUID;
 
 inline bool isNumeric( const char* pszInput, int nNumberBase) {
 	std::string base = ".-0123456789ABCDEF";

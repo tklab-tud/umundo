@@ -205,6 +205,7 @@ protected:
 	void broadCastNodeInfo(uint64_t now);
 	void removeStaleNodes(uint64_t now);
 
+	void replyWithDebugInfo(const std::string uuid);
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 

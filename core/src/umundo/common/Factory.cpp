@@ -19,6 +19,7 @@
 
 #include "umundo/common/Factory.h"
 #include "umundo/common/UUID.h"
+#include "umundo/common/Host.h"
 
 #include "umundo/connection/zeromq/ZeroMQNode.h"
 #include "umundo/connection/zeromq/ZeroMQPublisher.h"
@@ -59,11 +60,13 @@
 namespace umundo {
 
 std::string procUUID;
+std::string hostUUID;
 Factory* Factory::_instance = NULL;
 
 Factory* Factory::getInstance() {
 	if (Factory::_instance == NULL) {
 		procUUID = UUID::getUUID();
+		hostUUID = Host::getHostId();
 #ifdef BUILD_DEBUG
 		Debug::abortWithStackTraceOnSignal(SIGSEGV);
 #ifdef UNIX

@@ -394,6 +394,10 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		add_definitions(-Wno-narrowing)
 	endif()
 
+	if(GCC_VERSION VERSION_EQUAL 4.8 OR GCC_VERSION VERSION_GREATER 4.8)
+		add_definitions(-Wno-unused-local-typedefs)
+	endif()
+
 	# swig will throw a warning with optimization otherwise
 	add_definitions(-fno-strict-aliasing)
 	add_definitions("-Wno-unused-value -Wno-unused-function -Wno-sign-compare")
@@ -796,13 +800,20 @@ if(BUILD_CONVENIENCE_LIB)
 
 		if (IOS OR APPLE)
 			set(LIPO_INPUT_FILES "")
+			if (IOS)
+		    set(LIPO_CMD xcrun -sdk iphoneos lipo)
+		    set(LIBTOOL_CMD xcrun -sdk iphoneos libtool)
+			else()
+  	    set(LIPO_CMD "lipo")
+  	    set(LIBTOOL_CMD "libtool")
+			endif()
 			foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
 				# message("ARCH: ${ARCH}")
 				# @TODO: we should only depend on targets that are actually being built
 				ADD_CUSTOM_COMMAND(
 					OUTPUT    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a
-					COMMAND   libtool
-					ARGS      -arch_only ${ARCH} -static -o ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a ${UMUNDO_STATIC_LIBRARIES} 1>/dev/null 2>/dev/null
+					COMMAND   ${LIBTOOL_CMD}
+					ARGS      -arch_only ${ARCH} -static -o ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.${ARCH}.a ${UMUNDO_STATIC_LIBRARIES} 1>/dev/null
 					DEPENDS   ${UMUNDO_COMP_BUILT}
 					COMMENT   "Running libtool on static libraries for ${ARCH}"
 				)
@@ -810,7 +821,7 @@ if(BUILD_CONVENIENCE_LIB)
 			endforeach()
 			ADD_CUSTOM_TARGET(umundo ALL
 				DEPENDS ${LIPO_INPUT_FILES} umundocore
-				COMMAND lipo -create -output ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a ${LIPO_INPUT_FILES} && rm ${LIPO_INPUT_FILES}
+				COMMAND ${LIPO_CMD} -create -output ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libumundo${CMAKE_LIBRARY_POSTFIX}.a ${LIPO_INPUT_FILES} && rm ${LIPO_INPUT_FILES}
 				COMMENT "Building libumundo${CMAKE_LIBRARY_POSTFIX}.a convenience library")
 		elseif(CMAKE_CROSSCOMPILING)
 			# do nothing

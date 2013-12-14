@@ -40,9 +40,10 @@ public:
 	    NODE_INFO     = 0x0003, // information about a node and its publishers
 	    PUB_ADDED     = 0x0004, // sent when a node added a publisher
 	    PUB_REMOVED   = 0x0005, // sent when a node removed a publisher
-	    SUBSCRIBE     = 0x0007, // sent when subscribing to a publisher
-	    UNSUBSCRIBE   = 0x0008, // unsusbscribing from a publisher
-	    DISCONNECT    = 0x000B, // node was removed
+	    SUBSCRIBE     = 0x0006, // sent when subscribing to a publisher
+	    UNSUBSCRIBE   = 0x0007, // unsusbscribing from a publisher
+	    DISCONNECT    = 0x0008, // node was removed
+	    DEBUG         = 0x0009, // request debug info
 	    SHUTDOWN      = 0x000C, // node is shutting down
 	};
 
@@ -62,6 +63,7 @@ public:
 		if (type == SUBSCRIBE)   return "SUBSCRIBE";
 		if (type == UNSUBSCRIBE) return "UNSUBSCRIBE";
 		if (type == DISCONNECT)  return "DISCONNECT";
+		if (type == DEBUG)       return "DEBUG";
 		if (type == SHUTDOWN)    return "SHUTDOWN";
 		return "UNKNOWN";
 	}

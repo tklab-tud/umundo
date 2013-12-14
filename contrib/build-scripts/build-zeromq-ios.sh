@@ -52,12 +52,14 @@ if [ ! -d ${DEST_DIR}/device ]; then
   SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneOS${SDK_VER}.sdk"
   
   if [ $(bc <<< "$SDK_VER >= 7.0") -eq 1 ]; then
+    
     # export CC="/Applications/Xcode.app/Contents/Developer/usr/bin/gcc"
     # export CXX="/Applications/Xcode.app/Contents/Developer/usr/bin/g++"
     # export CPPFLAGS="-sysroot ${SYSROOT}"
     # export CXXCPPFLAGS="-sysroot ${SYSROOT}"
     # export LD=${TOOLCHAIN_ROOT}/usr/bin/ld
-    echo "asdf"
+    export LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS} -lstdc++"
+    
   else
     export CC=${TOOLCHAIN_ROOT}/usr/bin/gcc
     export CXX=${TOOLCHAIN_ROOT}/usr/bin/g++
@@ -65,6 +67,11 @@ if [ ! -d ${DEST_DIR}/device ]; then
     export CPP=${TOOLCHAIN_ROOT}/usr/bin/cpp
     export CXXCPP=${TOOLCHAIN_ROOT}/usr/bin/cpp
     export LDFLAGS="-isysroot ${SYSROOT} ${DEV_ARCHS}"
+    export AR=${TOOLCHAIN_ROOT}/usr/bin/ar
+    export AS=${TOOLCHAIN_ROOT}/usr/bin/as
+    export LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool
+    export STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip
+    export RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib
   fi
 
   if [ ! -d ${SYSROOT} ]; then
@@ -81,19 +88,12 @@ if [ ! -d ${DEST_DIR}/device ]; then
   mkdir -p ${DEST_DIR}/device &> /dev/null
 
   ./configure \
-  CPP="cpp" \
-  CXXCPP="cpp" \
   CFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
   CXXFLAGS="-O -isysroot ${SYSROOT} ${DEV_ARCHS}" \
   --host=arm-apple-darwin10 \
   --target=arm-apple-darwin10 \
   --disable-shared \
   --disable-dependency-tracking \
-  AR=${TOOLCHAIN_ROOT}/usr/bin/ar \
-  AS=${TOOLCHAIN_ROOT}/usr/bin/as \
-  LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool \
-  STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip \
-  RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib \
   --prefix=${DEST_DIR}/device
 
   make -j2 install
@@ -104,8 +104,6 @@ else
   echo
 fi
 
-exit
-
 #
 # Simulator
 #
@@ -115,20 +113,22 @@ if [ ! -d ${DEST_DIR}/simulator ]; then
   SYSROOT="${TOOLCHAIN_ROOT}/SDKs/iPhoneSimulator${SDK_VER}.sdk"
 
   if [ $(bc <<< "$SDK_VER >= 7.0") -eq 1 ]; then
-    export CXX=${TOOLCHAIN_ROOT}/usr/bin/g++wdf
-    export CC=${TOOLCHAIN_ROOT}/usr/bin/gcc-qwef
-    export AR=/Applications/Xcode.app/Contents/Developer/usr/bin/ar
-    export AS=/Applications/Xcode.app/Contents/Developer/usr/bin/as
-    export LIBTOOL=/Applications/Xcode.app/Contents/Developer/usr/bin/libtool
-    export STRIP=/Applications/Xcode.app/Contents/Developer/usr/bin/strip
-    export RANLIB=/Applications/Xcode.app/Contents/Developer/usr/bin/ranlib
-    export LD=${TOOLCHAIN_ROOT}/usr/bin/ld
+    # export CXX=${TOOLCHAIN_ROOT}/usr/bin/g++
+    # export CC=${TOOLCHAIN_ROOT}/usr/bin/gcc
+    # export AR=/Applications/Xcode.app/Contents/Developer/usr/bin/ar
+    # export AS=/Applications/Xcode.app/Contents/Developer/usr/bin/as
+    # export LIBTOOL=/Applications/Xcode.app/Contents/Developer/usr/bin/libtool
+    # export STRIP=/Applications/Xcode.app/Contents/Developer/usr/bin/strip
+    # export RANLIB=/Applications/Xcode.app/Contents/Developer/usr/bin/ranlib
+    # export LD=${TOOLCHAIN_ROOT}/usr/bin/ld
+    export LDFLAGS="-isysroot ${SYSROOT} -arch i386 -lstdc++"
   else
     export CXX=${TOOLCHAIN_ROOT}/usr/bin/llvm-g++
     export CC=${TOOLCHAIN_ROOT}/usr/bin/llvm-gcc
     export AR=${TOOLCHAIN_ROOT}/usr/bin/ar
     export AS=${TOOLCHAIN_ROOT}/usr/bin/as
     export LIBTOOL=${TOOLCHAIN_ROOT}/usr/bin/libtool
+    export LDFLAGS="-isysroot  ${SYSROOT} -arch i386"
     export STRIP=${TOOLCHAIN_ROOT}/usr/bin/strip
     export RANLIB=${TOOLCHAIN_ROOT}/usr/bin/ranlib
     export LD=${TOOLCHAIN_ROOT}/usr/bin/ld\ -r
@@ -152,15 +152,16 @@ if [ ! -d ${DEST_DIR}/simulator ]; then
   CXXFLAGS="-O -isysroot ${SYSROOT} -arch i386" \
   --disable-shared \
   --disable-dependency-tracking \
-  LDFLAGS="-isysroot  ${SYSROOT} -arch i386" \
   --prefix=${DEST_DIR}/simulator
 
   make -j2 install
 else
   echo
-  echo "${DEST_DIR}/device already exists - not rebuilding."
+  echo "${DEST_DIR}/simulator already exists - not rebuilding."
   echo
 fi
+
+cp ${DEST_DIR}/device/include/* ${DIR}/../prebuilt/ios/include
 
 echo
 echo "- Creating universal binaries --------------------------------------"
@@ -170,23 +171,24 @@ LIBS=`find ${DIR}/../prebuilt/ios/*zeromq-build* -name *.a`
 set +e
 for LIB in ${LIBS}; do
   LIB_BASE=`basename $LIB .a`
-  ARCHS=`lipo -info $LIB`
+  ARCHS=`xcrun -sdk iphoneos lipo -info $LIB`
   ARCHS=`expr "$ARCHS" : '.*:\(.*\)$'`
   for ARCH in ${ARCHS}; do
     mkdir -p ${DIR}/../prebuilt/ios/arch/${ARCH} > /dev/null
-    lipo -extract $ARCH $LIB -output ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a \
+    xcrun -sdk iphoneos lipo -extract $ARCH $LIB -output ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a \
       || cp $LIB ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB_BASE}.a
     UNIQUE_LIBS=`ls ${DIR}/../prebuilt/ios/arch/${ARCH}`
   done
 done
 
-
 for LIB in ${UNIQUE_LIBS}; do
   FILELIST=""
   for ARCH in `ls ${DIR}/../prebuilt/ios/arch/`; do
     FILELIST="${FILELIST} ${DIR}/../prebuilt/ios/arch/${ARCH}/${LIB}"
-  done
-  lipo -create ${FILELIST} -output ${DIR}/../prebuilt/ios/lib/${LIB}
+  done  
+  # echo "xcrun -sdk iphoneos lipo -create ${FILELIST} -output ${DIR}/../prebuilt/ios/lib/${LIB}"
+  # exit
+  xcrun -sdk iphoneos lipo -create ${FILELIST} -output ${DIR}/../prebuilt/ios/lib/${LIB}
 done
 
 rm -rf ${DIR}/../prebuilt/ios/arch/

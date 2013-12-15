@@ -13,19 +13,26 @@
  *  program. If not, see <http://www.opensource.org/licenses/bsd-license>.
  */
 
+// ./bin/umundo-debug -ofoo.dot && dot -O -Tpdf foo.dot && open foo.dot.pdf
+// ./bin/umundo-debug -ofoo.dot && twopi -O -Tpdf foo.dot && open foo.dot.pdf
+// ./bin/umundo-debug -ofoo.dot && neato -O -Tpdf foo.dot && open foo.dot.pdf
+// ./bin/umundo-debug -ofoo.dot && fdp -O -Tpdf foo.dot && open foo.dot.pdf
+// ./bin/umundo-debug -ofoo.dot && sfdp -O -Tpdf foo.dot && open foo.dot.pdf
+// ./bin/umundo-debug -ofoo.dot && circo -O -Tpdf foo.dot && open foo.dot.pdf
+
 #define NODE_ENSURE(uuid) \
-if (nodeDots.find(uuid) == nodeDots.end()) { \
-	nodeDots[uuid] = new NodeDot(); \
+if (debugNodes.find(uuid) == debugNodes.end()) { \
+	debugNodes[uuid] = new DebugNode(); \
 }
 
 #define PUB_ENSURE(uuid) \
-if (pubDots.find(uuid) == pubDots.end()) { \
-	pubDots[uuid] = new PubDot(); \
+if (debugPubs.find(uuid) == debugPubs.end()) { \
+	debugPubs[uuid] = new DebugPub(); \
 }
 
 #define SUB_ENSURE(uuid) \
-if (subDots.find(uuid) == subDots.end()) { \
-	subDots[uuid] = new SubDot(); \
+if (debugSubs.find(uuid) == debugSubs.end()) { \
+	debugSubs[uuid] = new DebugSub(); \
 }
 
 #define CHECK_AND_ASSIGN(keyCStr, var) \
@@ -69,7 +76,7 @@ std::ofstream outfile;
 std::string uuid;
 std::string dotFile;
 std::string domain;
-bool isVerbose;
+bool isQuiet;
 size_t waitFor;
 
 Mutex mutex;
@@ -77,60 +84,74 @@ Mutex mutex;
 void printUsageAndExit() {
 	printf("umundo-debug version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-debug [-v] [-d domain] [-wN] [-oFILE]\n");
+	printf("\tumundo-debug [-q] [-d domain] [-wN] [-oFILE]\n");
 	printf("\n");
 	printf("Options\n");
-	printf("\t-v                 : print debug info messages as the arrive\n");
+	printf("\t-q                 : do not print debug info messages as they arrive\n");
 	printf("\t-d <domain>        : join domain\n");
 	printf("\t-wN                : wait N milli-seconds for nodes (defaults to 3000)\n");
 	printf("\t-oFILE             : write umundo layout as a dot file\n");
 	exit(1);
 }
 
-class PubDot;
-class SubDot;
-class NodeDot;
+class DebugPub;
+class DebugSub;
+class DebugNode;
 
-class PubDot {
+class DebugPub {
 public:
-	PubDot() : isReal(false) {}
+	DebugPub() : isReal(false) {}
 	bool isReal;
 	std::string uuid;
 	std::string type;
 	std::string channelName;
-	std::map<std::string, NodeDot*> availableAtNode;
-	std::map<std::string, NodeDot*> knownByNode;
-	std::map<std::string, SubDot*> connFromSubs;
+	std::map<std::string, DebugNode*> availableAtNode;
+	std::map<std::string, DebugNode*> knownByNode;
+	std::map<std::string, DebugSub*> connFromSubs;
 };
 
-class SubDot {
+class DebugSub {
 public:
-	SubDot() : isReal(false) {}
+	DebugSub() : isReal(false) {}
 	bool isReal;
 	std::string uuid;
 	std::string type;
 	std::string channelName;
-	std::map<std::string, NodeDot*> availableAtNode;
-	std::map<std::string, NodeDot*> knownByNode;
-	std::map<std::string, PubDot*> connToPubs;
+	std::map<std::string, DebugNode*> availableAtNode;
+	std::map<std::string, DebugNode*> knownByNode;
+	std::map<std::string, DebugPub*> connToPubs;
 };
 
-class NodeDot {
+class DebugNode {
 public:
-	NodeDot() : isReal(false) {}
+	DebugNode() : isReal(false) {}
 	bool isReal;
 	std::string uuid;
 	std::string host;
 	std::string proc;
-	std::map<std::string, NodeDot*> connTo;
-	std::map<std::string, NodeDot*> connFrom;
-	std::map<std::string, SubDot*> subs;
-	std::map<std::string, PubDot*> pubs;
+	std::map<std::string, DebugNode*> connTo;
+	std::map<std::string, DebugNode*> connFrom;
+	std::map<std::string, DebugSub*> subs;
+	std::map<std::string, DebugPub*> pubs;
 };
 
-std::map<std::string, NodeDot*> nodeDots;
-std::map<std::string, PubDot*> pubDots;
-std::map<std::string, SubDot*> subDots;
+struct DotNode {
+	std::string dotId;
+	std::map<std::string, std::string> attr;
+};
+
+class DotEdge {
+	std::string dotId;
+	std::map<std::string, std::string> attr;
+};
+
+std::map<std::string, DebugNode*> debugNodes;
+std::map<std::string, DebugPub*> debugPubs;
+std::map<std::string, DebugSub*> debugSubs;
+
+std::map<std::string, DotNode> dotNodes;
+std::map<std::string, DotNode> dotEdges;
+
 std::list<std::string> messages;
 
 class DebugInfoFetcher : public Thread {
@@ -178,7 +199,7 @@ public:
 			msgSize = zmq_msg_size(&repMsg);
 
 			std::string data((char*)zmq_msg_data(&repMsg), msgSize);
-			if (isVerbose)
+			if (!isQuiet)
 				std::cout << data << std::endl;
 
 			messages.push_back(data);
@@ -188,7 +209,8 @@ public:
 			if (!more)
 				break;      //  Last message part
 		}
-		std::cout << std::endl;
+		if (!isQuiet)
+			std::cout << std::endl;
 		if (locked)
 			mutex.unlock();
 	}
@@ -216,108 +238,123 @@ class DebugEndPointResultSet : public ResultSet<EndPoint> {
 	}
 };
 
-void writeNodeDot(NodeDot* node) {
-	outfile << "\"" << node->uuid << "\" [";
-	outfile << "fontsize=8,";
-	outfile << "shape=box,";
+void processDebugNode(DebugNode* node) {
+	dotNodes[node->uuid].dotId = "\"" + node->uuid + "\"";
+	dotNodes[node->uuid].attr["fontsize"] = "8";
+	dotNodes[node->uuid].attr["shape"] = "box";
+	
 	if (node->isReal) {
-		outfile << "color=black,";
+		dotNodes[node->uuid].attr["color"] = "black";
 	} else {
-		outfile << "color=red,";
+		dotNodes[node->uuid].attr["color"] = "red";
 	}
-	outfile << "label=<";
-	outfile << "<b>Node[" << SHORT_UUID(node->uuid) << "]</b><br />";
-	outfile << ">";
-	outfile << "];" << std::endl;
 
-	std::map<std::string, SubDot*>::iterator subIter = node->subs.begin();
+	std::stringstream labelSS;
+	labelSS << "<";
+	labelSS << "<b>Node[" << SHORT_UUID(node->uuid) << "]</b><br />";
+	labelSS << ">";
+	dotNodes[node->uuid].attr["label"] = labelSS.str();
+	
+	
+	std::map<std::string, DebugSub*>::iterator subIter = node->subs.begin();
 	while(subIter != node->subs.end()) {
-		outfile << "\"" << node->uuid << "\" -> \"" << subIter->first << "\" [";
-		outfile << "arrowhead=normal,";
-		outfile << "color=black";
-		outfile << "];" << std::endl;
+		std::string edgeId = node->uuid + " -> " + subIter->first;
+		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + subIter->first + "\"";
+		dotEdges[edgeId].attr["arrowhead"] = "diamond";
+		dotEdges[edgeId].attr["color"] = "grey";
 		subIter++;
 	}
 
-	std::map<std::string, PubDot*>::iterator pubIter = node->pubs.begin();
+	std::map<std::string, DebugPub*>::iterator pubIter = node->pubs.begin();
 	while(pubIter != node->pubs.end()) {
-		outfile << "\"" << node->uuid << "\" -> \"" << pubIter->first << "\" [";
-		outfile << "arrowhead=normal,";
-		outfile << "color=black";
-		outfile << "];" << std::endl;
+		std::string edgeId = node->uuid + " -> " + pubIter->first;
+		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + pubIter->first + "\"";
+		dotEdges[edgeId].attr["arrowhead"] = "diamond";
+		dotEdges[edgeId].attr["color"] = "grey";
 		pubIter++;
 	}
 
 }
 
-void writePubDot(PubDot* pub) {
-	outfile << "\"" << pub->uuid << "\" [";
-	outfile << "fontsize=8,";
-	outfile << "shape=box,";
+void processDebugPub(DebugPub* pub) {
+	dotNodes[pub->uuid].dotId = "\"" + pub->uuid + "\"";
+	dotNodes[pub->uuid].attr["fontsize"] = "8";
+	dotNodes[pub->uuid].attr["shape"] = "box";
+	
 	if (pub->isReal) {
-		outfile << "color=black,";
+		dotNodes[pub->uuid].attr["color"] = "black";
 	} else {
-		outfile << "color=red,";
+		dotNodes[pub->uuid].attr["color"] = "red";
 	}
-	outfile << "label=<";
-	outfile << "<b>Pub[" << SHORT_UUID(pub->uuid) << "]</b><br />";
+	
+	std::stringstream labelSS;
+	labelSS << "<";
+	labelSS << "<b>Pub[" << SHORT_UUID(pub->uuid) << "]</b><br />";
 	switch (strTo<uint16_t>(pub->type)) {
-	case 1:
-		outfile << "ZMQ";
-		break;
-	case 2:
-		outfile << "RTP";
-		break;
-	default:
-		outfile << "UKN";
-		break;
+		case 1:
+			labelSS << "ZMQ";
+			break;
+		case 2:
+			labelSS << "RTP";
+			break;
+		default:
+			labelSS << "UKN";
+			break;
 	}
-	outfile << "@" << pub->channelName << "<br />";
-	outfile << ">";
-	outfile << "];" << std::endl;
+	labelSS << "@" << pub->channelName << "<br />";
+	labelSS << ">";
+	dotNodes[pub->uuid].attr["label"] = labelSS.str();
 
-	std::map<std::string, SubDot*>::iterator subIter = pub->connFromSubs.begin();
+	std::map<std::string, DebugSub*>::iterator subIter = pub->connFromSubs.begin();
 	while(subIter != pub->connFromSubs.end()) {
-		outfile << "\"" << pub->uuid << "\" -> \"" << subIter->first << "\" [";
-		outfile << "arrowhead=normal,";
-		outfile << "color=black";
-		outfile << "];" << std::endl;
+		std::string edgeId = pub->uuid + " -> " + subIter->first;
+		dotEdges[edgeId].dotId = "\"" + pub->uuid + "\" -> \"" + subIter->first + "\"";
+		dotEdges[edgeId].attr["arrowhead"] = "normal";
+		dotEdges[edgeId].attr["color"] = "black";
 		subIter++;
 	}
 }
 
-void writeSubDot(SubDot* sub) {
-	outfile << "\"" << sub->uuid << "\" [";
-	outfile << "fontsize=8,";
-	outfile << "shape=box,";
+void processDebugSub(DebugSub* sub) {
+	dotNodes[sub->uuid].dotId = "\"" + sub->uuid + "\"";
+	dotNodes[sub->uuid].attr["fontsize"] = "8";
+	dotNodes[sub->uuid].attr["shape"] = "box";
+	
 	if (sub->isReal) {
-		outfile << "color=black,";
+		dotNodes[sub->uuid].attr["color"] = "black";
 	} else {
-		outfile << "color=red,";
+		dotNodes[sub->uuid].attr["color"] = "red";
 	}
-	outfile << "label=<";
-	outfile << "<b>Sub[" << SHORT_UUID(sub->uuid) << "]</b><br />";
+	
+	std::stringstream labelSS;
+	labelSS << "<";
+	labelSS << "<b>Sub[" << SHORT_UUID(sub->uuid) << "]</b><br />";
 	switch (strTo<uint16_t>(sub->type)) {
-	case 1:
-		outfile << "ZMQ";
-		break;
-	case 2:
-		outfile << "RTP";
-		break;
-	default:
-		outfile << "UKN";
-		break;
+		case 1:
+			labelSS << "ZMQ";
+			break;
+		case 2:
+			labelSS << "RTP";
+			break;
+		default:
+			labelSS << "UKN";
+			break;
 	}
-	outfile << "@" << sub->channelName << "<br />";
-	outfile << ">";
-	outfile << "];" << std::endl;
-
-	std::map<std::string, PubDot*>::iterator pubIter = sub->connToPubs.begin();
+	labelSS << "@" << sub->channelName << "<br />";
+	labelSS << ">";
+	dotNodes[sub->uuid].attr["label"] = labelSS.str();
+	
+	std::map<std::string, DebugPub*>::iterator pubIter = sub->connToPubs.begin();
 	while(pubIter != sub->connToPubs.end()) {
-		outfile << "\"" << sub->uuid << "\" -> \"" << pubIter->first << "\" [";
-		outfile << "arrowhead=normal,";
-		outfile << "color=black";
-		outfile << "];" << std::endl;
+		std::string edgeId = sub->uuid + " -> " + pubIter->first;
+		std::string backEdgeId = pubIter->first + " -> " + sub->uuid;
+		if (dotEdges.find(backEdgeId) != dotEdges.end()) {
+			dotEdges[backEdgeId].attr["dir"] = "both";
+		} else {
+			dotEdges[edgeId].dotId = "\"" + sub->uuid + "\" -> \"" + pubIter->first + "\"";
+			dotEdges[edgeId].attr["arrowhead"] = "normal";
+			dotEdges[edgeId].attr["color"] = "black";
+		}
 		pubIter++;
 	}
 }
@@ -326,13 +363,13 @@ void generateDotFile() {
 	// iterate all messages
 	std::list<std::string>::iterator mIter;
 
-	NodeDot* currNode = NULL;
-	PubDot* currPub = NULL;
-	SubDot* currSub = NULL;
+	DebugNode* currNode = NULL;
+	DebugPub* currPub = NULL;
+	DebugSub* currSub = NULL;
 
-	NodeDot* currRemoteNode = NULL;
-	PubDot* currRemotePub = NULL;
-	SubDot* currRemoteSub = NULL;
+	DebugNode* currRemoteNode = NULL;
+	DebugPub* currRemotePub = NULL;
+	DebugSub* currRemoteSub = NULL;
 
 	for(mIter = messages.begin(); mIter != messages.end(); mIter++) {
 		std::string key;
@@ -347,7 +384,7 @@ void generateDotFile() {
 		if (mIter->substr(0, key.length()) == key) {
 			std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 			NODE_ENSURE(uuid)
-			currNode = nodeDots[uuid];
+			currNode = debugNodes[uuid];
 			currNode->uuid = uuid;
 			currNode->isReal = true;
 			continue;
@@ -367,7 +404,7 @@ void generateDotFile() {
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 				PUB_ENSURE(uuid)
-				currPub = pubDots[uuid];
+				currPub = debugPubs[uuid];
 				currPub->uuid = uuid;
 				currPub->isReal = true;
 				currPub->availableAtNode[currNode->uuid] = currNode;
@@ -389,7 +426,7 @@ void generateDotFile() {
 				if (mIter->substr(0,key.length()) == key) {
 					std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 					SUB_ENSURE(uuid)
-					currRemoteSub = subDots[uuid];
+					currRemoteSub = debugSubs[uuid];
 					currRemoteSub->uuid = uuid;
 					currRemoteSub->knownByNode[currNode->uuid] = currNode;
 					currPub->connFromSubs[uuid] = currRemoteSub;
@@ -414,7 +451,7 @@ void generateDotFile() {
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 				SUB_ENSURE(uuid)
-				currSub = subDots[uuid];
+				currSub = debugSubs[uuid];
 				currSub->uuid = uuid;
 				currSub->isReal = true;
 				currSub->availableAtNode[currNode->uuid] = currNode;
@@ -436,7 +473,7 @@ void generateDotFile() {
 				if (mIter->substr(0,key.length()) == key) {
 					std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 					PUB_ENSURE(uuid)
-					currRemotePub = pubDots[uuid];
+					currRemotePub = debugPubs[uuid];
 					currRemotePub->uuid = uuid;
 					currRemotePub->knownByNode[currNode->uuid] = currNode;
 					currSub->connToPubs[uuid] = currRemotePub;
@@ -460,7 +497,7 @@ void generateDotFile() {
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = mIter->substr(key.length(), mIter->length() - key.length());
 				NODE_ENSURE(uuid)
-				currRemoteNode = nodeDots[uuid];
+				currRemoteNode = debugNodes[uuid];
 				currRemoteNode->uuid = uuid;
 				continue;
 			}
@@ -483,38 +520,74 @@ void generateDotFile() {
 		}
 	}
 
-	// now write it as a dot file
-	outfile << "digraph {" << std::endl;
-	outfile << "rankdir=TB; fontsize=10;" << std::endl;
-
-	std::map<std::string, NodeDot*>::iterator nodeIter = nodeDots.begin();
-	while(nodeIter != nodeDots.end()) {
-		writeNodeDot(nodeIter->second);
+	// process into edges and nodes fot dot
+	std::map<std::string, DebugNode*>::iterator nodeIter = debugNodes.begin();
+	while(nodeIter != debugNodes.end()) {
+		processDebugNode(nodeIter->second);
 		nodeIter++;
 	}
-	std::map<std::string, PubDot*>::iterator pubIter = pubDots.begin();
-	while(pubIter != pubDots.end()) {
-		writePubDot(pubIter->second);
+	std::map<std::string, DebugPub*>::iterator pubIter = debugPubs.begin();
+	while(pubIter != debugPubs.end()) {
+		processDebugPub(pubIter->second);
 		pubIter++;
 	}
 
-	std::map<std::string, SubDot*>::iterator subIter = subDots.begin();
-	while(subIter != subDots.end()) {
-		writeSubDot(subIter->second);
+	std::map<std::string, DebugSub*>::iterator subIter = debugSubs.begin();
+	while(subIter != debugSubs.end()) {
+		processDebugSub(subIter->second);
 		subIter++;
 	}
 
+	// now write it as a dot file
+	outfile << "digraph {" << std::endl;
+	outfile << "rankdir=LR; fontsize=10;" << std::endl;
 
+	// process dot nodes
+	std::map<std::string, DotNode>::iterator dNodeIter = dotNodes.begin();
+	while(dNodeIter != dotNodes.end()) {
+		outfile << dNodeIter->second.dotId;
+		outfile << "[";
+		
+		std::map<std::string, std::string>::iterator attrIter = dNodeIter->second.attr.begin();
+		std::string seperator;
+		while (attrIter != dNodeIter->second.attr.end()) {
+			outfile << seperator << attrIter->first << "=" << attrIter->second;
+			seperator = ",";
+			attrIter++;
+		}
+		
+		outfile << "];" << std::endl;
+		dNodeIter++;
+	}
+
+	// process dot edges
+	std::map<std::string, DotNode>::iterator dEdgeIter = dotEdges.begin();
+	while(dEdgeIter != dotEdges.end()) {
+		outfile << dEdgeIter->second.dotId;
+		outfile << " [";
+		
+		std::map<std::string, std::string>::iterator attrIter = dEdgeIter->second.attr.begin();
+		std::string seperator;
+		while (attrIter != dEdgeIter->second.attr.end()) {
+			outfile << seperator << attrIter->first << "=" << attrIter->second;
+			seperator = ",";
+			attrIter++;
+		}
+		
+		outfile << "];" << std::endl;
+		dEdgeIter++;
+	}
+	
 	outfile << "}" << std::endl;
 }
 
 int main(int argc, char** argv) {
 
 	waitFor = 3000;
-	isVerbose = false;
+	isQuiet = false;
 
 	int option;
-	while ((option = getopt(argc, argv, "d:w:o:v")) != -1) {
+	while ((option = getopt(argc, argv, "d:w:o:q")) != -1) {
 		switch(option) {
 		case 'd':
 			domain = optarg;
@@ -525,8 +598,8 @@ int main(int argc, char** argv) {
 		case 'o':
 			dotFile = optarg;
 			break;
-		case 'v':
-			isVerbose = true;
+		case 'q':
+			isQuiet = true;
 			break;
 		default:
 			printUsageAndExit();

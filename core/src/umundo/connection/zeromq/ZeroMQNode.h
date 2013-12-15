@@ -141,6 +141,26 @@ protected:
 		uint64_t startedAt; ///< Timestamp when we noticed this subscription attempt
 	};
 
+	class StatBucket {
+	public:
+		StatBucket() :
+			timeStamp(Thread::getTimeStampMs()),
+			nrMetaMsgRcvd(0),
+			sizeMetaMsgRcvd(0),
+			nrMetaMsgSent(0),
+			sizeMetaMsgSent(0)
+		{};
+		uint64_t timeStamp;
+		std::map<std::string, size_t> nrChannelMsg; ///< number of message received per channel
+		std::map<std::string, size_t> sizeChannelMsg; ///< accumulate size of messages
+		size_t nrMetaMsgRcvd;
+		size_t sizeMetaMsgRcvd;
+		size_t nrMetaMsgSent;
+		size_t sizeMetaMsgSent;
+	};
+	
+	std::list<StatBucket> _buckets;
+	
 	ZeroMQNode();
 
 	std::map<std::string, std::string> _options;
@@ -206,6 +226,7 @@ protected:
 	void removeStaleNodes(uint64_t now);
 
 	void replyWithDebugInfo(const std::string uuid);
+	StatBucket accumulateIntoBucket();
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 

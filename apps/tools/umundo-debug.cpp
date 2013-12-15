@@ -105,6 +105,8 @@ public:
 	std::string uuid;
 	std::string type;
 	std::string channelName;
+	std::string msgsPerSecSent;
+	std::string bytesPerSecSent;
 	std::map<std::string, DebugNode*> availableAtNode;
 	std::map<std::string, DebugNode*> knownByNode;
 	std::map<std::string, DebugSub*> connFromSubs;
@@ -129,6 +131,11 @@ public:
 	std::string uuid;
 	std::string host;
 	std::string proc;
+	std::string os;
+	std::string msgsPerSecSent;
+	std::string bytesPerSecSent;
+	std::string msgsPerSecRcvd;
+	std::string bytesPerSecRcvd;
 	std::map<std::string, DebugNode*> connTo;
 	std::map<std::string, DebugNode*> connFrom;
 	std::map<std::string, DebugSub*> subs;
@@ -252,6 +259,13 @@ void processDebugNode(DebugNode* node) {
 	std::stringstream labelSS;
 	labelSS << "<";
 	labelSS << "<b>Node[" << SHORT_UUID(node->uuid) << "]</b><br />";
+	labelSS << "OS: " << node->os << "<br />";
+	if (node->bytesPerSecSent.size() > 0) {
+		labelSS << "Sent: " << node->bytesPerSecSent << "B in " << node->msgsPerSecSent << "msgs / sec<br />";
+	}
+	if (node->bytesPerSecRcvd.size() > 0) {
+		labelSS << "Rcvd: " << node->bytesPerSecRcvd << "B in " << node->msgsPerSecRcvd << "msgs / sec<br />";
+	}
 	labelSS << ">";
 	dotNodes[node->uuid].attr["label"] = labelSS.str();
 	
@@ -273,7 +287,6 @@ void processDebugNode(DebugNode* node) {
 		dotEdges[edgeId].attr["color"] = "grey";
 		pubIter++;
 	}
-
 }
 
 void processDebugPub(DebugPub* pub) {
@@ -302,6 +315,11 @@ void processDebugPub(DebugPub* pub) {
 			break;
 	}
 	labelSS << "@" << pub->channelName << "<br />";
+	labelSS << "#Subscribers: " << pub->connFromSubs.size() << "<br />";
+	if (pub->bytesPerSecSent.size() > 0) {
+		labelSS << "Sent: " << pub->bytesPerSecSent << "B in " << pub->msgsPerSecSent << "msgs / sec<br />";
+	}
+
 	labelSS << ">";
 	dotNodes[pub->uuid].attr["label"] = labelSS.str();
 
@@ -341,6 +359,7 @@ void processDebugSub(DebugSub* sub) {
 			break;
 	}
 	labelSS << "@" << sub->channelName << "<br />";
+	labelSS << "#Publishers: " << sub->connToPubs.size() << "<br />";
 	labelSS << ">";
 	dotNodes[sub->uuid].attr["label"] = labelSS.str();
 	
@@ -394,7 +413,12 @@ void generateDotFile() {
 			continue;
 
 		CHECK_AND_ASSIGN("host:", currNode->host);
+		CHECK_AND_ASSIGN("os:", currNode->os);
 		CHECK_AND_ASSIGN("proc:", currNode->proc);
+		CHECK_AND_ASSIGN("sent:msgs:", currNode->msgsPerSecSent);
+		CHECK_AND_ASSIGN("sent:bytes:", currNode->bytesPerSecSent);
+		CHECK_AND_ASSIGN("rcvd:msgs:", currNode->msgsPerSecRcvd);
+		CHECK_AND_ASSIGN("rcvd:bytes:", currNode->bytesPerSecRcvd);
 
 		// process publishers
 		key = "pub:";
@@ -417,6 +441,8 @@ void generateDotFile() {
 
 			CHECK_AND_ASSIGN("pub:channelName:", currPub->channelName);
 			CHECK_AND_ASSIGN("pub:type:", currPub->type);
+			CHECK_AND_ASSIGN("pub:sent:msgs:", currPub->msgsPerSecSent);
+			CHECK_AND_ASSIGN("pub:sent:bytes:", currPub->bytesPerSecSent);
 
 			// remote sub registered at the publisher
 			key = "pub:sub";

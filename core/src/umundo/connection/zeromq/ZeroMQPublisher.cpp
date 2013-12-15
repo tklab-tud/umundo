@@ -163,8 +163,9 @@ void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 
 	UM_LOG_INFO("Publisher %s lost subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
-	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {// only farewell for the last vanishing occurence
-		_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
+	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
+		if (_greeter != NULL)
+			_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
 		_subs.erase(sub.getUUID());
 	}
 

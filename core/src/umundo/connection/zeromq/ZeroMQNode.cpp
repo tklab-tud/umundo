@@ -819,6 +819,7 @@ void ZeroMQNode::processOpComm() {
 		break;
 	}
 	case Message::DISCONNECT: {
+		// endpoint was removed
 		char* address;
 		readPtr = readString(readPtr, address, msgSize - (readPtr - recvBuffer));
 
@@ -828,7 +829,7 @@ void ZeroMQNode::processOpComm() {
 
 		_connTo[address]->refCount--;
 
-		if (_connTo[address]->refCount == 0) {
+		if (_connTo[address]->refCount <= 0) {
 			NodeStub& nodeStub = _connTo[address]->node;
 			std::string nodeUUID = nodeStub.getUUID();
 			disconnectRemoteNode(nodeStub);
@@ -843,6 +844,10 @@ void ZeroMQNode::processOpComm() {
 			} else {
 				assert(nodeUUID.size() > 0);
 				assert(_connFrom.find(nodeUUID) != _connFrom.end());
+				
+				delete _connFrom[nodeUUID];
+				_connFrom.erase(nodeUUID);
+
 			}
 			_connTo.erase(address);
 
@@ -948,11 +953,6 @@ void ZeroMQNode::run() {
 			_buckets.push_back(StatBucket());
 		}
 		
-		if (items[2].revents & ZMQ_POLLIN) {
-			processOpComm();
-			DRAIN_SOCKET(_readOpSocket);
-		}
-
 		index = stdSockets;
 		sockIter = _connTo.begin();
 		while (sockIter != _connTo.end()) {
@@ -975,6 +975,11 @@ void ZeroMQNode::run() {
 		if (items[1].revents & ZMQ_POLLIN) {
 			processPubComm();
 			DRAIN_SOCKET(_pubSocket);
+		}
+
+		if (items[2].revents & ZMQ_POLLIN) {
+			processOpComm();
+			DRAIN_SOCKET(_readOpSocket);
 		}
 
 		// someone is publishing - this is last to
@@ -1072,21 +1077,50 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 		return;
 
 	std::string nodeUUID = nodeStub.getUUID();
-	std::map<std::string, PublisherStub> pubs = nodeStub.getPublishers();
-	std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
-	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
+	std::map<std::string, PublisherStub> remotePubs = nodeStub.getPublishers();
+	std::map<std::string, PublisherStub>::iterator remotePubIter = remotePubs.begin();
+	std::map<std::string, Subscriber>::iterator localSubIter = _subs.begin();
 
 	// iterate all remote publishers and remove from local subs
-	while (pubIter != pubs.end()) {
-		while (subIter != _subs.end()) {
-			if(subIter->second.matches(pubIter->second.getChannelName())) {
-				subIter->second.removed(pubIter->second, nodeStub);
-				sendSubRemoved(nodeStub.getUUID().c_str(), subIter->second, pubIter->second);
+	while (remotePubIter != remotePubs.end()) {
+		while (localSubIter != _subs.end()) {
+			if(localSubIter->second.matches(remotePubIter->second.getChannelName())) {
+				localSubIter->second.removed(remotePubIter->second, nodeStub);
+				sendSubRemoved(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
 			}
-			subIter++;
+			localSubIter++;
 		}
-		pubIter++;
+		remotePubIter++;
 	}
+
+	std::map<std::string, SubscriberStub> remoteSubs = nodeStub.getSubscribers();
+	std::map<std::string, SubscriberStub>::iterator remoteSubIter = remoteSubs.begin();
+	while(remoteSubIter != remoteSubs.end()) {
+		if (_subscriptions.find(remoteSubIter->first) != _subscriptions.end()) {
+			Subscription& subscription = _subscriptions[remoteSubIter->first];
+			std::map<std::string, Publisher>::iterator confirmedIter = subscription.confirmed.begin();
+			while(confirmedIter != subscription.confirmed.end()) {
+				confirmedIter->second.removed(subscription.subStub, nodeStub);
+				confirmedIter++;
+			}
+			_subscriptions.erase(remoteSubIter->first);
+		} else {
+			// could not find any subscriptions
+		}
+		remoteSubIter++;
+	}
+	
+	// iterate all remote subscribers and remove from local pubs
+//	while (localPubIter != _pubs.end()) {
+//		while (remoteSubIter != remoteSubs.end()) {
+//			if(remoteSubIter->second.matches(localPubIter->second.getChannelName())) {
+//				localSubIter->second.removed(remotePubIter->second, nodeStub);
+//				sendSubRemoved(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
+//			}
+//			remoteSubIter++;
+//		}
+//		localPubIter++;
+//	}
 
 }
 

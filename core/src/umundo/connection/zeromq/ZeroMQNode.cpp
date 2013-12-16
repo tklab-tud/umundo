@@ -937,7 +937,7 @@ void ZeroMQNode::run() {
 		
 		// make sure we have a bucket for performance measuring
 		if (_buckets.size() == 0)
-			_buckets.push_back(StatBucket());
+			_buckets.push_back(StatBucket<size_t>());
 
 		//UM_LOG_DEBUG("%s: polling on %ld sockets", _uuid.c_str(), nrSockets);
 		zmq_poll(items, index, -1);
@@ -950,7 +950,7 @@ void ZeroMQNode::run() {
 		}
 		if (_buckets.back().timeStamp < now - UMUNDO_PERF_BUCKET_LENGTH_MS) {
 			// we need a new bucket
-			_buckets.push_back(StatBucket());
+			_buckets.push_back(StatBucket<size_t>());
 		}
 		
 		index = stdSockets;
@@ -1502,13 +1502,13 @@ char* ZeroMQNode::readUInt16(char* buffer, uint16_t& value) {
 	return buffer;
 }
 
-ZeroMQNode::StatBucket ZeroMQNode::accumulateIntoBucket() {
-	StatBucket statBucket;
+ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
+	StatBucket<double> statBucket;
 	
 	double rollOffFactor = 0.3;
 
-	std::list<StatBucket>::iterator buckFrameStart = _buckets.begin();
-	std::list<StatBucket>::iterator buckFrameEnd = _buckets.begin();
+	std::list<StatBucket<size_t> >::iterator buckFrameStart = _buckets.begin();
+	std::list<StatBucket<size_t> >::iterator buckFrameEnd = _buckets.begin();
 	std::map<std::string, size_t>::iterator chanIter;
 
 	while(buckFrameEnd != _buckets.end()) {
@@ -1519,8 +1519,8 @@ ZeroMQNode::StatBucket ZeroMQNode::accumulateIntoBucket() {
 		}
 		
 		// accumulate stats for a second
-		StatBucket oneSecBucket;
-		std::list<StatBucket>::iterator curr = buckFrameStart;
+		StatBucket<size_t> oneSecBucket;
+		std::list<StatBucket<size_t> >::iterator curr = buckFrameStart;
 		while(curr != buckFrameEnd) {
 			oneSecBucket.nrMetaMsgRcvd += curr->nrMetaMsgRcvd;
 			oneSecBucket.nrMetaMsgSent += curr->nrMetaMsgSent;
@@ -1566,7 +1566,7 @@ ZeroMQNode::StatBucket ZeroMQNode::accumulateIntoBucket() {
 void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	ScopeLock lock(_mutex);
 
-	StatBucket statBucket = accumulateIntoBucket();
+	StatBucket<double> statBucket = accumulateIntoBucket();
 
 	// return to sender
 	zmq_send(_nodeSocket, uuid.c_str(), uuid.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));

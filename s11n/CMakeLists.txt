@@ -1,36 +1,13 @@
-############################################################
-# Gather libraries and header files
-############################################################
-
-# include directories for our header files
-include_directories(src)
-
-# gather all header files
-file(GLOB_RECURSE UMUNDOS11N_HEADER_FILES src/umundo/*.h)
-
-include(UseUMundo)
-
-LIST(APPEND UMUNDOS11N_LIBRARIES umundocore)
-
-# umundocore already links against Foundation.framework
-# if (APPLE)
-# 	find_library(FOUNDATION NAMES Foundation REQUIRED)
-# 	LIST(APPEND UMUNDOS11N_LIBRARIES ${FOUNDATION})
-# endif()
-
-###########################################
-# gather implementation agnostic files
-###########################################
-
-file(GLOB S11N_FILES src/umundo/s11n/*.cpp)
-list(APPEND UMUNDOS11N_FILES  ${S11N_FILES})
+# only reenable if we found an implementation
+set(BUILD_UMUNDO_S11N OFF)
 
 ###########################################
 # Protocol Buffers
 ###########################################
 
-if (S11N_PROTOBUF)
-	find_package(Protobuf REQUIRED)
+find_package(Protobuf)
+if (S11N_PROTOBUF AND PROTOBUF_FOUND)
+	set(BUILD_UMUNDO_S11N ON)
 
 	# protobuf-lite is not enough as we use reflection and dynamic messages
 # 	LIST(APPEND UMUNDOS11N_LIBRARIES optimized ${PROTOBUF_LITE_LIBRARY})
@@ -55,42 +32,68 @@ if (S11N_PROTOBUF)
 	# list(APPEND UMUNDOS11N_HEADER_FILES ${PROTO_HDRS})
 	# list(APPEND UMUNDOS11N_FILES ${PROTO_SRCS})
 
-endif(S11N_PROTOBUF)
+endif()
 
-############################################################
-# bindings
-############################################################
+if(BUILD_UMUNDO_S11N)
 
-if (APPLE OR IOS)
-	file(GLOB_RECURSE UMUNDOS11N_OBJC_FILES src/umundo-objc/s11n/*.mm)
-	file(GLOB_RECURSE UMUNDOS11N_OBJC_HEADER_FILES src/umundo-objc/s11n/*.h)
-	list(APPEND UMUNDOS11N_HEADER_FILES ${UMUNDOS11N_OBJC_HEADER_FILES})
-	list(APPEND UMUNDOS11N_FILES ${UMUNDOS11N_OBJC_FILES})
-	if (IOSSIM)
-		set_source_files_properties(${UMUNDOS11N_OBJC_FILES} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
+	# include directories for our header files
+	include_directories(src)
+
+	# gather all header files
+	file(GLOB_RECURSE UMUNDOS11N_HEADER_FILES src/umundo/*.h)
+
+	include(UseUMundo)
+
+	LIST(APPEND UMUNDOS11N_LIBRARIES umundocore)
+
+	# umundocore already links against Foundation.framework
+	# if (APPLE)
+	# 	find_library(FOUNDATION NAMES Foundation REQUIRED)
+	# 	LIST(APPEND UMUNDOS11N_LIBRARIES ${FOUNDATION})
+	# endif()
+
+	###########################################
+	# gather implementation agnostic files
+	###########################################
+
+	file(GLOB S11N_FILES src/umundo/s11n/*.cpp)
+	list(APPEND UMUNDOS11N_FILES  ${S11N_FILES})
+
+	############################################################
+	# bindings
+	############################################################
+
+	if (APPLE OR IOS)
+		file(GLOB_RECURSE UMUNDOS11N_OBJC_FILES src/umundo-objc/s11n/*.mm)
+		file(GLOB_RECURSE UMUNDOS11N_OBJC_HEADER_FILES src/umundo-objc/s11n/*.h)
+		list(APPEND UMUNDOS11N_HEADER_FILES ${UMUNDOS11N_OBJC_HEADER_FILES})
+		list(APPEND UMUNDOS11N_FILES ${UMUNDOS11N_OBJC_FILES})
+		if (IOSSIM)
+			set_source_files_properties(${UMUNDOS11N_OBJC_FILES} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
+		endif()
+		include_directories(${PROJECT_SOURCE_DIR}/core/bindings/)
 	endif()
-	include_directories(${PROJECT_SOURCE_DIR}/core/bindings/)
+
+	#LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
+
+	############################################################
+	# setup umundoserial library
+	############################################################
+
+	add_library(umundoserial ${UMUNDOS11N_FILES} ${UMUNDOS11N_HEADER_FILES})
+	if (DIST_PREPARE)
+	  set_target_properties(umundoserial PROPERTIES SOVERSION ${UMUNDO_VERSION})
+	endif()
+	target_link_libraries(umundoserial ${UMUNDOS11N_LIBRARIES})
+	INSTALL_HEADERS(HEADERS ${UMUNDOS11N_HEADER_FILES} COMPONENT headers)
+	INSTALL_LIBRARY(TARGETS umundoserial COMPONENT libraryS11N)
+	set_target_properties(umundoserial PROPERTIES FOLDER "Libraries")
+
+	# ok to have in IDEs, but do not install
+	LIST(APPEND UMUNDOS11N_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
+
+	LIST(SORT UMUNDOS11N_HEADER_FILES)
 endif()
-
-#LIST(APPEND UMUNDOS11N_LIBRARIES umundoserial)
-
-############################################################
-# setup umundoserial library
-############################################################
-
-LIST(SORT UMUNDOS11N_HEADER_FILES)
-
-add_library(umundoserial ${UMUNDOS11N_FILES} ${UMUNDOS11N_HEADER_FILES})
-if (DIST_PREPARE)
-  set_target_properties(umundoserial PROPERTIES SOVERSION ${UMUNDO_VERSION})
-endif()
-target_link_libraries(umundoserial ${UMUNDOS11N_LIBRARIES})
-INSTALL_HEADERS(HEADERS ${UMUNDOS11N_HEADER_FILES} COMPONENT headers)
-INSTALL_LIBRARY(TARGETS umundoserial COMPONENT libraryS11N)
-set_target_properties(umundoserial PROPERTIES FOLDER "Libraries")
-
-# ok to have in IDEs, but do not install
-LIST(APPEND UMUNDOS11N_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
 
 ############################################################
 # Miscellaneous
@@ -99,4 +102,5 @@ LIST(APPEND UMUNDOS11N_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config
 set(UMUNDOS11N_FILES "${UMUNDOS11N_FILES}" PARENT_SCOPE)
 set(UMUNDOS11N_LIBRARIES "${UMUNDOS11N_LIBRARIES}" PARENT_SCOPE)
 set(UMUNDOS11N_HEADER_FILES "${UMUNDOS11N_HEADER_FILES}" PARENT_SCOPE)
+set(BUILD_UMUNDO_S11N "${BUILD_UMUNDO_S11N}" PARENT_SCOPE)
 

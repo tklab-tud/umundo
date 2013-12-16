@@ -1,31 +1,15 @@
-############################################################
-# Gather libraries and header files
-############################################################
-
-# include directories for our header files
-include_directories(src)
-
-# gather all header files
-file(GLOB_RECURSE UMUNDORPC_HEADER_FILES src/umundo/rpc/*.h src/umundo/rpc.h)
-
+# only reenable if we found an implementation
+set(BUILD_UMUNDO_RPC OFF)
 include(UseUMundo)
-
-LIST(APPEND UMUNDORPC_LIBRARIES umundocore)
-LIST(APPEND UMUNDORPC_LIBRARIES umundoserial)
-
-###########################################
-# gather implementation agnostic files
-###########################################
-
-file(GLOB RPC_FILES src/umundo/rpc/*.cpp)
-list(APPEND UMUNDORPC_FILES  ${RPC_FILES})
 
 ###########################################
 # Protocol Buffers
 ###########################################
 
-if (RPC_PROTOBUF AND BUILD_UMUNDO_TOOLS)
-	find_package(Protobuf REQUIRED)
+find_package(Protobuf)
+if (PROTOBUF_FOUND AND RPC_PROTOBUF AND BUILD_UMUNDO_TOOLS)
+	set(BUILD_UMUNDO_RPC ON)
+
 # 	LIST(APPEND UMUNDORPC_LIBRARIES optimized ${PROTOBUF_LIBRARY})
 # 	LIST(APPEND UMUNDORPC_LIBRARIES debug ${PROTOBUF_LIBRARY_DEBUG})
 	include_directories(${PROTOBUF_INCLUDE_DIRS})
@@ -88,20 +72,41 @@ LIST(APPEND UMUNDORPC_LIBRARIES umundorpc)
 # setup umundorpc library
 ############################################################
 
-LIST(SORT UMUNDORPC_HEADER_FILES)
 
-add_library(umundorpc ${UMUNDORPC_FILES} ${UMUNDORPC_HEADER_FILES})
-if (DIST_PREPARE)
-  set_target_properties(umundorpc PROPERTIES SOVERSION ${UMUNDO_VERSION})
+if (BUILD_UMUNDO_RPC)
+
+	# include directories for our header files
+	include_directories(src)
+
+	# gather all header files
+	file(GLOB_RECURSE UMUNDORPC_HEADER_FILES src/umundo/rpc/*.h src/umundo/rpc.h)
+
+	LIST(APPEND UMUNDORPC_LIBRARIES umundocore)
+	LIST(APPEND UMUNDORPC_LIBRARIES umundoserial)
+
+	###########################################
+	# gather implementation agnostic files
+	###########################################
+
+	file(GLOB RPC_FILES src/umundo/rpc/*.cpp)
+	list(APPEND UMUNDORPC_FILES  ${RPC_FILES})
+
+	add_library(umundorpc ${UMUNDORPC_FILES} ${UMUNDORPC_HEADER_FILES})
+	if (DIST_PREPARE)
+	  set_target_properties(umundorpc PROPERTIES SOVERSION ${UMUNDO_VERSION})
+	endif()
+
+	target_link_libraries(umundorpc ${UMUNDORPC_LIBRARIES})
+	INSTALL_HEADERS(HEADERS ${UMUNDORPC_HEADER_FILES} COMPONENT headers)
+	INSTALL_LIBRARY(TARGETS umundorpc COMPONENT libraryRPC)
+	set_target_properties(umundorpc PROPERTIES FOLDER "Libraries")
+
+	# ok to have in IDEs, but do not install
+	LIST(APPEND UMUNDORPC_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
+
+	LIST(SORT UMUNDORPC_HEADER_FILES)
+
 endif()
-
-target_link_libraries(umundorpc ${UMUNDORPC_LIBRARIES})
-INSTALL_HEADERS(HEADERS ${UMUNDORPC_HEADER_FILES} COMPONENT headers)
-INSTALL_LIBRARY(TARGETS umundorpc COMPONENT libraryRPC)
-set_target_properties(umundorpc PROPERTIES FOLDER "Libraries")
-
-# ok to have in IDEs, but do not install
-LIST(APPEND UMUNDORPC_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
 
 ############################################################
 # Miscellaneous
@@ -110,4 +115,4 @@ LIST(APPEND UMUNDORPC_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.
 set(UMUNDORPC_FILES "${UMUNDORPC_FILES}" PARENT_SCOPE)
 set(UMUNDORPC_LIBRARIES "${UMUNDORPC_LIBRARIES}" PARENT_SCOPE)
 set(UMUNDORPC_HEADER_FILES "${UMUNDORPC_HEADER_FILES}" PARENT_SCOPE)
-
+set(BUILD_UMUNDO_RPC "${BUILD_UMUNDO_RPC}" PARENT_SCOPE)

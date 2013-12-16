@@ -141,6 +141,7 @@ protected:
 		uint64_t startedAt; ///< Timestamp when we noticed this subscription attempt
 	};
 
+	template<class T>
 	class StatBucket {
 	public:
 		StatBucket() :
@@ -151,15 +152,15 @@ protected:
 			sizeMetaMsgSent(0)
 		{};
 		uint64_t timeStamp;
-		std::map<std::string, size_t> nrChannelMsg; ///< number of message received per channel
-		std::map<std::string, size_t> sizeChannelMsg; ///< accumulate size of messages
-		size_t nrMetaMsgRcvd;
-		size_t sizeMetaMsgRcvd;
-		size_t nrMetaMsgSent;
-		size_t sizeMetaMsgSent;
+		std::map<std::string, T> nrChannelMsg; ///< number of message received per channel
+		std::map<std::string, T> sizeChannelMsg; ///< accumulate size of messages
+		T nrMetaMsgRcvd;
+		T sizeMetaMsgRcvd;
+		T nrMetaMsgSent;
+		T sizeMetaMsgSent;
 	};
 	
-	std::list<StatBucket> _buckets;
+	std::list<StatBucket<size_t> > _buckets;
 	
 	ZeroMQNode();
 
@@ -226,7 +227,7 @@ protected:
 	void removeStaleNodes(uint64_t now);
 
 	void replyWithDebugInfo(const std::string uuid);
-	StatBucket accumulateIntoBucket();
+	StatBucket<double> accumulateIntoBucket();
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 

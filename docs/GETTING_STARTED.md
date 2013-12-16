@@ -15,7 +15,7 @@ console or from within your installation directory. If you see some *io* on both
 ends, your system is setup correctly to run umundo programs. If not see the
 [troubleshooting](TroubleShooting) section below.
 
-You can export <tt>UMUNDO&#95;LOGLEVEL=[0..3]</tt> to increase the global log-level,
+You can export <tt>UMUNDO&#95;LOGLEVEL=[0..4]</tt> to increase the global log-level,
 with 3 being the most verbose. You can also increase/descrease log-levels per
 component by exporting <tt>UMUNDO&#95;LOGLEVEL&#95;[COMMON|NET|DISC|S11N]=[0..4]</tt>.
 With some terminals, colored output is available via <tt>UMUNDO&#95;LOGCOLORS=[ON|OFF]</tt>.

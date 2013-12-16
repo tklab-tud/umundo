@@ -261,10 +261,10 @@ void processDebugNode(DebugNode* node) {
 	labelSS << "<b>Node[" << SHORT_UUID(node->uuid) << "]</b><br />";
 	labelSS << "OS: " << node->os << "<br />";
 	if (node->bytesPerSecSent.size() > 0) {
-		labelSS << "Sent: " << node->bytesPerSecSent << "B in " << node->msgsPerSecSent << "msgs / sec<br />";
+		labelSS << "Sent: " << node->bytesPerSecSent << "B/s in " << node->msgsPerSecSent << "m/s<br />";
 	}
 	if (node->bytesPerSecRcvd.size() > 0) {
-		labelSS << "Rcvd: " << node->bytesPerSecRcvd << "B in " << node->msgsPerSecRcvd << "msgs / sec<br />";
+		labelSS << "Rcvd: " << node->bytesPerSecRcvd << "B/s in " << node->msgsPerSecRcvd << "m/s<br />";
 	}
 	labelSS << ">";
 	dotNodes[node->uuid].attr["label"] = labelSS.str();

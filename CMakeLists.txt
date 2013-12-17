@@ -433,10 +433,17 @@ endif()
 if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
 	set(CMAKE_OSX_ARCHITECTURES "x86_64;i386")
-	# support leopard and above
-	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+  if (MACOSX_VERSION VERSION_LESS 10.9)
+    # forces libstc++
+  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+    set(LIBCPP libstdc++)
+  else()
+    # forces libc++
+  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+    set(LIBCPP libc++)
+  endif()
 	foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
-			set(${FLAGS} "${${FLAGS}} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+			set(${FLAGS} "${${FLAGS}} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -stdlib=${LIBCPP}")
   endforeach()
 endif()
 

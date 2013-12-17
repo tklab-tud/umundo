@@ -40,7 +40,9 @@ fi
 # CXXFLAGS="-Os -mmacosx-version-min=10.6 -arch x86_64" \
 
 if [ ${MACOSX_COMP[1]} -lt 9 ]; then
-  MACOSX_VERSION_MIN="-mmacosx-version-min=10.6"
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.6 -stdlib=libstdc++"
+else
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.7 -stdlib=libc++"
 fi
 
 # 64Bit release

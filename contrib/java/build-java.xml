@@ -122,11 +122,21 @@
 	<echo message="source dir:         ${src.dir}"/>
 	<echo message="build dir:          ${build.dir}"/>
 	<echo message="build type:         ${build.type}"/>
+	<echo message="test class:         ${test.class}"/>
+	<echo message="test file:          ${test.file}"/>
 
-	<echo message="Test loading JAR and JNI library"/>
-	<javac classpath="${lib.dir}/umundo.jar" srcdir="test/" includeantruntime="false" />
-	<java classpath="${lib.dir}/umundo.jar:test" classname="TestJNILoad" />
-	<delete file="test/TestJNILoad.class" />
+	<javac srcdir="test/" includeantruntime="false">
+    <classpath>
+      <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
+      <pathelement location="${lib.dir}/umundo.jar"/>
+    </classpath>
+	</javac>
+	<java classpath="${lib.dir}/umundo.jar:test" classname="${test.class}">
+    <classpath>
+      <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
+      <pathelement location="${lib.dir}/umundo.jar"/>
+    </classpath>
+	</java>
 </target>
 
 </project>

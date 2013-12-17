@@ -1,3 +1,4 @@
+import org.umundo.core.Discovery;
 import org.umundo.core.Node;
 import org.umundo.protobuf.tests.EchoServiceStub;
 import org.umundo.protobuf.tests.TestServices.EchoReply;
@@ -7,7 +8,7 @@ import org.umundo.rpc.ServiceDescription;
 import org.umundo.rpc.ServiceFilter;
 import org.umundo.rpc.ServiceManager;
 
-public class TestRPCClient {
+public class RPCClient {
 	public static void main(String[] args) throws InterruptedException {
 		class ServiceListener implements IServiceListener {
 			@Override
@@ -37,8 +38,10 @@ public class TestRPCClient {
 			}
 		}
 
-		
+		Discovery disc = new Discovery(Discovery.DiscoveryType.MDNS);
 		Node node = new Node();
+		disc.add(node);
+		
 		ServiceManager svcMgr = new ServiceManager();
 		node.connect(svcMgr);
 		

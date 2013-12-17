@@ -11,6 +11,10 @@ public class TestRPC {
 	public static void main(String[] args) throws InterruptedException {
 		Node node1 = new Node();
 		Node node2 = new Node();
+		
+		node1.added(node2);
+		node2.added(node1);
+		
 		EchoServiceImpl localEchoService = new EchoServiceImpl();
 
 		ServiceManager svcMgr1 = new ServiceManager();
@@ -25,7 +29,7 @@ public class TestRPC {
 
 		EchoServiceStub echoService = new EchoServiceStub(svcDesc);
 
-		int iterations = 15000;
+		int iterations = 15;
 	    int sends = 0;
 	    long now = System.currentTimeMillis() / 1000;
 	    

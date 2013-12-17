@@ -133,10 +133,12 @@ if (UMUNDONATIVEJAVA_LOCATION)
 			-f build-java.xml
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/java
 			COMMENT "Creating the jar ...")
+			
 		# make sure ant runs after we built the wrappers
 		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_S11N)
 			add_dependencies(java java_protoc_s11n)
 		endif()
+		
 		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_RPC)
 			add_dependencies(java java_protoc_rpc)
 		endif()
@@ -145,16 +147,24 @@ if (UMUNDONATIVEJAVA_LOCATION)
 		set_target_properties(java PROPERTIES FOLDER "Bindings")
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS java)
+
+			file(GLOB JAVA_TESTS ${PROJECT_SOURCE_DIR}/contrib/java/test/Test*.java)
+			
+			foreach(TEST ${JAVA_TESTS})
+				get_filename_component(TEST_NAME ${TEST} NAME_WE)
+				add_test(java${TEST_NAME}
+					${ANT_EXECUTABLE}
+					-Dlib.dir=${JAR_JNI_ROOT_PATH}
+					-Dsrc.dir=${PROJECT_SOURCE_DIR}
+					-Dbuild.dir=${PROJECT_BINARY_DIR}
+					-Dbuild.type=${CMAKE_BUILD_TYPE}
+					-Dtest.class=${TEST_NAME}
+					-Dtest.file=${TEST}
+					-f ${PROJECT_SOURCE_DIR}/contrib/java/build-java.xml
+					test)
+			endforeach()
 		endif()
 
-		add_test(java-tests
-			${ANT_EXECUTABLE}
-			-Dlib.dir=${JAR_JNI_ROOT_PATH}
-			-Dsrc.dir=${PROJECT_SOURCE_DIR}
-			-Dbuild.dir=${PROJECT_BINARY_DIR}
-			-Dbuild.type=${CMAKE_BUILD_TYPE}
-			-f ${PROJECT_SOURCE_DIR}/contrib/java/build-java.xml
-			test)
 	else()
 		message(STATUS "Could not find ant binary - will not build jars")
 	endif()

@@ -21,7 +21,7 @@ fi
 mkdir -p ${DEST_DIR}/lib &> /dev/null
 
 if [ -f Makefile ]; then
-	make clean
+	make distclean
 fi
 
 ./configure \

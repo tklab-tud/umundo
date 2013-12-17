@@ -1,5 +1,6 @@
 # only reenable if we found an implementation
 set(BUILD_UMUNDO_S11N OFF)
+include(UseUMundo)
 
 ###########################################
 # Protocol Buffers
@@ -41,8 +42,6 @@ if(BUILD_UMUNDO_S11N)
 
 	# gather all header files
 	file(GLOB_RECURSE UMUNDOS11N_HEADER_FILES src/umundo/*.h)
-
-	include(UseUMundo)
 
 	LIST(APPEND UMUNDOS11N_LIBRARIES umundocore)
 

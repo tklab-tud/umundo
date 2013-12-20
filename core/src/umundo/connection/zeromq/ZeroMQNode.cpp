@@ -292,7 +292,7 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
 
 	std::map<std::string, NodeStub> to;
 	ScopeLock(_mutex);
-	std::map<std::string, NodeConnection*>::iterator nodeIter = _connTo.begin();
+	std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
 	while (nodeIter != _connTo.end()) {
 		// only report UUIDs as keys
 		if (UUID::isUUID(nodeIter->first)) {
@@ -311,7 +311,7 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 
 		_subs[sub.getUUID()] = sub;
 
-		std::map<std::string, NodeConnection*>::iterator nodeIter = _connTo.begin();
+		std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
 		while (nodeIter != _connTo.end()) {
 			NodeStub& nodeStub = nodeIter->second->node;
 			if (nodeStub) {
@@ -339,7 +339,7 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 
 		UM_LOG_INFO("%s removed subscriber %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
 
-		std::map<std::string, NodeConnection*>::iterator nodeIter = _connTo.begin();
+		std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
 		while (nodeIter != _connTo.end()) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
@@ -909,6 +909,7 @@ void ZeroMQNode::run() {
 	size_t more_size = sizeof(more);
 	size_t stdSockets = 4;
 	size_t index;
+	std::list<std::pair<uint32_t, std::string> > nodeSockets;
 
 	while(isStarted()) {
 		size_t maxSockets = _connTo.size() + stdSockets;
@@ -923,13 +924,14 @@ void ZeroMQNode::run() {
 		memcpy(items, sockets, stdSockets * sizeof(zmq_pollitem_t));
 
 		index = stdSockets;
-		std::map<std::string, NodeConnection*>::iterator sockIter = _connTo.begin();
+		std::map<std::string, NodeConnection*>::const_iterator sockIter = _connTo.begin();
 		while (sockIter != _connTo.end()) {
 			if (!UUID::isUUID(sockIter->first)) { // only add if key is an address
 				items[index].socket = sockIter->second->socket;
 				items[index].fd = 0;
 				items[index].events = ZMQ_POLLIN;
 				items[index].revents = 0;
+				nodeSockets.push_back(std::make_pair(index, sockIter->first));
 				index++;
 			}
 			sockIter++;
@@ -941,7 +943,8 @@ void ZeroMQNode::run() {
 
 		//UM_LOG_DEBUG("%s: polling on %ld sockets", _uuid.c_str(), nrSockets);
 		zmq_poll(items, index, -1);
-
+		// We do have a message to read!
+		
 		// manage performane status buckets
 		uint64_t now = Thread::getTimeStampMs();
 		while (_buckets.size() > 0 && _buckets.front().timeStamp < now - UMUNDO_PERF_WINDOW_LENGTH_MS) {
@@ -953,19 +956,21 @@ void ZeroMQNode::run() {
 			_buckets.push_back(StatBucket<size_t>());
 		}
 		
-		index = stdSockets;
-		sockIter = _connTo.begin();
-		while (sockIter != _connTo.end()) {
-			if (!UUID::isUUID(sockIter->first)) {
-				if (items[index].revents & ZMQ_POLLIN) {
-					// init reply
-					processClientComm(sockIter->second);
-					break;
+		// look through node sockets
+		while(nodeSockets.size() > 0) {
+			if (items[nodeSockets.front().first].revents & ZMQ_POLLIN) {
+				ScopeLock lock(_mutex);
+				if (_connTo.find(nodeSockets.front().second) != _connTo.end()) {
+					processClientComm(_connTo[nodeSockets.front().second]);
+				} else {
+					UM_LOG_WARN("%s: message from vanished node %s", _uuid.c_str(), nodeSockets.front().second.c_str());
 				}
-				index++;
+				break;
 			}
-			sockIter++;
+			nodeSockets.pop_front();
 		}
+		nodeSockets.clear();
+		
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			processNodeComm();

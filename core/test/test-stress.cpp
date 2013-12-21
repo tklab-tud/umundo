@@ -8,31 +8,32 @@ bool testDiscoveryStress() {
 	Publisher p("foo");
 	n.addPublisher(p);
 
-	assert(NodeImpl::instances == 1);
-
-	for(int i = 4; i > 0; i--) {
-		std::cout << "### " << i << std::endl;
+	for(int i = 40; i > 0; i--) {
 		Node n2;
-		assert(NodeImpl::instances == 2);
+		
+		n2.added(n);
+		n.added(n2);
 
 		for (int j = 0; j < i; j++) {
-			std::cout << "---------- " << j << std::endl;
 			Subscriber s("foo", NULL);
-			std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
-			assert(SubscriberImpl::instances == j + 1);
 			n2.addSubscriber(s);
-			std::cout << "\tSubscribers: " << p.waitForSubscribers(0) << std::endl;
-			assert(p.waitForSubscribers(j + 1) == j + 1);
-//			Thread::sleepMs(200);
+			int subs = p.waitForSubscribers(j);
+			std::cout << "\tSubscribers: " << subs << std::endl;
+//			assert(subs == j);
 		}
 
 		assert(p.waitForSubscribers(i) == i);
+		
 		std::map<std::string, Subscriber> subs = n2.getSubscribers();
 		std::map<std::string, Subscriber>::iterator subIter = subs.begin();
 		while(subIter != subs.end()) {
 			n2.removeSubscriber(subIter->second);
 			subIter++;
 		}
+		
+		n2.removed(n);
+		n.removed(n2);
+
 	}
 
 	return true;
@@ -54,10 +55,8 @@ bool testSubscriberStress() {
 			n2.addSubscriber(s);
 			subs.insert(s);
 			std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
-			assert(SubscriberImpl::instances == j + 1);
 		}
 		std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;
-		assert(SubscriberImpl::instances == i);
 		assert(p.waitForSubscribers(i) == i);
 
 		std::set<Subscriber>::iterator subIter = subs.begin();

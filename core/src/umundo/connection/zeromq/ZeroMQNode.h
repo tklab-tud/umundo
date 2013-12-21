@@ -167,9 +167,9 @@ protected:
 	std::map<std::string, std::string> _options;
 
 	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
-	std::map<std::string, NodeConnection*> _connFrom; ///< other node uuids connected to us have seen
-	std::map<std::string, NodeConnection*> _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
-	std::map<std::string, NodeConnection*> _connPending;
+	std::map<std::string, boost::shared_ptr<NodeConnection> > _connFrom; ///< other node uuids connected to us have seen
+	std::map<std::string, boost::shared_ptr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
+	std::map<std::string, boost::shared_ptr<NodeConnection> > _connPending;
 
 	std::map<std::string, Subscription> _subscriptions;
 
@@ -216,12 +216,12 @@ protected:
 	void processNodeComm();
 	void processPubComm();
 	void processOpComm();
-	void processClientComm(NodeConnection* client);
+	void processClientComm(boost::shared_ptr<NodeConnection> client);
 	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 
 	void processConnectedFrom(const std::string& uuid);
-	void processConnectedTo(const std::string& uuid, NodeConnection* client);
+	void processConnectedTo(const std::string& uuid, boost::shared_ptr<NodeConnection> client);
 
 	void broadCastNodeInfo(uint64_t now);
 	void removeStaleNodes(uint64_t now);

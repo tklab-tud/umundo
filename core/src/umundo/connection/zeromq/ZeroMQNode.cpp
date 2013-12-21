@@ -89,7 +89,7 @@ writeBuffer = (char*)zmq_msg_data(&msg);\
 writePtr = writeBuffer;\
  
 #define NODE_BROADCAST_MSG(msg) \
-std::map<std::string, NodeConnection*>::iterator nodeIter_ = _connFrom.begin();\
+std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter_ = _connFrom.begin();\
 while (nodeIter_ != _connFrom.end()) {\
 	if (UUID::isUUID(nodeIter_->first)) {\
 		zmq_msg_t broadCastMsgCopy_;\
@@ -155,10 +155,8 @@ ZeroMQNode::~ZeroMQNode() {
 		}
 	}
 
-	std::map<std::string, NodeConnection*>::iterator connIter = _connFrom.begin();
-	while(connIter != _connFrom.end()) {
-		delete connIter->second;
-		connIter++;
+	while(_connFrom.size() > 0) {
+		_connFrom.erase(_connFrom.begin());
 	}
 
 	// close sockets
@@ -278,7 +276,7 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedFrom() {
 
 	std::map<std::string, NodeStub> from;
 	ScopeLock(_mutex);
-	std::map<std::string, NodeConnection*>::iterator nodeIter = _connFrom.begin();
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter = _connFrom.begin();
 	while (nodeIter != _connFrom.end()) {
 		// this will report ourself as well
 		from[nodeIter->first] = nodeIter->second->node;
@@ -292,7 +290,7 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
 
 	std::map<std::string, NodeStub> to;
 	ScopeLock(_mutex);
-	std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter = _connTo.begin();
 	while (nodeIter != _connTo.end()) {
 		// only report UUIDs as keys
 		if (UUID::isUUID(nodeIter->first)) {
@@ -305,58 +303,56 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
 
 void ZeroMQNode::addSubscriber(Subscriber& sub) {
 	ScopeLock lock(_mutex);
-	if (_subs.find(sub.getUUID()) == _subs.end()) {
+	if (_subs.find(sub.getUUID()) != _subs.end())
+		return;
 
-		UM_LOG_INFO("%s added subscriber %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
+	UM_LOG_INFO("%s added subscriber %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
 
-		_subs[sub.getUUID()] = sub;
+	_subs[sub.getUUID()] = sub;
 
-		std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
-		while (nodeIter != _connTo.end()) {
-			NodeStub& nodeStub = nodeIter->second->node;
-			if (nodeStub) {
-				std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
-				std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
-
-				// iterate all remote publishers and remove from sub
-				while (pubIter != pubs.end()) {
-					if(sub.matches(pubIter->second.getChannelName())) {
-						sub.added(pubIter->second, nodeIter->second->node);
-						sendSubAdded(nodeIter->first.c_str(), sub, pubIter->second);
-					}
-					pubIter++;
-				}
-			}
-			nodeIter++;
-		}
-	}
-}
-
-void ZeroMQNode::removeSubscriber(Subscriber& sub) {
-	ScopeLock lock(_mutex);
-
-	if (_subs.find(sub.getUUID()) != _subs.end()) {
-
-		UM_LOG_INFO("%s removed subscriber %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
-
-		std::map<std::string, NodeConnection*>::const_iterator nodeIter = _connTo.begin();
-		while (nodeIter != _connTo.end()) {
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
+	while (nodeIter != _connTo.end()) {
+		if (nodeIter->second && nodeIter->second->node) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 
 			// iterate all remote publishers and remove from sub
 			while (pubIter != pubs.end()) {
 				if(sub.matches(pubIter->second.getChannelName())) {
-					sub.removed(pubIter->second, nodeIter->second->node);
-					sendSubRemoved(nodeIter->first.c_str(), sub, pubIter->second);
+					sub.added(pubIter->second, nodeIter->second->node);
+					sendSubAdded(nodeIter->first.c_str(), sub, pubIter->second);
 				}
 				pubIter++;
 			}
-			nodeIter++;
 		}
-		_subs.erase(sub.getUUID());
-
+		nodeIter++;
 	}
+}
+
+void ZeroMQNode::removeSubscriber(Subscriber& sub) {
+	ScopeLock lock(_mutex);
+
+	if (_subs.find(sub.getUUID()) == _subs.end())
+		return;
+
+	UM_LOG_INFO("%s removed subscriber %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
+
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
+	while (nodeIter != _connTo.end()) {
+		std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
+		std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
+
+		// iterate all remote publishers and remove from sub
+		while (pubIter != pubs.end()) {
+			if(sub.matches(pubIter->second.getChannelName())) {
+				sub.removed(pubIter->second, nodeIter->second->node);
+				sendSubRemoved(nodeIter->first.c_str(), sub, pubIter->second);
+			}
+			pubIter++;
+		}
+		nodeIter++;
+	}
+	_subs.erase(sub.getUUID());
 }
 
 void ZeroMQNode::addPublisher(Publisher& pub) {
@@ -601,9 +597,9 @@ void ZeroMQNode::processNodeComm() {
 					confirmSub(subUUID);
 			} else {
 				// remove a subscription
-
 				Subscription& confSub = _subscriptions[subUUID];
-				_connFrom[confSub.nodeUUID]->node.removeSubscriber(confSub.subStub);
+				if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID]->node)
+					_connFrom[confSub.nodeUUID]->node.removeSubscriber(confSub.subStub);
 
 				// move all pending subscriptions to confirmed
 				std::map<std::string, Publisher>::iterator confPubIter = confSub.confirmed.begin();
@@ -674,7 +670,7 @@ void ZeroMQNode::processPubComm() {
 /**
  * Process messages sent to one of the client sockets from a remote node
  */
-void ZeroMQNode::processClientComm(NodeConnection* client) {
+void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 	COMMON_VARS;
 
 	// we have a reply from the server
@@ -840,12 +836,12 @@ void ZeroMQNode::processOpComm() {
 
 			// delete NodeConnection object if not contained in _connFrom as well
 			if (!_connTo[address]->connectedFrom) {
-				delete _connTo[address];
+				//delete _connTo[address];
 			} else {
 				assert(nodeUUID.size() > 0);
 				assert(_connFrom.find(nodeUUID) != _connFrom.end());
 				
-				delete _connFrom[nodeUUID];
+				//delete _connFrom[nodeUUID];
 				_connFrom.erase(nodeUUID);
 
 			}
@@ -864,13 +860,13 @@ void ZeroMQNode::processOpComm() {
 
 		ScopeLock lock(_mutex);
 
-		NodeConnection* clientConn;
+		boost::shared_ptr<NodeConnection> clientConn;
 		// we don't know this endpoint
 		if (_connTo.find(address) == _connTo.end()) {
 			// open a new client connection
-			clientConn = new NodeConnection(address, _uuid);
+			clientConn = boost::shared_ptr<NodeConnection>(new NodeConnection(address, _uuid));
 			if (!clientConn->socket) {
-				delete clientConn;
+//				delete clientConn;
 				break;
 			}
 			_connTo[address] = clientConn;
@@ -912,6 +908,7 @@ void ZeroMQNode::run() {
 	std::list<std::pair<uint32_t, std::string> > nodeSockets;
 
 	while(isStarted()) {
+		_mutex.lock();
 		size_t maxSockets = _connTo.size() + stdSockets;
 
 		// reset std socket event flag
@@ -924,7 +921,7 @@ void ZeroMQNode::run() {
 		memcpy(items, sockets, stdSockets * sizeof(zmq_pollitem_t));
 
 		index = stdSockets;
-		std::map<std::string, NodeConnection*>::const_iterator sockIter = _connTo.begin();
+		std::map<std::string, boost::shared_ptr<NodeConnection> >::const_iterator sockIter = _connTo.begin();
 		while (sockIter != _connTo.end()) {
 			if (!UUID::isUUID(sockIter->first)) { // only add if key is an address
 				items[index].socket = sockIter->second->socket;
@@ -942,7 +939,9 @@ void ZeroMQNode::run() {
 			_buckets.push_back(StatBucket<size_t>());
 
 		//UM_LOG_DEBUG("%s: polling on %ld sockets", _uuid.c_str(), nrSockets);
+		_mutex.unlock();
 		zmq_poll(items, index, -1);
+		_mutex.lock();
 		// We do have a message to read!
 		
 		// manage performane status buckets
@@ -1020,6 +1019,7 @@ void ZeroMQNode::run() {
 //				removeStaleNodes(now);
 //				_lastDeadNodeRemoval = now;
 //			}
+		_mutex.unlock();
 		free(items);
 	}
 }
@@ -1032,19 +1032,19 @@ void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 }
 
 void ZeroMQNode::removeStaleNodes(uint64_t now) {
-	std::map<std::string, NodeConnection*>::iterator pendingNodeIter = _connTo.begin();
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator pendingNodeIter = _connTo.begin();
 	while(pendingNodeIter != _connTo.end()) {
 		if (now - pendingNodeIter->second->startedAt > 30000) {
 			// we have been very patient remove pending node
 			UM_LOG_ERR("%s could not connect to node at %s - removing", SHORT_UUID(_uuid).c_str(), pendingNodeIter->first.c_str());
-			delete pendingNodeIter->second;
+//			delete pendingNodeIter->second;
 			_connTo.erase(pendingNodeIter++);
 		} else {
 			pendingNodeIter++;
 		}
 	}
 
-	std::map<std::string, NodeConnection*>::iterator connIter = _connFrom.begin();
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator connIter = _connFrom.begin();
 	while(connIter != _connFrom.end()) {
 		if (!UUID::isUUID(connIter->first)) {
 			connIter++;
@@ -1069,7 +1069,7 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 
 			if (connIter->second->address.length())
 				_connFrom.erase(connIter->second->address);
-			delete connIter->second;
+//			delete connIter->second;
 			_connFrom.erase(connIter++);
 		} else {
 			connIter++;
@@ -1114,29 +1114,17 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 		}
 		remoteSubIter++;
 	}
-	
-	// iterate all remote subscribers and remove from local pubs
-//	while (localPubIter != _pubs.end()) {
-//		while (remoteSubIter != remoteSubs.end()) {
-//			if(remoteSubIter->second.matches(localPubIter->second.getChannelName())) {
-//				localSubIter->second.removed(remotePubIter->second, nodeStub);
-//				sendSubRemoved(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
-//			}
-//			remoteSubIter++;
-//		}
-//		localPubIter++;
-//	}
-
 }
 
 void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
 	// we received a connection from the given uuid
-
+	ScopeLock lock(_mutex);
+	
 	// let's see whether we already are connected *to* this one
 	if (_connTo.find(uuid) != _connTo.end()) {
 		_connFrom[uuid] = _connTo[uuid];
 	} else {
-		NodeConnection* conn = new NodeConnection();
+		boost::shared_ptr<NodeConnection> conn = boost::shared_ptr<NodeConnection>(new NodeConnection());
 		conn->node = NodeStub(boost::shared_ptr<NodeStubImpl>(new NodeStubImpl()));
 		conn->node.getImpl()->setUUID(uuid);
 		_connFrom[uuid] = conn;
@@ -1147,7 +1135,7 @@ void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
 	_connFrom[uuid]->node.updateLastSeen();
 }
 
-void ZeroMQNode::processConnectedTo(const std::string& uuid, NodeConnection* client) {
+void ZeroMQNode::processConnectedTo(const std::string& uuid, boost::shared_ptr<NodeConnection> client) {
 	assert(client->address.length() > 0);
 
 	// parse client's address back into its constituting parts
@@ -1177,7 +1165,6 @@ void ZeroMQNode::processConnectedTo(const std::string& uuid, NodeConnection* cli
 	// are we already connected *from* this one?
 	if (_connFrom.find(uuid) != _connFrom.end()) {
 		nodeStub = _connFrom[uuid]->node; // maybe we remembered something about the stub, keep entry
-		delete _connFrom[uuid]; 		// delete old entry
 		_connFrom[uuid] = client;   // overwrite with this one
 		client->connectedFrom = true; // and remember that we are already connected from
 	} else {
@@ -1719,8 +1706,8 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 
 
 	// send all the nodes we know about
-	std::map<std::string, NodeConnection*> connections;
-	std::map<std::string, NodeConnection*>::iterator nodeIter;
+	std::map<std::string, boost::shared_ptr<NodeConnection> > connections;
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter;
 
 	// insert connection to
 	nodeIter = _connTo.begin();

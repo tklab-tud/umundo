@@ -193,7 +193,7 @@ void ZeroMQNode::init(Options* options) {
 
 	// connect read and write op sockets
 	std::string readOpId("inproc://um.node.readop." + _uuid);
-	zmq_bind(_readOpSocket, readOpId.c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno))
+	zmq_bind(_readOpSocket, readOpId.c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
 	zmq_connect(_writeOpSocket, readOpId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", readOpId.c_str(), zmq_strerror(errno));
 
 	// connect node socket
@@ -217,8 +217,8 @@ void ZeroMQNode::init(Options* options) {
 		_pubPort = bindToFreePort(_pubSocket, "tcp", "*");
 	}
 	std::string pubId("um.pub." + _uuid);
-	zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno))
-	//  zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_bind: %s %s", std::string("ipc://" + pubId).c_str(), zmq_strerror(errno))
+	zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
+	//  zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_bind: %s %s", std::string("ipc://" + pubId).c_str(), zmq_strerror(errno));
 
 	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &sndhwm, sizeof(sndhwm))         && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_pubSocket, ZMQ_XPUB_VERBOSE, &vbsSub, sizeof(vbsSub))   && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno)); // receive all subscriptions
@@ -1830,7 +1830,7 @@ ZeroMQNode::NodeConnection::NodeConnection(const std::string& _address,
 		zmq_setsockopt(socket, ZMQ_IDENTITY, socketId.c_str(), socketId.length()) && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
 		int err = zmq_connect(socket, address.c_str());
 		if (err) {
-			UM_LOG_ERR("zmq_connect %s: %s", address.c_str(), zmq_strerror(errno))
+			UM_LOG_ERR("zmq_connect %s: %s", address.c_str(), zmq_strerror(errno));
 			zmq_close(socket);
 			socket = NULL;
 		}

@@ -19,6 +19,15 @@ if (BUILD_UMUNDO_S11N)
 	)
 endif()
 
+add_executable(umundo-rtppingpong umundo-rtppingpong.cpp)
+target_link_libraries(umundo-rtppingpong umundocore)
+set_target_properties(umundo-rtppingpong PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-rtppingpong
+	COMPONENT tools 
+)
+
 add_executable(umundo-pingpong umundo-pingpong.cpp)
 target_link_libraries(umundo-pingpong umundocore)
 set_target_properties(umundo-pingpong PROPERTIES FOLDER "Tools")

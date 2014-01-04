@@ -79,7 +79,7 @@ readPtr = recvBuffer;
 pub.getChannelName().length() + 1 + pub.getUUID().length() + 1 + 2 + 2
 
 #define SUB_INFO_SIZE(sub) \
-sub.getChannelName().length() + 1 + sub.getUUID().length() + 1 + 2
+sub.getChannelName().length() + 1 + sub.getUUID().length() + 1 + 2 + 2
 
 #define PREPARE_MSG(msg, size) \
 zmq_msg_t msg; \
@@ -565,17 +565,17 @@ void ZeroMQNode::processNodeComm() {
 		case Message::UNSUBSCRIBE: {
 			// a remote node subscribed or unsubscribed to one of our publishers
 
-			char* subChannelName;
-			char* subUUID;
-			char* pubChannelName;
-			char* pubUUID;
-			uint16_t pubPort;
-			uint16_t pubType;
-			uint16_t subType;
-
-			readPtr = readSubInfo(readPtr, subType, subChannelName, subUUID);
-			readPtr = readPubInfo(readPtr, pubType, pubPort, pubChannelName, pubUUID);
-
+			PublisherStubImpl* pubImpl = new PublisherStubImpl();
+			SubscriberStubImpl* subImpl = new SubscriberStubImpl();
+			
+			readPtr = readSubInfo(readPtr, REMAINING_BYTES_TOREAD, subImpl);
+			readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubImpl);
+			
+			std::string pubUUID = pubImpl->getUUID();
+			std::string subUUID = subImpl->getUUID();
+			
+			delete pubImpl;
+			
 			assert(REMAINING_BYTES_TOREAD == 0);
 			ScopeLock lock(_mutex);
 
@@ -585,17 +585,17 @@ void ZeroMQNode::processNodeComm() {
 			if (type == Message::SUBSCRIBE) {
 				// confirm subscription
 				if (!_subscriptions[subUUID].subStub) {
-					_subscriptions[subUUID].subStub = SubscriberStub(boost::shared_ptr<SubscriberStubImpl>(new SubscriberStubImpl()));
-					_subscriptions[subUUID].subStub.getImpl()->setChannelName(subChannelName);
-					_subscriptions[subUUID].subStub.getImpl()->setUUID(subUUID);
-					_subscriptions[subUUID].subStub.getImpl()->implType = subType;
+					_subscriptions[subUUID].subStub = SubscriberStub(boost::shared_ptr<SubscriberStubImpl>(subImpl));
+				} else {
+					delete subImpl;
 				}
 				_subscriptions[subUUID].nodeUUID = from;
 				_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
-				if (_subscriptions[subUUID].isZMQConfirmed || subType != Subscriber::ZEROMQ)
+				if (_subscriptions[subUUID].isZMQConfirmed || _subscriptions[subUUID].subStub.getImpl()->implType != Subscriber::ZEROMQ)
 					confirmSub(subUUID);
 			} else {
+				delete subImpl;
 				// remove a subscription
 				Subscription& confSub = _subscriptions[subUUID];
 				if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID]->node)
@@ -703,20 +703,17 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 
 		char* from;
 		readPtr = readString(readPtr, from, 37);
-		uint16_t port;
-		uint16_t pubType;
-		char* channelName;
-		char* pubUUID;
 
-		readPtr = readPubInfo(readPtr, pubType, port, channelName, pubUUID);
+		PublisherStubImpl* pubStub = new PublisherStubImpl();
+		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		ScopeLock lock(_mutex);
 
 		if (type == Message::PUB_ADDED) {
-			processRemotePubAdded(from, port, pubType, channelName, pubUUID);
+			processRemotePubAdded(from, pubStub);
 		} else {
-			processRemotePubRemoved(from, port, pubType, channelName, pubUUID);
+			processRemotePubRemoved(from, pubStub);
 		}
 
 	}
@@ -791,18 +788,18 @@ void ZeroMQNode::processOpComm() {
 	case Message::PUB_ADDED: {
 		// removePublisher / addPublisher called us
 		char* uuid;
-		uint16_t port;
-		uint16_t pubType;
-		char* channelName;
-		char* pubUUID;
 
 		readPtr = readString(readPtr, uuid, 37);
-		readPtr = readPubInfo(readPtr, pubType, port, channelName, pubUUID);
+
+		PublisherStubImpl* pubStub = new PublisherStubImpl();
+		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		std::string internalPubId("inproc://um.pub.intern.");
-		internalPubId += pubUUID;
+		internalPubId += pubStub->getUUID();
 
+		delete pubStub;
+		
 		if (type == Message::PUB_ADDED) {
 			zmq_connect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		} else {
@@ -1262,43 +1259,35 @@ void ZeroMQNode::processNodeInfo(char* recvBuffer, size_t msgSize) {
 
 	std::set<std::string> pubUUIDs;
 	while(REMAINING_BYTES_TOREAD > 37) {
-		uint16_t port;
-		char* channelName;
-		char* pubUUID;
-		uint16_t type;
-		readPtr = readPubInfo(readPtr, type, port, channelName, pubUUID);
-		processRemotePubAdded(from, port, type, channelName, pubUUID);
+
+		PublisherStubImpl* pubStub = new PublisherStubImpl();
+		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
+		processRemotePubAdded(from, pubStub);
 	}
 }
 
-void ZeroMQNode::processRemotePubAdded(char* nodeUUID,
-                                       uint16_t port,
-                                       uint16_t type,
-                                       char* channelName,
-                                       char* pubUUID) {
-	if (_connTo.find(nodeUUID) == _connTo.end())
+void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
+	if (_connTo.find(nodeUUID) == _connTo.end()) {
+		delete pub;
 		return;
+	}
 
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
 	nodeStub.updateLastSeen();
 
-	PublisherStub pubStub(boost::shared_ptr<PublisherStubImpl>(new PublisherStubImpl()));
-	pubStub.getImpl()->setUUID(pubUUID);
-	pubStub.getImpl()->setPort(port);
-	pubStub.getImpl()->setChannelName(channelName);
+	PublisherStub pubStub((boost::shared_ptr<PublisherStubImpl>(pub)));
 	pubStub.getImpl()->setDomain(nodeUUID);
 
 	pubStub.getImpl()->setInProcess(nodeStub.isInProcess());
 	pubStub.getImpl()->setRemote(nodeStub.isRemote());
 	pubStub.getImpl()->setIP(nodeStub.getIP());
 	pubStub.getImpl()->setTransport(nodeStub.getTransport());
-	pubStub.getImpl()->implType = type;
 
 	nodeStub.getImpl()->addPublisher(pubStub);
 
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
-		if (subIter->second.getImpl()->implType == type && subIter->second.matches(channelName)) {
+		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
 			subIter->second.added(pubStub, nodeStub);
 			sendSubAdded(nodeUUID, subIter->second, pubStub);
 		}
@@ -1306,29 +1295,28 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID,
 	}
 }
 
-void ZeroMQNode::processRemotePubRemoved(char* nodeUUID,
-        uint16_t port,
-        uint16_t type,
-        char* channelName,
-        char* pubUUID) {
+void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub) {
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
-	PublisherStub pubStub = nodeStub.getPublisher(pubUUID);
+	PublisherStub pubStub = nodeStub.getPublisher(pub->getUUID());
 
-	if (!pubStub)
+	if (!pubStub) {
+		delete pub;
 		return;
+	}
 
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
-		if (subIter->second.getImpl()->implType == type && subIter->second.matches(channelName)) {
+		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
 			subIter->second.removed(pubStub, nodeStub);
 			sendSubRemoved(nodeUUID, subIter->second, pubStub);
 		}
 		subIter++;
 	}
 	nodeStub.removePublisher(pubStub);
+	delete pub;
 }
 
 void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
@@ -1408,43 +1396,63 @@ char* ZeroMQNode::writePubInfo(char* buffer, const PublisherStub& pub) {
 	return buffer;
 }
 
-char* ZeroMQNode::readPubInfo(char* buffer, uint16_t& type, uint16_t& port, char*& channelName, char*& uuid) {
+char* ZeroMQNode::readPubInfo(char* buffer, size_t available, PublisherStubImpl* pubStub) {
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
 
-	buffer = readString(buffer, channelName, 4096);
-	buffer = readString(buffer, uuid, 37);
+	char* channelName;
+	buffer = readString(buffer, channelName, available - (buffer - start));
+	pubStub->setChannelName(channelName);
+	
+	char* uuid;
+	buffer = readString(buffer, uuid, available - (buffer - start));
+	pubStub->setUUID(uuid);
+
+	uint16_t type;
 	buffer = readUInt16(buffer, type);
+	pubStub->implType = type;
+
+	uint16_t port;
 	buffer = readUInt16(buffer, port);
+	pubStub->setPort(port);
 
 	return buffer;
 }
 
 char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
-	std::string channel = sub.getChannelName();
-	std::string uuid = sub.getUUID(); // we share a publisher socket in the node, do not publish hidden pub uuid
-	uint16_t type = sub.getImpl()->implType;
-
-	assert(uuid.length() == 36);
+	assert(sub.getUUID().length() == 36);
 
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
 
-	buffer = writeString(buffer, channel.c_str(), channel.length());
-	buffer = writeString(buffer, uuid.c_str(), uuid.length());
-	buffer = writeUInt16(buffer, type);
+	buffer = writeString(buffer, sub.getChannelName().c_str(), sub.getChannelName().length());
+	buffer = writeString(buffer, sub.getUUID().c_str(), sub.getUUID().length());
+	buffer = writeUInt16(buffer, sub.getImpl()->implType);
+	buffer = writeUInt16(buffer, sub.getPort());
 
 	assert(buffer - start == SUB_INFO_SIZE(sub));
 	return buffer;
 }
 
-char* ZeroMQNode::readSubInfo(char* buffer, uint16_t& type, char*& channelName, char*& uuid) {
+char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl* subStub) {
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
 
-	buffer = readString(buffer, channelName, 4096);
-	buffer = readString(buffer, uuid, 37);
+	char* channelName;
+	buffer = readString(buffer, channelName, available - (buffer - start));
+	subStub->setChannelName(channelName);
+	
+	char* uuid;
+	buffer = readString(buffer, uuid, available - (buffer - start));
+	subStub->setUUID(uuid);
+	
+	uint16_t type;
 	buffer = readUInt16(buffer, type);
+	subStub->implType = type;
+	
+	uint16_t port;
+	buffer = readUInt16(buffer, port);
+	subStub->setPort(port);
 
 	return buffer;
 }

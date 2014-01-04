@@ -59,12 +59,12 @@ protected:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberStub {
+class DLLEXPORT SubscriberStub : public EndPoint{
 public:
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }
-	SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : _impl(impl) { }
-	SubscriberStub(const SubscriberStub& other) : _impl(other._impl) { }
+	SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	SubscriberStub(const SubscriberStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
 	operator bool() const {
 		return _impl;
@@ -81,6 +81,7 @@ public:
 
 	SubscriberStub& operator=(const SubscriberStub& other) {
 		_impl = other._impl;
+		EndPoint::_impl = _impl;
 		return *this;
 	} // operator=
 

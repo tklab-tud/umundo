@@ -194,16 +194,16 @@ protected:
 	void sendSubRemoved(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void sendSubAdded(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void confirmSub(const std::string& subUUID);
-	void processRemotePubAdded(char* nodeUUID, uint16_t port, uint16_t type, char* channelName, char* pubUUID);
-	void processRemotePubRemoved(char* nodeUUID, uint16_t port, uint16_t type, char* channelName, char* pubUUID);
+	void processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub);
+	void processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub);
 	//@}
 
 	/** @name Read / Write to raw byte arrays */
 	//@{
 	char* writePubInfo(char* buffer, const PublisherStub& pub);
-	char* readPubInfo(char* buffer, uint16_t& type, uint16_t& port, char*& channelName, char*& uuid);
+	char* readPubInfo(char* buffer, size_t available, PublisherStubImpl* pub);
 	char* writeSubInfo(char* buffer, const Subscriber& sub);
-	char* readSubInfo(char* buffer, uint16_t& type, char*& channelName, char*& uuid);
+	char* readSubInfo(char* buffer, size_t available, SubscriberStubImpl* sub);
 	char* writeVersionAndType(char* buffer, Message::Type type);
 	char* readVersionAndType(char* buffer, uint16_t& version, umundo::Message::Type& type);
 	char* writeString(char* buffer, const char* content, size_t length);

@@ -158,6 +158,7 @@ public:
 	Subscriber& operator=(const Subscriber& other) {
 		_impl = other._impl;
 		SubscriberStub::_impl = _impl;
+		EndPoint::_impl = _impl;
 		return *this;
 	} // operator=
 

@@ -52,7 +52,7 @@ void Thread::join() {
 	_isStarted = false;
 }
 
-int Thread::getThreadId() {
+unsigned long int Thread::getThreadId() {
 	std::stringstream ssThreadId;
 	ssThreadId << tthread::this_thread::get_id();
 	int threadId;

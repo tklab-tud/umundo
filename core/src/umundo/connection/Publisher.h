@@ -49,13 +49,43 @@ public:
 
 class DLLEXPORT PublisherConfig : public Options {
 public:
-	std::string getType() {
+	virtual std::string getType() {
 		return "PublisherConfig";
 	}
 
 	std::string channelName;
-	std::string transport;
-	uint16_t port;
+};
+
+class DLLEXPORT RTPPublisherConfig : public PublisherConfig {
+public:
+	std::string getType() {
+		return "RTPPublisherConfig";
+	}
+	
+	RTPPublisherConfig(double samples, uint32_t increment, int type=-1, uint16_t port=0) {
+		setSamplesPerSec(samples);
+		setTimestampIncrement(increment);
+		if(type>0 && type<256)
+			setPayloadType(type);
+		if(port)
+			setPortbase(port);
+	}
+	
+	void setSamplesPerSec(double samples) {
+		options["pub.rtp.samplesPerSec"] = toStr(samples);
+	}
+	
+	void setTimestampIncrement(uint32_t increment) {
+		options["pub.rtp.timestampIncrement"] = toStr(increment);
+	}
+	
+	void setPortbase(uint16_t port) {
+		options["pub.rtp.portbase"] = toStr(port);
+	}
+	
+	void setPayloadType(uint8_t type) {
+		options["pub.rtp.payloadType"] = toStr(type);
+	}
 };
 
 /**
@@ -121,8 +151,12 @@ public:
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);
+	Publisher(const std::string& channelName, PublisherConfig* config);
+	Publisher(const std::string& channelName, Greeter* greeter, PublisherConfig* config);
 	Publisher(PublisherType type, const std::string& channelName);
 	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter);
+	Publisher(PublisherType type, const std::string& channelName, PublisherConfig* config);
+	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
 	Publisher(const boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
 	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
@@ -187,10 +221,9 @@ public:
 	}
 
 protected:
-	void init(PublisherType type, const std::string& channelName, Greeter* greeter);
+	void init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
 
 	boost::shared_ptr<PublisherImpl> _impl;
-	boost::shared_ptr<PublisherConfig> _config;
 	friend class Node;
 };
 

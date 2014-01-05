@@ -43,7 +43,7 @@ void ZeroMQSubscriber::init(Options* config) {
 	(_writeOpSocket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR))    || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 
 	std::string readOpId("inproc://um.node.readop." + _uuid);
-	zmq_bind(_readOpSocket, readOpId.c_str())  && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno))
+	zmq_bind(_readOpSocket, readOpId.c_str())  && UM_LOG_WARN("zmq_bind: %s", zmq_strerror(errno));
 	zmq_connect(_writeOpSocket, readOpId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", readOpId.c_str(), zmq_strerror(errno));
 
 	assert(_channelName.size() > 0);

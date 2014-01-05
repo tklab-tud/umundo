@@ -27,10 +27,10 @@
 #include <stdarg.h> ///< variadic functions
 
 /// Log a message with error priority
-#define UM_LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define UM_LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
-#define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__);
+#define UM_LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#define UM_LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
 
 // never strip logging
 #if 0

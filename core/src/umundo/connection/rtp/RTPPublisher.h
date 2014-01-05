@@ -21,16 +21,21 @@
 #ifndef RTPPUBLISHER_H_H9LXV94P
 #define RTPPUBLISHER_H_H9LXV94P
 
+#include <boost/shared_ptr.hpp>
+#include <jrtplib3/rtpsession.h>
+
 #include "umundo/common/Common.h"
+#include "umundo/common/Message.h"
 #include "umundo/connection/Publisher.h"
 #include "umundo/thread/Thread.h"
+#include "umundo/connection/rtp/RTPHelpers.h"
 
 namespace umundo {
 
 /**
- * Concrete publisher implementor for 0MQ (bridge pattern).
+ * Concrete publisher implementor for RTP (bridge pattern).
  */
-class DLLEXPORT RTPPublisher : public PublisherImpl {
+class DLLEXPORT RTPPublisher : public PublisherImpl, public Thread, protected RTPHelpers {
 public:
 	virtual ~RTPPublisher();
 
@@ -53,8 +58,16 @@ protected:
 
 private:
 	void run();
+	jrtplib::RTPSession _sess;
+	bool _isIPv6;
+	uint8_t _payloadType;
 
+	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
+	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
+
+	Monitor _pubLock;
 	Mutex _mutex;
+	bool _isSuspended;
 
 	friend class Factory;
 

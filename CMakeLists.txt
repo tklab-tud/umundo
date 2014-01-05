@@ -10,6 +10,7 @@
 # BUILD_PREFER_STATIC_PROTOBUF:BOOL    Prefer static protobuf libraries
 # BUILD_PREFER_STATIC_PCRE:BOOL        Prefer static pcre libraries
 # BUILD_PREFER_STATIC_ZEROMQ:BOOL      Prefer static zeromq libraries
+# BUILD_PREFER_STATIC_JRTPLIB:BOOL     Prefer static jrtplib libraries
 # BUILD_SHARED_LIBS:BOOL               Whether to build shared or static libraries
 # BUILD_TESTS:BOOL                     Build the tests
 # BUILD_CONVENIENCE_LIB:BOOL           Build libumundo convenience library
@@ -618,10 +619,12 @@ if (BUILD_PREFER_STATIC_LIBRARIES)
 	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" ON)
 	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" ON)
 	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
+	OPTION(BUILD_PREFER_STATIC_JRTPLIB "Prefer static JRTPLIB libraries when linking" ON)
 else()
 	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" OFF)
 	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" OFF)
 	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" OFF)
+	OPTION(BUILD_PREFER_STATIC_JRTPLIB "Prefer static JRTPLIB libraries when linking" OFF)
 endif()
 
 # Boost
@@ -657,6 +660,16 @@ endif()
 find_package(ZeroMQ REQUIRED)
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
+# JRTPLIB
+if (BUILD_PREFER_STATIC_JRTPLIB)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
+else()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
+endif()
+if (NET_RTP)
+	find_package(JRTPLIB REQUIRED)
+endif()
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
 ############################################################
 # Create config.h

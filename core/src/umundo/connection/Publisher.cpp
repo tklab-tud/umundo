@@ -36,22 +36,43 @@ PublisherImpl::~PublisherImpl() {
 }
 
 Publisher::Publisher(const std::string& channelName) {
-	init(ZEROMQ, channelName, NULL);
+	PublisherConfig config;
+	init(ZEROMQ, channelName, NULL, &config);
 }
 
 Publisher::Publisher(const std::string& channelName, Greeter* greeter) {
-	init(ZEROMQ, channelName, greeter);
+	PublisherConfig config;
+	init(ZEROMQ, channelName, greeter, &config);
+}
+
+Publisher::Publisher(const std::string& channelName, PublisherConfig *config) {
+	init(ZEROMQ, channelName, NULL, config);
+}
+
+Publisher::Publisher(const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
+	init(ZEROMQ, channelName, greeter, config);
 }
 
 Publisher::Publisher(PublisherType type, const std::string& channelName) {
-	init(type, channelName, NULL);
+	PublisherConfig config;
+	init(type, channelName, NULL, &config);
 }
 
 Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter* greeter) {
-	init(type, channelName, greeter);
+	PublisherConfig config;
+	init(type, channelName, greeter, &config);
 }
 
-void Publisher::init(PublisherType type, const std::string& channelName, Greeter* greeter) {
+Publisher::Publisher(PublisherType type, const std::string& channelName, PublisherConfig *config) {
+	init(type, channelName, NULL, config);
+}
+
+Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
+	init(type, channelName, greeter, config);
+}
+
+
+void Publisher::init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
 	switch (type) {
 	case ZEROMQ:
 		_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("pub.zmq"));
@@ -68,12 +89,11 @@ void Publisher::init(PublisherType type, const std::string& channelName, Greeter
 
 	PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
-	PublisherConfig config;
-	config.channelName = channelName;
+	config->channelName = channelName;
 	if (greeter != NULL)
 		_impl->setGreeter(greeter);
 
-	_impl->init(&config);
+	_impl->init(config);
 }
 
 void Publisher::send(const char* data, size_t length) {

@@ -21,8 +21,6 @@
 using namespace umundo;
 
 class TestReceiver : public Receiver {
-private:
-	int i=0;
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
@@ -30,47 +28,23 @@ public:
 		memcpy(data, msg->data(), msg->size());
 		data[msg->size()]='\0';
 		std::cout << "i(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
-		if(i++>8)
-			exit(0);
 	}
 };
 
 int main(int argc, char** argv) {
-	printf("umundo-rtppingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	
-	if(strcmp(argv[1], "pub")==0)
-	{
-		RTPPublisherConfig pubConfig(8000, 166, 0);		//PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
-		Publisher pubFoo(Publisher::RTP, "pingpong", &pubConfig);
-		
-		Discovery disc(Discovery::MDNS);
-		Node node;
-		disc.add(node);
-		node.addPublisher(pubFoo);
-		
-		while(1) {
-			Thread::sleepMs(1000);
-			Message* msg = new Message();
-			msg->setData("ping", 4);
-			std::cout << "o" << std::endl << std::flush;
-			pubFoo.send(msg);
-			delete(msg);
-		}
-	}
+	TestReceiver testRecv;
+	RTPSubscriberConfig subConfig;
+	Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
 	
-	if(strcmp(argv[1], "sub")==0)
-	{
-		TestReceiver testRecv;
-		RTPSubscriberConfig subConfig;
-		Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
-		
-		Discovery disc(Discovery::MDNS);
-		Node node;
-		disc.add(node);
-		node.addSubscriber(subFoo);
-		
-		while(1)
-			Thread::sleepMs(1000);
-	}
+	Discovery disc(Discovery::MDNS);
+	Node node;
+	disc.add(node);
+	node.addSubscriber(subFoo);
 	
+	while(1)
+		Thread::sleepMs(1000);
+	
+	return 0;
 }

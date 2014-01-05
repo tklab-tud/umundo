@@ -30,8 +30,6 @@
 #include <jrtplib3/rtpbyteaddress.h>
 #include <jrtplib3/rtpsessionparams.h>
 #include <jrtplib3/rtperrors.h>
-#include <jrtplib3/rtptimeutilities.h>
-#include <jrtplib3/rtppacket.h>
 
 #include "umundo/connection/rtp/RTPSubscriber.h"
 
@@ -132,13 +130,12 @@ void RTPSubscriber::resume() {
 void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
 	int status;
-	//TODO: no hardcoded endpoints!!!
-	uint16_t port=pub.getImpl()->getPort();
-	std::string ip=pub.getImpl()->getIP();
+	uint16_t port=pub.getPort();
+	std::string ip=node.getIP();
 	
 	if(_domainPubs.count(pub.getDomain()) == 0)
 	{
-		UM_LOG_WARN("%s: subscribing to %s", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str());
+		UM_LOG_WARN("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 		
 		jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		//if((status=_sess.AddDestination(*addr))<0)
@@ -154,9 +151,8 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
 	int status;
-	//TODO: no hardcoded endpoints!!!
-	uint16_t port=pub.getImpl()->getPort();
-	std::string ip=pub.getImpl()->getIP();
+	uint16_t port=pub.getPort();
+	std::string ip=node.getIP();
 	
 	// TODO: This fails for publishers added via different nodes
 	if (_pubs.find(pub.getUUID()) != _pubs.end())
@@ -176,7 +172,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	}
 	
 	if (_domainPubs.count(pub.getDomain()) == 0) {
-		UM_LOG_WARN("%s unsubscribing from %s", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str());
+		UM_LOG_WARN("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 		
 		const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		//if((status=_sess.DeleteDestination(*addr))<0)
@@ -208,6 +204,17 @@ void RTPSubscriber::run() {
 		}
 		jrtplib::RTPTime::Wait(jrtplib::RTPTime(1,0));
 	}
+}
+
+//TODO: inherit this from RTPSession
+void RTPSubscriber::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
+	assert(pack!=NULL);
+	if(_receiver==NULL)
+		return;
+	Message *msg=new Message((char*)pack->GetPayloadData(), pack->GetPayloadLength(), Message::NONE);
+	msg->putMeta("receivedTime", toStr(receivetime.GetDouble()));
+	_receiver->receive(msg);
+	delete msg;
 }
 
 Message* RTPSubscriber::getNextMsg() {

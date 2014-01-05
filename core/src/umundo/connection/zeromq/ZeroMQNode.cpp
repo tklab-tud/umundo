@@ -159,6 +159,9 @@ ZeroMQNode::~ZeroMQNode() {
 		_connFrom.erase(_connFrom.begin());
 	}
 
+	if (_sockets != NULL)
+		free(_sockets);
+	
 	// close sockets
 	zmq_close(_nodeSocket)    && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
 	zmq_close(_pubSocket)     && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
@@ -230,12 +233,15 @@ void ZeroMQNode::init(Options* options) {
 	zmq_setsockopt(_nodeSocket, ZMQ_ROUTER_MANDATORY, &routMand, sizeof(routMand))  && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
 	zmq_setsockopt(_nodeSocket, ZMQ_PROBE_ROUTER, &routProbe, sizeof(routProbe))    && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
 
-	sockets[0].socket = _nodeSocket;
-	sockets[1].socket = _pubSocket;
-	sockets[2].socket = _readOpSocket;
-	sockets[3].socket = _subSocket;
-	sockets[0].fd = sockets[1].fd = sockets[2].fd = sockets[3].fd = 0;
-	sockets[0].events = sockets[1].events = sockets[2].events = sockets[3].events = ZMQ_POLLIN;
+	_dirtySockets = true;
+	_sockets = NULL;
+	_nrStdSockets = 4;
+	_stdSockets[0].socket = _nodeSocket;
+	_stdSockets[1].socket = _pubSocket;
+	_stdSockets[2].socket = _readOpSocket;
+	_stdSockets[3].socket = _subSocket;
+	_stdSockets[0].fd = _stdSockets[1].fd = _stdSockets[2].fd = _stdSockets[3].fd = 0;
+	_stdSockets[0].events = _stdSockets[1].events = _stdSockets[2].events = _stdSockets[3].events = ZMQ_POLLIN;
 
 	start();
 }
@@ -822,7 +828,7 @@ void ZeroMQNode::processOpComm() {
 
 		_connTo[address]->refCount--;
 
-		if (_connTo[address]->refCount <= 0) {
+		if (_connTo[address]->refCount <= 0 && _connTo[address]->node) {
 			NodeStub& nodeStub = _connTo[address]->node;
 			std::string nodeUUID = nodeStub.getUUID();
 			disconnectRemoteNode(nodeStub);
@@ -846,6 +852,8 @@ void ZeroMQNode::processOpComm() {
 
 			if (nodeUUID.length() > 0)
 				_connTo.erase(nodeUUID);
+			
+			_dirtySockets = true;
 		}
 
 		break;
@@ -870,6 +878,7 @@ void ZeroMQNode::processOpComm() {
 		} else {
 			clientConn = _connTo[address];
 		}
+		_dirtySockets = true;
 
 		UM_LOG_INFO("%s: Sending CONNECT_REQ to %s", SHORT_UUID(_uuid).c_str(), address);
 
@@ -897,48 +906,53 @@ void ZeroMQNode::processOpComm() {
 	zmq_msg_close(&opMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
+void ZeroMQNode::updateSockets() {
+	ScopeLock lock(_mutex);
+	
+	if (_sockets != NULL)
+		free(_sockets);
+	_nodeSockets.clear();
+	
+	size_t maxSockets = _connTo.size() + _nrStdSockets;
+	_sockets = (zmq_pollitem_t*)malloc(sizeof(zmq_pollitem_t) * maxSockets);
+	// prepopulate with standard sockets
+	memcpy(_sockets, _stdSockets, _nrStdSockets * sizeof(zmq_pollitem_t));
+
+	size_t index = _nrStdSockets;
+	std::map<std::string, boost::shared_ptr<NodeConnection> >::const_iterator sockIter = _connTo.begin();
+	while (sockIter != _connTo.end()) {
+		if (!UUID::isUUID(sockIter->first)) { // only add if key is an address
+			_sockets[index].socket = sockIter->second->socket;
+			_sockets[index].fd = 0;
+			_sockets[index].events = ZMQ_POLLIN;
+			_sockets[index].revents = 0;
+			_nodeSockets.push_back(std::make_pair(index, sockIter->first));
+			index++;
+		}
+		sockIter++;
+	}
+	_nrSockets = index;
+	_dirtySockets = false;
+}
+	
 void ZeroMQNode::run() {
 	int more;
 	size_t more_size = sizeof(more);
-	size_t stdSockets = 4;
-	size_t index;
-	std::list<std::pair<uint32_t, std::string> > nodeSockets;
 
 	while(isStarted()) {
-		_mutex.lock();
-		size_t maxSockets = _connTo.size() + stdSockets;
-
-		// reset std socket event flag
-		for (int i = 0; i < stdSockets; i++) {
-			sockets[i].revents = 0;
-		}
-
-		zmq_pollitem_t* items = (zmq_pollitem_t*)malloc(sizeof(zmq_pollitem_t) * maxSockets);
-		// prepopulate with standard sockets
-		memcpy(items, sockets, stdSockets * sizeof(zmq_pollitem_t));
-
-		index = stdSockets;
-		std::map<std::string, boost::shared_ptr<NodeConnection> >::const_iterator sockIter = _connTo.begin();
-		while (sockIter != _connTo.end()) {
-			if (!UUID::isUUID(sockIter->first)) { // only add if key is an address
-				items[index].socket = sockIter->second->socket;
-				items[index].fd = 0;
-				items[index].events = ZMQ_POLLIN;
-				items[index].revents = 0;
-				nodeSockets.push_back(std::make_pair(index, sockIter->first));
-				index++;
-			}
-			sockIter++;
-		}
-		
 		// make sure we have a bucket for performance measuring
 		if (_buckets.size() == 0)
 			_buckets.push_back(StatBucket<size_t>());
 
+		if (_dirtySockets)
+			updateSockets();
+		
+		for (int i = 0; i < _nrSockets; i++) {
+			_sockets[i].revents = 0;
+		}
+
 		//UM_LOG_DEBUG("%s: polling on %ld sockets", _uuid.c_str(), nrSockets);
-		_mutex.unlock();
-		zmq_poll(items, index, -1);
-		_mutex.lock();
+		zmq_poll(_sockets, _nrSockets, -1);
 		// We do have a message to read!
 		
 		// manage performane status buckets
@@ -953,38 +967,38 @@ void ZeroMQNode::run() {
 		}
 		
 		// look through node sockets
-		while(nodeSockets.size() > 0) {
-			if (items[nodeSockets.front().first].revents & ZMQ_POLLIN) {
+		std::list<std::pair<uint32_t, std::string> >::const_iterator nodeSockIter = _nodeSockets.begin();
+		while(nodeSockIter != _nodeSockets.end()) {
+			if (_sockets[nodeSockIter->first].revents & ZMQ_POLLIN) {
 				ScopeLock lock(_mutex);
-				if (_connTo.find(nodeSockets.front().second) != _connTo.end()) {
-					processClientComm(_connTo[nodeSockets.front().second]);
+				if (_connTo.find(nodeSockIter->second) != _connTo.end()) {
+					processClientComm(_connTo[nodeSockIter->second]);
 				} else {
-					UM_LOG_WARN("%s: message from vanished node %s", _uuid.c_str(), nodeSockets.front().second.c_str());
+					UM_LOG_WARN("%s: message from vanished node %s", _uuid.c_str(), nodeSockIter->second.c_str());
 				}
 				break;
 			}
-			nodeSockets.pop_front();
+			nodeSockIter++;
 		}
-		nodeSockets.clear();
 		
 
-		if (items[0].revents & ZMQ_POLLIN) {
+		if (_sockets[0].revents & ZMQ_POLLIN) {
 			processNodeComm();
 			DRAIN_SOCKET(_nodeSocket);
 		}
 
-		if (items[1].revents & ZMQ_POLLIN) {
+		if (_sockets[1].revents & ZMQ_POLLIN) {
 			processPubComm();
 			DRAIN_SOCKET(_pubSocket);
 		}
 
-		if (items[2].revents & ZMQ_POLLIN) {
+		if (_sockets[2].revents & ZMQ_POLLIN) {
 			processOpComm();
 			DRAIN_SOCKET(_readOpSocket);
 		}
 
 		// someone is publishing - this is last to
-		if (items[3].revents & ZMQ_POLLIN) {
+		if (_sockets[3].revents & ZMQ_POLLIN) {
 			size_t msgSize = 0;
 			zmq_msg_t message;
 			std::string channelName;
@@ -1016,8 +1030,6 @@ void ZeroMQNode::run() {
 //				removeStaleNodes(now);
 //				_lastDeadNodeRemoval = now;
 //			}
-		_mutex.unlock();
-		free(items);
 	}
 }
 
@@ -1036,6 +1048,7 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 			UM_LOG_ERR("%s could not connect to node at %s - removing", SHORT_UUID(_uuid).c_str(), pendingNodeIter->first.c_str());
 //			delete pendingNodeIter->second;
 			_connTo.erase(pendingNodeIter++);
+			_dirtySockets = true;
 		} else {
 			pendingNodeIter++;
 		}
@@ -1181,6 +1194,8 @@ void ZeroMQNode::processConnectedTo(const std::string& uuid, boost::shared_ptr<N
 	client->node.getImpl()->setPort(strTo<uint16_t>(port));
 	client->node.updateLastSeen();
 	_connTo[uuid] = client;
+	_dirtySockets = true;
+
 }
 
 void ZeroMQNode::confirmSub(const std::string& subUUID) {

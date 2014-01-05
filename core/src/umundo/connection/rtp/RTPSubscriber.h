@@ -23,6 +23,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <jrtplib3/rtpsession.h>
+#include <jrtplib3/rtptimeutilities.h>
+#include <jrtplib3/rtppacket.h>
+#include <jrtplib3/rtpaddress.h>
 
 #include "umundo/config.h"
 #include "umundo/common/Common.h"
@@ -55,6 +58,7 @@ public:
 
 protected:
 	RTPSubscriber();
+	void OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress);
 
 private:
 	jrtplib::RTPSession _sess;

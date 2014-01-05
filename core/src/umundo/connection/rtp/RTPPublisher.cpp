@@ -72,7 +72,7 @@ void RTPPublisher::init(Options* config) {
 		return;
 	}
 	
-	_payloadType=96;
+	_payloadType=96;		//dynamic [RFC3551]
 	if(config->getKVPs().count("pub.rtp.payloadType"))
 		_payloadType=strTo<uint8_t>(config->getKVPs()["pub.rtp.payloadType"]);
 	
@@ -161,9 +161,8 @@ int RTPPublisher::waitForSubscribers(int count, int timeoutMs) {
 void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
 	int status;
-	//TODO: no hardcoded endpoints!!!
-	uint16_t port=sub.getImpl()->getPort();
-	std::string ip=sub.getImpl()->getIP();
+	uint16_t port=sub.getPort();
+	std::string ip=node.getIP();
 	
 	// do we already now about this sub via this node?
 	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
@@ -190,9 +189,8 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	ScopeLock lock(_mutex);
 	int status;
-	//TODO: no hardcoded endpoints!!!
-	uint16_t port=sub.getImpl()->getPort();
-	std::string ip=sub.getImpl()->getIP();
+	uint16_t port=sub.getPort();
+	std::string ip=node.getIP();
 	
 	// do we now about this sub via this node?
 	bool subscriptionFound = false;

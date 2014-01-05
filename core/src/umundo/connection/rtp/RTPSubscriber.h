@@ -21,16 +21,21 @@
 #ifndef RTPSUBSCRIBER_H_HQPJWLQR
 #define RTPSUBSCRIBER_H_HQPJWLQR
 
+#include <boost/shared_ptr.hpp>
+#include <jrtplib3/rtpsession.h>
+
 #include "umundo/config.h"
 #include "umundo/common/Common.h"
+#include "umundo/common/Message.h"
 #include "umundo/connection/Subscriber.h"
+#include "umundo/connection/rtp/RTPHelpers.h"
 
 namespace umundo {
 
 class PublisherStub;
 class NodeStub;
 
-class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread {
+class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread, protected RTPHelpers {
 public:
 	boost::shared_ptr<Implementation> create();
 	void init(Options*);
@@ -52,7 +57,15 @@ protected:
 	RTPSubscriber();
 
 private:
-
+	jrtplib::RTPSession _sess;
+	bool _isIPv6;
+	uint8_t _payloadType;
+	
+	bool _isSuspended;
+	
+	std::multimap<std::string, std::string> _domainPubs;
+	Mutex _mutex;
+	
 	friend class Factory;
 
 };

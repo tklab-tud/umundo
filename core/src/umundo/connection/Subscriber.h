@@ -56,6 +56,22 @@ public:
 	std::string uuid;
 };
 
+class DLLEXPORT RTPSubscriberConfig : public SubscriberConfig {
+public:
+	std::string getType() {
+		return "RTPSubscriberConfig";
+	}
+	
+	RTPSubscriberConfig(uint16_t port=0) {
+		if(port)
+			setPortbase(port);
+	}
+	
+	void setPortbase(uint16_t port) {
+		options["sub.rtp.portbase"] = toStr(port);
+	}
+};
+
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
@@ -116,8 +132,12 @@ public:
 	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);
 	Subscriber(const std::string& channelName, Receiver* receiver);
+	Subscriber(const std::string& channelName, SubscriberConfig* config);
+	Subscriber(const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
 	Subscriber(SubscriberType type, const std::string& channelName);
 	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver);
+	Subscriber(SubscriberType type, const std::string& channelName, SubscriberConfig* config);
+	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
 	Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
 	Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
@@ -190,10 +210,9 @@ public:
 
 protected:
 
-	void init(SubscriberType type, const std::string& channelName, Receiver* receiver);
+	void init(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
 
 	boost::shared_ptr<SubscriberImpl> _impl;
-	boost::shared_ptr<SubscriberConfig> _config;
 	friend class Node;
 };
 

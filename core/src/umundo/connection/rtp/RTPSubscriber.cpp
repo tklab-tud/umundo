@@ -19,10 +19,10 @@
  */
 
 #ifndef WIN32
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #else
-	#include <winsock2.h>
+#include <winsock2.h>
 #endif // WIN32
 
 #include <jrtplib3/rtpudpv4transmitter.h>
@@ -54,13 +54,12 @@ void RTPSubscriber::init(Options* config) {
 	uint16_t portbase=strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
 	if(!config->getKVPs().count("sub.rtp.portbase"))
 		portbase=16384;
-	if(portbase==0)
-	{
+	if(portbase==0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65536)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
 	_payloadType=96;
-	
+
 	//setting this to zero suppresses RTCP packets, setting this to one should be reasonable for periodic RTCP receiver reports
 	sessparams.SetOwnTimestampUnit(1);
 	sessparams.SetAcceptOwnPackets(false);
@@ -72,8 +71,7 @@ void RTPSubscriber::init(Options* config) {
 		transparams=new jrtplib::RTPUDPv6TransmissionParams;
 	else
 		transparams=new jrtplib::RTPUDPv4TransmissionParams;
-	for(; portbase<16384+32678; portbase+=2)		//try to find free ports
-	{
+	for(; portbase<16384+32678; portbase+=2) {	//try to find free ports
 		if(_isIPv6)
 			((jrtplib::RTPUDPv6TransmissionParams*)transparams)->SetPortbase(portbase);
 		else
@@ -90,7 +88,7 @@ void RTPSubscriber::init(Options* config) {
 	_port=portbase;		//sent to publisher (via framework)
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
-	
+
 	start();
 	delete transparams;
 }
@@ -132,11 +130,10 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	int status;
 	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
-	
-	if(_domainPubs.count(pub.getDomain()) == 0)
-	{
+
+	if(_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_WARN("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
-		
+
 		jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		//if((status=_sess.AddDestination(*addr))<0)
 		//	UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
@@ -153,16 +150,16 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	int status;
 	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
-	
+
 	// TODO: This fails for publishers added via different nodes
 	if (_pubs.find(pub.getUUID()) != _pubs.end())
 		_pubs.erase(pub.getUUID());
-	
+
 	if (_domainPubs.count(pub.getDomain()) == 0)
 		return;
-	
+
 	std::multimap<std::string, std::string>::iterator domIter = _domainPubs.find(pub.getDomain());
-	
+
 	while(domIter != _domainPubs.end()) {
 		if (domIter->second == pub.getUUID()) {
 			_domainPubs.erase(domIter++);
@@ -170,10 +167,10 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 			domIter++;
 		}
 	}
-	
+
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_WARN("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
-		
+
 		const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		//if((status=_sess.DeleteDestination(*addr))<0)
 		//	UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
@@ -191,8 +188,7 @@ void RTPSubscriber::setReceiver(Receiver* receiver) {
 void RTPSubscriber::run() {
 	int status;
 	Message *msg;
-	while(isStarted())
-	{
+	while(isStarted()) {
 		{
 			ScopeLock lock(_mutex);
 			if((status=_sess.Poll())<0)
@@ -219,8 +215,7 @@ void RTPSubscriber::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime
 
 Message* RTPSubscriber::getNextMsg() {
 	_sess.BeginDataAccess();
-	if(_sess.GotoFirstSourceWithData())
-	{
+	if(_sess.GotoFirstSourceWithData()) {
 		jrtplib::RTPPacket *pack=_sess.GetNextPacket();
 		assert(pack!=NULL);
 		Message *msg=new Message((char*)pack->GetPayloadData(), pack->GetPayloadLength(), Message::NONE);

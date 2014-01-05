@@ -249,7 +249,7 @@ void processDebugNode(DebugNode* node) {
 	dotNodes[node->uuid].dotId = "\"" + node->uuid + "\"";
 	dotNodes[node->uuid].attr["fontsize"] = "8";
 	dotNodes[node->uuid].attr["shape"] = "box";
-	
+
 	if (node->isReal) {
 		dotNodes[node->uuid].attr["color"] = "black";
 	} else {
@@ -268,8 +268,8 @@ void processDebugNode(DebugNode* node) {
 	}
 	labelSS << ">";
 	dotNodes[node->uuid].attr["label"] = labelSS.str();
-	
-	
+
+
 	std::map<std::string, DebugSub*>::iterator subIter = node->subs.begin();
 	while(subIter != node->subs.end()) {
 		std::string edgeId = node->uuid + " -> " + subIter->first;
@@ -293,26 +293,26 @@ void processDebugPub(DebugPub* pub) {
 	dotNodes[pub->uuid].dotId = "\"" + pub->uuid + "\"";
 	dotNodes[pub->uuid].attr["fontsize"] = "8";
 	dotNodes[pub->uuid].attr["shape"] = "box";
-	
+
 	if (pub->isReal) {
 		dotNodes[pub->uuid].attr["color"] = "black";
 	} else {
 		dotNodes[pub->uuid].attr["color"] = "red";
 	}
-	
+
 	std::stringstream labelSS;
 	labelSS << "<";
 	labelSS << "<b>Pub[" << SHORT_UUID(pub->uuid) << "]</b><br />";
 	switch (strTo<uint16_t>(pub->type)) {
-		case 1:
-			labelSS << "ZMQ";
-			break;
-		case 2:
-			labelSS << "RTP";
-			break;
-		default:
-			labelSS << "UKN";
-			break;
+	case 1:
+		labelSS << "ZMQ";
+		break;
+	case 2:
+		labelSS << "RTP";
+		break;
+	default:
+		labelSS << "UKN";
+		break;
 	}
 	labelSS << "@" << pub->channelName << "<br />";
 	labelSS << "#Subscribers: " << pub->connFromSubs.size() << "<br />";
@@ -337,32 +337,32 @@ void processDebugSub(DebugSub* sub) {
 	dotNodes[sub->uuid].dotId = "\"" + sub->uuid + "\"";
 	dotNodes[sub->uuid].attr["fontsize"] = "8";
 	dotNodes[sub->uuid].attr["shape"] = "box";
-	
+
 	if (sub->isReal) {
 		dotNodes[sub->uuid].attr["color"] = "black";
 	} else {
 		dotNodes[sub->uuid].attr["color"] = "red";
 	}
-	
+
 	std::stringstream labelSS;
 	labelSS << "<";
 	labelSS << "<b>Sub[" << SHORT_UUID(sub->uuid) << "]</b><br />";
 	switch (strTo<uint16_t>(sub->type)) {
-		case 1:
-			labelSS << "ZMQ";
-			break;
-		case 2:
-			labelSS << "RTP";
-			break;
-		default:
-			labelSS << "UKN";
-			break;
+	case 1:
+		labelSS << "ZMQ";
+		break;
+	case 2:
+		labelSS << "RTP";
+		break;
+	default:
+		labelSS << "UKN";
+		break;
 	}
 	labelSS << "@" << sub->channelName << "<br />";
 	labelSS << "#Publishers: " << sub->connToPubs.size() << "<br />";
 	labelSS << ">";
 	dotNodes[sub->uuid].attr["label"] = labelSS.str();
-	
+
 	std::map<std::string, DebugPub*>::iterator pubIter = sub->connToPubs.begin();
 	while(pubIter != sub->connToPubs.end()) {
 		std::string edgeId = sub->uuid + " -> " + pubIter->first;
@@ -573,7 +573,7 @@ void generateDotFile() {
 	while(dNodeIter != dotNodes.end()) {
 		outfile << dNodeIter->second.dotId;
 		outfile << "[";
-		
+
 		std::map<std::string, std::string>::iterator attrIter = dNodeIter->second.attr.begin();
 		std::string seperator;
 		while (attrIter != dNodeIter->second.attr.end()) {
@@ -581,7 +581,7 @@ void generateDotFile() {
 			seperator = ",";
 			attrIter++;
 		}
-		
+
 		outfile << "];" << std::endl;
 		dNodeIter++;
 	}
@@ -591,7 +591,7 @@ void generateDotFile() {
 	while(dEdgeIter != dotEdges.end()) {
 		outfile << dEdgeIter->second.dotId;
 		outfile << " [";
-		
+
 		std::map<std::string, std::string>::iterator attrIter = dEdgeIter->second.attr.begin();
 		std::string seperator;
 		while (attrIter != dEdgeIter->second.attr.end()) {
@@ -599,11 +599,11 @@ void generateDotFile() {
 			seperator = ",";
 			attrIter++;
 		}
-		
+
 		outfile << "];" << std::endl;
 		dEdgeIter++;
 	}
-	
+
 	outfile << "}" << std::endl;
 }
 

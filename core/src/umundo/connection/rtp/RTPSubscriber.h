@@ -64,12 +64,12 @@ private:
 	jrtplib::RTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
-	
+
 	bool _isSuspended;
-	
+
 	std::multimap<std::string, std::string> _domainPubs;
 	Mutex _mutex;
-	
+
 	friend class Factory;
 
 };

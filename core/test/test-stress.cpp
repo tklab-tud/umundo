@@ -10,7 +10,7 @@ bool testDiscoveryStress() {
 
 	for(int i = 40; i > 0; i--) {
 		Node n2;
-		
+
 		n2.added(n);
 		n.added(n2);
 
@@ -23,14 +23,14 @@ bool testDiscoveryStress() {
 		}
 
 		assert(p.waitForSubscribers(i) == i);
-		
+
 		std::map<std::string, Subscriber> subs = n2.getSubscribers();
 		std::map<std::string, Subscriber>::iterator subIter = subs.begin();
 		while(subIter != subs.end()) {
 			n2.removeSubscriber(subIter->second);
 			subIter++;
 		}
-		
+
 		n2.removed(n);
 		n.removed(n2);
 

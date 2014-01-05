@@ -34,20 +34,20 @@ class Type;
 class DLLEXPORT Message {
 public:
 	enum Type {
-		VERSION            = 0xF004, // version 0.4 of the message format
-		CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
-		CONNECT_REP        = 0x0002, // reply from a remote node
-		NODE_INFO          = 0x0003, // information about a node and its publishers
-		PUB_ADDED          = 0x0004, // sent when a node added a publisher
-		PUB_REMOVED        = 0x0005, // sent when a node removed a publisher
-		SUB_ADDED          = 0x000D, // sent when a node added a subscriber
-		SUB_REMOVED        = 0x000E, // sent when a node removed a subscriber
-		SUBSCRIBE          = 0x0006, // sent when subscribing to a publisher
-		UNSUBSCRIBE        = 0x0007, // unsusbscribing from a publisher
-		DISCONNECT         = 0x0008, // node was removed
-		DEBUG              = 0x0009, // request debug info
-		ZMQ_UPDATE_SOCKETS = 0xA001, // zmq specific internal message
-		SHUTDOWN           = 0x000C, // node is shutting down
+	    VERSION            = 0xF004, // version 0.4 of the message format
+	    CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
+	    CONNECT_REP        = 0x0002, // reply from a remote node
+	    NODE_INFO          = 0x0003, // information about a node and its publishers
+	    PUB_ADDED          = 0x0004, // sent when a node added a publisher
+	    PUB_REMOVED        = 0x0005, // sent when a node removed a publisher
+	    SUB_ADDED          = 0x000D, // sent when a node added a subscriber
+	    SUB_REMOVED        = 0x000E, // sent when a node removed a subscriber
+	    SUBSCRIBE          = 0x0006, // sent when subscribing to a publisher
+	    UNSUBSCRIBE        = 0x0007, // unsusbscribing from a publisher
+	    DISCONNECT         = 0x0008, // node was removed
+	    DEBUG              = 0x0009, // request debug info
+	    ZMQ_UPDATE_SOCKETS = 0xA001, // zmq specific internal message
+	    SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
 	enum Flags { // not used yet

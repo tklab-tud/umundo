@@ -19,10 +19,10 @@
  */
 
 #ifndef WIN32
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #else
-	#include <winsock2.h>
+#include <winsock2.h>
 #endif // WIN32
 
 #include "umundo/connection/rtp/RTPHelpers.h"
@@ -34,14 +34,11 @@ RTPHelpers::RTPHelpers() {}
 RTPHelpers::~RTPHelpers() {}
 
 jrtplib::RTPAddress *RTPHelpers::strToAddress(bool isIPv6, std::string ip, uint16_t port) {
-	if(isIPv6)
-	{
+	if(isIPv6) {
 		struct sockaddr_in6 sa;
 		inet_pton(AF_INET6, ip.c_str(), &(sa.sin6_addr));
 		return new jrtplib::RTPIPv6Address((const uint8_t*)&(sa.sin6_addr), port);
-	}
-	else
-	{
+	} else {
 		struct sockaddr_in sa;
 		inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr));
 		return new jrtplib::RTPIPv4Address((const uint8_t*)&(sa.sin_addr), port);

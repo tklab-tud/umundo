@@ -33,18 +33,18 @@ public:
 
 int main(int argc, char** argv) {
 	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	TestReceiver testRecv;
 	RTPSubscriberConfig subConfig;
 	Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
 	node.addSubscriber(subFoo);
-	
+
 	while(1)
 		Thread::sleepMs(1000);
-	
+
 	return 0;
 }

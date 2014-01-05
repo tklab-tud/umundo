@@ -159,9 +159,9 @@ protected:
 		T nrMetaMsgSent;
 		T sizeMetaMsgSent;
 	};
-	
+
 	std::list<StatBucket<size_t> > _buckets;
-	
+
 	ZeroMQNode();
 
 	std::map<std::string, std::string> _options;
@@ -186,7 +186,7 @@ protected:
 	std::list<std::pair<uint32_t, std::string> > _nodeSockets;
 
 	void updateSockets();
-	
+
 	void* _nodeSocket; ///< global node socket for off-band communication
 	void* _pubSocket; ///< node-global publisher to wrap added publishers
 	void* _writeOpSocket; ///< node-internal communication pair to guard zeromq operations from threads

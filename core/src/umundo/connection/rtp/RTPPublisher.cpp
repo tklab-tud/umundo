@@ -19,10 +19,10 @@
  */
 
 #ifndef WIN32
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #else
-	#include <winsock2.h>
+#include <winsock2.h>
 #endif // WIN32
 
 #include <jrtplib3/rtpudpv4transmitter.h>
@@ -56,32 +56,29 @@ void RTPPublisher::init(Options* config) {
 	uint32_t timestampIncrement=strTo<uint32_t>(config->getKVPs()["pub.rtp.timestampIncrement"]);
 	if(!config->getKVPs().count("pub.rtp.portbase"))
 		portbase=16384;
-	if(portbase==0)
-	{
+	if(portbase==0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65536)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(!config->getKVPs().count("pub.rtp.samplesPerSec") || samplesPerSec==0)
-	{
+	if(!config->getKVPs().count("pub.rtp.samplesPerSec") || samplesPerSec==0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid samplesPerSec (samplesPerSec > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(!config->getKVPs().count("pub.rtp.timestampIncrement") || timestampIncrement==0)
-	{
+	if(!config->getKVPs().count("pub.rtp.timestampIncrement") || timestampIncrement==0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	
+
 	_payloadType=96;		//dynamic [RFC3551]
 	if(config->getKVPs().count("pub.rtp.payloadType"))
 		_payloadType=strTo<uint8_t>(config->getKVPs()["pub.rtp.payloadType"]);
-	
+
 	// IMPORTANT: The local timestamp unit MUST be set, otherwise
 	//            RTCP Sender Report info will be calculated wrong
 	// We'll be sending samplesPerSec samples each second, so we'll
 	// put the timestamp unit to (1.0/samplesPerSec)
 	sessparams.SetOwnTimestampUnit(1.0/samplesPerSec);
-	
+
 	sessparams.SetAcceptOwnPackets(false);
 	sessparams.SetUsePollThread(false);
 	sessparams.SetReceiveMode(jrtplib::RTPTransmitter::AcceptSome);
@@ -91,8 +88,7 @@ void RTPPublisher::init(Options* config) {
 		transparams=new jrtplib::RTPUDPv6TransmissionParams;
 	else
 		transparams=new jrtplib::RTPUDPv4TransmissionParams;
-	for(; portbase<16384+32678; portbase+=2)		//try to find free ports
-	{
+	for(; portbase<16384+32678; portbase+=2) {	//try to find free ports
 		if(_isIPv6)
 			((jrtplib::RTPUDPv6TransmissionParams*)transparams)->SetPortbase(portbase);
 		else
@@ -110,7 +106,7 @@ void RTPPublisher::init(Options* config) {
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
 	_sess.SetDefaultTimestampIncrement(timestampIncrement);
-	
+
 	start();
 	delete transparams;
 }
@@ -163,7 +159,7 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	int status;
 	uint16_t port=sub.getPort();
 	std::string ip=node.getIP();
-	
+
 	// do we already now about this sub via this node?
 	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
 	while(subIter.first != subIter.second) {
@@ -171,9 +167,9 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 			return; // we already know about this sub from this node
 		subIter.first++;
 	}
-	
+
 	UM_LOG_WARN("%s: received a new subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
-	
+
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 	if((status=_sess.AddDestination(*addr))<0)
 		UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
@@ -191,7 +187,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	int status;
 	uint16_t port=sub.getPort();
 	std::string ip=node.getIP();
-	
+
 	// do we now about this sub via this node?
 	bool subscriptionFound = false;
 	std::pair<_domainSubs_t::iterator, _domainSubs_t::iterator> subIter = _domainSubs.equal_range(sub.getUUID());
@@ -204,20 +200,20 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	}
 	if (!subscriptionFound)
 		return;
-	
+
 	UM_LOG_WARN("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
-	
+
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 	if((status=_sess.DeleteDestination(*addr))<0)
 		UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
 	else if((status=_sess.DeleteFromAcceptList(*addr))<0)
 		UM_LOG_WARN("%s: error in session.DeleteFromAcceptList(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
 	delete addr;
-	
+
 	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
 		_subs.erase(sub.getUUID());
 	}
-	
+
 	_domainSubs.erase(subIter.first);
 	UMUNDO_SIGNAL(_pubLock);
 }
@@ -237,8 +233,7 @@ void RTPPublisher::send(Message* msg) {
 
 void RTPPublisher::run() {
 	int status;
-	while(isStarted())
-	{
+	while(isStarted()) {
 		{
 			ScopeLock lock(_mutex);
 			if((status=_sess.Poll())<0)

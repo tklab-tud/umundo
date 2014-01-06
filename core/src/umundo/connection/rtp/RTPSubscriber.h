@@ -32,6 +32,7 @@
 #include "umundo/common/Message.h"
 #include "umundo/connection/Subscriber.h"
 #include "umundo/connection/rtp/RTPHelpers.h"
+#include "umundo/connection/rtp/RTPPubSubRTPSession.h"
 
 namespace umundo {
 
@@ -59,19 +60,21 @@ public:
 protected:
 	RTPSubscriber();
 	void OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress);
+	void OnRTCPCompoundPacket(jrtplib::RTCPCompoundPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress);
+	Message *createRTPMessage(jrtplib::RTPPacket *pack);
 
 private:
-	jrtplib::RTPSession _sess;
+	RTPSubscriberRTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
-	
+
 	bool _isSuspended;
-	
+
 	std::multimap<std::string, std::string> _domainPubs;
 	Mutex _mutex;
-	
-	friend class Factory;
 
+	friend class Factory;
+	friend class RTPSubscriberRTPSession;
 };
 
 }

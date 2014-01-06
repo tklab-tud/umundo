@@ -149,8 +149,8 @@ protected:
 			nrMetaMsgRcvd(0),
 			sizeMetaMsgRcvd(0),
 			nrMetaMsgSent(0),
-			sizeMetaMsgSent(0)
-		{};
+			sizeMetaMsgSent(0) {
+		};
 		uint64_t timeStamp;
 		std::map<std::string, T> nrChannelMsg; ///< number of message received per channel
 		std::map<std::string, T> sizeChannelMsg; ///< accumulate size of messages
@@ -159,9 +159,9 @@ protected:
 		T nrMetaMsgSent;
 		T sizeMetaMsgSent;
 	};
-	
+
 	std::list<StatBucket<size_t> > _buckets;
-	
+
 	ZeroMQNode();
 
 	std::map<std::string, std::string> _options;

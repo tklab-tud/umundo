@@ -22,23 +22,23 @@ using namespace umundo;
 
 int main(int argc, char** argv) {
 	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	RTPPublisherConfig pubConfig(8000, 166, 0);		//PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
 	Publisher pubFoo(Publisher::RTP, "pingpong", &pubConfig);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);
-	
+
 	while(1) {
-		Thread::sleepMs(1000);
+		Thread::sleepMs(100);
 		Message* msg = new Message();
 		msg->setData("ping", 4);
 		std::cout << "o" << std::endl << std::flush;
 		pubFoo.send(msg);
 		delete(msg);
 	}
-	
+
 	return 0;
 }

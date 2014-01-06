@@ -61,12 +61,12 @@ public:
 	std::string getType() {
 		return "RTPSubscriberConfig";
 	}
-	
+
 	RTPSubscriberConfig(uint16_t port=0) {
 		if(port)
 			setPortbase(port);
 	}
-	
+
 	void setPortbase(uint16_t port) {
 		options["sub.rtp.portbase"] = toStr(port);
 	}

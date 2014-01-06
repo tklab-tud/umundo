@@ -27,24 +27,31 @@ public:
 		char data[msg->size()+1];
 		memcpy(data, msg->data(), msg->size());
 		data[msg->size()]='\0';
-		std::cout << "i(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
+		if(msg->getMeta("type")=="RTP")
+			std::cout << "RTP(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
+		/*else
+		{
+			std::cout << "RTCP -->";
+			std::cout << " fraction='" << msg->getMeta("fraction") << "'";
+			std::cout << std::endl << std::flush;
+		}*/
 	}
 };
 
 int main(int argc, char** argv) {
 	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	TestReceiver testRecv;
 	RTPSubscriberConfig subConfig;
 	Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
 	node.addSubscriber(subFoo);
-	
+
 	while(1)
-		Thread::sleepMs(1000);
-	
+		Thread::sleepMs(4000);
+
 	return 0;
 }

@@ -311,9 +311,9 @@ bool testPubSubConnections() {
 		node1.addPublisher(pub);
 
 		for (int j = 0; j < 2; j++) {
-			Subscriber sub1("foo", NULL);
-			Subscriber sub2("foo", NULL);
-			Subscriber sub3("foo", NULL);
+			Subscriber sub1("foo", NULL, NULL);
+			Subscriber sub2("foo", NULL, NULL);
+			Subscriber sub3("foo", NULL, NULL);
 
 			int subs = 0;
 			(void)subs;

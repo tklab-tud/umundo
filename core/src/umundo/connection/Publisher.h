@@ -61,7 +61,7 @@ public:
 	std::string getType() {
 		return "RTPPublisherConfig";
 	}
-	
+
 	RTPPublisherConfig(double samples, uint32_t increment, int type=-1, uint16_t port=0) {
 		setSamplesPerSec(samples);
 		setTimestampIncrement(increment);
@@ -70,19 +70,19 @@ public:
 		if(port)
 			setPortbase(port);
 	}
-	
+
 	void setSamplesPerSec(double samples) {
 		options["pub.rtp.samplesPerSec"] = toStr(samples);
 	}
-	
+
 	void setTimestampIncrement(uint32_t increment) {
 		options["pub.rtp.timestampIncrement"] = toStr(increment);
 	}
-	
+
 	void setPortbase(uint16_t port) {
 		options["pub.rtp.portbase"] = toStr(port);
 	}
-	
+
 	void setPayloadType(uint8_t type) {
 		options["pub.rtp.payloadType"] = toStr(type);
 	}

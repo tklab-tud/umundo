@@ -479,7 +479,7 @@ void ZeroMQNode::changed(EndPoint endPoint) {
  */
 void ZeroMQNode::processNodeComm() {
 	COMMON_VARS;
-	
+
 #if 0
 	for(;;) {
 		RECV_MSG(_nodeSocket, msg);
@@ -567,15 +567,15 @@ void ZeroMQNode::processNodeComm() {
 
 			PublisherStubImpl* pubImpl = new PublisherStubImpl();
 			SubscriberStubImpl* subImpl = new SubscriberStubImpl();
-			
+
 			readPtr = readSubInfo(readPtr, REMAINING_BYTES_TOREAD, subImpl);
 			readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubImpl);
-			
+
 			std::string pubUUID = pubImpl->getUUID();
 			std::string subUUID = subImpl->getUUID();
-			
+
 			delete pubImpl;
-			
+
 			assert(REMAINING_BYTES_TOREAD == 0);
 			ScopeLock lock(_mutex);
 
@@ -799,7 +799,7 @@ void ZeroMQNode::processOpComm() {
 		internalPubId += pubStub->getUUID();
 
 		delete pubStub;
-		
+
 		if (type == Message::PUB_ADDED) {
 			zmq_connect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		} else {
@@ -837,7 +837,7 @@ void ZeroMQNode::processOpComm() {
 			} else {
 				assert(nodeUUID.size() > 0);
 				assert(_connFrom.find(nodeUUID) != _connFrom.end());
-				
+
 				//delete _connFrom[nodeUUID];
 				_connFrom.erase(nodeUUID);
 
@@ -930,7 +930,7 @@ void ZeroMQNode::run() {
 			}
 			sockIter++;
 		}
-		
+
 		// make sure we have a bucket for performance measuring
 		if (_buckets.size() == 0)
 			_buckets.push_back(StatBucket<size_t>());
@@ -940,7 +940,7 @@ void ZeroMQNode::run() {
 		zmq_poll(items, index, -1);
 		_mutex.lock();
 		// We do have a message to read!
-		
+
 		// manage performane status buckets
 		uint64_t now = Thread::getTimeStampMs();
 		while (_buckets.size() > 0 && _buckets.front().timeStamp < now - UMUNDO_PERF_WINDOW_LENGTH_MS) {
@@ -951,7 +951,7 @@ void ZeroMQNode::run() {
 			// we need a new bucket
 			_buckets.push_back(StatBucket<size_t>());
 		}
-		
+
 		// look through node sockets
 		while(nodeSockets.size() > 0) {
 			if (items[nodeSockets.front().first].revents & ZMQ_POLLIN) {
@@ -966,7 +966,7 @@ void ZeroMQNode::run() {
 			nodeSockets.pop_front();
 		}
 		nodeSockets.clear();
-		
+
 
 		if (items[0].revents & ZMQ_POLLIN) {
 			processNodeComm();
@@ -993,10 +993,10 @@ void ZeroMQNode::run() {
 				zmq_msg_init (&message) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno));
 				zmq_msg_recv (&message, _subSocket, 0);
 				msgSize = zmq_msg_size(&message);
-				
+
 				if (channelName.size() == 0)
 					channelName = std::string((char*)zmq_msg_data(&message));
-				
+
 				_buckets.back().nrChannelMsg[channelName]++;
 				_buckets.back().sizeChannelMsg[channelName] += msgSize;
 
@@ -1007,7 +1007,7 @@ void ZeroMQNode::run() {
 					break;      //  Last message part
 			}
 		}
-		
+
 //			if (now - _lastNodeInfoBroadCast > 5000) {
 //				broadCastNodeInfo(now);
 //				_lastNodeInfoBroadCast = now;
@@ -1116,7 +1116,7 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
 	// we received a connection from the given uuid
 	ScopeLock lock(_mutex);
-	
+
 	// let's see whether we already are connected *to* this one
 	if (_connTo.find(uuid) != _connTo.end()) {
 		_connFrom[uuid] = _connTo[uuid];
@@ -1379,8 +1379,10 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 char* ZeroMQNode::writePubInfo(char* buffer, const PublisherStub& pub) {
 	std::string channel = pub.getChannelName();
 	std::string uuid = pub.getUUID(); // we share a publisher socket in the node, do not publish hidden pub uuid
-	uint16_t port = _pubPort; //pub.getPort();
+	uint16_t port = pub.getPort();
 	uint16_t type = pub.getImpl()->implType;
+	if(type == ZMQ_PUB)
+		port=_pubPort;
 
 	assert(uuid.length() == 36);
 
@@ -1403,7 +1405,7 @@ char* ZeroMQNode::readPubInfo(char* buffer, size_t available, PublisherStubImpl*
 	char* channelName;
 	buffer = readString(buffer, channelName, available - (buffer - start));
 	pubStub->setChannelName(channelName);
-	
+
 	char* uuid;
 	buffer = readString(buffer, uuid, available - (buffer - start));
 	pubStub->setUUID(uuid);
@@ -1441,15 +1443,15 @@ char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl
 	char* channelName;
 	buffer = readString(buffer, channelName, available - (buffer - start));
 	subStub->setChannelName(channelName);
-	
+
 	char* uuid;
 	buffer = readString(buffer, uuid, available - (buffer - start));
 	subStub->setUUID(uuid);
-	
+
 	uint16_t type;
 	buffer = readUInt16(buffer, type);
 	subStub->implType = type;
-	
+
 	uint16_t port;
 	buffer = readUInt16(buffer, port);
 	subStub->setPort(port);
@@ -1504,7 +1506,7 @@ char* ZeroMQNode::readUInt16(char* buffer, uint16_t& value) {
 
 ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 	StatBucket<double> statBucket;
-	
+
 	double rollOffFactor = 0.3;
 
 	std::list<StatBucket<size_t> >::iterator buckFrameStart = _buckets.begin();
@@ -1517,7 +1519,7 @@ ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 			buckFrameEnd++;
 			continue;
 		}
-		
+
 		// accumulate stats for a second
 		StatBucket<size_t> oneSecBucket;
 		std::list<StatBucket<size_t> >::iterator curr = buckFrameStart;
@@ -1526,7 +1528,7 @@ ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 			oneSecBucket.nrMetaMsgSent += curr->nrMetaMsgSent;
 			oneSecBucket.sizeMetaMsgRcvd += curr->sizeMetaMsgRcvd;
 			oneSecBucket.sizeMetaMsgSent += curr->sizeMetaMsgSent;
-			
+
 			chanIter = curr->nrChannelMsg.begin();
 			while (chanIter != curr->nrChannelMsg.end()) {
 				oneSecBucket.nrChannelMsg[chanIter->first] += chanIter->second;
@@ -1544,7 +1546,7 @@ ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 		statBucket.nrMetaMsgRcvd = (1 - rollOffFactor) * statBucket.nrMetaMsgRcvd + rollOffFactor * oneSecBucket.nrMetaMsgRcvd;
 		statBucket.sizeMetaMsgSent = (1 - rollOffFactor) * statBucket.sizeMetaMsgSent + rollOffFactor * oneSecBucket.sizeMetaMsgSent;
 		statBucket.sizeMetaMsgRcvd = (1 - rollOffFactor) * statBucket.sizeMetaMsgRcvd + rollOffFactor * oneSecBucket.sizeMetaMsgRcvd;
-		
+
 		chanIter = oneSecBucket.sizeChannelMsg.begin();
 		while (chanIter != oneSecBucket.sizeChannelMsg.end()) {
 			statBucket.sizeChannelMsg[chanIter->first] = (1 - rollOffFactor) * statBucket.sizeChannelMsg[chanIter->first] + rollOffFactor * chanIter->second;;
@@ -1562,7 +1564,7 @@ ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 
 	return statBucket;
 }
-	
+
 void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	ScopeLock lock(_mutex);
 
@@ -1609,7 +1611,7 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	RESETSS(ss);
 
 	// calculate performance
-	
+
 	ss << "sent:msgs:" << statBucket.nrMetaMsgSent;
 	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 	RESETSS(ss);
@@ -1621,7 +1623,7 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	ss << "rcvd:msgs:" << statBucket.nrMetaMsgRcvd;
 	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 	RESETSS(ss);
-	
+
 	ss << "rcvd:bytes:" << statBucket.sizeMetaMsgRcvd;
 	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 	RESETSS(ss);
@@ -1629,7 +1631,7 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	// send our publishers
 	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
 	while (pubIter != _pubs.end()) {
-		
+
 		ss << "pub:uuid:" << pubIter->first;
 		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 		RESETSS(ss);
@@ -1652,7 +1654,7 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 		ss << "pub:sent:bytes:" << statBucket.sizeChannelMsg[pubIter->second.getChannelName()];
 		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 		RESETSS(ss);
-		
+
 		std::map<std::string, SubscriberStub> subs = pubIter->second.getSubscribers();
 		std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
 

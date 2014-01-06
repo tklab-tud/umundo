@@ -59,7 +59,7 @@ protected:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberStub : public EndPoint{
+class DLLEXPORT SubscriberStub : public EndPoint {
 public:
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }

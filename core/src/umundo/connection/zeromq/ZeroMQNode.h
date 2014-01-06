@@ -135,6 +135,7 @@ protected:
 
 		bool isZMQConfirmed; ///< Whether we have seen this subscriber on the XPUB socket
 		std::string nodeUUID; ///< the remote node uuid
+		std::string address; ///< the remote address from getpeer*
 		SubscriberStub subStub; ///< local representation of remote subscriber
 		std::map<std::string, Publisher> pending; ///< Subscription pending
 		std::map<std::string, Publisher> confirmed; ///< Subscription confirmed

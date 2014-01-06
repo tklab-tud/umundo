@@ -2,6 +2,12 @@
 #include "umundo/common/Message.h"
 #include "umundo/connection/Node.h"
 
+#include <stdio.h>
+#include <zmq.h>
+#include <pthread.h>
+#include <string.h>
+#include <assert.h>
+
 using namespace umundo;
 
 bool testNodeConnections() {
@@ -216,6 +222,7 @@ bool testGeneralStuff() {
 	delete node1;
 	return true;
 }
+
 
 int main(int argc, char** argv) {
 	setenv("UMUNDO_LOGLEVEL", "4", 1);

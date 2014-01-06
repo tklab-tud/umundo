@@ -28,6 +28,14 @@
 #include <arpa/inet.h> // htons
 #include <string.h> // strlen, memcpy
 #include <stdio.h> // snprintf
+
+#include <sys/socket.h>
+#include <netdb.h>
+
+#endif
+
+#ifdef WIN32
+#include <WS2tcpip.h>
 #endif
 
 #include <boost/lexical_cast.hpp>
@@ -579,12 +587,28 @@ void ZeroMQNode::processNodeComm() {
 
 			std::string pubUUID = pubImpl->getUUID();
 			std::string subUUID = subImpl->getUUID();
-
+			std::string address;
+			
 			delete pubImpl;
 
 			assert(REMAINING_BYTES_TOREAD == 0);
 			ScopeLock lock(_mutex);
 
+			{
+				int srcFd = zmq_msg_get(&content, ZMQ_SRCFD);
+				
+				if (srcFd > 0) {
+					int rc;
+					struct sockaddr_storage ss;
+					socklen_t addrlen = sizeof ss;
+					rc = getpeername (srcFd, (struct sockaddr*) &ss, &addrlen);
+
+					char host [NI_MAXHOST];
+					rc = getnameinfo ((struct sockaddr*) &ss, addrlen, host, sizeof host, NULL, 0, NI_NUMERICHOST);
+					address = host;
+				}
+			}
+			
 			if (_pubs.find(pubUUID) == _pubs.end())
 				break;
 
@@ -596,6 +620,7 @@ void ZeroMQNode::processNodeComm() {
 					delete subImpl;
 				}
 				_subscriptions[subUUID].nodeUUID = from;
+				_subscriptions[subUUID].address = address;
 				_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
 				if (_subscriptions[subUUID].isZMQConfirmed || _subscriptions[subUUID].subStub.getImpl()->implType != Subscriber::ZEROMQ)
@@ -1215,6 +1240,10 @@ void ZeroMQNode::confirmSub(const std::string& subUUID) {
 		_connFrom[pendSub.nodeUUID]->node.addSubscriber(pendSub.subStub);
 	}
 
+	// copy over address from getpeer*
+	if (_connFrom[pendSub.nodeUUID]->node.getIP().length() == 0 && pendSub.address.length() > 0)
+		_connFrom[pendSub.nodeUUID]->node.getImpl()->setIP(pendSub.address);
+		
 	// move all pending subscriptions to confirmed
 	std::map<std::string, Publisher>::iterator pendPubIter = pendSub.pending.begin();
 	while(pendPubIter != pendSub.pending.end()) {

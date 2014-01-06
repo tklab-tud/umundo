@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 2.8.4)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "4")
-SET(UMUNDO_VERSION_PATCH "0")
+SET(UMUNDO_VERSION_PATCH "1")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -667,7 +667,10 @@ else()
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
 endif()
 if (NET_RTP)
-	find_package(JRTPLIB REQUIRED)
+	find_package(JRTPLIB)
+  if (NOT JRTPLIB)
+    set(NET_RTP OFF)
+  endif()
 endif()
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 

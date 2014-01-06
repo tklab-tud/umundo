@@ -19,14 +19,16 @@ if (BUILD_UMUNDO_S11N)
 	)
 endif()
 
-add_executable(umundo-rtp-pub umundo-rtp-pub.cpp)
-target_link_libraries(umundo-rtp-pub umundocore)
-set_target_properties(umundo-rtp-pub PROPERTIES FOLDER "Tools")
+if (NET_RTP)
+	add_executable(umundo-rtp-pub umundo-rtp-pub.cpp)
+	target_link_libraries(umundo-rtp-pub umundocore)
+	set_target_properties(umundo-rtp-pub PROPERTIES FOLDER "Tools")
 
-INSTALL_EXECUTABLE(
-	TARGETS umundo-rtp-pub
-	COMPONENT tools 
-)
+	INSTALL_EXECUTABLE(
+		TARGETS umundo-rtp-pub
+		COMPONENT tools 
+	)
+endif()
 
 add_executable(umundo-rtp-sub umundo-rtp-sub.cpp)
 target_link_libraries(umundo-rtp-sub umundocore)

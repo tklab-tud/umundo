@@ -274,16 +274,18 @@ bool testNodeDiscovery() {
 			std::set<Node>::iterator nodeIter2 = nodes.begin();
 			while(nodeIter2 != nodes.end()) {
 				// make sure everyone found exactly everyone else
-				retries = 200;
-				while(peers.find(nodeIter2->getUUID()) == peers.end()) {
-					Thread::sleepMs(100);
-					if (retries-- == 0)
-						assert(false);
-					peers = const_cast<Node&>(*nodeIter1).connectedTo();
+				if (nodeIter1->getUUID() != nodeIter2->getUUID()) {
+					retries = 200;
+					while(peers.find(nodeIter2->getUUID()) == peers.end()) {
+						Thread::sleepMs(100);
+						if (retries-- == 0)
+							assert(false);
+						peers = const_cast<Node&>(*nodeIter1).connectedTo();
+					}
 				}
 				nodeIter2++;
 			}
-			assert(peers.size() == nrNodes);
+			assert(peers.size() == nrNodes - 1);
 			nodeIter1++;
 		}
 		std::set<Node>::iterator nodeIter = nodes.begin();

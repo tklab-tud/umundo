@@ -135,6 +135,7 @@ protected:
 
 		bool isZMQConfirmed; ///< Whether we have seen this subscriber on the XPUB socket
 		std::string nodeUUID; ///< the remote node uuid
+		std::string address; ///< the remote address from getpeer*
 		SubscriberStub subStub; ///< local representation of remote subscriber
 		std::map<std::string, Publisher> pending; ///< Subscription pending
 		std::map<std::string, Publisher> confirmed; ///< Subscription confirmed
@@ -178,7 +179,14 @@ protected:
 	uint64_t _lastDeadNodeRemoval;
 	bool _allowLocalConns;
 
-	zmq_pollitem_t sockets[4]; // standard sockets to poll for this node
+	bool _dirtySockets;
+	zmq_pollitem_t _stdSockets[4]; // standard sockets to poll for this node
+	size_t _nrStdSockets;
+	zmq_pollitem_t* _sockets;
+	size_t _nrSockets;
+	std::list<std::pair<uint32_t, std::string> > _nodeSockets;
+
+	void updateSockets();
 
 	void* _nodeSocket; ///< global node socket for off-band communication
 	void* _pubSocket; ///< node-global publisher to wrap added publishers

@@ -101,7 +101,7 @@ void RTPPublisher::init(Options* config) {
 	if(status<0)
 		UM_LOG_ERR("%s: error in session.Create(): %s", SHORT_UUID(_uuid).c_str(), jrtplib::RTPGetErrorString(status).c_str());
 	else
-		UM_LOG_WARN("%s: session.Create() using portbase: %d", SHORT_UUID(_uuid).c_str(), portbase);
+		UM_LOG_INFO("%s: session.Create() using portbase: %d", SHORT_UUID(_uuid).c_str(), portbase);
 	_port=portbase;
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
@@ -168,7 +168,7 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 		subIter.first++;
 	}
 
-	UM_LOG_WARN("%s: received a new subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
+	UM_LOG_INFO("%s: received a new subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 	if((status=_sess.AddDestination(*addr))<0)
@@ -201,7 +201,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	if (!subscriptionFound)
 		return;
 
-	UM_LOG_WARN("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
+	UM_LOG_INFO("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 	if((status=_sess.DeleteDestination(*addr))<0)
@@ -233,13 +233,14 @@ void RTPPublisher::send(Message* msg) {
 
 void RTPPublisher::run() {
 	int status;
+	bool available;
 	while(isStarted()) {
-		{
+		_sess.WaitForIncomingData(jrtplib::RTPTime(1,0), &available);
+		if(available) {
 			ScopeLock lock(_mutex);
 			if((status=_sess.Poll())<0)
 				UM_LOG_WARN("%s: error in session.Poll(): %s", SHORT_UUID(_uuid).c_str(), jrtplib::RTPGetErrorString(status).c_str());
 		}
-		jrtplib::RTPTime::Wait(jrtplib::RTPTime(1,0));
 	}
 }
 

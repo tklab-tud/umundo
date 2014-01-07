@@ -15,7 +15,7 @@ bool testDiscoveryStress() {
 		n.added(n2);
 
 		for (int j = 0; j < i; j++) {
-			Subscriber s("foo", NULL);
+			Subscriber s("foo", NULL, NULL);
 			n2.addSubscriber(s);
 			int subs = p.waitForSubscribers(j);
 			std::cout << "\tSubscribers: " << subs << std::endl;
@@ -51,7 +51,7 @@ bool testSubscriberStress() {
 		std::cout << "--- " << i << std::endl;
 		std::set<Subscriber> subs;
 		for (int j = 0; j < i; j++) {
-			Subscriber s("foo", NULL);
+			Subscriber s("foo", NULL, NULL);
 			n2.addSubscriber(s);
 			subs.insert(s);
 			std::cout << "\tSub Implementations: " << SubscriberImpl::instances << std::endl;

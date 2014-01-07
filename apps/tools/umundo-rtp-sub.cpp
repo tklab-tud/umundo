@@ -24,11 +24,19 @@ class TestReceiver : public Receiver {
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
-		char data[msg->size()+1];
-		memcpy(data, msg->data(), msg->size());
-		data[msg->size()]='\0';
 		if(msg->getMeta("type")=="RTP")
+		{
+			char *data=(char*)malloc(msg->size()+1);
+			if(data==NULL)
+			{
+				std::cout << "RTP packet received but error in malloc" << std::endl << std::flush;
+				return;
+			}
+			memcpy(data, msg->data(), msg->size());
+			data[msg->size()]='\0';
 			std::cout << "RTP(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
+			free(data);
+		}
 		/*else
 		{
 			std::cout << "RTCP -->";

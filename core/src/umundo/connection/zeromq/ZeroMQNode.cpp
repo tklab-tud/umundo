@@ -599,6 +599,7 @@ void ZeroMQNode::processNodeComm() {
 				
 				if (srcFd > 0) {
 					int rc;
+					(void)rc; // surpress unused warning without assert
 					struct sockaddr_storage ss;
 					socklen_t addrlen = sizeof ss;
 					rc = getpeername (srcFd, (struct sockaddr*) &ss, &addrlen);
@@ -1423,9 +1424,11 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 char* ZeroMQNode::writePubInfo(char* buffer, const PublisherStub& pub) {
 	std::string channel = pub.getChannelName();
 	std::string uuid = pub.getUUID(); // we share a publisher socket in the node, do not publish hidden pub uuid
-	uint16_t port = _pubPort; //pub.getPort();
+	uint16_t port = pub.getPort();
 	uint16_t type = pub.getImpl()->implType;
-
+	if(type == ZMQ_PUB)
+		port=_pubPort;
+	
 	assert(uuid.length() == 36);
 
 	char* start = buffer;

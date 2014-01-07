@@ -28,7 +28,6 @@ if (NET_RTP)
 		TARGETS umundo-rtp-pub
 		COMPONENT tools 
 	)
-endif()
 
 add_executable(umundo-rtp-sub umundo-rtp-sub.cpp)
 target_link_libraries(umundo-rtp-sub umundocore)
@@ -38,6 +37,8 @@ INSTALL_EXECUTABLE(
 	TARGETS umundo-rtp-sub
 	COMPONENT tools 
 )
+
+endif()
 
 add_executable(umundo-pingpong umundo-pingpong.cpp)
 target_link_libraries(umundo-pingpong umundocore)

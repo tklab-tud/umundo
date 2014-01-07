@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 	node.addPublisher(pubFoo);
 
 	while(1) {
-		Thread::sleepMs(1000);
+		Thread::sleepMs(100);
 		Message* msg = new Message();
 		msg->setData("ping", 4);
 		std::cout << "o" << std::endl << std::flush;

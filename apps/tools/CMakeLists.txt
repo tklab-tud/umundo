@@ -29,14 +29,46 @@ if (NET_RTP)
 		COMPONENT tools 
 	)
 
-add_executable(umundo-rtp-sub umundo-rtp-sub.cpp)
-target_link_libraries(umundo-rtp-sub umundocore)
-set_target_properties(umundo-rtp-sub PROPERTIES FOLDER "Tools")
+	add_executable(umundo-rtp-sub umundo-rtp-sub.cpp)
+	target_link_libraries(umundo-rtp-sub umundocore)
+	set_target_properties(umundo-rtp-sub PROPERTIES FOLDER "Tools")
 
-INSTALL_EXECUTABLE(
-	TARGETS umundo-rtp-sub
-	COMPONENT tools 
-)
+	INSTALL_EXECUTABLE(
+		TARGETS umundo-rtp-sub
+		COMPONENT tools 
+	)
+	
+	find_package(Portaudio)
+	if(PORTAUDIO_FOUND)
+		include_directories(${PORTAUDIO_INCLUDE_DIR})
+		
+		add_executable(umundo-phone-pub umundo-phone-pub.cpp)
+		target_link_libraries(umundo-phone-pub umundocore portaudio)
+		set_target_properties(umundo-phone-pub PROPERTIES FOLDER "Tools")
+
+		INSTALL_EXECUTABLE(
+			TARGETS umundo-phone-pub
+			COMPONENT tools 
+		)
+		
+		add_executable(umundo-phone-sub umundo-phone-sub.cpp)
+		target_link_libraries(umundo-phone-sub umundocore portaudio)
+		set_target_properties(umundo-phone-sub PROPERTIES FOLDER "Tools")
+
+		INSTALL_EXECUTABLE(
+			TARGETS umundo-phone-sub
+			COMPONENT tools 
+		)
+		
+		add_executable(umundo-phone umundo-phone.cpp)
+		target_link_libraries(umundo-phone umundocore portaudio)
+		set_target_properties(umundo-phone PROPERTIES FOLDER "Tools")
+
+		INSTALL_EXECUTABLE(
+			TARGETS umundo-phone
+			COMPONENT tools 
+		)
+	endif()
 
 endif()
 

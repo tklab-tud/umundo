@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2012  Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
+ *  Copyright (C) 2013  Thilo Molitor (thilo@eightysoft.de)
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the FreeBSD license as published by the FreeBSD

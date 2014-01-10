@@ -72,7 +72,7 @@ void RTPPublisher::init(Options* config) {
 	_payloadType=96;		//dynamic [RFC3551]
 	if(config->getKVPs().count("pub.rtp.payloadType"))
 		_payloadType=strTo<uint8_t>(config->getKVPs()["pub.rtp.payloadType"]);
-
+	
 	// IMPORTANT: The local timestamp unit MUST be set, otherwise
 	//            RTCP Sender Report info will be calculated wrong
 	// We'll be sending samplesPerSec samples each second, so we'll
@@ -106,6 +106,12 @@ void RTPPublisher::init(Options* config) {
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
 	_sess.SetDefaultTimestampIncrement(timestampIncrement);
+	
+	if(_sess.SupportsMulticasting() && config->getKVPs().count("pub.rtp.multicast")) {
+		const jrtplib::RTPAddress *groupip=strToAddress(_isIPv6, config->getKVPs()["pub.rtp.multicast"], 0);
+		//_sess.JoinMulticastGroup(groupip);
+		delete groupip;
+	}
 
 	start();
 	delete transparams;

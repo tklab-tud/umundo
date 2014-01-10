@@ -124,11 +124,10 @@ int main(int argc, char** argv) {
 
 	checkError(Pa_StartStream(input_stream));
 	while(1) {
-		checkError(Pa_ReadStream(input_stream, buffer, FRAMES_PER_BUFFER));
+		checkError(Pa_ReadStream(input_stream, buffer, FRAMES_PER_BUFFER), 0);
 		
 		Message* msg = new Message();
 		msg->setData((char*)buffer, sizeof(float)*FRAMES_PER_BUFFER);
-		std::cout << "o" << std::endl << std::flush;
 		pubFoo.send(msg);
 		delete(msg);
 	}

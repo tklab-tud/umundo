@@ -443,7 +443,7 @@ endif()
 # see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
 if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
-	set(CMAKE_OSX_ARCHITECTURES "x86_64;i386")
+	set(CMAKE_OSX_ARCHITECTURES "x86_64")
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
   	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)

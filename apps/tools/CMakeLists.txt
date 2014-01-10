@@ -40,7 +40,7 @@ if (NET_RTP)
 	
 	find_package(Portaudio)
 	if(PORTAUDIO_FOUND)
-		include_directories(${PORTAUDIO_INCLUDE_DIR})
+		include_directories(${PORTAUDIO_INCLUDE_DIRS})
 		
 		add_executable(umundo-phone-pub umundo-phone-pub.cpp)
 		target_link_libraries(umundo-phone-pub umundocore portaudio)

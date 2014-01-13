@@ -18,7 +18,6 @@
 #include <iostream>
 #include <string.h>
 
-#include <math.h>
 #include <portaudio.h>
 
 #define SAMPLE_RATE (8000)
@@ -105,7 +104,7 @@ int main(int argc, char** argv) {
 	checkError(Pa_OpenStream(
 		&input_stream,
 		&inputParameters,
-		NULL,
+		NULL, /* no output */
 		SAMPLE_RATE,
 		FRAMES_PER_BUFFER,
 		paClipOff, /* we won't output out of range samples so don't bother clipping them */

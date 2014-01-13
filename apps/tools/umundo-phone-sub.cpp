@@ -18,7 +18,6 @@
 #include <iostream>
 #include <string.h>
 
-#include <math.h>
 #include <portaudio.h>
 
 #define SAMPLE_RATE (8000)
@@ -53,7 +52,7 @@ public:
 				Thread::sleepMs(200);						//wait some time to compensate network delay
 				checkError(Pa_StartStream(stream));
 			}
-			checkError(Pa_WriteStream(stream, msg->data(), msg->size()/sizeof(float)), 0);		//32 bit floating point output
+			checkError(Pa_WriteStream(stream, msg->data(), FRAMES_PER_BUFFER), 0);
 		}
 	}
 };
@@ -65,6 +64,8 @@ int main(int argc, char** argv) {
 
 	TestReceiver testRecv;
 	RTPSubscriberConfig subConfig;
+	subConfig.setMulticastIP("224.1.2.3");
+	subConfig.setMulticastPortbase(42042);
 	Subscriber subFoo(Subscriber::RTP, "phone-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

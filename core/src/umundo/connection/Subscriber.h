@@ -70,6 +70,14 @@ public:
 	void setPortbase(uint16_t port) {
 		options["sub.rtp.portbase"] = toStr(port);
 	}
+	
+	void setMulticastIP(std::string ip) {
+		options["sub.rtp.multicast"] = ip;
+	}
+	
+	void setMulticastPortbase(uint16_t port) {
+		this->setPortbase(port);
+	}
 };
 
 /**

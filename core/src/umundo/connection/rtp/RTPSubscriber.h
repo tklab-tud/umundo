@@ -67,6 +67,8 @@ private:
 	RTPSubscriberRTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
+	bool _multicast;
+	std::string _multicastIP;
 
 	bool _isSuspended;
 

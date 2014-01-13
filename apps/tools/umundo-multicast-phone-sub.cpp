@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 	RTPSubscriberConfig subConfig;
 	subConfig.setMulticastIP("224.1.2.3");
 	subConfig.setMulticastPortbase(42042);
-	Subscriber subFoo(Subscriber::RTP, "phone-pubsub", &testRecv, &subConfig);
+	Subscriber subFoo(Subscriber::RTP, "multicast-phone-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

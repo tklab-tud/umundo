@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 8000Hz and 40ms payload per rtp packet (166 samples)
 	pubConfig.setMulticastIP("224.1.2.3");
 	pubConfig.setMulticastPortbase(42042);
-	Publisher pubFoo(Publisher::RTP, "phone-pubsub", &pubConfig);
+	Publisher pubFoo(Publisher::RTP, "multicast-phone-pubsub", &pubConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

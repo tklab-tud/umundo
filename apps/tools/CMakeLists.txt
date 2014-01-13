@@ -42,21 +42,21 @@ if (NET_RTP)
 	if(PORTAUDIO_FOUND)
 		include_directories(${PORTAUDIO_INCLUDE_DIRS})
 		
-		add_executable(umundo-phone-pub umundo-phone-pub.cpp)
-		target_link_libraries(umundo-phone-pub umundocore portaudio)
-		set_target_properties(umundo-phone-pub PROPERTIES FOLDER "Tools")
+		add_executable(umundo-multicast-phone-pub umundo-multicast-phone-pub.cpp)
+		target_link_libraries(umundo-multicast-phone-pub umundocore portaudio)
+		set_target_properties(umundo-multicast-phone-pub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
-			TARGETS umundo-phone-pub
+			TARGETS umundo-multicast-phone-pub
 			COMPONENT tools 
 		)
 		
-		add_executable(umundo-phone-sub umundo-phone-sub.cpp)
-		target_link_libraries(umundo-phone-sub umundocore portaudio)
-		set_target_properties(umundo-phone-sub PROPERTIES FOLDER "Tools")
+		add_executable(umundo-multicast-phone-sub umundo-multicast-phone-sub.cpp)
+		target_link_libraries(umundo-multicast-phone-sub umundocore portaudio)
+		set_target_properties(umundo-multicast-phone-sub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
-			TARGETS umundo-phone-sub
+			TARGETS umundo-multicast-phone-sub
 			COMPONENT tools 
 		)
 		

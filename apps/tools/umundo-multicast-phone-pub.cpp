@@ -25,8 +25,7 @@
 
 using namespace umundo;
 
-void checkError(PaError err, int fatal=1)
-{
+void checkError(PaError err, int fatal=1) {
 	if( err == paNoError)
 		return;
 	if(fatal)
@@ -42,7 +41,7 @@ int main(int argc, char** argv) {
 	float buffer[FRAMES_PER_BUFFER];
 	PaStream *stream;
 	PaStreamParameters inputParameters;
-	
+
 	printf("umundo-phone-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 8000Hz and 40ms payload per rtp packet (166 samples)
@@ -67,21 +66,21 @@ int main(int argc, char** argv) {
 	inputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency ;
 	inputParameters.hostApiSpecificStreamInfo = NULL;
-	
+
 	checkError(Pa_OpenStream(
-		&stream,
-		&inputParameters,
-		NULL, /* no output */
-		SAMPLE_RATE,
-		FRAMES_PER_BUFFER,
-		paClipOff, /* we won't output out of range samples so don't bother clipping them */
-		NULL, /* no callback, use blocking API */
-		NULL )); /* no callback, so no callback userData */
-	
+	               &stream,
+	               &inputParameters,
+	               NULL, /* no output */
+	               SAMPLE_RATE,
+	               FRAMES_PER_BUFFER,
+	               paClipOff, /* we won't output out of range samples so don't bother clipping them */
+	               NULL, /* no callback, use blocking API */
+	               NULL )); /* no callback, so no callback userData */
+
 	checkError(Pa_StartStream(stream));
 	while(1) {
 		checkError(Pa_ReadStream(stream, buffer, FRAMES_PER_BUFFER), 0);
-		
+
 		Message* msg = new Message();
 		msg->setData((char*)buffer, sizeof(float)*FRAMES_PER_BUFFER);
 		pubFoo.send(msg);

@@ -588,7 +588,7 @@ void ZeroMQNode::processNodeComm() {
 			std::string pubUUID = pubImpl->getUUID();
 			std::string subUUID = subImpl->getUUID();
 			std::string address;
-			
+
 			delete pubImpl;
 
 			assert(REMAINING_BYTES_TOREAD == 0);
@@ -596,7 +596,7 @@ void ZeroMQNode::processNodeComm() {
 
 			{
 				int srcFd = zmq_msg_get(&content, ZMQ_SRCFD);
-				
+
 				if (srcFd > 0) {
 					int rc;
 					(void)rc; // surpress unused warning without assert
@@ -609,7 +609,7 @@ void ZeroMQNode::processNodeComm() {
 					address = host;
 				}
 			}
-			
+
 			if (_pubs.find(pubUUID) == _pubs.end())
 				break;
 
@@ -1244,7 +1244,7 @@ void ZeroMQNode::confirmSub(const std::string& subUUID) {
 	// copy over address from getpeer*
 	if (_connFrom[pendSub.nodeUUID]->node.getIP().length() == 0 && pendSub.address.length() > 0)
 		_connFrom[pendSub.nodeUUID]->node.getImpl()->setIP(pendSub.address);
-		
+
 	// move all pending subscriptions to confirmed
 	std::map<std::string, Publisher>::iterator pendPubIter = pendSub.pending.begin();
 	while(pendPubIter != pendSub.pending.end()) {
@@ -1428,7 +1428,7 @@ char* ZeroMQNode::writePubInfo(char* buffer, const PublisherStub& pub) {
 	uint16_t type = pub.getImpl()->implType;
 	if(type == ZMQ_PUB)
 		port=_pubPort;
-	
+
 	assert(uuid.length() == 36);
 
 	char* start = buffer;

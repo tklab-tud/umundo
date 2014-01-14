@@ -27,8 +27,7 @@ using namespace umundo;
 
 PaStream *stream;
 
-void checkError(PaError err, int fatal=1)
-{
+void checkError(PaError err, int fatal=1) {
 	if( err == paNoError )
 		return;
 	if(fatal)
@@ -44,11 +43,9 @@ class TestReceiver : public Receiver {
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
-		if(msg->getMeta("type")=="RTP")
-		{
+		if(msg->getMeta("type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
-			if(Pa_IsStreamStopped(stream)==1)				//start output stream when first packed is received
-			{
+			if(Pa_IsStreamStopped(stream)==1) {			//start output stream when first packed is received
 				Thread::sleepMs(200);						//wait some time to compensate network delay
 				checkError(Pa_StartStream(stream));
 			}
@@ -59,7 +56,7 @@ public:
 
 int main(int argc, char** argv) {
 	PaStreamParameters outputParameters;
-	
+
 	printf("umundo-phone-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	TestReceiver testRecv;
@@ -84,16 +81,16 @@ int main(int argc, char** argv) {
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
-	
+
 	checkError(Pa_OpenStream(
-		&stream,
-		NULL, /* no input */
-		&outputParameters,
-		SAMPLE_RATE,
-		FRAMES_PER_BUFFER,
-		paClipOff, /* we won't output out of range samples so don't bother clipping them */
-		NULL, /* no callback, use blocking API */
-		NULL )); /* no callback, so no callback userData */
+	               &stream,
+	               NULL, /* no input */
+	               &outputParameters,
+	               SAMPLE_RATE,
+	               FRAMES_PER_BUFFER,
+	               paClipOff, /* we won't output out of range samples so don't bother clipping them */
+	               NULL, /* no callback, use blocking API */
+	               NULL )); /* no callback, so no callback userData */
 
 	while(1)
 		Thread::sleepMs(4000);

@@ -20,8 +20,8 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (166)
+#define SAMPLE_RATE (16000)
+#define FRAMES_PER_BUFFER (100)
 
 using namespace umundo;
 

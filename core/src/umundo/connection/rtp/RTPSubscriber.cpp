@@ -55,8 +55,7 @@ void RTPSubscriber::init(Options* config) {
 	jrtplib::RTPTransmissionParams *transparams;
 	uint16_t portbase=strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
 	_multicastIP=config->getKVPs()["sub.rtp.multicast"];
-	if(config->getKVPs().count("pub.rtp.multicast") && !config->getKVPs().count("pub.rtp.portbase"))
-	{
+	if(config->getKVPs().count("pub.rtp.multicast") && !config->getKVPs().count("pub.rtp.portbase")) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65536) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
 	}
@@ -97,7 +96,7 @@ void RTPSubscriber::init(Options* config) {
 	_port=portbase;		//sent to publisher (via framework)
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
-	
+
 	if(config->getKVPs().count("sub.rtp.multicast")) {
 		if(!_sess.SupportsMulticasting())
 			UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
@@ -150,14 +149,13 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	if(_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_INFO("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
-		if(_multicast && unique_keys(_domainPubs)==0)
-		{
+		if(_multicast && unique_keys(_domainPubs)==0) {
 			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.JoinMulticastGroup(*addr);
 			delete addr;
 		}
-		
+
 		jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		if((status=_sess.AddDestination(*addr))<0)
 			UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
@@ -195,14 +193,13 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_INFO("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
-		if(_multicast && unique_keys(_domainPubs)==0)
-		{
+		if(_multicast && unique_keys(_domainPubs)==0) {
 			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.LeaveMulticastGroup(*addr);
 			delete addr;
 		}
-		
+
 		const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
 		if((status=_sess.DeleteDestination(*addr))<0)
 			UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());

@@ -24,11 +24,9 @@ class TestReceiver : public Receiver {
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
-		if(msg->getMeta("type")=="RTP")
-		{
+		if(msg->getMeta("type")=="RTP") {
 			char *data=(char*)malloc(msg->size()+1);
-			if(data==NULL)
-			{
+			if(data==NULL) {
 				std::cout << "RTP packet received but error in malloc" << std::endl << std::flush;
 				return;
 			}

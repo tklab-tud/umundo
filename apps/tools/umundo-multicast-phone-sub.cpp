@@ -21,9 +21,11 @@
 #include <portaudio.h>
 
 #define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (166)
+#define FRAMES_PER_BUFFER (332)
 
 using namespace umundo;
+
+PaStream *stream;
 
 void checkError(PaError err, int fatal=1)
 {
@@ -38,54 +40,63 @@ void checkError(PaError err, int fatal=1)
 		exit(err);
 }
 
-int main(int argc, char** argv) {
-	float buffer[FRAMES_PER_BUFFER];
-	PaStream *stream;
-	PaStreamParameters inputParameters;
-	
-	printf("umundo-phone-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+class TestReceiver : public Receiver {
+public:
+	TestReceiver() {};
+	void receive(Message* msg) {
+		if(msg->getMeta("type")=="RTP")
+		{
+			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
+			if(Pa_IsStreamStopped(stream)==1)				//start output stream when first packed is received
+			{
+				Thread::sleepMs(200);						//wait some time to compensate network delay
+				checkError(Pa_StartStream(stream));
+			}
+			checkError(Pa_WriteStream(stream, msg->data(), FRAMES_PER_BUFFER), 0);
+		}
+	}
+};
 
-	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 8000Hz and 40ms payload per rtp packet (166 samples)
-	Publisher pubFoo(Publisher::RTP, "phone-pubsub", &pubConfig);
+int main(int argc, char** argv) {
+	PaStreamParameters outputParameters;
+	
+	printf("umundo-phone-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+
+	TestReceiver testRecv;
+	RTPSubscriberConfig subConfig;
+	subConfig.setMulticastIP("224.1.2.3");
+	subConfig.setMulticastPortbase(42042);
+	Subscriber subFoo(Subscriber::RTP, "multicast-phone-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
-	node.addPublisher(pubFoo);
+	node.addSubscriber(subFoo);
 
 	checkError(Pa_Initialize());
 
-	inputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-	if (inputParameters.device == paNoDevice) {
+	outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+	if (outputParameters.device == paNoDevice) {
 		std::cout << "Error: No default output device." << std::endl;
 		return 0;
 	}
-	inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
-	inputParameters.channelCount = 1;
-	inputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency ;
-	inputParameters.hostApiSpecificStreamInfo = NULL;
+	outputParameters.channelCount = 1; /* mono output */
+	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+	outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+	outputParameters.hostApiSpecificStreamInfo = NULL;
 	
 	checkError(Pa_OpenStream(
 		&stream,
-		&inputParameters,
-		NULL, /* no output */
+		NULL, /* no input */
+		&outputParameters,
 		SAMPLE_RATE,
 		FRAMES_PER_BUFFER,
 		paClipOff, /* we won't output out of range samples so don't bother clipping them */
 		NULL, /* no callback, use blocking API */
 		NULL )); /* no callback, so no callback userData */
-	
-	checkError(Pa_StartStream(stream));
-	while(1) {
-		checkError(Pa_ReadStream(stream, buffer, FRAMES_PER_BUFFER));
-		
-		Message* msg = new Message();
-		msg->setData((char*)buffer, sizeof(float)*FRAMES_PER_BUFFER);
-		std::cout << "o" << std::endl << std::flush;
-		pubFoo.send(msg);
-		delete(msg);
-	}
+
+	while(1)
+		Thread::sleepMs(4000);
 
 	return 0;
 }

@@ -61,6 +61,8 @@ private:
 	jrtplib::RTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
+	std::string _multicastIP;
+	uint16_t _multicastPortbase;
 
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
@@ -68,6 +70,7 @@ private:
 	Monitor _pubLock;
 	Mutex _mutex;
 	bool _isSuspended;
+	bool _multicast;
 
 	friend class Factory;
 

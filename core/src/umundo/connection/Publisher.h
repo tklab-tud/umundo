@@ -86,6 +86,14 @@ public:
 	void setPayloadType(uint8_t type) {
 		options["pub.rtp.payloadType"] = toStr(type);
 	}
+	
+	void setMulticastIP(std::string ip) {
+		options["pub.rtp.multicast"] = ip;
+	}
+	
+	void setMulticastPortbase(uint16_t port) {
+		options["pub.rtp.multicastPortbase"] = toStr(port);
+	}
 };
 
 /**

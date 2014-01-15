@@ -4,18 +4,26 @@
 set -e
 
 ME=`basename $0`
-TARGET_DEVICE="arm-linux-androideabi"
-DEST_DIR="${PWD}/../../../prebuilt/darwin-i386/gnu/lib"
+DIR="$( cd "$( dirname "$0" )" && pwd )" 
+MACOSX_VER=`/usr/bin/sw_vers -productVersion`
+MACOSX_COMP=(`echo $MACOSX_VER | tr '.' ' '`)
+DEST_DIR="${DIR}/../prebuilt/darwin-i386/${MACOSX_COMP[0]}.${MACOSX_COMP[1]}/gnu"
 
 if [ ! -d mDNSPosix ]; then
 	echo
 	echo "Cannot find mDNSPosix"
 	echo "Run script from within mDNSResponder directory:"
-	echo "mDNSResponder-333.10$ ../....//${ME}"
+	echo "mDNSResponder-333.10$ ../../../${ME}"
 	echo
 	exit
 fi
 mkdir -p ${DEST_DIR} &> /dev/null
+
+if [ ${MACOSX_COMP[1]} -lt 9 ]; then
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.6 -stdlib=libstdc++"
+else
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.7 -stdlib=libc++"
+fi
 
 if [ -f ispatched ]; then
 	rm ./ispatched
@@ -42,6 +50,7 @@ LD=ld
 CC_FLAGS="\
  -DHAVE_IPV6 -no-cpp-precomp -Wdeclaration-after-statement \
  -D__MAC_OS_X_VERSION_MIN_REQUIRED=__MAC_OS_X_VERSION_10_6 \
+ ${MACOSX_VERSION_MIN} -arch x86_64 -arch i386\
  -D__APPLE_USE_RFC_2292 \
  -arch x86_64 -arch i386 \
  -ImDNSCore -ImDNSShared -ImDNSPosix -fwrapv -fno-strict-aliasing -W -Wall -DPID_FILE=\"/var/run/mdnsd.pid\" \
@@ -87,4 +96,12 @@ done
 echo ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 ${AR} rvs build/prod/libmDNSEmbedded_d.a $OBJS
 
-cp build/prod/* ${DEST_DIR}
+cp build/prod/* ${DEST_DIR}/lib
+mkdir -p ${DEST_DIR}/include/bonjour
+cp mDNSShared/CommonServices.h ${DEST_DIR}/include/bonjour
+cp mDNSShared/dns_sd.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/DNSCommon.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/mDNSDebug.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/mDNSEmbeddedAPI.h ${DEST_DIR}/include/bonjour
+cp mDNSPosix/mDNSPosix.h ${DEST_DIR}/include/bonjour
+cp mDNSCore/uDNS.h ${DEST_DIR}/include/bonjour

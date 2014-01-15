@@ -1,4 +1,5 @@
-FIND_PATH(JRTPLIB_INCLUDE_DIR jrtplib3/rtpsession.h
+set(JRTPLIB_INCLUDE_DIR)
+FIND_PATH(JRTPLIB_SESSION_INCLUDE_DIR jrtplib3/rtpsession.h
   HINTS $ENV{JRTPLIB_INCLUDE_DIR}
   PATH_SUFFIXES include
   PATHS
@@ -9,6 +10,26 @@ FIND_PATH(JRTPLIB_INCLUDE_DIR jrtplib3/rtpsession.h
   /opt/csw # Blastwave
   /opt
 )
+
+if (JRTPLIB_SESSION_INCLUDE_DIR)
+	list(APPEND JRTPLIB_INCLUDE_DIR ${JRTPLIB_SESSION_INCLUDE_DIR})
+endif()
+
+# at least on fedora, path is different
+FIND_PATH(JRTPLIB_JTHREAD_INCLUDE_DIR jthread.h
+  PATH_SUFFIXES include include/jthread
+  PATHS
+  /usr/local
+  /usr
+  /sw # Fink
+  /opt/local # DarwinPorts
+  /opt/csw # Blastwave
+  /opt
+)
+
+if (JRTPLIB_JTHREAD_INCLUDE_DIR)
+	list(APPEND JRTPLIB_INCLUDE_DIR ${JRTPLIB_JTHREAD_INCLUDE_DIR})
+endif()
 
 set(JRTPLIB_LIBRARY)
 FIND_LIBRARY(JRTPLIB_LIBRARY_RELEASE

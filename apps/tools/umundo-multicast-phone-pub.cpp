@@ -20,8 +20,8 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (166)
+#define SAMPLE_RATE (44100)
+#define FRAMES_PER_BUFFER (32)
 
 using namespace umundo;
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 	inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
 	inputParameters.channelCount = 1;
 	inputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency ;
+	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultHighInputLatency ;
 	inputParameters.hostApiSpecificStreamInfo = NULL;
 
 	checkError(Pa_OpenStream(

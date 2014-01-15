@@ -20,8 +20,7 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (332)
+#define SAMPLE_RATE (44100)
 
 using namespace umundo;
 
@@ -45,11 +44,11 @@ public:
 	void receive(Message* msg) {
 		if(msg->getMeta("type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
-			if(Pa_IsStreamStopped(stream)==1) {			//start output stream when first packed is received
-				Thread::sleepMs(200);						//wait some time to compensate network delay
+			if(Pa_IsStreamStopped(stream)==1) {				//start output stream when first packed is received
+				Thread::sleepMs(32);						//wait some time to compensate network delay
 				checkError(Pa_StartStream(stream));
 			}
-			checkError(Pa_WriteStream(stream, msg->data(), FRAMES_PER_BUFFER), 0);
+			checkError(Pa_WriteStream(stream, msg->data(), msg->size()/sizeof(float)), 0);
 		}
 	}
 };
@@ -79,7 +78,7 @@ int main(int argc, char** argv) {
 	}
 	outputParameters.channelCount = 1; /* mono output */
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-	outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+	outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
 
 	checkError(Pa_OpenStream(
@@ -87,7 +86,7 @@ int main(int argc, char** argv) {
 	               NULL, /* no input */
 	               &outputParameters,
 	               SAMPLE_RATE,
-	               FRAMES_PER_BUFFER,
+	               0,
 	               paClipOff, /* we won't output out of range samples so don't bother clipping them */
 	               NULL, /* no callback, use blocking API */
 	               NULL )); /* no callback, so no callback userData */

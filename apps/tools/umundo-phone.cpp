@@ -20,8 +20,8 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (166)
+#define SAMPLE_RATE (44100)
+#define FRAMES_PER_BUFFER (64)
 
 using namespace umundo;
 
@@ -45,8 +45,8 @@ public:
 	void receive(Message* msg) {
 		if(msg->getMeta("type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
-			if(Pa_IsStreamStopped(output_stream)==1) {			//start output stream when first packed is received
-				Thread::sleepMs(200);								//wait some time to compensate network delay
+			if(Pa_IsStreamStopped(output_stream)==1) {				//start output stream when first packed is received
+				Thread::sleepMs(32);								//wait some time to compensate network delay
 				checkError(Pa_StartStream(output_stream));
 			}
 			checkError(Pa_WriteStream(output_stream, msg->data(), FRAMES_PER_BUFFER), 0);

@@ -150,7 +150,7 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 		UM_LOG_INFO("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
 		if(_multicast && unique_keys(_domainPubs)==0) {
-			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), _multicastIP.c_str(), _port);
+			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.JoinMulticastGroup(*addr);
 			delete addr;
@@ -194,7 +194,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 		UM_LOG_INFO("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
 		if(_multicast && unique_keys(_domainPubs)==0) {
-			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), _multicastIP.c_str(), _port);
+			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.LeaveMulticastGroup(*addr);
 			delete addr;

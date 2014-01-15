@@ -20,7 +20,7 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (44100)
+#define SAMPLE_RATE (16000)
 #define FRAMES_PER_BUFFER (64)
 
 using namespace umundo;
@@ -46,7 +46,7 @@ public:
 		if(msg->getMeta("type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
 			if(Pa_IsStreamStopped(output_stream)==1) {				//start output stream when first packed is received
-				Thread::sleepMs(32);								//wait some time to compensate network delay
+				Thread::sleepMs(8);									//wait some time to compensate network delay
 				checkError(Pa_StartStream(output_stream));
 			}
 			checkError(Pa_WriteStream(output_stream, msg->data(), FRAMES_PER_BUFFER), 0);
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 
 	printf("umundo-phone version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
+	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
 	Publisher pubFoo(Publisher::RTP, "phone", &pubConfig);
 
 	TestReceiver testRecv;

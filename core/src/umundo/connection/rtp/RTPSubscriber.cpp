@@ -149,7 +149,7 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	if(_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_INFO("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
-		if(_multicast && unique_keys(_domainPubs)==0) {
+		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.JoinMulticastGroup(*addr);
@@ -162,6 +162,7 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 		if((status=_sess.AddToAcceptList(*addr))<0)
 			UM_LOG_WARN("%s: error in session.AddToAcceptList(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
 		delete addr;
+		UM_LOG_INFO("%s: now accepting incoming packets from %s:%d", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
 	}
 	_pubs[pub.getUUID()] = pub;
 	_domainPubs.insert(std::make_pair(pub.getDomain(), pub.getUUID()));
@@ -193,7 +194,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_INFO("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
-		if(_multicast && unique_keys(_domainPubs)==0) {
+		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
 			_sess.LeaveMulticastGroup(*addr);
@@ -206,6 +207,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 		if((status=_sess.DeleteFromAcceptList(*addr))<0)
 			UM_LOG_WARN("%s: error in session.DeleteFromAcceptList(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
 		delete addr;
+		UM_LOG_INFO("%s: now refusing incoming packets from %s:%d", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
 	}
 }
 

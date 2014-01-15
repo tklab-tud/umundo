@@ -20,8 +20,8 @@
 
 #include <portaudio.h>
 
-#define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (166)
+#define SAMPLE_RATE (16000)
+#define FRAMES_PER_BUFFER (64)
 
 using namespace umundo;
 
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
 	printf("umundo-phone-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 8000Hz and 40ms payload per rtp packet (166 samples)
+	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
 	pubConfig.setMulticastIP("224.1.2.3");
 	pubConfig.setMulticastPortbase(42042);
 	Publisher pubFoo(Publisher::RTP, "multicast-phone-pubsub", &pubConfig);
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 	inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
 	inputParameters.channelCount = 1;
 	inputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency ;
+	inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultHighInputLatency ;
 	inputParameters.hostApiSpecificStreamInfo = NULL;
 
 	checkError(Pa_OpenStream(

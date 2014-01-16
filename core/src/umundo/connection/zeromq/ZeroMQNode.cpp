@@ -159,6 +159,7 @@ ZeroMQNode::~ZeroMQNode() {
 			removed(node);
 			processOpComm();
 		} else {
+			assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 			_connTo.erase(_connTo.begin());
 		}
 	}
@@ -767,6 +768,7 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 
 		// if we were connected, remove it, object will be destructed there
 		if (_connTo.find(from) != _connTo.end()) {
+			assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 			removed(_connTo[from]->node);
 		}
 
@@ -852,6 +854,7 @@ void ZeroMQNode::processOpComm() {
 		if (_connTo.find(address) == _connTo.end())
 			return;
 
+		assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 		_connTo[address]->refCount--;
 
 		if (_connTo[address]->refCount <= 0 && _connTo[address]->node) {
@@ -900,8 +903,10 @@ void ZeroMQNode::processOpComm() {
 //				delete clientConn;
 				break;
 			}
+			assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 			_connTo[address] = clientConn;
 		} else {
+			assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 			clientConn = _connTo[address];
 		}
 		_dirtySockets = true;
@@ -998,6 +1003,7 @@ void ZeroMQNode::run() {
 			if (_sockets[nodeSockIter->first].revents & ZMQ_POLLIN) {
 				ScopeLock lock(_mutex);
 				if (_connTo.find(nodeSockIter->second) != _connTo.end()) {
+					assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 					processClientComm(_connTo[nodeSockIter->second]);
 				} else {
 					UM_LOG_WARN("%s: message from vanished node %s", _uuid.c_str(), nodeSockIter->second.c_str());
@@ -1073,6 +1079,7 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 			// we have been very patient remove pending node
 			UM_LOG_ERR("%s could not connect to node at %s - removing", SHORT_UUID(_uuid).c_str(), pendingNodeIter->first.c_str());
 //			delete pendingNodeIter->second;
+			assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 			_connTo.erase(pendingNodeIter++);
 			_dirtySockets = true;
 		} else {
@@ -1158,6 +1165,7 @@ void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
 
 	// let's see whether we already are connected *to* this one
 	if (_connTo.find(uuid) != _connTo.end()) {
+		assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 		_connFrom[uuid] = _connTo[uuid];
 	} else {
 		boost::shared_ptr<NodeConnection> conn = boost::shared_ptr<NodeConnection>(new NodeConnection());
@@ -1192,6 +1200,7 @@ void ZeroMQNode::processConnectedTo(const std::string& uuid, boost::shared_ptr<N
 	if (client->node && uuid != client->node.getUUID()) {
 		// previous and this uuid of remote node differ - assume that it was replaced
 		disconnectRemoteNode(client->node);
+		assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 		_connTo.erase(client->node.getUUID());
 		_connFrom.erase(client->node.getUUID());
 		nodeStub = NodeStub(boost::shared_ptr<NodeStubImpl>(new NodeStubImpl()));
@@ -1219,6 +1228,7 @@ void ZeroMQNode::processConnectedTo(const std::string& uuid, boost::shared_ptr<N
 	client->node.getImpl()->setIP(ip);
 	client->node.getImpl()->setPort(strTo<uint16_t>(port));
 	client->node.updateLastSeen();
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	_connTo[uuid] = client;
 	_dirtySockets = true;
 
@@ -1317,6 +1327,7 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 		return;
 	}
 
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
 	nodeStub.updateLastSeen();
 
@@ -1344,6 +1355,7 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
 	PublisherStub pubStub = nodeStub.getPublisher(pub->getUUID());
 
@@ -1370,6 +1382,7 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	void* clientSocket = _connTo[nodeUUID]->socket;
 	if (!clientSocket)
 		return;
@@ -1398,6 +1411,7 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	void* clientSocket = _connTo[nodeUUID]->socket;
 	if (!clientSocket)
 		return;

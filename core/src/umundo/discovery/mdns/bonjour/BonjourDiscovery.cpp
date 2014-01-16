@@ -570,13 +570,14 @@ void DNSSD_API BonjourDiscovery::browseReply(
 					myself->_remoteAds[ad].serviceResolver[replyIter->ifIndex] = serviceResolveRef;
 				}
 			} else {
-				myself->_nodes--;
 				// a service at an interface was removed
 				if(query.remoteAds.find(replyIter->serviceName) == query.remoteAds.end()) {
 					UM_LOG_DEBUG("browseReply: ignoring removal of unknown service");
 					replyIter++;
 					continue;
 				}
+
+				myself->_nodes--;
 				MDNSAd* ad = query.remoteAds[replyIter->serviceName];
 
 				changed[ad->name] = ad;

@@ -2,6 +2,7 @@
 
 set ME=%0
 set DIR=%~dp0
+set MSVC_VER=""
 
 if "%VSINSTALLDIR%" == "" (
 	echo.
@@ -10,16 +11,33 @@ if "%VSINSTALLDIR%" == "" (
 	goto :DONE
 )
 
+cl.exe 2>&1 |findstr "Version\ 18.00" > nul
+if %errorlevel% == 0 (
+	set MSVC_VER="-1800"
+)
+
+cl.exe 2>&1 |findstr "Version\ 16.00" > nul
+if %errorlevel% == 0 (
+	set MSVC_VER="-1600"
+)
+
+if "%MSVC_VER%" == "" (
+	echo.
+	echo Unknown MSVC_VER %MSVC_VER%.
+	echo.
+	goto :DONE
+)
+
 echo %LIB% |find "LIB\amd64;" > nul
 if %errorlevel% == 0 (
-	set DEST_DIR="%DIR%..\prebuilt\windows-x86_64\msvc"
+	set DEST_DIR="%DIR%..\prebuilt\windows-x86_64\msvc%MSVC_VER%"
 	set CPU_ARCH=x86_64
 	goto :ARCH_FOUND
 )
 
 echo %LIB% |find "LIB;" > nul
 if %errorlevel% == 0 (
-	set DEST_DIR="%DIR%..\prebuilt\windows-x86\msvc"
+	set DEST_DIR="%DIR%..\prebuilt\windows-x86\msvc%MSVC_VER%"
 	set CPU_ARCH=x86
 	goto :ARCH_FOUND
 )

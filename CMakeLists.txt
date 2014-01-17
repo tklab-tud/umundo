@@ -24,12 +24,12 @@
 # CMAKE_CUSTOM_FIND_PATH:STRING        Append the given path when searching for dependencies
 #
 
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 2.8.9)
 
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "4")
-SET(UMUNDO_VERSION_PATCH "1")
+SET(UMUNDO_VERSION_PATCH "2")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition
@@ -61,6 +61,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # lower case version of system name and compiler for library paths
 string(TOLOWER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LC)
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CMAKE_CXX_COMPILER_ID_LC)
+if (WIN32)
+	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}-${MSVC_VERSION})
+endif()
 
 ################################################################
 # Configuration of library type, linking and language bindings

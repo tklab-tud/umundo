@@ -19,8 +19,8 @@ class ChatGreeter : public TypedGreeter {
 public:
 	ChatGreeter(const std::string& username, const std::string& subId);
 	virtual ~ChatGreeter() {}
-	void welcome(TypedPublisher atPub, const std::string& nodeId, const std::string& subId);
-	void farewell(TypedPublisher fromPub, const std::string& nodeId, const std::string& subId);
+	void welcome(umundo::TypedPublisher atPub, const umundo::SubscriberStub& sub);
+	void farewell(umundo::TypedPublisher fromPub, const umundo::SubscriberStub& sub);
 	
 	std::string _username;
 	std::string _subId;

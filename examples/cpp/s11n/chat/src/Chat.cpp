@@ -19,23 +19,23 @@ void ChatReceiver::receive(void* obj, Message* msg) {
 
 ChatGreeter::ChatGreeter(const std::string& username, const std::string& subId) : _username(username), _subId(subId) {}
 
-void ChatGreeter::welcome(TypedPublisher atPub, const std::string& nodeId, const std::string& subId) {
+void ChatGreeter::welcome(TypedPublisher atPub, const umundo::SubscriberStub& sub) {
 	ChatMsg* welcomeMsg = new ChatMsg();
 	welcomeMsg->set_type(ChatMsg::JOINED);
 	welcomeMsg->set_username(_username.c_str());
 
 	Message* greeting = atPub.prepareMsg("ChatMsg", welcomeMsg);
-	greeting->setReceiver(subId);
+	greeting->setReceiver(sub.getUUID());
 
 	atPub.send(greeting);
 	delete greeting;
 	delete welcomeMsg;
 }
 
-void ChatGreeter::farewell(TypedPublisher fromPub, const std::string& nodeId, const std::string& subId) {
-	if (_participants.find(subId) != _participants.end()) {
-		std::cout << _participants[subId] << " left the chat" << std::endl;
-		_participants.erase(subId);
+void ChatGreeter::farewell(TypedPublisher fromPub, const umundo::SubscriberStub& sub) {
+	if (_participants.find(sub.getUUID()) != _participants.end()) {
+		std::cout << _participants[sub.getUUID()] << " left the chat" << std::endl;
+		_participants.erase(sub.getUUID());
 	} else {
 		std::cout << "An unknown user left the chat: " << std::endl;	
 	}
@@ -47,6 +47,9 @@ int main(int argc, char** argv) {
 	std::getline(std::cin, username);
 
 	Node chatNode;
+  Discovery disc(Discovery::MDNS);
+  disc.add(chatNode);
+  
 	TypedSubscriber chatSub("s11nChat", new ChatReceiver());
 	TypedPublisher chatPub("s11nChat");
 	chatPub.setGreeter(new ChatGreeter(username, chatSub.getUUID()));

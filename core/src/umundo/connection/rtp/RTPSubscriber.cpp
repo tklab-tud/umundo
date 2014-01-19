@@ -35,13 +35,11 @@
 
 namespace umundo {
 
-RTPSubscriber::RTPSubscriber() {
+RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber(0), _multicast(false), _isSuspended(false) {
 #ifdef WIN32
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
 #endif // WIN32
-	_isSuspended=false;
-	_multicast=false;
 	_sess.setSubscriber(this);
 	//TODO: distinguish between ipv4 and ipv6
 	_isIPv6=false;
@@ -231,6 +229,11 @@ void RTPSubscriber::run() {
 
 void RTPSubscriber::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
 	assert(pack!=NULL);
+	//we have to calculate the extended sequence number ourselves (http://research.edm.uhasselt.be/jori/jrtplib/documentation/classjrtplib_1_1RTPPacket.html#a74f943fd92a16b2d037f99e9b72485f5)
+	if(pack->GetSequenceNumber()<_lastSequenceNumber)		//sequence number overflow?
+		_extendedSequenceNumber++;
+	_lastSequenceNumber=pack->GetSequenceNumber();
+	pack->SetExtendedSequenceNumber((_extendedSequenceNumber<<16) + pack->GetSequenceNumber());
 	if(_receiver==NULL)
 		return;
 	Message *msg=createRTPMessage(pack);
@@ -248,7 +251,9 @@ Message *RTPSubscriber::createRTPMessage(jrtplib::RTPPacket *pack) {
 	msg->putMeta("SSRC", toStr(pack->GetSSRC()));
 	msg->putMeta("timestamp", toStr(pack->GetTimestamp()));
 	msg->putMeta("sequenceNumber", toStr(pack->GetSequenceNumber()));
+	msg->putMeta("extendedSequenceNumber", toStr(pack->GetExtendedSequenceNumber()));
 	msg->putMeta("payloadType", toStr(pack->GetPayloadType()));
+	msg->putMeta("marker", toStr(pack->HasMarker()));
 	return msg;
 }
 
@@ -257,6 +262,11 @@ Message* RTPSubscriber::getNextMsg() {
 	if(_sess.GotoFirstSourceWithData()) {
 		jrtplib::RTPPacket *pack=_sess.GetNextPacket();
 		assert(pack!=NULL);
+		//we have to calculate the extended sequence number ourselves (http://research.edm.uhasselt.be/jori/jrtplib/documentation/classjrtplib_1_1RTPPacket.html#a74f943fd92a16b2d037f99e9b72485f5)
+		if(pack->GetSequenceNumber()<_lastSequenceNumber)		//sequence number overflow?
+			_extendedSequenceNumber++;
+		_lastSequenceNumber=pack->GetSequenceNumber();
+		pack->SetExtendedSequenceNumber((_extendedSequenceNumber<<16) + pack->GetSequenceNumber());
 		Message *msg=createRTPMessage(pack);
 		_sess.DeletePacket(pack);
 		_sess.EndDataAccess();

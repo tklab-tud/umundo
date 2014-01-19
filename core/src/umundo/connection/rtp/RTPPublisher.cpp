@@ -36,13 +36,11 @@
 
 namespace umundo {
 
-RTPPublisher::RTPPublisher() {
+RTPPublisher::RTPPublisher() : _isSuspended(false), _multicast(false) {
 #ifdef WIN32
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
 #endif // WIN32
-	_isSuspended=false;
-	_multicast=false;
 	//TODO: distinguish between ipv4 and ipv6
 	_isIPv6=false;
 }
@@ -56,7 +54,7 @@ void RTPPublisher::init(Options* config) {
 	_multicastIP=config->getKVPs()["pub.rtp.multicast"];
 	_multicastPortbase=strTo<uint16_t>(config->getKVPs()["pub.rtp.multicastPortbase"]);
 	double samplesPerSec=strTo<double>(config->getKVPs()["pub.rtp.samplesPerSec"]);
-	uint32_t timestampIncrement=strTo<uint32_t>(config->getKVPs()["pub.rtp.timestampIncrement"]);
+	_timestampIncrement=strTo<uint32_t>(config->getKVPs()["pub.rtp.timestampIncrement"]);
 	if(!config->getKVPs().count("pub.rtp.portbase"))
 		portbase=16384;
 	if(portbase<=0 || portbase>=65536) {
@@ -67,11 +65,12 @@ void RTPPublisher::init(Options* config) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid samplesPerSec (samplesPerSec > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(!config->getKVPs().count("pub.rtp.timestampIncrement") || timestampIncrement==0) {
+	if(!config->getKVPs().count("pub.rtp.timestampIncrement") || _timestampIncrement==0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(config->getKVPs().count("pub.rtp.multicast") && (!config->getKVPs().count("pub.rtp.multicastPortbase") || _multicastPortbase<=0 || _multicastPortbase>=65536)) {
+	if(config->getKVPs().count("pub.rtp.multicast") && (!config->getKVPs().count("pub.rtp.multicastPortbase") || _multicastPortbase<=0 || _multicastPortbase>=65536))
+	{
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid multicast portbase (0 < portbase < 65536) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
 	}
@@ -79,7 +78,7 @@ void RTPPublisher::init(Options* config) {
 	_payloadType=96;		//dynamic [RFC3551]
 	if(config->getKVPs().count("pub.rtp.payloadType"))
 		_payloadType=strTo<uint8_t>(config->getKVPs()["pub.rtp.payloadType"]);
-
+	
 	// IMPORTANT: The local timestamp unit MUST be set, otherwise
 	//            RTCP Sender Report info will be calculated wrong
 	// We'll be sending samplesPerSec samples each second, so we'll
@@ -112,8 +111,8 @@ void RTPPublisher::init(Options* config) {
 	_port=portbase;
 	_sess.SetDefaultPayloadType(_payloadType);
 	_sess.SetDefaultMark(false);
-	_sess.SetDefaultTimestampIncrement(timestampIncrement);
-
+	_sess.SetDefaultTimestampIncrement(_timestampIncrement);
+	
 	if(config->getKVPs().count("pub.rtp.multicast")) {
 		if(!_sess.SupportsMulticasting())
 			UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
@@ -185,19 +184,23 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	UM_LOG_INFO("%s: received a new subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
-	if(_multicast) {
+	if(_multicast)
+	{
 		UM_LOG_WARN("%s: configured for multicast, not adding unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
-
-		if(_subs.size()==0) {	//first subscriber
+		
+		if(_subs.size()==0)		//first subscriber
+		{
 			UM_LOG_INFO("%s: got first multicast subscriber (%s:%u), joining multicast group %s:%u", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _multicastIP.c_str(), _multicastPortbase);
-
+			
 			const jrtplib::RTPAddress *maddr=strToAddress(_isIPv6, _multicastIP, _multicastPortbase);
 			_sess.JoinMulticastGroup(*maddr);
 			if((status=_sess.AddDestination(*maddr))<0)
 				UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _multicastPortbase, status, jrtplib::RTPGetErrorString(status).c_str());
 			delete maddr;
 		}
-	} else {
+	}
+	else
+	{
 		if((status=_sess.AddDestination(*addr))<0)
 			UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
 	}
@@ -232,23 +235,27 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	UM_LOG_INFO("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
 	const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
-	if(_multicast) {
+	if(_multicast)
+	{
 		UM_LOG_WARN("%s: configured for multicast, not removing unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
-
-		if(_subs.size()==1) {	//last subscriber
+		
+		if(_subs.size()==1)		//last subscriber
+		{
 			UM_LOG_INFO("%s: lost last multicast subscriber (%s:%u), leaving multicast group %s:%u", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _multicastIP.c_str(), _multicastPortbase);
-
+			
 			const jrtplib::RTPAddress *maddr=strToAddress(_isIPv6, _multicastIP, _multicastPortbase);
 			_sess.LeaveMulticastGroup(*maddr);
 			if((status=_sess.DeleteDestination(*maddr))<0)
 				UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _multicastPortbase, status, jrtplib::RTPGetErrorString(status).c_str());
 			delete maddr;
 		}
-	} else {
+	}
+	else
+	{
 		if((status=_sess.DeleteDestination(*addr))<0)
 			UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
 	}
-
+	
 	if((status=_sess.DeleteFromAcceptList(*addr))<0)
 		UM_LOG_WARN("%s: error in session.DeleteFromAcceptList(%s:%u): %d - %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, status, jrtplib::RTPGetErrorString(status).c_str());
 	delete addr;
@@ -263,13 +270,14 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 
 void RTPPublisher::send(Message* msg) {
 	int status;
+	bool marker=strTo<bool>(msg->getMeta("marker"));
 	std::string timestampIncrement=msg->getMeta("timestampIncrement");
 	if(!timestampIncrement.size())
 		timestampIncrement=_mandatoryMeta["timestampIncrement"];
 	if(timestampIncrement.size())
-		status=_sess.SendPacket(msg->data(), msg->size(), _payloadType, false, strTo<uint32_t>(timestampIncrement));
+		status=_sess.SendPacket(msg->data(), msg->size(), _payloadType, marker, strTo<uint32_t>(timestampIncrement));
 	else
-		status=_sess.SendPacket(msg->data(), msg->size());
+		status=_sess.SendPacket(msg->data(), msg->size(), _payloadType, marker, _timestampIncrement);
 	if(status<0)
 		UM_LOG_WARN("%s: error in session.SendPacket(): %s", SHORT_UUID(_uuid).c_str(), jrtplib::RTPGetErrorString(status).c_str());
 }

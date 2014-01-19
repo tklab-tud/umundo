@@ -67,6 +67,8 @@ private:
 	RTPSubscriberRTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
+	uint16_t _extendedSequenceNumber;
+	uint16_t _lastSequenceNumber;
 	bool _multicast;
 	std::string _multicastIP;
 

@@ -61,6 +61,7 @@ private:
 	jrtplib::RTPSession _sess;
 	bool _isIPv6;
 	uint8_t _payloadType;
+	uint32_t _timestampIncrement;
 	std::string _multicastIP;
 	uint16_t _multicastPortbase;
 

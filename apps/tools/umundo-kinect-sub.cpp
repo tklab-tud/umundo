@@ -31,51 +31,68 @@
 	#include <GL/glu.h>
 #endif
 
-GLuint gl_depth_tex;
-
 using namespace umundo;
+
+GLuint gl_depth_tex;
 
 class TestReceiver : public Receiver {
 public:
-	TestReceiver() : m_buffer_depth(640*480*3), _baseSeq(0), _frameTimestamp(0), _start(false) {};
+	TestReceiver() : _baseSeq(0), _frameTimestamp(0), _start(false) {
+		m_buffer_depth=new uint8_t[640*480*3];
+		for(unsigned int i=0; i<480; i++)
+			_mask[i]=true;
+	};
+	~TestReceiver() {
+		delete m_buffer_depth;
+	};
 	void receive(Message* msg) {
 		if(msg->getMeta("type")=="RTP") {
 			ScopeLock lock(m_depth_mutex);
-			//std::cout << "RTP(" << msg->size() << ") seq: " << msg->getMeta("sequenceNumber") << " eSeq: " << msg->getMeta("extendedSequenceNumber") << " stamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
 			bool marker=strTo<bool>(msg->getMeta("marker"));
 			uint32_t seq=strTo<uint32_t>(msg->getMeta("extendedSequenceNumber"));
 			uint16_t *depth=(uint16_t*)msg->data();
-			if(!_baseSeq)
-				_baseSeq = seq;
 			uint16_t row = (seq-_baseSeq)%480;
-			if(marker) {
-				//std::cout << " [advertising new frame] " << std::flush;
-				_frameTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
-				_start=true;
-				std::cout << "timestamp " << _frameTimestamp << " missed rows:";
-				int start_miss=0;
-				int sum=0;
-				bool old=false;
-				for(unsigned int i=0; i<480; i++)
-				{
-					if(_mask[i]!=old || i==179) {
-						if((_mask[i]==true && i>0) || i==179) {
-							std::cout << " " << start_miss << "-" << i-1;
-							sum+=i-start_miss+1;
-						}
-						if(_mask[i]==false)
-							start_miss=i;
-					}
-					old=_mask[i];
-					_mask[i]=false;
-				}
-				std::cout << " sum: " << sum << " ("<< ((double)sum/480.0)*100 << "%)" << std::endl;
-				m_new_depth_frame = true;
-			}
-			//std::cout << " row: " << row << std::flush;
+			/*
+			std::cout << "RTP(" << msg->size() << ") seq: " << msg->getMeta("sequenceNumber") << " eSeq: " << msg->getMeta("extendedSequenceNumber") << " stamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
+			if(marker)
+				std::cout << " [advertising new frame] " << std::flush;
+			std::cout << " row: " << row << std::flush;
 			if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_frameTimestamp)
-				;//std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_frameTimestamp << "} " << std::flush;
-			//std::cout << std::endl << std::flush;
+				std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_frameTimestamp << "} " << std::flush;
+			std::cout << std::endl << std::flush;
+			*/
+			if(marker) {
+				if(_start) {
+					std::cout << "timestamp " << _frameTimestamp << " missed rows:";
+					int start_miss=0;
+					int sum=0;
+					bool old=false;
+					for(unsigned int i=0; i<480; i++)
+					{
+						if(_mask[i]!=old) {
+							if(_mask[i]==true && i>0) {
+								std::cout << " " << start_miss << "-" << i-1;
+								sum+=i-start_miss;
+							}
+							if(_mask[i]==false)
+								start_miss=i;
+						}
+						old=_mask[i];
+					}
+					if(old==false) {
+						std::cout << " " << start_miss << "-479";
+						sum+=479-start_miss+1;
+					}
+					std::cout << " sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)" << std::endl;
+				}
+				for(unsigned int i=0; i<480; i++)
+					_mask[i]=false;
+				_baseSeq = seq;
+				_start=true;
+				_frameTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
+				m_new_depth_frame = true;
+				UMUNDO_SIGNAL(_newFrame);
+			}
 			if(!_start)		//wait for first complete frame
 				return;
 			_mask[row]=true;
@@ -122,29 +139,31 @@ public:
 			}
 		}
 	}
-	bool getDepth(std::vector<uint8_t> &buffer) {
+	bool getDepth(uint8_t *buffer) {
 		ScopeLock lock(m_depth_mutex);
+		_newFrame.wait(m_depth_mutex, 1000);
 		if (!m_new_depth_frame)
 			return false;
-		buffer=m_buffer_depth;
+		memcpy(buffer, m_buffer_depth, 640*480*3*sizeof(uint8_t));
 		m_new_depth_frame = false;
 		return true;
 	}
 private:
 	bool m_new_depth_frame;
-	std::vector<uint8_t> m_buffer_depth;
+	uint8_t *m_buffer_depth;
 	uint32_t _baseSeq;
 	uint32_t _frameTimestamp;
 	bool _start;
 	bool _mask[480];
 	Mutex m_depth_mutex;
+	Monitor _newFrame;
 };
 
 TestReceiver testRecv;
 
 void DrawGLScene()
 {
-	static std::vector<uint8_t> depth(640*480*4);
+	uint8_t depth[640*480*3];
 
 	testRecv.getDepth(depth);
 
@@ -154,7 +173,7 @@ void DrawGLScene()
 	glEnable(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, &depth[0]);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, depth);
 
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4f(255.0f, 255.0f, 255.0f, 255.0f);
@@ -224,8 +243,5 @@ int main(int argc, char** argv) {
 
 	glutMainLoop();
 
-	while(1)
-		;
-	
 	return 0;
 }

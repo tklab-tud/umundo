@@ -230,7 +230,7 @@ void RTPSubscriber::run() {
 void RTPSubscriber::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
 	assert(pack!=NULL);
 	//we have to calculate the extended sequence number ourselves (http://research.edm.uhasselt.be/jori/jrtplib/documentation/classjrtplib_1_1RTPPacket.html#a74f943fd92a16b2d037f99e9b72485f5)
-	if(pack->GetSequenceNumber()<_lastSequenceNumber)		//sequence number overflow?
+	if(pack->GetSequenceNumber()<_lastSequenceNumber)		//test for sequence number overflow
 		_extendedSequenceNumber++;
 	_lastSequenceNumber=pack->GetSequenceNumber();
 	pack->SetExtendedSequenceNumber((_extendedSequenceNumber<<16) + pack->GetSequenceNumber());

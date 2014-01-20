@@ -24,11 +24,13 @@
 
 using namespace umundo;
 
+uint16_t modulo=1;
+
 /* thanks to Yoda---- from IRC */
 class MyFreenectDevice : public Freenect::FreenectDevice {
 public:
 	MyFreenectDevice(freenect_context *_ctx, int _index)
-		: Freenect::FreenectDevice(_ctx, _index), m_buffer_depth(freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB).bytes), m_gamma(2048), pubFoo(NULL)
+		: Freenect::FreenectDevice(_ctx, _index), m_buffer_depth(freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB).bytes), m_gamma(2048), pubFoo(NULL), count(0)
 	{
 		for( unsigned int i = 0 ; i < 2048 ; i++) {
 			float v = i/2048.0;
@@ -44,8 +46,12 @@ public:
 	}
 	// Do not call directly even in child
 	void DepthCallback(void* _depth, uint32_t timestamp) {
-		std::cout << "got new depth data" << std::endl << std::flush;
-		if(!pubFoo)
+		count++;
+		std::cout << "got new depth data (timestamp: " << timestamp << ", modulo: " << count%modulo << ")";
+		if(!(count%modulo))
+			std::cout << ", sending data...";
+		std::cout << std::endl << std::flush;
+		if(!pubFoo || count%modulo)
 			return;
 		uint16_t* depth = static_cast<uint16_t*>(_depth);
 		uint16_t buffer[640*480];
@@ -64,6 +70,8 @@ public:
 			msg->setData((char*)(buffer+(640*i)), sizeof(uint16_t)*640);
 			pubFoo->send(msg);
 			delete(msg);
+			//sleep some time to give network buffers time to send out our data (this helps against periodic packet loss)
+			Thread::sleepNs(128000);
 		}
 	}
 	void setPub(Publisher *pub) {
@@ -74,6 +82,7 @@ private:
 	std::vector<uint8_t> m_buffer_depth;
 	std::vector<uint16_t> m_gamma;
 	Publisher *pubFoo;
+	uint8_t count;
 };
 
 Freenect::Freenect freenect;
@@ -83,6 +92,14 @@ freenect_video_format requested_format(FREENECT_VIDEO_RGB);
 int main(int argc, char** argv) {
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
+	if(argc>1) {
+		int m=strTo<uint16_t>(argv[1]);
+		if(m>0 && m<256)
+			modulo=m;
+	}
+	
+	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
+	
 	RTPPublisherConfig pubConfig(1, 1);
 	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
 

@@ -271,6 +271,8 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 void RTPPublisher::send(Message* msg) {
 	int status;
 	bool marker=strTo<bool>(msg->getMeta("marker"));
+	if(!msg->getMeta("marker").size())
+		marker=false;
 	std::string timestampIncrement=msg->getMeta("timestampIncrement");
 	if(!timestampIncrement.size())
 		timestampIncrement=_mandatoryMeta["timestampIncrement"];

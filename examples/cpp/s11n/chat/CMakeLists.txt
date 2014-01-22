@@ -8,7 +8,7 @@ SET(CMAKE_BUILD_TYPE Debug CACHE STRING "")
 # found in order for CMake to be able to search for umundo.
 #
 
-find_path(FINDUMUNDO_CMAKE_PATH FindUMundo.cmake
+find_path(FINDUMUNDO_CMAKE_PATH FindUMUNDO.cmake
   PATHS
   ${PROJECT_SOURCE_DIR}/../../../../contrib/cmake               # we still are in the source distribution
   /usr/local/share/umundo/cmake                         # installed on unices
@@ -18,7 +18,7 @@ find_path(FINDUMUNDO_CMAKE_PATH FindUMundo.cmake
 )
 
 if (NOT FINDUMUNDO_CMAKE_PATH)
-  message(FATAL_ERROR "Could not find directory containing FindUMundo.cmake, set UMUNDO_CMAKE_PATH environment variable to help")
+  message(FATAL_ERROR "Could not find directory containing FindUMUNDO.cmake, set UMUNDO_CMAKE_PATH environment variable to help")
 endif()
 
 # add path with FindUMundo.cmake to cmakes module path

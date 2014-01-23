@@ -218,6 +218,8 @@ int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPSubscriberConfig subConfig;
+	subConfig.setMulticastIP("224.1.2.3");
+	subConfig.setMulticastPortbase(42042);
 	Subscriber subFoo(Subscriber::RTP, "kinect-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

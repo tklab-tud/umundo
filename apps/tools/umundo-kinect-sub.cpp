@@ -212,9 +212,6 @@ void InitGL(int Width, int Height)
 }
 
 int main(int argc, char** argv) {
-	int g_argc;
-	char **g_argv;
-	
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPSubscriberConfig subConfig;
@@ -229,7 +226,7 @@ int main(int argc, char** argv) {
 
 
 	//OpenGL Display Part
-	glutInit(&g_argc, g_argv);
+	glutInit(&argc, argv);
 
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH);
 	glutInitWindowSize(640, 480);

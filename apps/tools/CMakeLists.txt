@@ -73,10 +73,8 @@ if (NET_RTP)
 	find_package(Freenect)
 	find_package(OpenGL)
 	find_package(GLUT)
-	if(FREENECT_FOUND AND OPENGL_FOUND AND GLUT_FOUND)
+	if(FREENECT_FOUND)
 		include_directories(${FREENECT_INCLUDE_DIR})
-		include_directories(${OPENGL_INCLUDE_DIR})
-		include_directories(${GLUT_INCLUDE_DIR})
 		
 		add_executable(umundo-kinect-pub umundo-kinect-pub.cpp)
 		target_link_libraries(umundo-kinect-pub umundocore ${FREENECT_LIBRARY})
@@ -86,6 +84,11 @@ if (NET_RTP)
 			TARGETS umundo-kinect-pub
 			COMPONENT tools 
 		)
+	endif()
+	
+	if(OPENGL_FOUND AND GLUT_FOUND)
+		include_directories(${OPENGL_INCLUDE_DIR})
+		include_directories(${GLUT_INCLUDE_DIR})
 		
 		add_executable(umundo-kinect-sub umundo-kinect-sub.cpp)
 		target_link_libraries(umundo-kinect-sub umundocore ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})

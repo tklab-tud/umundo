@@ -43,7 +43,7 @@ if (NET_RTP)
 		include_directories(${PORTAUDIO_INCLUDE_DIRS})
 		
 		add_executable(umundo-multicast-phone-pub umundo-multicast-phone-pub.cpp)
-		target_link_libraries(umundo-multicast-phone-pub umundocore portaudio)
+		target_link_libraries(umundo-multicast-phone-pub umundocore ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-multicast-phone-pub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -52,7 +52,7 @@ if (NET_RTP)
 		)
 		
 		add_executable(umundo-multicast-phone-sub umundo-multicast-phone-sub.cpp)
-		target_link_libraries(umundo-multicast-phone-sub umundocore portaudio)
+		target_link_libraries(umundo-multicast-phone-sub umundocore ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-multicast-phone-sub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -61,7 +61,7 @@ if (NET_RTP)
 		)
 		
 		add_executable(umundo-phone umundo-phone.cpp)
-		target_link_libraries(umundo-phone umundocore portaudio)
+		target_link_libraries(umundo-phone umundocore ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-phone PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -79,7 +79,7 @@ if (NET_RTP)
 		include_directories(${GLUT_INCLUDE_DIR})
 		
 		add_executable(umundo-kinect-pub umundo-kinect-pub.cpp)
-		target_link_libraries(umundo-kinect-pub umundocore freenect)
+		target_link_libraries(umundo-kinect-pub umundocore ${FREENECT_LIBRARY})
 		set_target_properties(umundo-kinect-pub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -88,7 +88,7 @@ if (NET_RTP)
 		)
 		
 		add_executable(umundo-kinect-sub umundo-kinect-sub.cpp)
-		target_link_libraries(umundo-kinect-sub umundocore freenect GL GLU glut)
+		target_link_libraries(umundo-kinect-sub umundocore ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 		set_target_properties(umundo-kinect-sub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(

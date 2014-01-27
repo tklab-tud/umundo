@@ -130,13 +130,13 @@ void RTPPublisher::init(Options* config) {
 	_port=libre::sa_port(libre::rtp_local(_rtp_socket));
 	_initDone=true;
 	
-	/*struct libre::sa addr;
+	struct libre::sa addr;
 	libre::sa_init(&addr, AF_INET);
 	//net_default_source_addr_get(AF_INET, &addr);
 	libre::sa_set_str(&addr, "127.0.0.1", 42042);
 	std::cout << addr.len << " port: " << ntohs(addr.u.in.sin_port) << std::endl;
 	//addr.len = sizeof(struct sockaddr_in);
-	_destinations["127.0.0.1:42042"]=addr;*/
+	_destinations["127.0.0.1:42042"]=addr;
 }
 
 RTPPublisher::~RTPPublisher() {

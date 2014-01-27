@@ -62,6 +62,7 @@
 /** miscellaneous */
 #cmakedefine PROJECT_SOURCE_DIR "@PROJECT_SOURCE_DIR@"
 #cmakedefine DIST_PREPARE
+#cmakedefine HAVE_STDBOOL_H @HAVE_STDBOOL_H@
 
 /** Implementation specific */
 #cmakedefine NET_ZEROMQ_SND_HWM @NET_ZEROMQ_SND_HWM@

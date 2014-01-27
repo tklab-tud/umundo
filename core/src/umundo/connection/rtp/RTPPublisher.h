@@ -22,7 +22,6 @@
 #define RTPPUBLISHER_H_H9LXV94P
 
 #include <boost/shared_ptr.hpp>
-#include <jrtplib3/rtpsession.h>
 
 #include "umundo/common/Common.h"
 #include "umundo/common/Message.h"
@@ -30,12 +29,14 @@
 #include "umundo/thread/Thread.h"
 #include "umundo/connection/rtp/RTPHelpers.h"
 
+#include "umundo/connection/rtp/libre.h"
+
 namespace umundo {
 
 /**
  * Concrete publisher implementor for RTP (bridge pattern).
  */
-class DLLEXPORT RTPPublisher : public PublisherImpl, public Thread, protected RTPHelpers {
+class DLLEXPORT RTPPublisher : public PublisherImpl {
 public:
 	virtual ~RTPPublisher();
 
@@ -57,21 +58,25 @@ protected:
 	void removed(const SubscriberStub& sub, const NodeStub& node);
 
 private:
-	void run();
-	jrtplib::RTPSession _sess;
-	bool _isIPv6;
 	uint8_t _payloadType;
 	uint32_t _timestampIncrement;
 	std::string _multicastIP;
 	uint16_t _multicastPortbase;
-
+	uint32_t _timestamp;
+	
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
+	std::map<std::string, struct libre::sa> _destinations;
 
 	Monitor _pubLock;
 	Mutex _mutex;
 	bool _isSuspended;
 	bool _multicast;
+	bool _initDone;
+	
+	RTPHelpers *_helper;
+	struct libre::rtp_sock *_rtp_socket;
+	static void rtp_recv(const struct libre::sa*, const struct libre::rtp_header*, struct libre::mbuf*, void*);
 
 	friend class Factory;
 

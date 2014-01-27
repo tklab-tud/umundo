@@ -110,6 +110,7 @@ public:
 	virtual void join();
 	void start();
 	void stop();
+	unsigned long int getManagedThreadId(); ///< integer unique to the thread managed by this class
 	bool isStarted() {
 		return _isStarted;
 	}

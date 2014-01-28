@@ -10,7 +10,7 @@
 # BUILD_PREFER_STATIC_PROTOBUF:BOOL    Prefer static protobuf libraries
 # BUILD_PREFER_STATIC_PCRE:BOOL        Prefer static pcre libraries
 # BUILD_PREFER_STATIC_ZEROMQ:BOOL      Prefer static zeromq libraries
-# BUILD_PREFER_STATIC_JRTPLIB:BOOL     Prefer static jrtplib libraries
+# BUILD_PREFER_STATIC_RE:BOOL          Prefer static re libraries
 # BUILD_SHARED_LIBS:BOOL               Whether to build shared or static libraries
 # BUILD_TESTS:BOOL                     Build the tests
 # BUILD_CONVENIENCE_LIB:BOOL           Build libumundo convenience library
@@ -46,6 +46,7 @@ project(umundo)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
 include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
 include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
+include("${CMAKE_MODULE_PATH}/HeaderExists.cmake")
 
 # CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
@@ -622,12 +623,12 @@ if (BUILD_PREFER_STATIC_LIBRARIES)
 	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" ON)
 	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" ON)
 	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
-	OPTION(BUILD_PREFER_STATIC_JRTPLIB "Prefer static JRTPLIB libraries when linking" ON)
+	OPTION(BUILD_PREFER_STATIC_RE "Prefer static RE libraries when linking" ON)
 else()
 	OPTION(BUILD_PREFER_STATIC_PROTOBUF "Prefer static Protobuf libraries when linking" OFF)
 	OPTION(BUILD_PREFER_STATIC_PCRE "Prefer static PCRE libraries when linking" OFF)
 	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" OFF)
-	OPTION(BUILD_PREFER_STATIC_JRTPLIB "Prefer static JRTPLIB libraries when linking" OFF)
+	OPTION(BUILD_PREFER_STATIC_RE "Prefer static RE libraries when linking" OFF)
 endif()
 
 # Boost
@@ -663,18 +664,18 @@ endif()
 find_package(ZeroMQ REQUIRED)
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 
-# JRTPLIB
-if (BUILD_PREFER_STATIC_JRTPLIB)
+# RE
+if (BUILD_PREFER_STATIC_RE)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
 else()
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SHARED})
 endif()
 if (NET_RTP)
-	find_package(JRTPLIB)
-  if (NOT JRTPLIB_FOUND)
+	find_package(RE)
+  if (NOT RE_FOUND)
     set(NET_RTP OFF)
 	else()
-		include_directories(${JRTPLIB_INCLUDE_DIR})
+		include_directories(${RE_INCLUDE_DIR})
   endif()
 endif()
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
@@ -949,6 +950,7 @@ endif()
 
 message(STATUS "Targets:")
 message(STATUS "  Building umundo.core ........... : ON")
+message(STATUS "  Building umundo.core RTP ....... : ${NET_RTP}")
 message(STATUS "  Building umundo.s11n ........... : ${BUILD_UMUNDO_S11N}")
 message(STATUS "  Building umundo.rpc ............ : ${BUILD_UMUNDO_RPC}")
 message(STATUS "  Building umundo.util ........... : ${BUILD_UMUNDO_UTIL}")

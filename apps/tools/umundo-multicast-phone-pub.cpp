@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
 	printf("umundo-phone-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
+	RTPPublisherConfig pubConfig(FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
 	pubConfig.setMulticastIP("224.1.2.3");
 	pubConfig.setMulticastPortbase(42042);
 	Publisher pubFoo(Publisher::RTP, "multicast-phone-pubsub", &pubConfig);

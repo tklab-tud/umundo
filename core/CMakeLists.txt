@@ -62,10 +62,10 @@ endif()
 # RTP
 ###########################################
 
-if(NET_RTP AND JRTPLIB_FOUND)
+if(NET_RTP)
 	file(GLOB_RECURSE NET_RTP_FILES src/umundo/connection/rtp/*.cpp)
 	list(APPEND UMUNDOCORE_FILES ${NET_RTP_FILES})
-	LIST(APPEND UMUNDOCORE_LIBRARIES ${JRTPLIB_LIBRARY})
+	LIST(APPEND UMUNDOCORE_LIBRARIES ${RE_LIBRARY})
 endif()
 
 ###########################################

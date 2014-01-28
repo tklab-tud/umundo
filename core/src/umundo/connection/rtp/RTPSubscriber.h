@@ -21,25 +21,24 @@
 #ifndef RTPSUBSCRIBER_H_HQPJWLQR
 #define RTPSUBSCRIBER_H_HQPJWLQR
 
+#include <queue>
 #include <boost/shared_ptr.hpp>
-#include <jrtplib3/rtpsession.h>
-#include <jrtplib3/rtptimeutilities.h>
-#include <jrtplib3/rtppacket.h>
-#include <jrtplib3/rtpaddress.h>
 
 #include "umundo/config.h"
 #include "umundo/common/Common.h"
+#include "umundo/thread/Thread.h"
 #include "umundo/common/Message.h"
 #include "umundo/connection/Subscriber.h"
 #include "umundo/connection/rtp/RTPHelpers.h"
-#include "umundo/connection/rtp/RTPPubSubRTPSession.h"
+
+#include "umundo/connection/rtp/libre.h"
 
 namespace umundo {
 
 class PublisherStub;
 class NodeStub;
 
-class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread, protected RTPHelpers {
+class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread {
 public:
 	boost::shared_ptr<Implementation> create();
 	void init(Options*);
@@ -56,27 +55,30 @@ public:
 
 	// Thread
 	void run();
+	
 
 protected:
 	RTPSubscriber();
-	void OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress);
-	void OnRTCPCompoundPacket(jrtplib::RTCPCompoundPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress);
-	Message *createRTPMessage(jrtplib::RTPPacket *pack);
 
 private:
-	RTPSubscriberRTPSession _sess;
-	bool _isIPv6;
-	uint8_t _payloadType;
+	uint16_t _extendedSequenceNumber;
+	uint16_t _lastSequenceNumber;
 	bool _multicast;
 	std::string _multicastIP;
 
 	bool _isSuspended;
+	bool _initDone;
 
+	std::queue<Message*> _queue;
 	std::multimap<std::string, std::string> _domainPubs;
 	Mutex _mutex;
-
+	Monitor _cond;
+	
+	RTPHelpers *_helper;
+	struct libre::rtp_sock *_rtp_socket;
+	static void rtp_recv(const struct libre::sa*, const struct libre::rtp_header*, struct libre::mbuf*, void*);
+	
 	friend class Factory;
-	friend class RTPSubscriberRTPSession;
 };
 
 }

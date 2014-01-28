@@ -86,6 +86,10 @@ void Thread::sleepMs(uint32_t ms) {
 	tthread::this_thread::sleep_for(tthread::chrono::milliseconds(ms));
 }
 
+void Thread::sleepNs(uint32_t ns) {
+	tthread::this_thread::sleep_for(tthread::chrono::nanoseconds(ns));
+}
+
 uint64_t Thread::getTimeStampMs() {
 	uint64_t time = 0;
 #ifdef WIN32

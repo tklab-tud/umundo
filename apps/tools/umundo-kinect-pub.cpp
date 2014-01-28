@@ -17,26 +17,23 @@
 #include "umundo/core.h"
 #include <iostream>
 #include <string.h>
-#include <cmath>
-#include <vector>
 
 #include <libfreenect.hpp>
 
-using namespace umundo;
+struct RTPData {
+	uint16_t row;
+	uint64_t timestamp;
+	uint16_t data[640];
+};
 
-uint16_t modulo=1;
+using namespace umundo;
 
 /* thanks to Yoda---- from IRC */
 class MyFreenectDevice : public Freenect::FreenectDevice {
 public:
-	MyFreenectDevice(freenect_context *_ctx, int _index)
-		: Freenect::FreenectDevice(_ctx, _index), m_buffer_depth(freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB).bytes), m_gamma(2048), pubFoo(NULL), count(0)
+	MyFreenectDevice(freenect_context *ctx, int index)
+		: Freenect::FreenectDevice(ctx, index), _pub(NULL), _frameCount(0)
 	{
-		for( unsigned int i = 0 ; i < 2048 ; i++) {
-			float v = i/2048.0;
-			v = std::pow(v, 3)* 6;
-			m_gamma[i] = v*6*256;
-		}
 		this->setLed(LED_RED);
 	}
 	// Do not call directly even in child
@@ -44,46 +41,50 @@ public:
 		return;
 	}
 	// Do not call directly even in child
-	void DepthCallback(void* _depth, uint32_t frameTimestamp) {
-		count++;
-		std::cout << "got new depth data (timestamp: " << frameTimestamp << ", modulo: " << count%modulo << ")";
-		if(!(count%modulo))
+	void DepthCallback(void* depthData, uint32_t frameTimestamp) {
+		uint16_t* depth = static_cast<uint16_t*>(depthData);
+		
+		_frameCount++;
+		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
+		if(!(_frameCount%_modulo))
 			std::cout << ", sending data...";
 		std::cout << std::endl << std::flush;
-		if(!pubFoo || count%modulo)
+		if(!_pub || _frameCount%_modulo)			//send every _frameCount modulo _modulo frame
 			return;
-		uint16_t* depth = static_cast<uint16_t*>(_depth);
-		uint16_t buffer[640*480];
-		for( unsigned int i = 0 ; i < 640*480 ; i++) {
-			uint16_t pval = m_gamma[depth[i]];
-			buffer[i]=pval;
-		}
+		
 		uint64_t timestamp=Thread::getTimeStampMs();
 		for( unsigned int i = 0; i < 480; i++ ) {
 			Message* msg = new Message();
-			msg->putMeta("timestampIncrement", toStr(0));
-			msg->putMeta("marker", toStr(false));
-			if(i==479)
+			//set marker to indicate new frame start and timestampIncrement so that individual rtp packets for one frame share the same rtp timestamp
+			if(i==0) {
 				msg->putMeta("timestampIncrement", toStr(1));
-			if(i==0)
 				msg->putMeta("marker", toStr(true));
-			char sndbuf[sizeof(uint16_t)*640+sizeof(uint64_t)];
-			memcpy(sndbuf, &timestamp, sizeof(uint64_t));
-			memcpy(sndbuf+sizeof(uint64_t), buffer+(640*i), sizeof(uint16_t)*640);
-			msg->setData(sndbuf, sizeof(sndbuf));
-			pubFoo->send(msg);
-			delete(msg);
+			} else {
+				msg->putMeta("timestampIncrement", toStr(0));
+				msg->putMeta("marker", toStr(false));
+			}
+			struct RTPData *data=new struct RTPData;
+			data->row=i;
+			data->timestamp=timestamp;
+			memcpy(data->data, depth+(640*i), sizeof(uint16_t)*640);		//copy one depth data row into rtp data
+			msg->setData((char*)data, sizeof(struct RTPData));
+			_pub->send(msg);
+			delete data;
+			delete msg;
 		}
 	}
 	void setPub(Publisher *pub) {
-		this->pubFoo=pub;
+		_pub=pub;
+	};
+	
+	void setModulo(uint16_t modulo) {
+		_modulo=modulo;
 	};
 
 private:
-	std::vector<uint8_t> m_buffer_depth;
-	std::vector<uint16_t> m_gamma;
-	Publisher *pubFoo;
-	uint8_t count;
+	Publisher *_pub;
+	uint16_t _modulo;
+	uint8_t _frameCount;
 };
 
 Freenect::Freenect freenect;
@@ -91,6 +92,8 @@ MyFreenectDevice* device;
 freenect_video_format requested_format(FREENECT_VIDEO_RGB);
 
 int main(int argc, char** argv) {
+	uint16_t modulo=1;
+	
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	if(argc>1) {
@@ -113,6 +116,7 @@ int main(int argc, char** argv) {
 
 	device = &freenect.createDevice<MyFreenectDevice>(0);
 	device->setPub(&pubFoo);
+	device->setModulo(modulo);
 	device->startDepth();
 
 	while(1)

@@ -43,9 +43,8 @@
 #endif
 
 #ifdef NET_RTP
-//libre interferes with std::queue and makes this two positional
-#include "umundo/connection/rtp/RTPSubscriber.h"
 #include "umundo/connection/rtp/RTPPublisher.h"
+#include "umundo/connection/rtp/RTPSubscriber.h"
 #endif
 
 #if !(defined NET_ZEROMQ)

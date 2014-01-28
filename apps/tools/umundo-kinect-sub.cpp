@@ -37,7 +37,7 @@ GLuint gl_depth_tex;
 
 class TestReceiver : public Receiver {
 public:
-	TestReceiver() : _baseSeq(0), _frameTimestamp(0), _start(false) {
+	TestReceiver() : _baseSeq(0), _rtpTimestamp(0), _start(false), _offset(0) {
 		m_buffer_depth=new uint8_t[640*480*3];
 		for(unsigned int i=0; i<480; i++)
 			_mask[i]=true;
@@ -50,20 +50,28 @@ public:
 			ScopeLock lock(m_depth_mutex);
 			bool marker=strTo<bool>(msg->getMeta("marker"));
 			uint32_t seq=strTo<uint32_t>(msg->getMeta("extendedSequenceNumber"));
-			uint16_t *depth=(uint16_t*)msg->data();
+			const char *raw_data=msg->data();
+			uint16_t *depth=(uint16_t*)((char*)raw_data+sizeof(uint64_t));
+			uint64_t timestamp=*((uint64_t*)raw_data);
 			uint16_t row = (seq-_baseSeq)%480;
+			
+			if(!_offset)
+				_offset=Thread::getTimeStampMs()-timestamp;
+				
 			/*
 			std::cout << "RTP(" << msg->size() << ") seq: " << msg->getMeta("sequenceNumber") << " eSeq: " << msg->getMeta("extendedSequenceNumber") << " stamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
 			if(marker)
 				std::cout << " [advertising new frame] " << std::flush;
 			std::cout << " row: " << row << std::flush;
-			if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_frameTimestamp)
-				std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_frameTimestamp << "} " << std::flush;
+			if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_rtpTimestamp)
+				std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_rtpTimestamp << "} " << std::flush;
 			std::cout << std::endl << std::flush;
 			*/
 			if(marker) {
 				if(_start) {
-					std::cout << "timestamp " << _frameTimestamp << " missed rows:";
+					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
+						<< " (transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
+						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_offset)-_lastRemoteTimestamp)) << ") missed rows:";
 					int start_miss=0;
 					int sum=0;
 					bool old=false;
@@ -71,7 +79,10 @@ public:
 					{
 						if(_mask[i]!=old) {
 							if(_mask[i]==true && i>0) {
-								std::cout << " " << start_miss << "-" << i-1;
+								if(start_miss==i-1)
+									std::cout << " " << start_miss;
+								else
+									std::cout << " " << start_miss << "-" << i-1;
 								sum+=i-start_miss;
 							}
 							if(_mask[i]==false)
@@ -80,7 +91,10 @@ public:
 						old=_mask[i];
 					}
 					if(old==false) {
-						std::cout << " " << start_miss << "-479";
+						if(start_miss==479)
+							std::cout << " " << start_miss;
+						else
+							std::cout << " " << start_miss << "-479";
 						sum+=479-start_miss+1;
 					}
 					std::cout << " sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)" << std::endl;
@@ -89,10 +103,12 @@ public:
 					_mask[i]=false;
 				_baseSeq = seq;
 				_start=true;
-				_frameTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
+				_rtpTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
 				m_new_depth_frame = true;
 				UMUNDO_SIGNAL(_newFrame);
 			}
+			_lastRemoteTimestamp=timestamp;
+			_lastLocalTimestamp=Thread::getTimeStampMs()-_offset;
 			if(!_start)		//wait for first complete frame
 				return;
 			_mask[row]=true;
@@ -141,7 +157,7 @@ public:
 	}
 	bool getDepth(uint8_t *buffer) {
 		ScopeLock lock(m_depth_mutex);
-		_newFrame.wait(m_depth_mutex, 1000);
+		_newFrame.wait(m_depth_mutex, 100);
 		if (!m_new_depth_frame)
 			return false;
 		memcpy(buffer, m_buffer_depth, 640*480*3*sizeof(uint8_t));
@@ -152,8 +168,11 @@ private:
 	bool m_new_depth_frame;
 	uint8_t *m_buffer_depth;
 	uint32_t _baseSeq;
-	uint32_t _frameTimestamp;
+	uint32_t _rtpTimestamp;
 	bool _start;
+	uint64_t _lastRemoteTimestamp;
+	uint64_t _lastLocalTimestamp;
+	int64_t _offset;
 	bool _mask[480];
 	Mutex m_depth_mutex;
 	Monitor _newFrame;
@@ -215,8 +234,8 @@ int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPSubscriberConfig subConfig;
-	subConfig.setMulticastIP("224.1.2.3");
-	subConfig.setMulticastPortbase(42042);
+	//subConfig.setMulticastIP("224.1.2.3");
+	//subConfig.setMulticastPortbase(42142);
 	Subscriber subFoo(Subscriber::RTP, "kinect-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

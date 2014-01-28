@@ -36,12 +36,8 @@ class RTPHelpers : public Thread {
 protected:
 	RTPHelpers();
 	~RTPHelpers();
-	static struct sockaddr_in strToIPv4Address(std::string ip, uint16_t port);
-	void run();
 	
-	static uint32_t _libreUsage;
-	Mutex _libreUsageMutex;
-	
+	static uint32_t _libreUsage;	
 	static bool _initDone;
 	static struct libre::mqueue *_mq;
 	static Mutex _mutex;
@@ -51,9 +47,11 @@ protected:
 	static int _retval;
 	static unsigned long int _id;
 	
-	static void deinit(void);
 	static int call(boost::function<int()>);
 	static void handler(int, void*, void*);
+	
+private:
+	void run();
 	
 	friend class RTPSubscriber;
 	friend class RTPPublisher;

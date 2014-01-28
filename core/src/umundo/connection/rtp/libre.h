@@ -27,8 +27,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//datatype sizes seem to depend on this define
+//in the libre makefile this define is always on --> we do the same here
+#define HAVE_INET6
+
 namespace libre {
 	#include <re.h>
 }
+
+//these libre makros infere with some stdlib templates, undefine them here
+#undef MAX
+#undef max
+#undef MIN
+#undef min
 
 #endif /* end of include guard: LIBRE_H_HAPJWLQR */

@@ -30,7 +30,6 @@
 
 namespace umundo {
 
-
 uint32_t RTPHelpers::_libreUsage=0;
 bool RTPHelpers::_initDone=false;
 struct libre::mqueue *RTPHelpers::_mq=NULL;
@@ -39,14 +38,14 @@ int RTPHelpers::_retval=0;
 Mutex RTPHelpers::_usageCountMutex;
 Mutex RTPHelpers::_mutex;
 Monitor RTPHelpers::_cond;
-unsigned long RTPHelpers::_id;
-
+unsigned long RTPHelpers::_id=0;
 
 RTPHelpers::RTPHelpers() {
 	ScopeLock lock(_usageCountMutex);
 	if(!_libreUsage) {
 		//init libre
 		int err;
+		libre::rand_init();
 		if((err=libre::libre_init())) {
 			UM_LOG_ERR("libre init failed with error code %d", err);
 			return;
@@ -60,7 +59,6 @@ RTPHelpers::RTPHelpers() {
 			}
 		}
 		start();
-		_id=getManagedThreadId();
 	}
 	_libreUsage++;
 }
@@ -83,6 +81,7 @@ RTPHelpers::~RTPHelpers() {
 
 void RTPHelpers::run() {
 	int err;
+	_id=Thread::getThreadId();
 	err=libre::re_main(NULL);
 	{
 		ScopeLock lock(_mutex);
@@ -95,25 +94,16 @@ void RTPHelpers::run() {
 	return;
 }
 
-struct sockaddr_in RTPHelpers::strToIPv4Address(std::string ip, uint16_t port) {
-	struct sockaddr_in sa;
-	memset(&sa, 0, sizeof(struct sockaddr_in));
-	sa.sin_family=AF_INET;
-	inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr));
-	sa.sin_port=htons(port);
-	return sa;
-}
-
 /** call() wakes up the poll() or select() or epoll() in the main thread for re_main() mainloop
  * and executes the given function object in the context of the main thread
  * Use this for all libre calls where new fds are created
 **/
 int RTPHelpers::call(boost::function<int()> f) {
 	if(_id == Thread::getThreadId()) {
-		//we're already runnin in the mainloop thread, call supplied function directly
+		//we're already running in the mainloop thread, call supplied function directly
 		return f();
 	} else {
-		//we're not runnin in the mainloop thread, instruct libre to call supplied function via our handler
+		//we're not running in the mainloop thread, instruct libre to call supplied function via our handler
 		ScopeLock lock(_mutex);
 		_func=f;
 		libre::mqueue_push(_mq, 0, NULL);

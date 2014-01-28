@@ -39,15 +39,14 @@ public:
 		}
 		this->setLed(LED_RED);
 	}
-	//~MyFreenectDevice(){}
 	// Do not call directly even in child
 	void VideoCallback(void* _rgb, uint32_t timestamp) {
 		return;
 	}
 	// Do not call directly even in child
-	void DepthCallback(void* _depth, uint32_t timestamp) {
+	void DepthCallback(void* _depth, uint32_t frameTimestamp) {
 		count++;
-		std::cout << "got new depth data (timestamp: " << timestamp << ", modulo: " << count%modulo << ")";
+		std::cout << "got new depth data (timestamp: " << frameTimestamp << ", modulo: " << count%modulo << ")";
 		if(!(count%modulo))
 			std::cout << ", sending data...";
 		std::cout << std::endl << std::flush;
@@ -59,6 +58,7 @@ public:
 			uint16_t pval = m_gamma[depth[i]];
 			buffer[i]=pval;
 		}
+		uint64_t timestamp=Thread::getTimeStampMs();
 		for( unsigned int i = 0; i < 480; i++ ) {
 			Message* msg = new Message();
 			msg->putMeta("timestampIncrement", toStr(0));
@@ -67,11 +67,12 @@ public:
 				msg->putMeta("timestampIncrement", toStr(1));
 			if(i==0)
 				msg->putMeta("marker", toStr(true));
-			msg->setData((char*)(buffer+(640*i)), sizeof(uint16_t)*640);
+			char sndbuf[sizeof(uint16_t)*640+sizeof(uint64_t)];
+			memcpy(sndbuf, &timestamp, sizeof(uint64_t));
+			memcpy(sndbuf+sizeof(uint64_t), buffer+(640*i), sizeof(uint16_t)*640);
+			msg->setData(sndbuf, sizeof(sndbuf));
 			pubFoo->send(msg);
 			delete(msg);
-			//sleep some time to give network buffers time to send out our data (this helps against periodic packet loss)
-			Thread::sleepNs(128000);
 		}
 	}
 	void setPub(Publisher *pub) {
@@ -100,9 +101,9 @@ int main(int argc, char** argv) {
 	
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
 	
-	RTPPublisherConfig pubConfig(1, 1);
-	pubConfig.setMulticastIP("224.1.2.3");
-	pubConfig.setMulticastPortbase(42042);
+	RTPPublisherConfig pubConfig(1);
+	//pubConfig.setMulticastIP("224.1.2.3");
+	//pubConfig.setMulticastPortbase(42142);
 	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
 
 	Discovery disc(Discovery::MDNS);

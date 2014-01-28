@@ -60,14 +60,6 @@ unsigned long int Thread::getThreadId() {
 	return threadId;
 }
 
-unsigned long int Thread::getManagedThreadId() {
-	std::stringstream ssThreadId;
-	ssThreadId << _thread->get_id();
-	int threadId;
-	ssThreadId >> threadId;
-	return threadId;
-}
-
 void Thread::start() {
 	if (_isStarted)
 		return;

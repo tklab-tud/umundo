@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 
 	printf("umundo-phone version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(SAMPLE_RATE, FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
+	RTPPublisherConfig pubConfig(FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
 	Publisher pubFoo(Publisher::RTP, "phone", &pubConfig);
 
 	TestReceiver testRecv;

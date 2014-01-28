@@ -116,6 +116,7 @@ public:
 
 	static void yield();
 	static void sleepMs(uint32_t ms);
+	static void sleepNs(uint32_t ns);
 	static unsigned long int getThreadId(); ///< integer unique to the current thread
 	static uint64_t getTimeStampMs(); ///< timestamp in ms since 01.01.1970
 

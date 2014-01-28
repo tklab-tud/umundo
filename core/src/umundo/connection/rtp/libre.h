@@ -18,23 +18,27 @@
  *  @endcond
  */
 
-#include "umundo/connection/rtp/RTPPubSubRTPSession.h"
-#include "umundo/connection/rtp/RTPSubscriber.h"
+//we want libre in its own namespace
+#ifndef LIBRE_H_HAPJWLQR
+#define LIBRE_H_HAPJWLQR
 
-namespace umundo {
+//this is needed for libre to function in its namespace
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-void RTPSubscriberRTPSession::setSubscriber(RTPSubscriber *sub) {
-	_sub=sub;
+//datatype sizes seem to depend on this define
+//in the libre makefile this define is always on --> we do the same here
+#define HAVE_INET6
+
+namespace libre {
+	#include <re.h>
 }
 
-void RTPSubscriberRTPSession::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
-	if(_sub!=NULL)
-		_sub->OnRTPPacket(pack, receivetime, senderaddress);
-}
+//these libre makros infere with some stdlib templates, undefine them here
+#undef MAX
+#undef max
+#undef MIN
+#undef min
 
-/*void RTPSubscriberRTPSession::OnRTCPCompoundPacket(jrtplib::RTCPCompoundPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
-	if(_sub!=NULL)
-		_sub->OnRTCPCompoundPacket(pack, receivetime, senderaddress);
-}*/
-
-}
+#endif /* end of include guard: LIBRE_H_HAPJWLQR */

@@ -25,94 +25,79 @@
 #include <winsock2.h>
 #endif // WIN32
 
-#include <jrtplib3/rtpudpv4transmitter.h>
-#include <jrtplib3/rtpudpv6transmitter.h>
-#include <jrtplib3/rtpbyteaddress.h>
-#include <jrtplib3/rtpsessionparams.h>
-#include <jrtplib3/rtperrors.h>
+#include <boost/bind.hpp>
 
 #include "umundo/connection/rtp/RTPSubscriber.h"
 
 namespace umundo {
 
-RTPSubscriber::RTPSubscriber() {
+RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber(0), _multicast(false), _isSuspended(false), _initDone(false) {
 #ifdef WIN32
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
 #endif // WIN32
-	_isSuspended=false;
-	_multicast=false;
-	_sess.setSubscriber(this);
-	//TODO: distinguish between ipv4 and ipv6
-	_isIPv6=false;
-
 }
 
 void RTPSubscriber::init(Options* config) {
 	ScopeLock lock(_mutex);
 	int status;
-	jrtplib::RTPSessionParams sessparams;
-	jrtplib::RTPTransmissionParams *transparams;
+	uint16_t min=16384;		//minimum rtp port
+	uint16_t max=65534;		//maximum rtp port
 	uint16_t portbase=strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
 	_multicastIP=config->getKVPs()["sub.rtp.multicast"];
 	if(config->getKVPs().count("pub.rtp.multicast") && !config->getKVPs().count("pub.rtp.portbase")) {
-		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65536) when using multicast", SHORT_UUID(_uuid).c_str());
+		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65535) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(!config->getKVPs().count("sub.rtp.portbase"))
-		portbase=16384;
-	if(portbase<=0 || portbase>=65536) {
-		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid portbase (0 < portbase < 65536)", SHORT_UUID(_uuid).c_str());
+	if(config->getKVPs().count("sub.rtp.portbase") && (portbase==0 || portbase==65535)) {
+		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	_payloadType=96;
-
-	//setting this to zero suppresses RTCP packets (triggering a rtp timeout after some seconds)
-	//setting this to one should be reasonable for periodic RTCP receiver reports
-	sessparams.SetOwnTimestampUnit(1);
-	sessparams.SetAcceptOwnPackets(false);
-	sessparams.SetUsePollThread(false);
-	sessparams.SetReceiveMode(jrtplib::RTPTransmitter::AcceptSome);
-	sessparams.SetResolveLocalHostname(false);
-	sessparams.SetCNAME("um.rtp." + _channelName);
-	if(_isIPv6==true)
-		transparams=new jrtplib::RTPUDPv6TransmissionParams;
-	else
-		transparams=new jrtplib::RTPUDPv4TransmissionParams;
-	for(; portbase<16384+32678; portbase+=2) {	//try to find free ports
-		if(_isIPv6)
-			((jrtplib::RTPUDPv6TransmissionParams*)transparams)->SetPortbase(portbase);
-		else
-			((jrtplib::RTPUDPv4TransmissionParams*)transparams)->SetPortbase(portbase);
-		if((status=_sess.Create(sessparams, transparams, _isIPv6 ? jrtplib::RTPTransmitter::IPv6UDPProto : jrtplib::RTPTransmitter::IPv4UDPProto))>=0)
-			break;
-		if(config->getKVPs().count("sub.rtp.portbase"))		//only if no portbase was explicitly specified
-			break;
+	
+	_helper=new RTPHelpers();		//this starts the re_main() mainloop
+	if(config->getKVPs().count("sub.rtp.portbase")) {
+		min=portbase;
+		max=portbase+1;
 	}
-	if(status<0)
-		UM_LOG_ERR("%s: error in session.Create(): %s", SHORT_UUID(_uuid).c_str(), jrtplib::RTPGetErrorString(status).c_str());
-	else
-		UM_LOG_INFO("%s: session.Create() using portbase: %d", SHORT_UUID(_uuid).c_str(), portbase);
-	_port=portbase;		//sent to publisher (via framework)
-	_sess.SetDefaultPayloadType(_payloadType);
-	_sess.SetDefaultMark(false);
-
+	struct libre::sa ip;
+	libre::sa_init(&ip, AF_INET);
+	libre::sa_set_in(&ip, INADDR_ANY, 0);
+	if((status=RTPHelpers::call(boost::bind(libre::rtp_listen, &_rtp_socket, static_cast<int>(IPPROTO_UDP), &ip, min, max, false, rtp_recv, (void (*)(const libre::sa*, libre::rtcp_msg*, void*)) NULL, this)))) {
+		UM_LOG_ERR("%s: error %d in libre::rtp_listen()", SHORT_UUID(_uuid).c_str(), status);
+		delete _helper;
+		return;
+	}
+	_port=libre::sa_port(libre::rtp_local(_rtp_socket));
+	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket), 8192*1024);		//try to set something large
+	
 	if(config->getKVPs().count("sub.rtp.multicast")) {
-		if(!_sess.SupportsMulticasting())
-			UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
-		else
-			_multicast=true;
+		struct libre::sa maddr;
+		libre::sa_init(&maddr, AF_INET);
+		if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
+			UM_LOG_WARN("%s: error %d in libre::sa_set_str(%s:%u): %s", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
+		else {
+			//test for multicast support
+			status=libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
+			status|=libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
+			if(status)
+				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
+			else 
+				_multicast=true;
+		}
 	}
-
-	start();
-	delete transparams;
+	
+	_initDone=true;
 }
 
 RTPSubscriber::~RTPSubscriber() {
 	stop();
+	_cond.broadcast();		//wake up thread
 	join();
-	if(_sess.IsActive())
-		_sess.BYEDestroy(jrtplib::RTPTime(2,0),0,0);
+	if(_initDone)
+	{
+		delete _helper;
+		libre::mem_deref(_rtp_socket);
+	}
 #ifdef WIN32
 	WSACleanup();
 #endif // WIN32
@@ -151,18 +136,14 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 
 		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
-			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
-			_sess.JoinMulticastGroup(*addr);
-			delete addr;
+			
+			struct libre::sa maddr;
+			libre::sa_init(&maddr, AF_INET);
+			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
+				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, ignoring publisher", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
+			else if(libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr))
+				UM_LOG_ERR("%s: system not supporting multicast, ignoring publisher (%s:%d)", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 		}
-
-		jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
-		if((status=_sess.AddDestination(*addr))<0)
-			UM_LOG_WARN("%s: error in session.AddDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
-		if((status=_sess.AddToAcceptList(*addr))<0)
-			UM_LOG_WARN("%s: error in session.AddToAcceptList(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
-		delete addr;
-		UM_LOG_INFO("%s: now accepting incoming packets from %s:%d", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
 	}
 	_pubs[pub.getUUID()] = pub;
 	_domainPubs.insert(std::make_pair(pub.getDomain(), pub.getUUID()));
@@ -196,82 +177,86 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 
 		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
-			const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, _multicastIP, _port);
-			_sess.LeaveMulticastGroup(*addr);
-			delete addr;
+			
+			struct libre::sa maddr;
+			libre::sa_init(&maddr, AF_INET);
+			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
+				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, not leaving multicast group", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
+			else if(libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr))
+				UM_LOG_ERR("%s: system not supporting multicast, not leaving multicast group (%s:%d)", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
 		}
 
-		const jrtplib::RTPAddress *addr=strToAddress(_isIPv6, ip, port);
-		if((status=_sess.DeleteDestination(*addr))<0)
-			UM_LOG_WARN("%s: error in session.DeleteDestination(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
-		if((status=_sess.DeleteFromAcceptList(*addr))<0)
-			UM_LOG_WARN("%s: error in session.DeleteFromAcceptList(%s:%u): %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, jrtplib::RTPGetErrorString(status).c_str());
-		delete addr;
-		UM_LOG_INFO("%s: now refusing incoming packets from %s:%d", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
 	}
 }
 
 void RTPSubscriber::setReceiver(Receiver* receiver) {
 	ScopeLock lock(_mutex);
 	_receiver=receiver;
+	if(_receiver)
+		start();
 }
 
 void RTPSubscriber::run() {
-	int status;
-	bool available;
-	while(isStarted()) {
-		_sess.WaitForIncomingData(jrtplib::RTPTime(1,0), &available);
-		if(available) {
+	while(isStarted() && _receiver) {
+		Message *msg=NULL;
+		{
 			ScopeLock lock(_mutex);
-			if((status=_sess.Poll())<0)
-				UM_LOG_WARN("%s: error in session.Poll(): %s", SHORT_UUID(_uuid).c_str(), jrtplib::RTPGetErrorString(status).c_str());
+			if(_queue.empty())
+				_cond.wait(_mutex);
+			if(_queue.empty())
+				continue;
+			msg=_queue.front();
+			_queue.pop();
 		}
+		if(!_receiver)
+			continue;
+		_receiver->receive(msg);
+		delete msg;
 	}
+	return;
 }
 
-void RTPSubscriber::OnRTPPacket(jrtplib::RTPPacket *pack, const jrtplib::RTPTime &receivetime, const jrtplib::RTPAddress *senderaddress) {
-	assert(pack!=NULL);
-	if(_receiver==NULL)
+void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rtp_header *hdr, struct libre::mbuf *mb, void *arg) {
+	RTPSubscriber *obj=(RTPSubscriber*)arg;
+	
+	if(!mbuf_get_left(mb))
 		return;
-	Message *msg=createRTPMessage(pack);
-	_receiver->receive(msg);
-	delete msg;
-}
-
-Message *RTPSubscriber::createRTPMessage(jrtplib::RTPPacket *pack) {
-	Message *msg=new Message((char*)pack->GetPayloadData(), pack->GetPayloadLength(), Message::NONE);
+	
+	Message *msg=new Message((char*)mbuf_buf(mb), mbuf_get_left(mb), Message::NONE);
 	msg->putMeta("type", "RTP");
-	msg->putMeta("receivedTime", toStr(pack->GetReceiveTime().GetDouble()));
-	msg->putMeta("CSRCCount", toStr(pack->GetCSRCCount()));
-	for(int i=0; i<pack->GetCSRCCount(); i++)
-		msg->putMeta("CSRC"+toStr(i), toStr(pack->GetCSRC(i)));
-	msg->putMeta("SSRC", toStr(pack->GetSSRC()));
-	msg->putMeta("timestamp", toStr(pack->GetTimestamp()));
-	msg->putMeta("sequenceNumber", toStr(pack->GetSequenceNumber()));
-	msg->putMeta("payloadType", toStr(pack->GetPayloadType()));
-	return msg;
+	msg->putMeta("marker", toStr((bool)hdr->m));
+	msg->putMeta("SSRC", toStr(hdr->ssrc));
+	msg->putMeta("timestamp", toStr(hdr->ts));
+	msg->putMeta("payloadType", toStr(hdr->pt));
+	msg->putMeta("sequenceNumber", toStr(hdr->seq));
+	if(hdr->seq<obj->_lastSequenceNumber)		//test for sequence number overflow
+		obj->_extendedSequenceNumber++;
+	obj->_lastSequenceNumber=hdr->seq;
+	msg->putMeta("extendedSequenceNumber", toStr((obj->_extendedSequenceNumber<<16) + hdr->seq));
+	msg->putMeta("CSRCCount", toStr(hdr->cc));
+	for(int i=0; i<hdr->cc; i++)
+		msg->putMeta("CSRC"+toStr(i), toStr(hdr->csrc[i]));
+	
+	//push new message into queue
+	{
+		ScopeLock lock(obj->_mutex);
+		obj->_queue.push(msg);
+	}
+	obj->_cond.broadcast();
 }
 
 Message* RTPSubscriber::getNextMsg() {
-	_sess.BeginDataAccess();
-	if(_sess.GotoFirstSourceWithData()) {
-		jrtplib::RTPPacket *pack=_sess.GetNextPacket();
-		assert(pack!=NULL);
-		Message *msg=createRTPMessage(pack);
-		_sess.DeletePacket(pack);
-		_sess.EndDataAccess();
-		return msg;
-	}
-	_sess.EndDataAccess();
-	return NULL;
+	ScopeLock lock(_mutex);
+	if(_queue.empty())
+		return NULL;
+	Message *msg=_queue.front();
+	_queue.pop();
+	return msg;
 }
 
 bool RTPSubscriber::hasNextMsg() {
-	bool available;
-	_sess.BeginDataAccess();
-	available=_sess.GotoFirstSourceWithData();
-	_sess.EndDataAccess();
-	return available;
+	ScopeLock lock(_mutex);
+	return !_queue.empty();
 }
 
 }

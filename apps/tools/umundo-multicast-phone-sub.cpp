@@ -45,7 +45,7 @@ public:
 		if(msg->getMeta("type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
 			if(Pa_IsStreamStopped(stream)==1) {				//start output stream when first packed is received
-				Thread::sleepMs(8);							//wait some time to compensate network delay
+				Thread::sleepMs(256);							//wait some time to compensate network delay
 				checkError(Pa_StartStream(stream));
 			}
 			checkError(Pa_WriteStream(stream, msg->data(), msg->size()/sizeof(float)), 0);

@@ -62,17 +62,12 @@ public:
 		return "RTPPublisherConfig";
 	}
 
-	RTPPublisherConfig(double samples, uint32_t increment, int type=-1, uint16_t port=0) {
-		setSamplesPerSec(samples);
+	RTPPublisherConfig(uint32_t increment, int type=-1, uint16_t port=0) {
 		setTimestampIncrement(increment);
-		if(type>0 && type<256)
+		if(type>0 && type<128)		//libre limit
 			setPayloadType(type);
 		if(port)
 			setPortbase(port);
-	}
-
-	void setSamplesPerSec(double samples) {
-		options["pub.rtp.samplesPerSec"] = toStr(samples);
 	}
 
 	void setTimestampIncrement(uint32_t increment) {

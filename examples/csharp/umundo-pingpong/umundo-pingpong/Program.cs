@@ -39,15 +39,20 @@ namespace umundo_pingpong
         	/*
         	 * Make sure this path contains the umundoNativeCSharp.dll!
         	 */
-            SetDllDirectory("C:\\Users\\sradomski\\Desktop\\build\\umundo\\lib");
+            
+            SetDllDirectory("Y:\\Documents\\TK\\Code\\umundo\\build\\vs13-win64\\lib");
+            //SetDllDirectory("C:\\Users\\sradomski\\Desktop\\build\\umundo\\lib");
             org.umundo.core.Node node = new org.umundo.core.Node();
+            org.umundo.core.Discovery disc = new org.umundo.core.Discovery(Discovery.DiscoveryType.MDNS);
+            disc.add(node);
+
             Publisher pub = new Publisher("pingpong");
             PingReceiver recv = new PingReceiver();
             Subscriber sub = new Subscriber("pingpong", recv);
             node.addPublisher(pub);
             node.addSubscriber(sub);
 
-            while (true)
+            while (!Console.KeyAvailable)
             {
                 Message msg = new Message();
                 String data = "data";

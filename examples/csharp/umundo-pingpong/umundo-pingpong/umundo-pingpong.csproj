@@ -67,7 +67,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="umundoCSharp">
-      <HintPath>C:\Users\sradomski\Desktop\build\umundo\lib\umundoCSharp.dll</HintPath>
+      <HintPath>..\..\..\..\build\vs13-win32\lib\umundoCSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

@@ -438,9 +438,13 @@ using System.Runtime.InteropServices;
 
 %ignore Implementation;
 %ignore Configuration;
+
 %ignore NodeConfig;
 %ignore PublisherConfig;
 %ignore SubscriberConfig;
+%ignore RTPPublisherConfig;
+%ignore RTPSubscriberConfig;
+
 %ignore EndPointImpl;
 %ignore DiscoveryImpl;
 %ignore NodeImpl;

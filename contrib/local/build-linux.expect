@@ -151,6 +151,11 @@ expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt { send "\n" }
 
+expect -re $prompt { send "make mono\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt { send "\n" }
+
 if { [string compare $BUILD_TESTS "ON"] == 0 } {
   expect -re $prompt { send "make test\n" }
   expect "Start" { exp_continue } \
@@ -183,6 +188,11 @@ expect "Building CXX" { exp_continue } \
        -re $prompt    { send "\n" }
 
 expect -re $prompt { send "make java\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt { send "\n" }
+
+expect -re $prompt { send "make mono\n" }
 expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt { send "\n" }

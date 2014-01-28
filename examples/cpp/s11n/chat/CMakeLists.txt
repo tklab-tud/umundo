@@ -7,9 +7,10 @@ SET(CMAKE_BUILD_TYPE Debug CACHE STRING "")
 # We need to set CMAKE_MODULE_PATH to the path where FindUMundo.cmake can be 
 # found in order for CMake to be able to search for umundo.
 #
-find_path(FINDUMUNDO_CMAKE_PATH FindUMundo.cmake
+
+find_path(FINDUMUNDO_CMAKE_PATH FindUMUNDO.cmake
   PATHS
-  ${PROJECT_SOURCE_DIR}/../../../../cmake               # we still are in the source distribution
+  ${PROJECT_SOURCE_DIR}/../../../../contrib/cmake               # we still are in the source distribution
   /usr/local/share/umundo/cmake                         # installed on unices
   "C:/Program Files (x86)/uMundo/share/umundo/cmake"    # installed on Windows
   "C:/Program Files/uMundo/share/umundo/cmake"          # installed on Windows alternative
@@ -17,7 +18,7 @@ find_path(FINDUMUNDO_CMAKE_PATH FindUMundo.cmake
 )
 
 if (NOT FINDUMUNDO_CMAKE_PATH)
-  message(FATAL_ERROR "Could not find directory containing FindUMundo.cmake, set UMUNDO_CMAKE_PATH environment variable to help")
+  message(FATAL_ERROR "Could not find directory containing FindUMUNDO.cmake, set UMUNDO_CMAKE_PATH environment variable to help")
 endif()
 
 # add path with FindUMundo.cmake to cmakes module path
@@ -26,7 +27,7 @@ set(CMAKE_MODULE_PATH ${FINDUMUNDO_CMAKE_PATH})
 find_package(UMUNDO REQUIRED core serial)
 include_directories(${UMUNDO_INCLUDE_DIR})
 
-find_package(ProtoBuf REQUIRED)
+find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 

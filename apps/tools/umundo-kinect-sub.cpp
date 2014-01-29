@@ -112,7 +112,7 @@ public:
 			if(!_start)		//wait for first complete frame
 				return;
 			_mask[row]=true;
-			for( unsigned int i = row*640 ; i < row*640 + msg->size()/sizeof(uint16_t) ; i++) {
+			for( unsigned int i = row*640 ; i < row*640 + 640 ; i++) {
 				uint16_t pval = depth[i-row*640];
 				uint8_t lb = pval & 0xff;
 				switch (pval>>8) {
@@ -234,8 +234,8 @@ int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPSubscriberConfig subConfig;
-	//subConfig.setMulticastIP("224.1.2.3");
-	//subConfig.setMulticastPortbase(42142);
+	subConfig.setMulticastIP("224.1.2.3");
+	subConfig.setMulticastPortbase(42142);
 	Subscriber subFoo(Subscriber::RTP, "kinect-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

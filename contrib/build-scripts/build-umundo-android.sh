@@ -15,6 +15,18 @@ BUILD_DIR="/tmp/build-umundo-ios"
 rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 cd ${BUILD_DIR}
 
+
+if [ ! -d "${ANDROID_NDK}" ]; then
+  echo
+  echo No Android NDK at ${ANDROID_NDK}
+  echo export ANDROID_NDK as the NDK root
+  echo
+  exit
+fi
+echo
+echo Using Android NDK at ${ANDROID_NDK}
+echo
+
 #. ${DIR}/find-android-ndk.sh
 
 #    ANDROID_ABI=armeabi-v7a -  specifies the target Application Binary

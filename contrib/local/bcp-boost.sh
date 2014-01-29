@@ -7,8 +7,8 @@ CWD=`pwd`
 SOURCE_FILES=`find ${DIR}/../../core/ -name \*.h -print -o -name \*.cpp -print`
 #echo ${SOURCE_FILES}
 
-/Users/sradomski/Documents/TK/Code/boost_1_51_0/dist/bin/bcp \
---boost=/Users/sradomski/Documents/TK/Code/boost_1_51_0 \
+/Users/sradomski/Documents/TK/Code/boost_1_55_0/dist/bin/bcp \
+--boost=/Users/sradomski/Documents/TK/Code/boost_1_55_0 \
 --scan ${SOURCE_FILES} \
 ${DIR}/../prebuilt/include
 

@@ -53,7 +53,7 @@ public:
 		if(!pubFoo || count%modulo)
 			return;
 		uint16_t* depth = static_cast<uint16_t*>(_depth);
-		uint16_t buffer[640*480];
+		uint16_t* buffer = (uint16_t*)malloc(sizeof(uint16_t) * 640*480);
 		for( unsigned int i = 0 ; i < 640*480 ; i++) {
 			uint16_t pval = m_gamma[depth[i]];
 			buffer[i]=pval;
@@ -74,6 +74,7 @@ public:
 			pubFoo->send(msg);
 			delete(msg);
 		}
+		delete(buffer);
 	}
 	void setPub(Publisher *pub) {
 		this->pubFoo=pub;
@@ -102,8 +103,8 @@ int main(int argc, char** argv) {
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
 	
 	RTPPublisherConfig pubConfig(1);
-	//pubConfig.setMulticastIP("224.1.2.3");
-	//pubConfig.setMulticastPortbase(42142);
+	pubConfig.setMulticastIP("224.1.2.3");
+	pubConfig.setMulticastPortbase(42142);
 	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
 
 	Discovery disc(Discovery::MDNS);

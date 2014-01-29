@@ -136,7 +136,7 @@ ZeroMQNode::~ZeroMQNode() {
 	UM_LOG_INFO("%s: node shutting down", SHORT_UUID(_uuid).c_str());
 
 	char tmp[4];
-	writeVersionAndType(tmp, Message::SHUTDOWN);
+	writeVersionAndType(tmp, Message::UM_SHUTDOWN);
 	zmq_send(_writeOpSocket, tmp, 4, 0) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // unblock poll
 	join(); // wait for thread to finish
 
@@ -144,7 +144,7 @@ ZeroMQNode::~ZeroMQNode() {
 	ScopeLock lock(_mutex);
 
 	PREPARE_MSG(shutdownMsg, 4 + 37);
-	writePtr = writeVersionAndType(writePtr, Message::SHUTDOWN);
+	writePtr = writeVersionAndType(writePtr, Message::UM_SHUTDOWN);
 	assert(writePtr - writeBuffer == 4);
 	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
 	assert(writePtr - writeBuffer == zmq_msg_size(&shutdownMsg));
@@ -381,7 +381,7 @@ void ZeroMQNode::addPublisher(Publisher& pub) {
 
 	UM_LOG_INFO("%s added publisher %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
 
-	writePtr = writeVersionAndType(writePtr, Message::PUB_ADDED);
+	writePtr = writeVersionAndType(writePtr, Message::UM_PUB_ADDED);
 	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
 	writePtr = writePubInfo(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
@@ -407,7 +407,7 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 
 	UM_LOG_INFO("%s removed publisher %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
 
-	writePtr = writeVersionAndType(writePtr, Message::PUB_REMOVED);
+	writePtr = writeVersionAndType(writePtr, Message::UM_PUB_REMOVED);
 	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
 	writePtr = writePubInfo(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
@@ -452,7 +452,7 @@ void ZeroMQNode::added(EndPoint endPoint) {
 	// write connection request to operation socket
 	PREPARE_MSG(addEndPointMsg, 4 + otherAddress.str().length() + 1);
 
-	writePtr = writeVersionAndType(writePtr, Message::CONNECT_REQ);
+	writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);
 	assert(writePtr - writeBuffer == 4);
 	writePtr = writeString(writePtr, otherAddress.str().c_str(), otherAddress.str().length());
 	assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
@@ -475,7 +475,7 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 	otherAddress << endPoint.getTransport() << "://" << endPoint.getIP() << ":" << endPoint.getPort();
 
 	PREPARE_MSG(removeEndPointMsg, 4 + otherAddress.str().length() + 1);
-	writePtr = writeVersionAndType(writePtr, Message::DISCONNECT);
+	writePtr = writeVersionAndType(writePtr, Message::UM_DISCONNECT);
 	assert(writePtr - writeBuffer == 4);
 	writePtr = writeString(writePtr, otherAddress.str().c_str(), otherAddress.str().length());
 	assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
@@ -540,7 +540,7 @@ void ZeroMQNode::processNodeComm() {
 		uint16_t version;
 		readPtr = readVersionAndType(recvBuffer, version, type);
 
-		if (version != Message::VERSION) {
+		if (version != Message::UM_VERSION) {
 			UM_LOG_INFO("%s: node socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
 			zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 			return;
@@ -548,12 +548,12 @@ void ZeroMQNode::processNodeComm() {
 
 		UM_LOG_INFO("%s: node socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
 		switch (type) {
-		case Message::DEBUG: {
+		case Message::UM_DEBUG: {
 			// someone wants debug info from us
 			replyWithDebugInfo(from);
 			break;
 		}
-		case Message::CONNECT_REQ: {
+		case Message::UM_CONNECT_REQ: {
 
 			// someone is about to connect to us
 			if (from != _uuid || _allowLocalConns)
@@ -566,7 +566,7 @@ void ZeroMQNode::processNodeComm() {
 			_buckets.back().sizeMetaMsgSent += from.length();
 
 			zmq_msg_t replyNodeInfoMsg;
-			writeNodeInfo(&replyNodeInfoMsg, Message::CONNECT_REP);
+			writeNodeInfo(&replyNodeInfoMsg, Message::UM_CONNECT_REP);
 
 			zmq_sendmsg(_nodeSocket, &replyNodeInfoMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
 			_buckets.back().nrMetaMsgSent++;
@@ -575,8 +575,8 @@ void ZeroMQNode::processNodeComm() {
 			zmq_msg_close(&replyNodeInfoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 			break;
 		}
-		case Message::SUBSCRIBE:
-		case Message::UNSUBSCRIBE: {
+		case Message::UM_SUBSCRIBE:
+		case Message::UM_UNSUBSCRIBE: {
 			// a remote node subscribed or unsubscribed to one of our publishers
 
 			PublisherStubImpl* pubImpl = new PublisherStubImpl();
@@ -613,7 +613,7 @@ void ZeroMQNode::processNodeComm() {
 			if (_pubs.find(pubUUID) == _pubs.end())
 				break;
 
-			if (type == Message::SUBSCRIBE) {
+			if (type == Message::UM_SUBSCRIBE) {
 				// confirm subscription
 				if (!_subscriptions[subUUID].subStub) {
 					_subscriptions[subUUID].subStub = SubscriberStub(boost::shared_ptr<SubscriberStubImpl>(subImpl));
@@ -717,7 +717,7 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 	uint16_t version;
 	readPtr = readVersionAndType(recvBuffer, version, type);
 
-	if (version != Message::VERSION) {
+	if (version != Message::UM_VERSION) {
 		UM_LOG_INFO("%s: client socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
 		zmq_msg_close(&opMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 		return;
@@ -726,8 +726,8 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 	UM_LOG_INFO("%s: client socket received %s from %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type), client->address.c_str());
 
 	switch (type) {
-	case Message::PUB_REMOVED:
-	case Message::PUB_ADDED: {
+	case Message::UM_PUB_REMOVED:
+	case Message::UM_PUB_ADDED: {
 
 		if (REMAINING_BYTES_TOREAD < 37) {
 			break;
@@ -742,14 +742,14 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 
 		ScopeLock lock(_mutex);
 
-		if (type == Message::PUB_ADDED) {
+		if (type == Message::UM_PUB_ADDED) {
 			processRemotePubAdded(from, pubStub);
 		} else {
 			processRemotePubRemoved(from, pubStub);
 		}
 
 	}
-	case Message::SHUTDOWN: {
+	case Message::UM_SHUTDOWN: {
 		// a remote neighbor shut down
 		if (REMAINING_BYTES_TOREAD < 37) {
 			break;
@@ -772,7 +772,7 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 
 		break;
 	}
-	case Message::CONNECT_REP: {
+	case Message::UM_CONNECT_REP: {
 
 		// remote server answered our connect_req
 		if (REMAINING_BYTES_TOREAD < 37) {
@@ -816,8 +816,8 @@ void ZeroMQNode::processOpComm() {
 
 	UM_LOG_INFO("%s: internal op socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
 	switch (type) {
-	case Message::PUB_REMOVED:
-	case Message::PUB_ADDED: {
+	case Message::UM_PUB_REMOVED:
+	case Message::UM_PUB_ADDED: {
 		// removePublisher / addPublisher called us
 		char* uuid;
 
@@ -832,7 +832,7 @@ void ZeroMQNode::processOpComm() {
 
 		delete pubStub;
 
-		if (type == Message::PUB_ADDED) {
+		if (type == Message::UM_PUB_ADDED) {
 			zmq_connect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		} else {
 			zmq_disconnect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
@@ -843,7 +843,7 @@ void ZeroMQNode::processOpComm() {
 
 		break;
 	}
-	case Message::DISCONNECT: {
+	case Message::UM_DISCONNECT: {
 		// endpoint was removed
 		char* address;
 		readPtr = readString(readPtr, address, msgSize - (readPtr - recvBuffer));
@@ -884,7 +884,7 @@ void ZeroMQNode::processOpComm() {
 
 		break;
 	}
-	case Message::CONNECT_REQ: {
+	case Message::UM_CONNECT_REQ: {
 		// added(EndPoint) called us - rest of message is endpoint address
 		char* address;
 		readPtr = readString(readPtr, address, msgSize - (readPtr - recvBuffer));
@@ -910,7 +910,7 @@ void ZeroMQNode::processOpComm() {
 
 		// send a CONNECT_REQ message
 		PREPARE_MSG(connReqMsg, 4);
-		writePtr = writeVersionAndType(writePtr, Message::CONNECT_REQ);
+		writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);
 		assert(writePtr - writeBuffer == zmq_msg_size(&connReqMsg));
 
 		zmq_sendmsg(clientConn->socket, &connReqMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
@@ -921,7 +921,7 @@ void ZeroMQNode::processOpComm() {
 
 		break;
 	}
-	case Message::SHUTDOWN: {
+	case Message::UM_SHUTDOWN: {
 		// do we need to do something here - destructor does most of the work
 		break;
 	}
@@ -1061,7 +1061,7 @@ void ZeroMQNode::run() {
 
 void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 	zmq_msg_t infoMsg;
-	writeNodeInfo(&infoMsg, Message::NODE_INFO);
+	writeNodeInfo(&infoMsg, Message::UM_NODE_INFO);
 	NODE_BROADCAST_MSG(infoMsg);
 	zmq_msg_close(&infoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
@@ -1386,7 +1386,7 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 	size_t bufferSize = 4 + SUB_INFO_SIZE(sub) + PUB_INFO_SIZE(pub);
 	PREPARE_MSG(subAddedMsg, bufferSize);
 
-	writePtr = writeVersionAndType(writePtr, Message::SUBSCRIBE);
+	writePtr = writeVersionAndType(writePtr, Message::UM_SUBSCRIBE);
 	writePtr = writeSubInfo(writePtr, sub);
 	writePtr = writePubInfo(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
@@ -1415,7 +1415,7 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 	size_t bufferSize = 4 + SUB_INFO_SIZE(sub) + PUB_INFO_SIZE(pub);
 	PREPARE_MSG(subRemovedMsg, bufferSize);
 
-	writePtr = writeVersionAndType(writePtr, Message::UNSUBSCRIBE);
+	writePtr = writeVersionAndType(writePtr, Message::UM_UNSUBSCRIBE);
 	writePtr = writeSubInfo(writePtr, sub);
 	writePtr = writePubInfo(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
@@ -1512,7 +1512,7 @@ char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl
 }
 
 char* ZeroMQNode::writeVersionAndType(char* buffer, Message::Type type) {
-	buffer = writeUInt16(buffer, Message::VERSION);
+	buffer = writeUInt16(buffer, Message::UM_VERSION);
 	buffer = writeUInt16(buffer, type);
 	return buffer;
 }

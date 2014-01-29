@@ -36,44 +36,44 @@ CPP_COMMON_FLAGS="${CC_COMMON_FLAGS} -fno-rtti"
 
 # build for x86
 
-# CC_X86_FLAGS="${CC_COMMON_FLAGS} \
-# -funwind-tables \
-# -finline-limit=300"
-# CPP_X86_FLAGS="${CPP_COMMON_FLAGS} \
-# -funwind-tables \
-# -finline-limit=300"
-# 
-# X86_SYSROOT="${ANDROID_NDK}/platforms/android-9/arch-x86"
-# X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.7/prebuilt/darwin-x86_64"
-# X86_TOOL_PREFIX="i686-linux-android"
-# X86_COMMON_FLAGS="\
-# -isystem ${ANDROID_NDK}/platforms/android-9/arch-x86/usr/include \
-# -isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
-# -isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86/include \
-# "
-# X86_CPP_STDLIB="${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86"
-# 
-# export ARCH="x86"
-# export CPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp"
-# export CXXCPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp"
-# export CPPFLAGS="--sysroot=${X86_SYSROOT}"
-# export CXXCPPFLAGS="--sysroot=${X86_SYSROOT}"
-# export CC="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-gcc"
-# export CXX="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-g++"
-# export LD="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ld"
-# export CXXFLAGS="-Os -s ${CPP_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}"
-# export CFLAGS="-Os -s ${CC_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}"
-# export LDFLAGS="--sysroot=${X86_SYSROOT} -L${X86_CPP_STDLIB} -lgnustl_static"
-# export AR="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ar"
-# export AS="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-as"
-# export LIBTOOL="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-libtool"
-# export STRIP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-strip"
-# export RANLIB="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ranlib"
-# 
-# set +e
-# make -j2
+CC_X86_FLAGS="${CC_COMMON_FLAGS} \
+-funwind-tables \
+-finline-limit=300"
+CPP_X86_FLAGS="${CPP_COMMON_FLAGS} \
+-funwind-tables \
+-finline-limit=300"
 
+X86_SYSROOT="${ANDROID_NDK}/platforms/android-9/arch-x86"
+X86_TOOLCHAIN_ROOT="${ANDROID_NDK}/toolchains/x86-4.7/prebuilt/darwin-x86_64"
+X86_TOOL_PREFIX="i686-linux-android"
+X86_COMMON_FLAGS="\
+-isystem ${ANDROID_NDK}/platforms/android-9/arch-x86/usr/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/include \
+-isystem ${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86/include \
+"
+X86_CPP_STDLIB="${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/4.7/libs/x86"
 
+export ARCH="x86"
+export CPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp"
+export CXXCPP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-cpp"
+export CPPFLAGS="--sysroot=${X86_SYSROOT}"
+export CXXCPPFLAGS="--sysroot=${X86_SYSROOT}"
+export CC="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-gcc"
+export CXX="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-g++"
+export LD="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ld"
+export CXXFLAGS="-Os -s ${CPP_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}"
+export CFLAGS="-Os -s ${CC_X86_FLAGS} --sysroot=${X86_SYSROOT} ${X86_COMMON_FLAGS}"
+export LDFLAGS="--sysroot=${X86_SYSROOT} -L${X86_CPP_STDLIB} -lgnustl_static"
+export AR="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ar"
+export AS="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-as"
+export LIBTOOL="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-libtool"
+export STRIP="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-strip"
+export RANLIB="${X86_TOOLCHAIN_ROOT}/bin/${X86_TOOL_PREFIX}-ranlib"
+
+set +e
+make -j2
+
+exit
 
 # build for arm
 

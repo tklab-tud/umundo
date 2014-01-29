@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 2.8.9)
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "4")
-SET(UMUNDO_VERSION_PATCH "2")
+SET(UMUNDO_VERSION_PATCH "3")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition

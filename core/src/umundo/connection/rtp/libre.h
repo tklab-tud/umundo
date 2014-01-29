@@ -30,6 +30,7 @@
 //datatype sizes seem to depend on this define
 //in the libre makefile this define is always on --> we do the same here
 #define HAVE_INET6
+#define HAVE__BOOL
 
 namespace libre {
 	#include <re.h>

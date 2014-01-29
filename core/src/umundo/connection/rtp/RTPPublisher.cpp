@@ -55,8 +55,7 @@ void RTPPublisher::init(Options* config) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(config->getKVPs().count("pub.rtp.multicast") && (!config->getKVPs().count("pub.rtp.multicastPortbase") || _multicastPortbase==0 || _multicastPortbase==65535))
-	{
+	if(config->getKVPs().count("pub.rtp.multicast") && (!config->getKVPs().count("pub.rtp.multicastPortbase") || _multicastPortbase==0 || _multicastPortbase==65535)) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid multicast portbase (0 < portbase < 65535) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
 	}
@@ -65,7 +64,7 @@ void RTPPublisher::init(Options* config) {
 	_payloadType=96;		//dynamic [RFC3551]
 	if(config->getKVPs().count("pub.rtp.payloadType"))
 		_payloadType=strTo<uint8_t>(config->getKVPs()["pub.rtp.payloadType"]);
-	
+
 	if(config->getKVPs().count("pub.rtp.portbase")) {
 		min=portbase;
 		max=portbase+1;
@@ -82,7 +81,7 @@ void RTPPublisher::init(Options* config) {
 	_port=libre::sa_port(libre::rtp_local(_rtp_socket));
 	_timestamp=libre::rand_u32();
 	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket), 8192*1024);		//try to set something large
-	
+
 	if(config->getKVPs().count("pub.rtp.multicast")) {
 		struct libre::sa maddr;
 		libre::sa_init(&maddr, AF_INET);
@@ -94,17 +93,16 @@ void RTPPublisher::init(Options* config) {
 			status|=libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
 			if(status)
 				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
-			else 
+			else
 				_multicast=true;
 		}
 	}
-	
+
 	_initDone=true;
 }
 
 RTPPublisher::~RTPPublisher() {
-	if(_initDone)
-	{
+	if(_initDone) {
 		delete _helper;
 		libre::mem_deref(_rtp_socket);
 	}
@@ -160,14 +158,12 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 	UM_LOG_INFO("%s: received a new subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
-	if(_multicast)
-	{
+	if(_multicast) {
 		UM_LOG_WARN("%s: configured for multicast, not adding unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
-		
-		if(_subs.size()==0)		//first subscriber
-		{
+
+		if(_subs.size()==0) {	//first subscriber
 			UM_LOG_INFO("%s: got first multicast subscriber (%s:%u), adding multicast group %s:%u to receivers list", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _multicastIP.c_str(), _multicastPortbase);
-			
+
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
 			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _multicastPortbase)))
@@ -175,9 +171,7 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 			else
 				_destinations[_multicastIP+":"+toStr(_multicastPortbase)]=maddr;
 		}
-	}
-	else
-	{
+	} else {
 		struct libre::sa addr;
 		libre::sa_init(&addr, AF_INET);
 		if((status=libre::sa_set_str(&addr, ip.c_str(), port)))
@@ -209,17 +203,15 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	}
 	if (!subscriptionFound)
 		return;
-	
+
 	UM_LOG_INFO("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
-	
-	if(_multicast)
-	{
+
+	if(_multicast) {
 		UM_LOG_WARN("%s: configured for multicast, not removing unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
-		
-		if(_subs.size()==1)		//last subscriber
-		{
+
+		if(_subs.size()==1) {	//last subscriber
 			UM_LOG_INFO("%s: lost last multicast subscriber (%s:%u), removing multicast group %s:%u from receivers list", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _multicastIP.c_str(), _multicastPortbase);
-			
+
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
 			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _multicastPortbase)))
@@ -227,9 +219,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 			else
 				_destinations.erase(_multicastIP+":"+toStr(_multicastPortbase));
 		}
-	}
-	else
-	{
+	} else {
 		struct libre::sa addr;
 		libre::sa_init(&addr, AF_INET);
 		if((status=libre::sa_set_str(&addr, ip.c_str(), port)))
@@ -237,7 +227,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 		else
 			_destinations.erase(ip+":"+toStr(port));
 	}
-	
+
 	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
 		_subs.erase(sub.getUUID());
 	}
@@ -259,7 +249,7 @@ void RTPPublisher::send(Message* msg) {
 		_timestamp+=strTo<uint32_t>(timestampIncrement);
 	else
 		_timestamp+=_timestampIncrement;
-	
+
 	//allocate buffer
 	libre::mbuf *mb = libre::mbuf_alloc(libre::RTP_HEADER_SIZE + msg->size());
 	//make room for rtp header

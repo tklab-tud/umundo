@@ -53,7 +53,7 @@ void RTPSubscriber::init(Options* config) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	
+
 	_helper=new RTPHelpers();		//this starts the re_main() mainloop
 	if(config->getKVPs().count("sub.rtp.portbase")) {
 		min=portbase;
@@ -69,7 +69,7 @@ void RTPSubscriber::init(Options* config) {
 	}
 	_port=libre::sa_port(libre::rtp_local(_rtp_socket));
 	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket), 8192*1024);		//try to set something large
-	
+
 	if(config->getKVPs().count("sub.rtp.multicast")) {
 		struct libre::sa maddr;
 		libre::sa_init(&maddr, AF_INET);
@@ -81,11 +81,11 @@ void RTPSubscriber::init(Options* config) {
 			status|=libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
 			if(status)
 				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
-			else 
+			else
 				_multicast=true;
 		}
 	}
-	
+
 	_initDone=true;
 }
 
@@ -93,8 +93,7 @@ RTPSubscriber::~RTPSubscriber() {
 	stop();
 	_cond.broadcast();		//wake up thread
 	join();
-	if(_initDone)
-	{
+	if(_initDone) {
 		delete _helper;
 		libre::mem_deref(_rtp_socket);
 	}
@@ -136,7 +135,7 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 
 		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
-			
+
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
 			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
@@ -177,7 +176,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 
 		if(_multicast && _pubs.size()==0) {
 			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
-			
+
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
 			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
@@ -218,10 +217,10 @@ void RTPSubscriber::run() {
 
 void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rtp_header *hdr, struct libre::mbuf *mb, void *arg) {
 	RTPSubscriber *obj=(RTPSubscriber*)arg;
-	
+
 	if(!mbuf_get_left(mb))
 		return;
-	
+
 	Message *msg=new Message((char*)mbuf_buf(mb), mbuf_get_left(mb), Message::NONE);
 	msg->putMeta("type", "RTP");
 	msg->putMeta("marker", toStr((bool)hdr->m));
@@ -236,7 +235,7 @@ void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rt
 	msg->putMeta("CSRCCount", toStr(hdr->cc));
 	for(int i=0; i<hdr->cc; i++)
 		msg->putMeta("CSRC"+toStr(i), toStr(hdr->csrc[i]));
-	
+
 	//push new message into queue
 	{
 		ScopeLock lock(obj->_mutex);

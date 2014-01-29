@@ -63,7 +63,7 @@ private:
 	std::string _multicastIP;
 	uint16_t _multicastPortbase;
 	uint32_t _timestamp;
-	
+
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
 	std::map<std::string, struct libre::sa> _destinations;
@@ -73,7 +73,7 @@ private:
 	bool _isSuspended;
 	bool _multicast;
 	bool _initDone;
-	
+
 	RTPHelpers *_helper;
 	struct libre::rtp_sock *_rtp_socket;
 	static void rtp_recv(const struct libre::sa*, const struct libre::rtp_header*, struct libre::mbuf*, void*);

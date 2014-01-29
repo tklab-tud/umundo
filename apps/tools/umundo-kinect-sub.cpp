@@ -23,13 +23,13 @@
 #include <vector>
 
 #if defined(__APPLE__)
-	#include <GLUT/glut.h>
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
-	#include <GL/glut.h>
-	#include <GL/gl.h>
-	#include <GL/glu.h>
+#include <GL/glut.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 #endif
 
 struct RTPData {
@@ -55,48 +55,47 @@ public:
 			_mGamma[i] = v*6*256;
 		}
 	};
-	
+
 	~TestReceiver() {
 		delete _internalDepthBuffer;
 	};
-	
+
 	void receive(Message* msg) {
-		
+
 		//handle only RTP messages
 		if(msg->getMeta("type")=="RTP") {
 			ScopeLock lock(_internalDepthMutex);
 			bool marker=strTo<bool>(msg->getMeta("marker"));
 			struct RTPData *data=(struct RTPData*)msg->data();
-			
+
 			/*
-			std::cout << "RTP(" << msg->size() << ") sequenceNumber: " << msg->getMeta("sequenceNumber") << " extendedSequenceNumber: " << msg->getMeta("extendedSequenceNumber") << " rtpTimestamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
-			if(marker)
-				std::cout << " [advertising new frame] " << std::flush;
-			std::cout << " row: " << data->row << std::flush;
-			if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_rtpTimestamp)
-				std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_rtpTimestamp << "} " << std::flush;
-			std::cout << std::endl << std::flush;
-			*/
-			
+			 std::cout << "RTP(" << msg->size() << ") sequenceNumber: " << msg->getMeta("sequenceNumber") << " extendedSequenceNumber: " << msg->getMeta("extendedSequenceNumber") << " rtpTimestamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
+			 if(marker)
+			 std::cout << " [advertising new frame] " << std::flush;
+			 std::cout << " row: " << data->row << std::flush;
+			 if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_rtpTimestamp)
+			 std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_rtpTimestamp << "} " << std::flush;
+			 std::cout << std::endl << std::flush;
+			 */
+
 			//calculate time offset to remote host
 			if(!_timeOffset)
 				_timeOffset=Thread::getTimeStampMs()-data->timestamp;
-			
+
 			//marker is set --> new frame starts here
 			if(marker) {
 				if(_start) {
 					//output info for last complete frame
 					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
-						<< " (remote time offset: " << _timeOffset
-						<< "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
-						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
+					          << " (remote time offset: " << _timeOffset
+					          << "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
+					          << "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
 					//calculate packet misses (and output statistics about them)
 					int start_miss=0;
 					int sum=0;
 					bool old=false;
 					std::stringstream stream;
-					for(unsigned int i=0; i<480; i++)
-					{
+					for(unsigned int i=0; i<480; i++) {
 						if(_mask[i]!=old) {
 							if(_mask[i]==true && i>0) {
 								if(start_miss==i-1)
@@ -133,14 +132,14 @@ public:
 				}
 				_start=true;
 			}
-			
+
 			//calculate aux data
 			_lastRemoteTimestamp=data->timestamp;
 			_lastLocalTimestamp=Thread::getTimeStampMs()-_timeOffset;
 			if(!_start)				//wait for first complete frame (and ignore data till then)
 				return;
 			_mask[data->row]=true;		//mark this row as received
-			
+
 			//process received data and calculate received depth picture row
 			for(unsigned int col = 0 ; col < 640 ; col++) {
 				unsigned int i=data->row*640 + col;
@@ -186,7 +185,7 @@ public:
 			}
 		}
 	};
-	
+
 	bool getDepth(uint8_t *buffer) {
 		ScopeLock lock(_internalDepthMutex);
 		_newFrame.wait(_internalDepthMutex, 100);
@@ -197,7 +196,7 @@ public:
 		_newCompleteFrame = false;
 		return true;
 	};
-	
+
 private:
 	std::vector<uint16_t> _mGamma;
 	bool _newCompleteFrame;
@@ -214,8 +213,7 @@ private:
 
 TestReceiver testRecv;
 
-void DrawGLScene()
-{
+void DrawGLScene() {
 	uint8_t depth[640*480*3];
 
 	testRecv.getDepth(depth);
@@ -230,17 +228,20 @@ void DrawGLScene()
 
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4f(255.0f, 255.0f, 255.0f, 255.0f);
-	glTexCoord2f(0, 0); glVertex3f(0,0,0);
-	glTexCoord2f(1, 0); glVertex3f(640,0,0);
-	glTexCoord2f(1, 1); glVertex3f(640,480,0);
-	glTexCoord2f(0, 1); glVertex3f(0,480,0);
+	glTexCoord2f(0, 0);
+	glVertex3f(0,0,0);
+	glTexCoord2f(1, 0);
+	glVertex3f(640,0,0);
+	glTexCoord2f(1, 1);
+	glVertex3f(640,480,0);
+	glTexCoord2f(0, 1);
+	glVertex3f(0,480,0);
 	glEnd();
 
 	glutSwapBuffers();
 }
 
-void ReSizeGLScene(int Width, int Height)
-{
+void ReSizeGLScene(int Width, int Height) {
 	glViewport(0,0,Width,Height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -248,8 +249,7 @@ void ReSizeGLScene(int Width, int Height)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void InitGL(int Width, int Height)
-{
+void InitGL(int Width, int Height) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0);
 	glDepthFunc(GL_LESS);
@@ -268,8 +268,8 @@ int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	RTPSubscriberConfig subConfig;
-	subConfig.setMulticastIP("224.1.2.3");
-	subConfig.setMulticastPortbase(42142);
+	//subConfig.setMulticastIP("224.1.2.3");
+	//subConfig.setMulticastPortbase(42142);
 	Subscriber subFoo(Subscriber::RTP, "kinect-pubsub", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

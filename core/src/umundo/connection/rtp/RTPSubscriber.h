@@ -55,7 +55,7 @@ public:
 
 	// Thread
 	void run();
-	
+
 
 protected:
 	RTPSubscriber();
@@ -73,11 +73,11 @@ private:
 	std::multimap<std::string, std::string> _domainPubs;
 	Mutex _mutex;
 	Monitor _cond;
-	
+
 	RTPHelpers *_helper;
 	struct libre::rtp_sock *_rtp_socket;
 	static void rtp_recv(const struct libre::sa*, const struct libre::rtp_header*, struct libre::mbuf*, void*);
-	
+
 	friend class Factory;
 };
 

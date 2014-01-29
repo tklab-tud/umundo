@@ -88,7 +88,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	const char* logDomain = NULL;
 	bool logDomainChanged = false;
 	(void)logDomainChanged; // not used on android, get rid of warning
-	
+
 	// determine actual log levels once per program start
 	if (!determinedLogLevels) {
 		// if UMUNDO_LOGLEVEL is defined in environment, it overwrites loglevels from build time

@@ -504,7 +504,7 @@ void DNSSD_API BonjourDiscovery::browseReply(
 		// we queued a list of mdns replies, simplify first
 		std::list<BonjourBrowseReply>::iterator replyIter = myself->_pendingBrowseReplies.begin();
 		while(replyIter != myself->_pendingBrowseReplies.end()) {
-			
+
 			// first some general validation
 			if (myself->_queryClients.find(replyIter->domain) == myself->_queryClients.end()) {
 				UM_LOG_ERR("Ignoring browseReply for domain no longer watched: %s", replyIter->domain.c_str());
@@ -536,7 +536,7 @@ void DNSSD_API BonjourDiscovery::browseReply(
 					replyIter++;
 					continue;
 				}
-				
+
 				assert(query.remoteAds.find(replyIter->serviceName) != query.remoteAds.end());
 				MDNSAd* ad = query.remoteAds[replyIter->serviceName];
 

@@ -73,7 +73,7 @@ RTPHelpers::~RTPHelpers() {
 		join();
 		libre::libre_close();
 	}
-	
+
 	//check for memory leaks
 	libre::tmr_debug();
 	libre::mem_debug();

@@ -36,8 +36,8 @@ class RTPHelpers : public Thread {
 protected:
 	RTPHelpers();
 	~RTPHelpers();
-	
-	static uint32_t _libreUsage;	
+
+	static uint32_t _libreUsage;
 	static bool _initDone;
 	static struct libre::mqueue *_mq;
 	static Mutex _mutex;
@@ -46,13 +46,13 @@ protected:
 	static boost::function<int()> _func;
 	static int _retval;
 	static unsigned long int _id;
-	
+
 	static int call(boost::function<int()>);
 	static void handler(int, void*, void*);
-	
+
 private:
 	void run();
-	
+
 	friend class RTPSubscriber;
 	friend class RTPPublisher;
 };

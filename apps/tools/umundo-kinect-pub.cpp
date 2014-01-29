@@ -32,8 +32,7 @@ using namespace umundo;
 class MyFreenectDevice : public Freenect::FreenectDevice {
 public:
 	MyFreenectDevice(freenect_context *ctx, int index)
-		: Freenect::FreenectDevice(ctx, index), _pub(NULL), _frameCount(0)
-	{
+		: Freenect::FreenectDevice(ctx, index), _pub(NULL), _frameCount(0) {
 		this->setLed(LED_RED);
 	}
 	// Do not call directly even in child
@@ -44,7 +43,7 @@ public:
 	void DepthCallback(void* depthData, uint32_t frameTimestamp) {
 		uint16_t *depth = static_cast<uint16_t*>(depthData);
 		uint64_t timestamp=Thread::getTimeStampMs();
-		
+
 		_frameCount++;
 		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
 		if(!(_frameCount%_modulo)) {
@@ -78,7 +77,7 @@ public:
 	void setPub(Publisher *pub) {
 		_pub=pub;
 	};
-	
+
 	void setModulo(uint16_t modulo) {
 		_modulo=modulo;
 	};
@@ -96,7 +95,7 @@ freenect_video_format requested_format(FREENECT_VIDEO_RGB);
 
 int main(int argc, char** argv) {
 	uint16_t modulo=1;
-	
+
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	if(argc>1) {
@@ -104,12 +103,12 @@ int main(int argc, char** argv) {
 		if(m>0 && m<256)
 			modulo=m;
 	}
-	
+
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
-	
+
 	RTPPublisherConfig pubConfig(1);
-	pubConfig.setMulticastIP("224.1.2.3");
-	pubConfig.setMulticastPortbase(42142);
+	//pubConfig.setMulticastIP("224.1.2.3");
+	//pubConfig.setMulticastPortbase(42142);
 	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
 
 	Discovery disc(Discovery::MDNS);

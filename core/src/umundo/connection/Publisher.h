@@ -165,7 +165,7 @@ public:
 	virtual ~Publisher();
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const Publisher& other) const {
 		return _impl < other._impl;

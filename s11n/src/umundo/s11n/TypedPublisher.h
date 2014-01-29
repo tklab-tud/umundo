@@ -78,7 +78,7 @@ public:
 	virtual ~TypedPublisher();
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const TypedPublisher& other) const {
 		return _impl < other._impl;

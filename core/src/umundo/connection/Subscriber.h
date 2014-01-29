@@ -151,7 +151,7 @@ public:
 	virtual ~Subscriber();
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const Subscriber& other) const {
 		return _impl < other._impl;

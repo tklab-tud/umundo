@@ -99,7 +99,7 @@ public:
 	virtual ~Node();
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const Node& other) const {
 		return _impl < other._impl;

@@ -64,7 +64,7 @@ public:
 	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const PublisherStub& other) const {
 		return _impl < other._impl;

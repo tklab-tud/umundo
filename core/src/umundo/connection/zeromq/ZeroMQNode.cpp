@@ -1067,6 +1067,7 @@ void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 }
 
 void ZeroMQNode::removeStaleNodes(uint64_t now) {
+	ScopeLock lock(_mutex);
 	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator pendingNodeIter = _connTo.begin();
 	while(pendingNodeIter != _connTo.end()) {
 		if (now - pendingNodeIter->second->startedAt > 30000) {
@@ -1315,12 +1316,13 @@ void ZeroMQNode::processNodeInfo(char* recvBuffer, size_t msgSize) {
 }
 
 void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
+
 	if (_connTo.find(nodeUUID) == _connTo.end()) {
 		delete pub;
 		return;
 	}
 
-	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
 	nodeStub.updateLastSeen();
 
@@ -1345,10 +1347,11 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 }
 
 void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub) {
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
+
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
-	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	NodeStub nodeStub = _connTo[nodeUUID]->node;
 	PublisherStub pubStub = nodeStub.getPublisher(pub->getUUID());
 
@@ -1371,11 +1374,11 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 
 void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
 	COMMON_VARS;
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
-	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	void* clientSocket = _connTo[nodeUUID]->socket;
 	if (!clientSocket)
 		return;
@@ -1400,11 +1403,11 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 
 void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
 	COMMON_VARS;
+	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 
 	if (_connTo.find(nodeUUID) == _connTo.end())
 		return;
 
-	assert(_mutex.try_lock() == true); // assume that we are holding the mutex
 	void* clientSocket = _connTo[nodeUUID]->socket;
 	if (!clientSocket)
 		return;

@@ -66,7 +66,7 @@ public:
 	virtual ~TypedSubscriber();
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const TypedSubscriber& other) const {
 		return _impl < other._impl;

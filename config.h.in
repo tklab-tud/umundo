@@ -21,6 +21,7 @@
 #cmakedefine CYGWIN
 #cmakedefine IOS
 #cmakedefine IOSSIM
+#cmakedefine WITH_CPP11
 
 // suppress warnings with already define -DANDROID macro
 #ifndef ANDROID

@@ -62,7 +62,7 @@ public:
 	virtual ~NodeStubBase() { }
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const NodeStubBase& other) const {
 		return _impl < other._impl;
@@ -151,7 +151,7 @@ public:
 	virtual ~NodeStub() { }
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const NodeStub& other) const {
 		return _impl < other._impl;

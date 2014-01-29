@@ -83,7 +83,7 @@ public:
 	Discovery(const Discovery& other) : _impl(other._impl) { }
 	virtual ~Discovery();
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const Discovery& other) const {
 		return _impl < other._impl;

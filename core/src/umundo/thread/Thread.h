@@ -23,6 +23,11 @@
 #include "umundo/common/Common.h"
 #include "umundo/thread/tinythread.h"
 
+// C++11
+#ifdef WITH_CPP11
+#include <mutex>
+#endif
+
 // this is a hack until we get a compiler firewall per Pimpl
 #ifdef _WIN32
 # if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
@@ -130,13 +135,20 @@ private:
 /**
  * Platform independent mutual exclusion.
  */
+#ifdef WITH_CPP11
+typedef std::recursive_mutex Mutex;
+#else
 typedef tthread::recursive_mutex Mutex;
-
+#endif
 
 /**
  * Instantiate on stack to give code in scope below exclusive access.
  */
+#ifdef WITH_CPP11
+typedef std::lock_guard<std::recursive_mutex> ScopeLock;
+#else
 typedef tthread::lock_guard<tthread::recursive_mutex> ScopeLock;
+#endif
 
 /**
  * See comments from Schmidt on condition variables in windows:

@@ -67,7 +67,7 @@ public:
 	SubscriberStub(const SubscriberStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator< (const SubscriberStub& other) const {
 		return _impl < other._impl;

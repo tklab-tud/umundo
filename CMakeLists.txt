@@ -20,6 +20,7 @@
 # BUILD_UMUNDO_UTIL:BOOL               Build the C++ utility library
 # BUILD_UMUNDO_APPS:BOOL               Build some example applications
 # BUILD_UMUNDO_TOOLS:BOOL              Build the command-line tools
+# BUILD_WITH_CPP11:BOOL                Enable C++11
 # DIST_PREPARE:BOOL                    Prepare a distribution, everything ends up in SRC/package/PLATFORM
 # CMAKE_CUSTOM_FIND_PATH:STRING        Append the given path when searching for dependencies
 #
@@ -95,6 +96,7 @@ OPTION(BUILD_CONVENIENCE_LIB  "Build umundo convenience library" OFF)
 OPTION(BUILD_TESTS            "Build umundo tests" OFF)
 OPTION(BUILD_BINDINGS         "Build umundo language bindings" ON)
 OPTION(DIST_PREPARE           "Put libraries into the lib folder of the source tree" OFF)
+OPTION(BUILD_WITH_CPP11       "Build with C++11" OFF)
 
 # setup defaults
 if (CMAKE_CROSSCOMPILING AND ANDROID)
@@ -403,6 +405,11 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 
 	# we cannot tread warning as error with the "narrowing problem"
 	# add_definitions(-Werror)
+
+	if (BUILD_WITH_CPP11)
+		add_definitions(-std=c++11)
+		add_definitions(-DWITH_CPP11)
+	endif()
 
 	if(GCC_VERSION VERSION_EQUAL 4.7 OR GCC_VERSION VERSION_GREATER 4.7)
 		# when compiling as C++11, narrowing is a warning but older compilers complain about the option

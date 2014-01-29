@@ -150,7 +150,7 @@ public:
 	virtual ~EndPoint() { }
 
 	operator bool() const {
-		return _impl;
+		return _impl.get();
 	}
 	bool operator==(const EndPoint& other) const {
 		return _impl == other._impl;

@@ -117,8 +117,10 @@ public:
 							stream << " " << start_miss << "-479";
 						sum+=479-start_miss+1;
 					}
-					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)"
-						" missed rows detail: " << stream.str() << std::endl << std::flush;
+					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)";
+					if(sum)
+						std::cout << " missed rows detail: " << stream.str();
+					std::cout << std::endl << std::flush;
 				}
 				//clear packetloss mask
 				for(unsigned int i=0; i<480; i++)

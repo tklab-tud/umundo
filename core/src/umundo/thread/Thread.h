@@ -21,11 +21,16 @@
 #ifndef PTHREAD_H_KU2YWI3W
 #define PTHREAD_H_KU2YWI3W
 #include "umundo/common/Common.h"
+
+#ifndef WITH_CPP11
 #include "umundo/thread/tinythread.h"
+#endif
 
 // C++11
 #ifdef WITH_CPP11
 #include <mutex>
+#include <thread>
+#include <condition_variable>
 #endif
 
 // this is a hack until we get a compiler firewall per Pimpl
@@ -128,7 +133,11 @@ public:
 private:
 	bool _isStarted;
 	static void runWrapper(void*);
+#ifdef WITH_CPP11
+	std::thread* _thread;
+#else
 	tthread::thread* _thread;
+#endif
 
 };
 
@@ -170,10 +179,12 @@ public:
 	void wait(Mutex& mutex, uint32_t ms);
 
 private:
+#ifdef WITH_CPP11
+	std::condition_variable_any _cond;
+#else
 	tthread::condition_variable _cond;
+#endif
 };
-
-typedef Monitor Condition;
 
 }
 

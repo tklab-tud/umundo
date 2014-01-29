@@ -289,7 +289,6 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedFrom() {
 	ScopeLock lock(_mutex);
 
 	std::map<std::string, NodeStub> from;
-	ScopeLock(_mutex);
 	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter = _connFrom.begin();
 	while (nodeIter != _connFrom.end()) {
 		// this will report ourself as well
@@ -303,7 +302,6 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
 	ScopeLock lock(_mutex);
 
 	std::map<std::string, NodeStub> to;
-	ScopeLock(_mutex);
 	std::map<std::string, boost::shared_ptr<NodeConnection> >::iterator nodeIter = _connTo.begin();
 	while (nodeIter != _connTo.end()) {
 		// only report UUIDs as keys
@@ -782,7 +780,7 @@ void ZeroMQNode::processClientComm(boost::shared_ptr<NodeConnection> client) {
 		char* fromUUID;
 		readPtr = readString(readPtr, fromUUID, 37);
 
-		ScopeLock(_mutex);
+		ScopeLock lock(_mutex);
 		assert(client->address.length() > 0);
 
 		if (fromUUID == _uuid && !_allowLocalConns) // do not connect to ourself

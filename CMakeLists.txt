@@ -446,6 +446,12 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	# SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRTD.lib")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 	add_definitions("-fPIC")
+	
+	if (BUILD_WITH_CPP11)
+		add_definitions(-std=c++11)
+		add_definitions(-DWITH_CPP11)
+	endif()
+	
 	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-parentheses-equality")
 else()
 	message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")

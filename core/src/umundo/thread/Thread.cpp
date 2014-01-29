@@ -29,6 +29,10 @@
 #include <sys/time.h> // gettimeofday
 #endif
 
+#ifdef WITH_CPP11
+#define tthread std
+#endif
+
 namespace umundo {
 
 Thread::Thread() {
@@ -134,7 +138,11 @@ void Monitor::wait(Mutex& mutex, uint32_t ms) {
 	if (ms <= 0) {
 		_cond.wait(mutex);
 	} else {
+#ifdef WITH_CPP11
+		_cond.wait_for(mutex, std::chrono::milliseconds(ms));
+#else
 		_cond.wait_for(mutex, ms);
+#endif
 	}
 }
 

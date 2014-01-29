@@ -175,8 +175,8 @@ public:
 
 		// prepare a debug request
 		char buf[4];
-		uint16_t version = htons(Message::VERSION);
-		uint16_t debug = htons(Message::DEBUG);
+		uint16_t version = htons(Message::UM_VERSION);
+		uint16_t debug = htons(Message::UM_DEBUG);
 		buf[0] = (version >> 0) & 0xff;
 		buf[1] = (version >> 8) & 0xff;
 		buf[2] = (debug >> 0) & 0xff;

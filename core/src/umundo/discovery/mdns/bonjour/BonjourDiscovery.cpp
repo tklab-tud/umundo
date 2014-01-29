@@ -577,11 +577,17 @@ void DNSSD_API BonjourDiscovery::browseReply(
 					continue;
 				}
 
-				myself->_nodes--;
 				MDNSAd* ad = query.remoteAds[replyIter->serviceName];
 
+				if(ad->interfaces.find(replyIter->ifIndex) == ad->interfaces.end()) {
+					UM_LOG_DEBUG("browseReply: ignoring removal of unknown interface");
+					replyIter++;
+					continue;
+				}
+
+				myself->_nodes--;
+
 				changed[ad->name] = ad;
-				assert(ad->interfaces.find(replyIter->ifIndex) != ad->interfaces.end());
 
 				// which ip address vanished?
 				ad->ipv4.erase(replyIter->ifIndex);

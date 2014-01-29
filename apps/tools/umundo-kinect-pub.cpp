@@ -42,17 +42,18 @@ public:
 	}
 	// Do not call directly even in child
 	void DepthCallback(void* depthData, uint32_t frameTimestamp) {
-		uint16_t* depth = static_cast<uint16_t*>(depthData);
+		uint16_t *depth = static_cast<uint16_t*>(depthData);
+		uint64_t timestamp=Thread::getTimeStampMs();
 		
 		_frameCount++;
 		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
-		if(!(_frameCount%_modulo))
-			std::cout << ", sending data...";
+		if(!(_frameCount%_modulo)) {
+			std::cout << ", sending data (" << (1000/(timestamp-_lastTimestamp)) << " frames per second)...";
+		}
 		std::cout << std::endl << std::flush;
 		if(!_pub || _frameCount%_modulo)			//send every _frameCount modulo _modulo frame
 			return;
 		
-		uint64_t timestamp=Thread::getTimeStampMs();
 		for( unsigned int i = 0; i < 480; i++ ) {
 			Message* msg = new Message();
 			//set marker to indicate new frame start and timestampIncrement so that individual rtp packets for one frame share the same rtp timestamp
@@ -72,6 +73,7 @@ public:
 			delete data;
 			delete msg;
 		}
+		_lastTimestamp=timestamp;
 	}
 	void setPub(Publisher *pub) {
 		_pub=pub;
@@ -85,6 +87,7 @@ private:
 	Publisher *_pub;
 	uint16_t _modulo;
 	uint8_t _frameCount;
+	uint64_t _lastTimestamp;
 };
 
 Freenect::Freenect freenect;

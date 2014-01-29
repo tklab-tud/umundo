@@ -17,6 +17,7 @@
 #include "umundo/core.h"
 #include <stdio.h>
 #include <iostream>
+#include <sstream>
 #include <string.h>
 #include <cmath>
 #include <vector>
@@ -86,20 +87,22 @@ public:
 				if(_start) {
 					//output info for last complete frame
 					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
-						<< " (transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
-						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ") missed rows:";
+						<< " (remote time offset: " << _timeOffset
+						<< "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
+						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
 					//calculate packet misses (and output statistics about them)
 					int start_miss=0;
 					int sum=0;
 					bool old=false;
+					std::stringstream stream;
 					for(unsigned int i=0; i<480; i++)
 					{
 						if(_mask[i]!=old) {
 							if(_mask[i]==true && i>0) {
 								if(start_miss==i-1)
-									std::cout << " " << start_miss;
+									stream << " " << start_miss;
 								else
-									std::cout << " " << start_miss << "-" << i-1;
+									stream << " " << start_miss << "-" << i-1;
 								sum+=i-start_miss;
 							}
 							if(_mask[i]==false)
@@ -109,12 +112,13 @@ public:
 					}
 					if(old==false) {
 						if(start_miss==479)
-							std::cout << " " << start_miss;
+							stream << " " << start_miss;
 						else
-							std::cout << " " << start_miss << "-479";
+							stream << " " << start_miss << "-479";
 						sum+=479-start_miss+1;
 					}
-					std::cout << " sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)" << std::endl;
+					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)"
+						" missed rows detail: " << stream.str() << std::endl << std::flush;
 				}
 				//clear packetloss mask
 				for(unsigned int i=0; i<480; i++)

@@ -17,6 +17,7 @@
 #include "umundo/core.h"
 #include <stdio.h>
 #include <iostream>
+#include <sstream>
 #include <string.h>
 #include <cmath>
 #include <vector>
@@ -31,58 +32,77 @@
 	#include <GL/glu.h>
 #endif
 
+struct RTPData {
+	uint16_t row;
+	uint64_t timestamp;
+	uint16_t data[640];
+};
+
 using namespace umundo;
 
 GLuint gl_depth_tex;
 
 class TestReceiver : public Receiver {
 public:
-	TestReceiver() : _baseSeq(0), _rtpTimestamp(0), _start(false), _offset(0) {
-		m_buffer_depth=new uint8_t[640*480*3];
+	TestReceiver() : _mGamma(2048), _rtpTimestamp(0), _start(false), _timeOffset(0) {
+		_internalDepthBuffer=new uint8_t[640*480*3];
 		for(unsigned int i=0; i<480; i++)
 			_mask[i]=true;
+		//gamma precalculations
+		for( unsigned int i = 0 ; i < 2048 ; i++) {
+			float v = i/2048.0;
+			v = std::pow(v, 3)* 6;
+			_mGamma[i] = v*6*256;
+		}
 	};
+	
 	~TestReceiver() {
-		delete m_buffer_depth;
+		delete _internalDepthBuffer;
 	};
+	
 	void receive(Message* msg) {
+		
+		//handle only RTP messages
 		if(msg->getMeta("type")=="RTP") {
-			ScopeLock lock(m_depth_mutex);
+			ScopeLock lock(_internalDepthMutex);
 			bool marker=strTo<bool>(msg->getMeta("marker"));
-			uint32_t seq=strTo<uint32_t>(msg->getMeta("extendedSequenceNumber"));
-			const char *raw_data=msg->data();
-			uint16_t *depth=(uint16_t*)((char*)raw_data+sizeof(uint64_t));
-			uint64_t timestamp=*((uint64_t*)raw_data);
-			uint16_t row = (seq-_baseSeq)%480;
+			struct RTPData *data=(struct RTPData*)msg->data();
 			
-			if(!_offset)
-				_offset=Thread::getTimeStampMs()-timestamp;
-				
 			/*
-			std::cout << "RTP(" << msg->size() << ") seq: " << msg->getMeta("sequenceNumber") << " eSeq: " << msg->getMeta("extendedSequenceNumber") << " stamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
+			std::cout << "RTP(" << msg->size() << ") sequenceNumber: " << msg->getMeta("sequenceNumber") << " extendedSequenceNumber: " << msg->getMeta("extendedSequenceNumber") << " rtpTimestamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
 			if(marker)
 				std::cout << " [advertising new frame] " << std::flush;
-			std::cout << " row: " << row << std::flush;
+			std::cout << " row: " << data->row << std::flush;
 			if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_rtpTimestamp)
 				std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_rtpTimestamp << "} " << std::flush;
 			std::cout << std::endl << std::flush;
 			*/
+			
+			//calculate time offset to remote host
+			if(!_timeOffset)
+				_timeOffset=Thread::getTimeStampMs()-data->timestamp;
+			
+			//marker is set --> new frame starts here
 			if(marker) {
 				if(_start) {
+					//output info for last complete frame
 					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
-						<< " (transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
-						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_offset)-_lastRemoteTimestamp)) << ") missed rows:";
+						<< " (remote time offset: " << _timeOffset
+						<< "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
+						<< "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
+					//calculate packet misses (and output statistics about them)
 					int start_miss=0;
 					int sum=0;
 					bool old=false;
+					std::stringstream stream;
 					for(unsigned int i=0; i<480; i++)
 					{
 						if(_mask[i]!=old) {
 							if(_mask[i]==true && i>0) {
 								if(start_miss==i-1)
-									std::cout << " " << start_miss;
+									stream << " " << start_miss;
 								else
-									std::cout << " " << start_miss << "-" << i-1;
+									stream << " " << start_miss << "-" << i-1;
 								sum+=i-start_miss;
 							}
 							if(_mask[i]==false)
@@ -92,89 +112,103 @@ public:
 					}
 					if(old==false) {
 						if(start_miss==479)
-							std::cout << " " << start_miss;
+							stream << " " << start_miss;
 						else
-							std::cout << " " << start_miss << "-479";
+							stream << " " << start_miss << "-479";
 						sum+=479-start_miss+1;
 					}
-					std::cout << " sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)" << std::endl;
+					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)";
+					if(sum)
+						std::cout << " missed rows detail: " << stream.str();
+					std::cout << std::endl << std::flush;
 				}
+				//clear packetloss mask
 				for(unsigned int i=0; i<480; i++)
 					_mask[i]=false;
-				_baseSeq = seq;
-				_start=true;
 				_rtpTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
-				m_new_depth_frame = true;
-				UMUNDO_SIGNAL(_newFrame);
+				//we received a mark, so old frame is complete --> signal this to opengl thread
+				if(_start) {
+					_newCompleteFrame = true;
+					UMUNDO_SIGNAL(_newFrame);
+				}
+				_start=true;
 			}
-			_lastRemoteTimestamp=timestamp;
-			_lastLocalTimestamp=Thread::getTimeStampMs()-_offset;
-			if(!_start)		//wait for first complete frame
+			
+			//calculate aux data
+			_lastRemoteTimestamp=data->timestamp;
+			_lastLocalTimestamp=Thread::getTimeStampMs()-_timeOffset;
+			if(!_start)				//wait for first complete frame (and ignore data till then)
 				return;
-			_mask[row]=true;
-			for( unsigned int i = row*640 ; i < row*640 + msg->size()/sizeof(uint16_t) ; i++) {
-				uint16_t pval = depth[i-row*640];
+			_mask[data->row]=true;		//mark this row as received
+			
+			//process received data and calculate received depth picture row
+			for(unsigned int col = 0 ; col < 640 ; col++) {
+				unsigned int i=data->row*640 + col;
+				uint16_t pval = _mGamma[data->data[col]];
 				uint8_t lb = pval & 0xff;
 				switch (pval>>8) {
 				case 0:
-					m_buffer_depth[3*i+0] = 255;
-					m_buffer_depth[3*i+1] = 255-lb;
-					m_buffer_depth[3*i+2] = 255-lb;
+					_internalDepthBuffer[3*i+0] = 255;
+					_internalDepthBuffer[3*i+1] = 255-lb;
+					_internalDepthBuffer[3*i+2] = 255-lb;
 					break;
 				case 1:
-					m_buffer_depth[3*i+0] = 255;
-					m_buffer_depth[3*i+1] = lb;
-					m_buffer_depth[3*i+2] = 0;
+					_internalDepthBuffer[3*i+0] = 255;
+					_internalDepthBuffer[3*i+1] = lb;
+					_internalDepthBuffer[3*i+2] = 0;
 					break;
 				case 2:
-					m_buffer_depth[3*i+0] = 255-lb;
-					m_buffer_depth[3*i+1] = 255;
-					m_buffer_depth[3*i+2] = 0;
+					_internalDepthBuffer[3*i+0] = 255-lb;
+					_internalDepthBuffer[3*i+1] = 255;
+					_internalDepthBuffer[3*i+2] = 0;
 					break;
 				case 3:
-					m_buffer_depth[3*i+0] = 0;
-					m_buffer_depth[3*i+1] = 255;
-					m_buffer_depth[3*i+2] = lb;
+					_internalDepthBuffer[3*i+0] = 0;
+					_internalDepthBuffer[3*i+1] = 255;
+					_internalDepthBuffer[3*i+2] = lb;
 					break;
 				case 4:
-					m_buffer_depth[3*i+0] = 0;
-					m_buffer_depth[3*i+1] = 255-lb;
-					m_buffer_depth[3*i+2] = 255;
+					_internalDepthBuffer[3*i+0] = 0;
+					_internalDepthBuffer[3*i+1] = 255-lb;
+					_internalDepthBuffer[3*i+2] = 255;
 					break;
 				case 5:
-					m_buffer_depth[3*i+0] = 0;
-					m_buffer_depth[3*i+1] = 0;
-					m_buffer_depth[3*i+2] = 255-lb;
+					_internalDepthBuffer[3*i+0] = 0;
+					_internalDepthBuffer[3*i+1] = 0;
+					_internalDepthBuffer[3*i+2] = 255-lb;
 					break;
 				default:
-					m_buffer_depth[3*i+0] = 0;
-					m_buffer_depth[3*i+1] = 0;
-					m_buffer_depth[3*i+2] = 0;
+					_internalDepthBuffer[3*i+0] = 0;
+					_internalDepthBuffer[3*i+1] = 0;
+					_internalDepthBuffer[3*i+2] = 0;
 					break;
 				}
 			}
 		}
-	}
+	};
+	
 	bool getDepth(uint8_t *buffer) {
-		ScopeLock lock(m_depth_mutex);
-		_newFrame.wait(m_depth_mutex, 100);
-		if (!m_new_depth_frame)
+		ScopeLock lock(_internalDepthMutex);
+		_newFrame.wait(_internalDepthMutex, 100);
+		if (!_newCompleteFrame)
 			return false;
-		memcpy(buffer, m_buffer_depth, 640*480*3*sizeof(uint8_t));
-		m_new_depth_frame = false;
+		//copy buffer so that the frame doesn't change while displaying it with opengl (while already receiving packets for the next frame)
+		memcpy(buffer, _internalDepthBuffer, 640*480*3*sizeof(uint8_t));
+		_newCompleteFrame = false;
 		return true;
-	}
+	};
+	
 private:
-	bool m_new_depth_frame;
-	uint8_t *m_buffer_depth;
-	uint32_t _baseSeq;
+	std::vector<uint16_t> _mGamma;
+	bool _newCompleteFrame;
+	uint8_t *_internalDepthBuffer;
 	uint32_t _rtpTimestamp;
 	bool _start;
 	uint64_t _lastRemoteTimestamp;
 	uint64_t _lastLocalTimestamp;
-	int64_t _offset;
+	int64_t _timeOffset;
 	bool _mask[480];
-	Mutex m_depth_mutex;
+	Mutex _internalDepthMutex;
 	Monitor _newFrame;
 };
 

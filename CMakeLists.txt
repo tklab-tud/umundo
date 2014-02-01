@@ -25,7 +25,9 @@
 # CMAKE_CUSTOM_FIND_PATH:STRING        Append the given path when searching for dependencies
 #
 
-cmake_minimum_required(VERSION 2.8.9)
+# we need 2.8.9 for java but travis only features 2.8.7
+# TODO: give a sensible error message when building the jar fails
+cmake_minimum_required(VERSION 2.8.7)
 
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")

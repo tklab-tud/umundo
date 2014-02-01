@@ -1,5 +1,7 @@
 # uMundo ReadMe
 
+[![Build Status](https://travis-ci.org/tklab-tud/umundo.png?branch=master)](https://travis-ci.org/tklab-tud/umundo)
+
 uMundo is a lightweight refactoring of the distributed Mundo publish/subscribe middleware to deliver byte
 arrays and objects on channels from publishers to subscribers. With lightweight, we do not necessarily
 refer to runtime behavior or memory footprint (though we work hard to keep it sane) but to the amount

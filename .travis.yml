@@ -4,5 +4,5 @@ compiler:
   - clang
 before_install:
  - sudo apt-get update -qq
- - sudo apt-get install -qq libprotobuf-dev libprotoc-dev
+ - sudo apt-get install -qq libprotobuf-dev libprotoc-dev protobuf-compiler
 script: mkdir build && cd build && cmake .. && make

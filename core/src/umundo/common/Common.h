@@ -50,15 +50,24 @@
 #include <sstream>
 #include <iostream>
 
-// #if __cplusplus > 199711L
-// 	typedef boost::shared_ptr std::shared_ptr
-// 	typedef boost::weak_ptr std::weak_ptr
-// #else
+#ifdef WITH_CPP11
+#include <memory>
+#define SharedPtr std::shared_ptr
+#define WeakPtr std::weak_ptr
+#define StaticPtrCast std::static_pointer_cast
+#define EnableSharedFromThis std::enable_shared_from_this
+#else
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-// #endif
+#define SharedPtr boost::shared_ptr
+#define WeakPtr boost::weak_ptr
+#define StaticPtrCast boost::static_pointer_cast
+#define EnableSharedFromThis boost::enable_shared_from_this
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 
 #if defined(_WIN32) && !defined(UMUNDO_STATIC)
 #	ifdef COMPILING_DLL

@@ -14,7 +14,7 @@ using namespace umundo;
 
 static std::string hostId;
 static Monitor monitor;
-static Mutex mutex;
+static RMutex mutex;
 
 class EndPointResultSet : public ResultSet<EndPoint> {
 public:
@@ -120,7 +120,7 @@ bool testDiscoveryObject() {
 }
 
 bool testMulticastDNSDiscovery() {
-	boost::shared_ptr<MDNSDiscoveryImpl> mdnsImpl = boost::static_pointer_cast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
+	SharedPtr<MDNSDiscoveryImpl> mdnsImpl = StaticPtrCast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
 
 	std::string domain = "foo.local.";
 	std::string regType = "_umundo._tcp.";

@@ -36,7 +36,7 @@
     } else {
       _cListener = new umundoTypedReceiverWrapper(listener);
       std::string cppChannelName([name cStringUsingEncoding: NSASCIIStringEncoding]);
-      _cppSub = boost::shared_ptr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, _cListener));
+      _cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, _cListener));
     }
   }
   return self;

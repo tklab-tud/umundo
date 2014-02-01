@@ -9,7 +9,7 @@
 using namespace umundo;
 
 static int receives = 0;
-static Mutex mutex;
+static RMutex mutex;
 static std::string hostId;
 
 

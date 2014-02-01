@@ -138,14 +138,14 @@ public:
 			return;
 		}
 
-		_impl = boost::shared_ptr<EndPointImpl>(new EndPointImpl());
+		_impl = SharedPtr<EndPointImpl>(new EndPointImpl());
 		_impl->setTransport(transport);
 		_impl->setIP(ip);
 		_impl->setPort(strTo<uint16_t>(port));
 	}
 
 	EndPoint() : _impl() { }
-	EndPoint(boost::shared_ptr<EndPointImpl> const impl) : _impl(impl) { }
+	EndPoint(SharedPtr<EndPointImpl> const impl) : _impl(impl) { }
 	EndPoint(const EndPoint& other) : _impl(other._impl) { }
 	virtual ~EndPoint() { }
 
@@ -200,12 +200,12 @@ public:
 		return _impl->updateLastSeen();
 	}
 
-	boost::shared_ptr<EndPointImpl> getImpl() const {
+	SharedPtr<EndPointImpl> getImpl() const {
 		return _impl;
 	}
 
 protected:
-	boost::shared_ptr<EndPointImpl> _impl;
+	SharedPtr<EndPointImpl> _impl;
 	friend std::ostream& operator<< (std::ostream& os, const EndPoint& endPoint);
 
 };

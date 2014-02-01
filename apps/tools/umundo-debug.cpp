@@ -79,7 +79,7 @@ std::string domain;
 bool isQuiet;
 size_t waitFor;
 
-Mutex mutex;
+RMutex mutex;
 
 void printUsageAndExit() {
 	printf("umundo-debug version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");

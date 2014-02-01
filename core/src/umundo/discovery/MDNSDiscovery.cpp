@@ -23,8 +23,8 @@
 
 namespace umundo {
 
-boost::shared_ptr<Implementation> MDNSDiscovery::create() {
-	boost::shared_ptr<Implementation> impl = boost::shared_ptr<Implementation>(new MDNSDiscovery());
+SharedPtr<Implementation> MDNSDiscovery::create() {
+	SharedPtr<Implementation> impl = SharedPtr<Implementation>(new MDNSDiscovery());
 	return impl;
 }
 
@@ -37,7 +37,7 @@ void MDNSDiscovery::init(Options* config) {
 	if (_config["mdns.protocol"].length() == 0)     _config["mdns.protocol"] = "tcp";
 	if (_config["mdns.serviceType"].length() == 0)  _config["mdns.serviceType"] = "umundo";
 
-	_mdnsImpl = boost::static_pointer_cast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
+	_mdnsImpl = StaticPtrCast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
 	_query = new MDNSQuery();
 	_query->domain = _config["mdns.domain"];
 	_query->regType = "_" + _config["mdns.serviceType"] + "._" + _config["mdns.protocol"] + ".";
@@ -83,7 +83,7 @@ void MDNSDiscovery::advertise(const EndPoint& node) {
 
 	MDNSAd* mdnsAd;
 	{
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		if (_localAds.find(node) != _localAds.end()) {
 			UM_LOG_WARN("Already advertising endpoint");
 			return; // we already advertise this one
@@ -103,7 +103,7 @@ void MDNSDiscovery::add(Node& node) {
 
 	MDNSAd* mdnsAd;
 	{
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		if (_localAds.find(node) != _localAds.end()) {
 			UM_LOG_WARN("Node already %s://%s:%d advertised",
 			            node.getTransport().c_str(),
@@ -129,7 +129,7 @@ void MDNSDiscovery::unadvertise(const EndPoint& node) {
 
 	MDNSAd* mdnsAd;
 	{
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		if (_localAds.find(node) == _localAds.end()) {
 			UM_LOG_WARN("Not unadvertising %s://%s:%d - node unknown",
 			            node.getTransport().c_str(),
@@ -150,7 +150,7 @@ void MDNSDiscovery::remove(Node& node) {
 }
 
 void MDNSDiscovery::browse(ResultSet<EndPoint>* query) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) != _queries.end()) {
 		UM_LOG_WARN("Query %p already added for browsing", query);
@@ -168,7 +168,7 @@ void MDNSDiscovery::browse(ResultSet<EndPoint>* query) {
 }
 
 void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) == _queries.end()) {
 		UM_LOG_WARN("No such query %p to unbrowse", query);
@@ -190,7 +190,7 @@ void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
  * Called by the actual MDNS implementation when a node is added.
  */
 void MDNSDiscovery::added(MDNSAd* remoteAd) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if(_remoteAds.find(remoteAd) != _remoteAds.end()) {
 		UM_LOG_WARN("MDNS reported existing node %s in %s as new", _remoteAds[remoteAd].getAddress().c_str(), _config["mdns.domain"].c_str());
@@ -203,7 +203,7 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 		}
 	} else {
 		// a new one
-		EndPoint endPoint(boost::shared_ptr<EndPointImpl>(new EndPointImpl()));
+		EndPoint endPoint(SharedPtr<EndPointImpl>(new EndPointImpl()));
 
 		endPoint.getImpl()->setDomain(remoteAd->domain);
 		endPoint.getImpl()->setHost(remoteAd->host);
@@ -231,7 +231,7 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 }
 
 void MDNSDiscovery::removed(MDNSAd* remoteAd) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if(_remoteAds.find(remoteAd) == _remoteAds.end()) {
 		UM_LOG_WARN("MDNS reported vanishing of unknown node %s in %s", remoteAd->host.c_str(), _config["mdns.domain"].c_str());
@@ -249,7 +249,7 @@ void MDNSDiscovery::removed(MDNSAd* remoteAd) {
 }
 
 void MDNSDiscovery::changed(MDNSAd* remoteAd) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	assert(_remoteAds.find(remoteAd) != _remoteAds.end());
 
@@ -263,7 +263,7 @@ void MDNSDiscovery::changed(MDNSAd* remoteAd) {
 }
 
 std::vector<EndPoint> MDNSDiscovery::list() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	std::vector<EndPoint> endpoints;
 	for (std::map<MDNSAd*, EndPoint>::iterator adIter = _remoteAds.begin();

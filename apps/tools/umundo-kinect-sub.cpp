@@ -64,7 +64,7 @@ public:
 
 		//handle only RTP messages
 		if(msg->getMeta("type")=="RTP") {
-			ScopeLock lock(_internalDepthMutex);
+			RScopeLock lock(_internalDepthMutex);
 			bool marker=strTo<bool>(msg->getMeta("marker"));
 			struct RTPData *data=(struct RTPData*)msg->data();
 
@@ -187,7 +187,7 @@ public:
 	};
 
 	bool getDepth(uint8_t *buffer) {
-		ScopeLock lock(_internalDepthMutex);
+		RScopeLock lock(_internalDepthMutex);
 		_newFrame.wait(_internalDepthMutex, 100);
 		if (!_newCompleteFrame)
 			return false;
@@ -207,7 +207,7 @@ private:
 	uint64_t _lastLocalTimestamp;
 	int64_t _timeOffset;
 	bool _mask[480];
-	Mutex _internalDepthMutex;
+	RMutex _internalDepthMutex;
 	Monitor _newFrame;
 };
 

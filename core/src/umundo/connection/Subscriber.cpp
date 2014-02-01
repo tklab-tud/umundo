@@ -75,11 +75,11 @@ Subscriber::~Subscriber() {
 void Subscriber::init(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config) {
 	switch (type) {
 	case RTP:
-		_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("sub.rtp"));
+		_impl = StaticPtrCast<SubscriberImpl>(Factory::create("sub.rtp"));
 		_impl->implType = RTP;
 		break;
 	case ZEROMQ:
-		_impl = boost::static_pointer_cast<SubscriberImpl>(Factory::create("sub.zmq"));
+		_impl = StaticPtrCast<SubscriberImpl>(Factory::create("sub.zmq"));
 		_impl->implType = ZEROMQ;
 		break;
 	default:

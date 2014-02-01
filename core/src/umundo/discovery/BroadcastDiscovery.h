@@ -58,9 +58,9 @@ public:
 class DLLEXPORT BroadcastDiscovery : public DiscoveryImpl, public Thread {
 public:
 	virtual ~BroadcastDiscovery();
-	static boost::shared_ptr<BroadcastDiscovery> getInstance();  ///< Return the singleton instance.
+	static SharedPtr<BroadcastDiscovery> getInstance();  ///< Return the singleton instance.
 
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	void suspend();
 	void resume();
@@ -79,7 +79,7 @@ public:
 
 protected:
 	BroadcastDiscovery();
-	static boost::shared_ptr<BroadcastDiscovery> _instance;  ///< The singleton instance.
+	static SharedPtr<BroadcastDiscovery> _instance;  ///< The singleton instance.
 
 	friend class Factory;
 };

@@ -37,7 +37,7 @@ public:
 	virtual ~PBDeserializer() {}
 
 	void init(Options*);
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void* deserialize(const std::string& type, Message* msg);
 	void destroyObj(void* obj);
 

@@ -53,7 +53,7 @@ TypedSubscriber::TypedSubscriber(const std::string& channelName) : Subscriber(ch
 #endif
 		Factory::registerPrototype("typeDeserializer", _registeredPrototype);
 	}
-	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
+	_impl = StaticPtrCast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
 	assert(_impl != NULL);
 }
 
@@ -64,7 +64,7 @@ TypedSubscriber::TypedSubscriber(const std::string& channelName, TypedReceiver* 
 #endif
 		Factory::registerPrototype("typeDeserializer", _registeredPrototype);
 	}
-	_impl = boost::static_pointer_cast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
+	_impl = StaticPtrCast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
 	_impl->setReceiver(recv);
 	Subscriber::setReceiver(_impl.get());
 	assert(_impl != NULL);

@@ -32,6 +32,8 @@ freely, subject to the following restrictions:
 #include <process.h>
 #endif
 
+#ifndef WITH_CPP11
+
 namespace umundo {
 
 namespace tthread {
@@ -300,3 +302,4 @@ thread::id this_thread::get_id() {
 }
 }
 }
+#endif

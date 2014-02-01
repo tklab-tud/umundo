@@ -73,7 +73,7 @@ private:
 public:
 	TypedPublisher() : _impl() {}
 	TypedPublisher(const std::string& channelName);
-	TypedPublisher(boost::shared_ptr<TypeSerializerImpl> const impl) :  _impl(impl) { }
+	TypedPublisher(SharedPtr<TypeSerializerImpl> const impl) :  _impl(impl) { }
 	TypedPublisher(const TypedPublisher& other) : Publisher(other), _impl(other._impl) { }
 	virtual ~TypedPublisher();
 
@@ -103,7 +103,7 @@ public:
 	void registerType(const std::string& type, void* serializer);
 	void setGreeter(TypedGreeter* greeter);
 private:
-	boost::shared_ptr<TypeSerializerImpl> _impl;
+	SharedPtr<TypeSerializerImpl> _impl;
 
 	GreeterWrapper* _greeterWrapper;
 	static TypeSerializerImpl* _registeredPrototype; ///< The instance we registered at the factory

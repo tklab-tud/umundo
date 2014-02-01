@@ -36,7 +36,7 @@ class NodeStub;
  */
 class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl, public Thread {
 public:
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	virtual ~ZeroMQSubscriber();
 	void suspend();
@@ -59,11 +59,11 @@ protected:
 	void* _readOpSocket;
 	void* _writeOpSocket;
 	std::multimap<std::string, std::string> _domainPubs;
-	Mutex _mutex;
+	RMutex _mutex;
 
 private:
 
-	boost::shared_ptr<umundo::SubscriberConfig> _config;
+	SharedPtr<umundo::SubscriberConfig> _config;
 	friend class Factory;
 };
 

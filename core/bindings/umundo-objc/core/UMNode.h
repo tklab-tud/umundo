@@ -35,7 +35,7 @@
  */
 @interface UMNode :
 NSObject {
-	boost::shared_ptr<umundo::Node> _cppNode;
+	SharedPtr<umundo::Node> _cppNode;
 }
 
 - (id) init;

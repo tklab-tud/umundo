@@ -137,7 +137,7 @@ public:
 	};
 
 	Subscriber() : _impl() {}
-	explicit Subscriber(const SubscriberStub& stub) : _impl(boost::static_pointer_cast<SubscriberImpl>(stub.getImpl())) {}
+	explicit Subscriber(const SubscriberStub& stub) : _impl(StaticPtrCast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);
 	Subscriber(const std::string& channelName, Receiver* receiver);
 	Subscriber(const std::string& channelName, SubscriberConfig* config);
@@ -146,7 +146,7 @@ public:
 	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver);
 	Subscriber(SubscriberType type, const std::string& channelName, SubscriberConfig* config);
 	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
-	Subscriber(boost::shared_ptr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
+	Subscriber(SharedPtr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
 	Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
 
@@ -212,7 +212,7 @@ public:
 		return _impl->resume();
 	}
 
-	boost::shared_ptr<SubscriberImpl> getImpl() const {
+	SharedPtr<SubscriberImpl> getImpl() const {
 		return _impl;
 	}
 
@@ -220,7 +220,7 @@ protected:
 
 	void init(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
 
-	boost::shared_ptr<SubscriberImpl> _impl;
+	SharedPtr<SubscriberImpl> _impl;
 	friend class Node;
 };
 

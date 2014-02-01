@@ -3,8 +3,8 @@
 
 using namespace umundo;
 
-bool testRecursiveMutex() {
-	Mutex mutex;
+bool testRMutex() {
+	RMutex mutex;
 	UMUNDO_LOCK(mutex);
 	if(!mutex.try_lock()) {
 		UM_LOG_ERR("tryLock should be possible from within the same thread");
@@ -17,7 +17,7 @@ bool testRecursiveMutex() {
 	return true;
 }
 
-static Mutex testMutex;
+static RMutex testMutex;
 
 bool testThreads() {
 	class Thread1 : public Thread {
@@ -68,7 +68,7 @@ bool testMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-			ScopeLock lock(testMutex);
+			RScopeLock lock(testMutex);
 			testMonitor.wait(testMutex);
 			Thread::sleepMs(10); // avoid clash with other threads
 			passedMonitor++;
@@ -78,7 +78,7 @@ bool testMonitors() {
 	TestThread thread1(0);
 	TestThread thread2(5);
 	TestThread thread3(10);
-	testMutex = Mutex();
+	RMutex testMutex;
 	for (int i = 0; i < 10; i++) {
 		passedMonitor = 0;
 
@@ -110,7 +110,7 @@ bool testMonitors() {
 	return true;
 }
 
-static Mutex testTimedMutex;
+static RMutex testTimedMutex;
 static Monitor testTimedMonitor;
 static int passedTimedMonitor = 0;
 
@@ -119,7 +119,7 @@ bool testTimedMonitors() {
 		int _ms;
 		TestThread(int ms) : _ms(ms) {}
 		void run() {
-			ScopeLock lock(testTimedMutex);
+			RScopeLock lock(testTimedMutex);
 			testTimedMonitor.wait(testTimedMutex, _ms);
 			passedTimedMonitor++;
 		}
@@ -130,7 +130,7 @@ bool testTimedMonitors() {
 	TestThread thread3(0); // waits forever
 	TestThread thread4(0); // waits forever
 	TestThread thread5(0); // waits forever
-	testTimedMutex = Mutex();
+	RMutex testTimedMutex;
 
 	for (int i = 0; i < 2; i++) {
 		// test waiting for a given time
@@ -188,49 +188,8 @@ bool testTimedMonitors() {
 	return true;
 }
 
-class FooTracer : public Traceable, public Thread {
-	void run() {
-		while(isStarted()) {
-			trace("This is foo");
-			Thread::sleepMs(20);
-		}
-	}
-
-	void retrace(const std::string& msg, std::map<std::string, std::string> info) {
-	};
-
-};
-
-bool testTracing() {
-	FooTracer* tr1 = new FooTracer();
-	FooTracer* tr2 = new FooTracer();
-	FooTracer* tr3 = new FooTracer();
-
-	tr1->setTraceFile("trace.txt");
-	tr2->setTraceFile("trace.txt");
-	tr3->setTraceFile("trace.txt");
-
-	tr1->start();
-	tr2->start();
-	tr3->start();
-
-	Thread::sleepMs(100);
-	delete tr1;
-	delete tr2;
-	delete tr3;
-
-	Thread::sleepMs(100);
-
-	FooTracer* tr4 = new FooTracer();
-	tr4->replay("trace.txt");
-
-	return true;
-}
-
 int main(int argc, char** argv) {
-	if(!testTracing())
-		return EXIT_FAILURE;
-	if(!testRecursiveMutex())
+	if(!testRMutex())
 		return EXIT_FAILURE;
 	if(!testThreads())
 		return EXIT_FAILURE;

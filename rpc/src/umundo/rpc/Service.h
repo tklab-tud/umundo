@@ -193,7 +193,7 @@ protected:
 	std::map<std::string, Monitor*> _requests;
 	std::map<std::string, void*> _responses;
 
-	Mutex _mutex;
+	RMutex _mutex;
 
 	friend class ServiceManager;
 };

@@ -48,7 +48,7 @@ extern "C" {
 
 namespace umundo {
 
-boost::shared_ptr<Implementation> BonjourDiscovery::create() {
+SharedPtr<Implementation> BonjourDiscovery::create() {
 	return getInstance();
 }
 
@@ -56,9 +56,9 @@ void BonjourDiscovery::init(Options*) {
 	// do nothing?
 }
 
-boost::shared_ptr<BonjourDiscovery> BonjourDiscovery::getInstance() {
+SharedPtr<BonjourDiscovery> BonjourDiscovery::getInstance() {
 	if (_instance.get() == NULL) {
-		_instance = boost::shared_ptr<BonjourDiscovery>(new BonjourDiscovery());
+		_instance = SharedPtr<BonjourDiscovery>(new BonjourDiscovery());
 #ifdef DISC_BONJOUR_EMBED
 		UM_LOG_DEBUG("Initializing embedded mDNS server");
 		int err = embedded_mDNSInit();
@@ -79,7 +79,7 @@ boost::shared_ptr<BonjourDiscovery> BonjourDiscovery::getInstance() {
 	}
 	return _instance;
 }
-boost::shared_ptr<BonjourDiscovery> BonjourDiscovery::_instance;
+SharedPtr<BonjourDiscovery> BonjourDiscovery::_instance;
 
 BonjourDiscovery::BonjourDiscovery() {
 	_mainDNSHandle = NULL;
@@ -90,7 +90,7 @@ BonjourDiscovery::BonjourDiscovery() {
 BonjourDiscovery::~BonjourDiscovery() {
 #if 0
 	{
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		map<intptr_t, Node >::iterator nodeIter = _localNodes.begin();
 		while(nodeIter != _localNodes.end()) {
 			Node node = nodeIter->second;
@@ -118,7 +118,7 @@ BonjourDiscovery::~BonjourDiscovery() {
  * _suspendedNodes to add them when resuming.
  */
 void BonjourDiscovery::suspend() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (_isSuspended) {
 		return;
 	}
@@ -143,7 +143,7 @@ void BonjourDiscovery::suspend() {
  * reinitialized before advertising them.
  */
 void BonjourDiscovery::resume() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (!_isSuspended) {
 		return;
 	}
@@ -194,7 +194,7 @@ void BonjourDiscovery::run() {
 
 		int result;
 		{
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			// initialize file desriptor set for select
 			std::map<int, DNSServiceRef>::const_iterator cIt;
 			for (cIt = _activeFDs.begin(); cIt != _activeFDs.end(); cIt++) {
@@ -211,7 +211,7 @@ void BonjourDiscovery::run() {
 		if (result > 0) {
 			std::map<int, DNSServiceRef>::iterator it;
 
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			it = _activeFDs.begin();
 			while(it != _activeFDs.end()) {
 				DNSServiceRef sdref = it->second;
@@ -245,7 +245,7 @@ void BonjourDiscovery::run() {
  * Add a node to be discoverable by other nodes.
  */
 void BonjourDiscovery::advertise(MDNSAd* node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	DNSServiceErrorType err;
 	DNSServiceRef registerClient = _mainDNSHandle;
@@ -310,7 +310,7 @@ void BonjourDiscovery::advertise(MDNSAd* node) {
 
 
 void BonjourDiscovery::unadvertise(MDNSAd* node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if (_localAds.find(node) == _localAds.end()) {
 		UM_LOG_WARN("Ignoring removal of unregistered node from discovery");
@@ -334,7 +334,7 @@ void BonjourDiscovery::unadvertise(MDNSAd* node) {
  * we will resolve its ip address.
  */
 void BonjourDiscovery::browse(MDNSQuery* query) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 //	dumpQueries();
 
@@ -387,7 +387,7 @@ void BonjourDiscovery::browse(MDNSQuery* query) {
 }
 
 void BonjourDiscovery::unbrowse(MDNSQuery* query) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	std::set<MDNSQuery*>::iterator queryIter = _queryClients[query->domain][query->regType].queries.find(query);
 	if (queryIter == _queryClients[query->domain][query->regType].queries.end()) {
@@ -475,8 +475,8 @@ void DNSSD_API BonjourDiscovery::browseReply(
 	 *
 	 */
 
-	boost::shared_ptr<BonjourDiscovery> myself = getInstance();
-	ScopeLock lock(myself->_mutex);
+	SharedPtr<BonjourDiscovery> myself = getInstance();
+	RScopeLock lock(myself->_mutex);
 
 	UM_LOG_DEBUG("browseReply: received info on %s/%s as %s at if %d as %s (%d)",
 	             serviceName_, domain_, regtype_, ifIndex_, (flags_ & kDNSServiceFlagsAdd ? "added" : "removed"), flags_);
@@ -737,8 +737,8 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 	 *
 	 */
 
-	boost::shared_ptr<BonjourDiscovery> myself = getInstance();
-	ScopeLock lock(myself->_mutex);
+	SharedPtr<BonjourDiscovery> myself = getInstance();
+	RScopeLock lock(myself->_mutex);
 
 	UM_LOG_INFO("serviceResolveReply: info on node %s at %p on %s:%d at if %d",
 	            fullname,
@@ -850,8 +850,8 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 	 *
 	 */
 
-	boost::shared_ptr<BonjourDiscovery> myself = getInstance();
-	ScopeLock lock(myself->_mutex);
+	SharedPtr<BonjourDiscovery> myself = getInstance();
+	RScopeLock lock(myself->_mutex);
 
 	UM_LOG_INFO("addrInfoReply: %s with ttl %d for %p", hostname_, ttl_, context_);
 

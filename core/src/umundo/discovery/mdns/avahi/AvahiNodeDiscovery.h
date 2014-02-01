@@ -59,7 +59,7 @@ private:
 	AvahiNodeDiscovery();
 
 	AvahiSimplePoll *_simplePoll;
-	Mutex _mutex;
+	RMutex _mutex;
 	Monitor _monitor;
 
 	bool validateState();

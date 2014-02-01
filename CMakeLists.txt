@@ -97,6 +97,10 @@ OPTION(BUILD_TESTS            "Build umundo tests" OFF)
 OPTION(BUILD_BINDINGS         "Build umundo language bindings" ON)
 OPTION(DIST_PREPARE           "Put libraries into the lib folder of the source tree" OFF)
 OPTION(BUILD_WITH_CPP11       "Build with C++11" OFF)
+OPTION(ENABLE_TRACING         "Log functions as they are entered" OFF)
+if (ENABLE_TRACING)
+	add_definitions("-DENABLE_TRACING")
+endif()
 
 # setup defaults
 if (CMAKE_CROSSCOMPILING AND ANDROID)
@@ -418,6 +422,16 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 
 	if(GCC_VERSION VERSION_EQUAL 4.8 OR GCC_VERSION VERSION_GREATER 4.8)
 		add_definitions(-Wno-unused-local-typedefs)
+		
+		# gcc 4.8 features
+		if (CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+			if (HOST_64BIT)
+				add_definitions(-fsanitize=address)
+				add_definitions(-fno-omit-frame-pointer)			
+				add_definitions(-fsanitize=thread)
+			endif()
+			add_definitions(-O0)
+		endif()
 	endif()
 
 	# swig will throw a warning with optimization otherwise

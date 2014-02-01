@@ -29,10 +29,6 @@
 #include <sys/time.h> // gettimeofday
 #endif
 
-#ifdef WITH_CPP11
-#define tthread std
-#endif
-
 namespace umundo {
 
 Thread::Thread() {
@@ -56,9 +52,26 @@ void Thread::join() {
 	_isStarted = false;
 }
 
+#ifdef WITH_CPP11
+static unsigned long int _threadIDToInt(const std::thread::id &aHandle) {
+	static std::mutex idMapLock;
+	static std::map<std::thread::id, unsigned long int> idMap;
+	static unsigned long int idCount(1);
+
+	std::lock_guard<std::mutex> guard(idMapLock);
+	if(idMap.find(aHandle) == idMap.end())
+		idMap[aHandle] = idCount ++;
+	return idMap[aHandle];
+}
+#endif
+
 unsigned long int Thread::getThreadId() {
 	std::stringstream ssThreadId;
+#ifdef WITH_CPP11
+	ssThreadId << _threadIDToInt(tthread::this_thread::get_id());
+#else
 	ssThreadId << tthread::this_thread::get_id();
+#endif
 	int threadId;
 	ssThreadId >> threadId;
 	return threadId;
@@ -134,7 +147,7 @@ void Monitor::signal(int nrThreads) {
 		_cond.notify_one();
 }
 
-void Monitor::wait(Mutex& mutex, uint32_t ms) {
+void Monitor::wait(RMutex& mutex, uint32_t ms) {
 	if (ms <= 0) {
 		_cond.wait(mutex);
 	} else {

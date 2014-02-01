@@ -36,11 +36,11 @@ class ZeroMQNode;
 /**
  * Concrete publisher implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public boost::enable_shared_from_this<ZeroMQPublisher>  {
+class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public EnableSharedFromThis<ZeroMQPublisher>  {
 public:
 	virtual ~ZeroMQPublisher();
 
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	void suspend();
 	void resume();
@@ -61,7 +61,7 @@ private:
 	void run();
 
 	void* _pubSocket;
-	boost::shared_ptr<PublisherConfig> _config;
+	SharedPtr<PublisherConfig> _config;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;
 
@@ -69,7 +69,7 @@ private:
 	std::map<std::string, std::list<std::pair<uint64_t, umundo::Message*> > > _queuedMessages;
 
 	Monitor _pubLock;
-	Mutex _mutex;
+	RMutex _mutex;
 
 	friend class Factory;
 };

@@ -40,7 +40,7 @@ class NodeStub;
 
 class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread {
 public:
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	virtual ~RTPSubscriber();
 	void suspend();
@@ -71,7 +71,7 @@ private:
 
 	std::queue<Message*> _queue;
 	std::multimap<std::string, std::string> _domainPubs;
-	Mutex _mutex;
+	RMutex _mutex;
 	Monitor _cond;
 
 	RTPHelpers *_helper;

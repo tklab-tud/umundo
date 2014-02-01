@@ -39,7 +39,7 @@ NodeImpl::~NodeImpl() {
 }
 
 Node::Node() {
-	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node.zmq"));
+	_impl = StaticPtrCast<NodeImpl>(Factory::create("node.zmq"));
 	NodeStubBase::_impl = _impl;
 	EndPoint::_impl = _impl;
 	NodeOptions options(0, 0);
@@ -47,7 +47,7 @@ Node::Node() {
 }
 
 Node::Node(uint16_t nodePort, uint16_t pubPort) {
-	_impl = boost::static_pointer_cast<NodeImpl>(Factory::create("node.zmq"));
+	_impl = StaticPtrCast<NodeImpl>(Factory::create("node.zmq"));
 	NodeStubBase::_impl = _impl;
 	EndPoint::_impl = _impl;
 	NodeOptions options(nodePort, pubPort);

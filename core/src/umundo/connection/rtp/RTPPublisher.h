@@ -40,7 +40,7 @@ class DLLEXPORT RTPPublisher : public PublisherImpl {
 public:
 	virtual ~RTPPublisher();
 
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	void suspend();
 	void resume();
@@ -69,7 +69,7 @@ private:
 	std::map<std::string, struct libre::sa> _destinations;
 
 	Monitor _pubLock;
-	Mutex _mutex;
+	RMutex _mutex;
 	bool _isSuspended;
 	bool _multicast;
 	bool _initDone;

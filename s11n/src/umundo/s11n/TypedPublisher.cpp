@@ -38,7 +38,7 @@ TypedPublisher::TypedPublisher(const std::string& channelName) : Publisher(chann
 #endif
 		Factory::registerPrototype("typeSerializer", _registeredPrototype);
 	}
-	_impl = boost::static_pointer_cast<TypeSerializerImpl>(Factory::create("typeSerializer"));
+	_impl = StaticPtrCast<TypeSerializerImpl>(Factory::create("typeSerializer"));
 	assert(_impl != NULL);
 }
 TypeSerializerImpl* TypedPublisher::_registeredPrototype = NULL;

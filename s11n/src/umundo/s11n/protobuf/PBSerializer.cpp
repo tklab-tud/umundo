@@ -38,8 +38,8 @@ PBSerializer::PBSerializer() {}
 
 PBSerializer::~PBSerializer() {}
 
-boost::shared_ptr<Implementation> PBSerializer::create() {
-	boost::shared_ptr<Implementation> instance(new PBSerializer());
+SharedPtr<Implementation> PBSerializer::create() {
+	SharedPtr<Implementation> instance(new PBSerializer());
 	return instance;
 }
 
@@ -57,7 +57,7 @@ void PBSerializer::registerType(const std::string& type, void* serializer) {
 	_serializers[type] = (MessageLite*)serializer;
 }
 
-Mutex PBSerializer::protoMutex;
+RMutex PBSerializer::protoMutex;
 google::protobuf::DescriptorPool* PBSerializer::descPool = NULL;
 google::protobuf::DynamicMessageFactory* PBSerializer::descFactory = NULL;
 std::map<std::string, const google::protobuf::Descriptor*> PBSerializer::descs;
@@ -66,7 +66,7 @@ PBErrorReporter* PBSerializer::errorReporter = NULL;
 google::protobuf::compiler::DiskSourceTree* PBSerializer::sourceTree = NULL;
 
 const google::protobuf::Message* PBSerializer::getProto(const std::string& type) {
-	ScopeLock lock(protoMutex);
+	RScopeLock lock(protoMutex);
 	// prefer descriptions from .proto files
 	if (descFactory != NULL && descs.find(type) != descs.end()) {
 		return descFactory->GetPrototype(descs[type]);
@@ -91,7 +91,7 @@ const google::protobuf::Message* PBSerializer::getProto(const std::string& type)
  * TypedSubscriber if you want to cast.
  */
 void PBSerializer::addProto(const std::string& dirOrFile) {
-	ScopeLock lock(protoMutex);
+	RScopeLock lock(protoMutex);
 	if (descPool == NULL) {
 		descPool = new google::protobuf::DescriptorPool();
 		descFactory = new google::protobuf::DynamicMessageFactory(descPool);

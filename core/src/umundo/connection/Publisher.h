@@ -160,7 +160,7 @@ public:
 	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter);
 	Publisher(PublisherType type, const std::string& channelName, PublisherConfig* config);
 	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
-	Publisher(const boost::shared_ptr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
+	Publisher(const SharedPtr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
 	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
 
@@ -226,7 +226,7 @@ public:
 protected:
 	void init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
 
-	boost::shared_ptr<PublisherImpl> _impl;
+	SharedPtr<PublisherImpl> _impl;
 	friend class Node;
 };
 

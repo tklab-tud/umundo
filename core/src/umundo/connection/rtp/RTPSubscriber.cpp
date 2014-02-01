@@ -39,7 +39,7 @@ RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber
 }
 
 void RTPSubscriber::init(Options* config) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t min=16384;		//minimum rtp port
 	uint16_t max=65534;		//maximum rtp port
@@ -102,13 +102,13 @@ RTPSubscriber::~RTPSubscriber() {
 #endif // WIN32
 }
 
-boost::shared_ptr<Implementation> RTPSubscriber::create() {
-	return boost::shared_ptr<RTPSubscriber>(new RTPSubscriber());
+SharedPtr<Implementation> RTPSubscriber::create() {
+	return SharedPtr<RTPSubscriber>(new RTPSubscriber());
 }
 
 void RTPSubscriber::suspend() {
 	//TODO: do something useful on android/ios (e.g. send BYE to publishers etc.)
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (_isSuspended)
 		return;
 	_isSuspended = true;
@@ -118,14 +118,14 @@ void RTPSubscriber::resume() {
 	//TODO: do something useful on android/ios (e.g. send BYE to publishers etc.)
 	//or maybe use jrtplib::RTPSession::IncrementTimestampDefault() to increment the timestamp
 	//according to the time elapsed between suspend and resume
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (!_isSuspended)
 		return;
 	_isSuspended = false;
 }
 
 void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
@@ -149,7 +149,7 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 }
 
 void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
@@ -189,7 +189,7 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 }
 
 void RTPSubscriber::setReceiver(Receiver* receiver) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	_receiver=receiver;
 	if(_receiver)
 		start();
@@ -199,7 +199,7 @@ void RTPSubscriber::run() {
 	while(isStarted() && _receiver) {
 		Message *msg=NULL;
 		{
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			if(_queue.empty())
 				_cond.wait(_mutex);
 			if(_queue.empty())
@@ -238,14 +238,14 @@ void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rt
 
 	//push new message into queue
 	{
-		ScopeLock lock(obj->_mutex);
+		RScopeLock lock(obj->_mutex);
 		obj->_queue.push(msg);
 	}
 	obj->_cond.broadcast();
 }
 
 Message* RTPSubscriber::getNextMsg() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if(_queue.empty())
 		return NULL;
 	Message *msg=_queue.front();
@@ -254,7 +254,7 @@ Message* RTPSubscriber::getNextMsg() {
 }
 
 bool RTPSubscriber::hasNextMsg() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	return !_queue.empty();
 }
 

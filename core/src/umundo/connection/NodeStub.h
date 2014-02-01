@@ -57,7 +57,7 @@ protected:
 class DLLEXPORT NodeStubBase : public EndPoint {
 public:
 	NodeStubBase() : _impl() { }
-	NodeStubBase(boost::shared_ptr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	NodeStubBase(SharedPtr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
 	NodeStubBase(const NodeStubBase& other) : EndPoint(other._impl), _impl(other._impl) { }
 	virtual ~NodeStubBase() { }
 
@@ -88,12 +88,12 @@ public:
 
 	//@}
 
-	boost::shared_ptr<NodeStubBaseImpl> getImpl() const {
+	SharedPtr<NodeStubBaseImpl> getImpl() const {
 		return _impl;
 	}
 
 protected:
-	boost::shared_ptr<NodeStubBaseImpl> _impl;
+	SharedPtr<NodeStubBaseImpl> _impl;
 };
 
 class DLLEXPORT NodeStubImpl : public NodeStubBaseImpl {
@@ -146,7 +146,7 @@ private:
 class DLLEXPORT NodeStub : public NodeStubBase {
 public:
 	NodeStub() : _impl() { }
-	NodeStub(boost::shared_ptr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
+	NodeStub(SharedPtr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
 	NodeStub(const NodeStub& other) : NodeStubBase(other._impl), _impl(other._impl) { }
 	virtual ~NodeStub() { }
 
@@ -191,7 +191,7 @@ public:
 		return _impl->getPublisher(uuid);
 	}
 
-	boost::shared_ptr<NodeStubImpl> getImpl() const {
+	SharedPtr<NodeStubImpl> getImpl() const {
 		return _impl;
 	}
 
@@ -224,7 +224,7 @@ public:
 #endif
 
 protected:
-	boost::shared_ptr<NodeStubImpl> _impl;
+	SharedPtr<NodeStubImpl> _impl;
 
 };
 

@@ -35,13 +35,13 @@ bool RTPHelpers::_initDone=false;
 struct libre::mqueue *RTPHelpers::_mq=NULL;
 boost::function<int()> RTPHelpers::_func=NULL;
 int RTPHelpers::_retval=0;
-Mutex RTPHelpers::_usageCountMutex;
-Mutex RTPHelpers::_mutex;
+RMutex RTPHelpers::_usageCountMutex;
+RMutex RTPHelpers::_mutex;
 Monitor RTPHelpers::_cond;
 unsigned long RTPHelpers::_id=0;
 
 RTPHelpers::RTPHelpers() {
-	ScopeLock lock(_usageCountMutex);
+	RScopeLock lock(_usageCountMutex);
 	if(!_libreUsage) {
 		//init libre
 		int err;
@@ -52,7 +52,7 @@ RTPHelpers::RTPHelpers() {
 		}
 		//start libre mainloop and init our libre calling capabilities
 		{
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			if(!_initDone) {
 				_initDone=true;
 				libre::mqueue_alloc(&_mq, handler, NULL);
@@ -64,7 +64,7 @@ RTPHelpers::RTPHelpers() {
 }
 
 RTPHelpers::~RTPHelpers() {
-	ScopeLock lock(_usageCountMutex);
+	RScopeLock lock(_usageCountMutex);
 	_libreUsage--;
 	if(!_libreUsage) {
 		//call() needs a function object returning an int
@@ -84,7 +84,7 @@ void RTPHelpers::run() {
 	_id=Thread::getThreadId();
 	err=libre::re_main(NULL);
 	{
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		libre::mem_deref(_mq);
 		_initDone=false;
 	}
@@ -104,7 +104,7 @@ int RTPHelpers::call(boost::function<int()> f) {
 		return f();
 	} else {
 		//we're not running in the mainloop thread, instruct libre to call supplied function via our handler
-		ScopeLock lock(_mutex);
+		RScopeLock lock(_mutex);
 		_func=f;
 		libre::mqueue_push(_mq, 0, NULL);
 		_cond.wait(_mutex);
@@ -114,7 +114,7 @@ int RTPHelpers::call(boost::function<int()> f) {
 }
 
 void RTPHelpers::handler(int id, void *data, void *arg) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	_retval=_func();
 	_cond.broadcast();
 }

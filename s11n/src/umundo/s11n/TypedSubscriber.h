@@ -61,7 +61,7 @@ public:
 	TypedSubscriber() : _impl() {}
 	TypedSubscriber(const std::string& channelName);
 	TypedSubscriber(const std::string& channelName, TypedReceiver* receiver);
-	TypedSubscriber(boost::shared_ptr<TypeDeserializerImpl> const impl) : _impl(impl) { }
+	TypedSubscriber(SharedPtr<TypeDeserializerImpl> const impl) : _impl(impl) { }
 	TypedSubscriber(const TypedSubscriber& other) : Subscriber(other), _impl(other._impl) { }
 	virtual ~TypedSubscriber();
 
@@ -95,7 +95,7 @@ public:
 	virtual void* deserialize(Message* msg);
 
 private:
-	boost::shared_ptr<TypeDeserializerImpl> _impl;
+	SharedPtr<TypeDeserializerImpl> _impl;
 	static TypeDeserializerImpl* _registeredPrototype; ///< The instance we registered at the factory
 };
 

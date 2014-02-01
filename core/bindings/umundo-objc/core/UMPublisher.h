@@ -30,7 +30,7 @@
 @interface UMPublisher :
 NSObject {
 	@public
-	boost::shared_ptr<umundo::Publisher> _cppPub;
+	SharedPtr<umundo::Publisher> _cppPub;
 }
 
 - (id) initWithChannel:

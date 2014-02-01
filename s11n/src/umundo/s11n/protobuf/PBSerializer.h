@@ -43,7 +43,7 @@ public:
 	PBSerializer();
 	virtual ~PBSerializer();
 
-	virtual boost::shared_ptr<Implementation> create();
+	virtual SharedPtr<Implementation> create();
 	virtual void init(Options*);
 
 	virtual std::string serialize(const std::string& type, void* obj);
@@ -65,7 +65,7 @@ private:
 	static PBErrorReporter* errorReporter;
 	static google::protobuf::compiler::DiskSourceTree* sourceTree;
 
-	static Mutex protoMutex;
+	static RMutex protoMutex;
 };
 
 class DLLEXPORT PBErrorReporter : public google::protobuf::compiler::MultiFileErrorCollector {

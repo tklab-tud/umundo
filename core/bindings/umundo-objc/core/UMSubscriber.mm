@@ -64,7 +64,7 @@ public:
       umundo::Receiver* cListener = new umundoReceiverWrapper(listener);
       std::string cppChannelName([name cStringUsingEncoding: NSASCIIStringEncoding]);
       _cppSub =
-      boost::shared_ptr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, cListener));
+      SharedPtr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, cListener));
     }
   }
   return self;

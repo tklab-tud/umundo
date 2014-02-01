@@ -40,8 +40,8 @@ protected:
 	static uint32_t _libreUsage;
 	static bool _initDone;
 	static struct libre::mqueue *_mq;
-	static Mutex _mutex;
-	static Mutex _usageCountMutex;
+	static RMutex _mutex;
+	static RMutex _usageCountMutex;
 	static Monitor _cond;
 	static boost::function<int()> _func;
 	static int _retval;

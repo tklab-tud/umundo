@@ -60,7 +60,7 @@ protected:
 class DLLEXPORT PublisherStub : public EndPoint {
 public:
 	PublisherStub() : _impl() { }
-	PublisherStub(boost::shared_ptr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	PublisherStub(SharedPtr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
 	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
 	operator bool() const {
@@ -82,7 +82,7 @@ public:
 		return *this;
 	} // operator=
 
-	boost::shared_ptr<PublisherStubImpl> getImpl() const {
+	SharedPtr<PublisherStubImpl> getImpl() const {
 		return _impl;
 	}
 
@@ -97,7 +97,7 @@ public:
 	//@}
 
 protected:
-	boost::shared_ptr<PublisherStubImpl> _impl;
+	SharedPtr<PublisherStubImpl> _impl;
 };
 
 #if 0

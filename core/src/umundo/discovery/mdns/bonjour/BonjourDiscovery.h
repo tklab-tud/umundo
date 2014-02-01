@@ -55,9 +55,9 @@ class DLLEXPORT BonjourDiscovery : public MDNSDiscoveryImpl, public Thread {
 public:
 	BonjourDiscovery();
 	virtual ~BonjourDiscovery();
-	static boost::shared_ptr<BonjourDiscovery> getInstance();  ///< Return the singleton instance.
+	static SharedPtr<BonjourDiscovery> getInstance();  ///< Return the singleton instance.
 
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	void suspend();
 	void resume();
@@ -176,10 +176,10 @@ protected:
 	int _nodes;
 	int _ads;
 
-	Mutex _mutex;
+	RMutex _mutex;
 	Monitor _monitor;
 
-	static boost::shared_ptr<BonjourDiscovery> _instance;  ///< The singleton instance.
+	static SharedPtr<BonjourDiscovery> _instance;  ///< The singleton instance.
 
 	friend class BonjourNodeStub;
 	friend class Factory;

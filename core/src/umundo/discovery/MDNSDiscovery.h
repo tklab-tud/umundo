@@ -87,7 +87,7 @@ public:
 class MDNSDiscovery : public DiscoveryImpl, public ResultSet<MDNSAd*> {
 public:
 	MDNSDiscovery();
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	virtual ~MDNSDiscovery();
 
 	void suspend();
@@ -116,8 +116,8 @@ protected:
 	std::map<MDNSAd*, EndPoint> _remoteAds;
 	std::set<ResultSet<EndPoint>*> _queries;
 
-	Mutex _mutex;
-	boost::shared_ptr<MDNSDiscoveryImpl> _mdnsImpl;
+	RMutex _mutex;
+	SharedPtr<MDNSDiscoveryImpl> _mdnsImpl;
 };
 
 }

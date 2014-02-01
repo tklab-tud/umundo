@@ -46,7 +46,7 @@ protected:
 	bool _isSuspended;
 
 private:
-	virtual boost::shared_ptr<Implementation> create() = 0; ///< Factory method called by the Factory class
+	virtual SharedPtr<Implementation> create() = 0; ///< Factory method called by the Factory class
 	friend class Factory; ///< In C++ friends can see your privates!
 };
 

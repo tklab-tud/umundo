@@ -75,14 +75,14 @@ class NodeQuery;
 /**
  * Concrete node implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public boost::enable_shared_from_this<ZeroMQNode> {
+class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public EnableSharedFromThis<ZeroMQNode> {
 public:
 
 	virtual ~ZeroMQNode();
 
 	/** @name Implementor */
 	//@{
-	boost::shared_ptr<Implementation> create();
+	SharedPtr<Implementation> create();
 	void init(Options*);
 	void suspend();
 	void resume();
@@ -168,9 +168,9 @@ protected:
 	std::map<std::string, std::string> _options;
 
 	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
-	std::map<std::string, boost::shared_ptr<NodeConnection> > _connFrom; ///< other node uuids connected to us have seen
-	std::map<std::string, boost::shared_ptr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
-	std::map<std::string, boost::shared_ptr<NodeConnection> > _connPending;
+	std::map<std::string, SharedPtr<NodeConnection> > _connFrom; ///< other node uuids connected to us have seen
+	std::map<std::string, SharedPtr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
+	std::map<std::string, SharedPtr<NodeConnection> > _connPending;
 
 	std::map<std::string, Subscription> _subscriptions;
 
@@ -224,12 +224,12 @@ protected:
 	void processNodeComm();
 	void processPubComm();
 	void processOpComm();
-	void processClientComm(boost::shared_ptr<NodeConnection> client);
+	void processClientComm(SharedPtr<NodeConnection> client);
 	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 
 	void processConnectedFrom(const std::string& uuid);
-	void processConnectedTo(const std::string& uuid, boost::shared_ptr<NodeConnection> client);
+	void processConnectedTo(const std::string& uuid, SharedPtr<NodeConnection> client);
 
 	void broadCastNodeInfo(uint64_t now);
 	void removeStaleNodes(uint64_t now);

@@ -40,7 +40,7 @@ class Options;
 class DLLEXPORT Factory {
 public:
 	static Factory* getInstance();
-	static boost::shared_ptr<Implementation> create(const std::string&);
+	static SharedPtr<Implementation> create(const std::string&);
 
 	static void suspendInstances(); ///< Suspend all instances for device sleep
 	static void resumeInstances(); ///< Resume all instances from device sleep
@@ -52,8 +52,8 @@ protected:
 
 private:
 	std::map<std::string, Implementation*> _prototypes;
-	std::vector<boost::weak_ptr<Implementation> > _implementations;
-	Mutex _mutex;
+	std::vector<WeakPtr<Implementation> > _implementations;
+	RMutex _mutex;
 	static Factory* _instance;
 
 };

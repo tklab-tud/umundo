@@ -41,7 +41,7 @@ namespace umundo {
 ZeroMQPublisher::ZeroMQPublisher() {}
 
 void ZeroMQPublisher::init(Options* config) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	_transport = "tcp";
 
@@ -76,26 +76,26 @@ ZeroMQPublisher::~ZeroMQPublisher() {
 
 }
 
-boost::shared_ptr<Implementation> ZeroMQPublisher::create() {
-	return boost::shared_ptr<ZeroMQPublisher>(new ZeroMQPublisher());
+SharedPtr<Implementation> ZeroMQPublisher::create() {
+	return SharedPtr<ZeroMQPublisher>(new ZeroMQPublisher());
 }
 
 void ZeroMQPublisher::suspend() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (_isSuspended)
 		return;
 	_isSuspended = true;
 };
 
 void ZeroMQPublisher::resume() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (!_isSuspended)
 		return;
 	_isSuspended = false;
 };
 
 int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	uint64_t now = Thread::getTimeStampMs();
 	while (unique_keys(_domainSubs) < (unsigned int)count) {
 		_pubLock.wait(_mutex, timeoutMs);
@@ -114,7 +114,7 @@ int ZeroMQPublisher::waitForSubscribers(int count, int timeoutMs) {
 }
 
 void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	_subs[sub.getUUID()] = sub;
 
@@ -131,7 +131,7 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
 	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) // only perform greeting for first occurence of subscriber
-		_greeter->welcome(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
+		_greeter->welcome(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())), sub);
 
 	if (_queuedMessages.find(sub.getUUID()) != _queuedMessages.end()) {
 		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[sub.getUUID()].size());
@@ -146,7 +146,7 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 }
 
 void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	// do we now about this sub via this node?
 	bool subscriptionFound = false;
@@ -165,7 +165,7 @@ void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 
 	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
 		if (_greeter != NULL)
-			_greeter->farewell(Publisher(boost::static_pointer_cast<PublisherImpl>(shared_from_this())), sub);
+			_greeter->farewell(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())), sub);
 		_subs.erase(sub.getUUID());
 	}
 

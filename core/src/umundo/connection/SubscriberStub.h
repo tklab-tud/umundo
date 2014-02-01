@@ -63,7 +63,7 @@ class DLLEXPORT SubscriberStub : public EndPoint {
 public:
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }
-	SubscriberStub(boost::shared_ptr<SubscriberStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	SubscriberStub(SharedPtr<SubscriberStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
 	SubscriberStub(const SubscriberStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 
 	operator bool() const {
@@ -92,12 +92,12 @@ public:
 		return _impl->getUUID();
 	}
 
-	boost::shared_ptr<SubscriberStubImpl> getImpl() const {
+	SharedPtr<SubscriberStubImpl> getImpl() const {
 		return _impl;
 	}
 
 protected:
-	boost::shared_ptr<SubscriberStubImpl> _impl;
+	SharedPtr<SubscriberStubImpl> _impl;
 };
 
 }

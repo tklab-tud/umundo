@@ -27,6 +27,7 @@
 
 #ifdef UNIX
 #include <sys/socket.h>
+#include <unistd.h> // gethostname
 #if !defined(ANDROID)
 #include <ifaddrs.h>
 #endif

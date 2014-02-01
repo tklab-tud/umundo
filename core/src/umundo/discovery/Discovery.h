@@ -79,7 +79,7 @@ public:
 	 */
 	Discovery(DiscoveryType, Options* = NULL); ///< Get the discovery subsystem with given type
 	Discovery(DiscoveryType, const std::string domain); ///< Convenience constructor to pass a domain
-	Discovery(boost::shared_ptr<DiscoveryImpl> const impl) : _impl(impl) { }
+	Discovery(SharedPtr<DiscoveryImpl> const impl) : _impl(impl) { }
 	Discovery(const Discovery& other) : _impl(other._impl) { }
 	virtual ~Discovery();
 	operator bool() const {
@@ -147,7 +147,7 @@ public:
 	//@}
 
 protected:
-	boost::shared_ptr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
+	SharedPtr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
 };
 
 

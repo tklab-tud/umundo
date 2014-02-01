@@ -29,10 +29,10 @@ namespace umundo {
 Discovery::Discovery(DiscoveryType type, Options* config) {
 	switch (type) {
 	case MDNS:
-		_impl = boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery.mdns"));
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
 		break;
 	case BROADCAST:
-		_impl = boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
 		break;
 	default:
 		break;
@@ -44,14 +44,14 @@ Discovery::Discovery(DiscoveryType type, Options* config) {
 Discovery::Discovery(DiscoveryType type, const std::string domain) {
 	switch (type) {
 	case MDNS: {
-		_impl = boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery.mdns"));
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
 		MDNSDiscoveryOptions* config = new MDNSDiscoveryOptions();
 		config->setDomain(domain);
 		_impl->init(config);
 		break;
 	}
 	case BROADCAST: {
-		_impl = boost::static_pointer_cast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
 		BroadcastDiscoveryOptions* config = new BroadcastDiscoveryOptions();
 		config->setDomain(domain);
 		_impl->init(config);

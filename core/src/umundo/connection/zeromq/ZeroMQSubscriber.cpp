@@ -36,7 +36,7 @@ namespace umundo {
 ZeroMQSubscriber::ZeroMQSubscriber() {}
 
 void ZeroMQSubscriber::init(Options* config) {
-//	_config = boost::static_pointer_cast<SubscriberConfig>(config);
+//	_config = StaticPtrCast<SubscriberConfig>(config);
 
 	(_subSocket     = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB))     || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 	(_readOpSocket  = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR))    || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
@@ -81,12 +81,12 @@ ZeroMQSubscriber::~ZeroMQSubscriber() {
 	zmq_close(_writeOpSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 }
 
-boost::shared_ptr<Implementation> ZeroMQSubscriber::create() {
-	return boost::shared_ptr<ZeroMQSubscriber>(new ZeroMQSubscriber());
+SharedPtr<Implementation> ZeroMQSubscriber::create() {
+	return SharedPtr<ZeroMQSubscriber>(new ZeroMQSubscriber());
 }
 
 void ZeroMQSubscriber::suspend() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (_isSuspended)
 		return;
 	_isSuspended = true;
@@ -94,14 +94,14 @@ void ZeroMQSubscriber::suspend() {
 };
 
 void ZeroMQSubscriber::resume() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (!_isSuspended)
 		return;
 	_isSuspended = false;
 };
 
 void ZeroMQSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	if (_domainPubs.count(pub.getDomain()) == 0) {
 		std::stringstream ss;
@@ -131,7 +131,7 @@ void ZeroMQSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 }
 
 void ZeroMQSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	// TODO: This fails for publishers added via different nodes
 	if (_pubs.find(pub.getUUID()) != _pubs.end())

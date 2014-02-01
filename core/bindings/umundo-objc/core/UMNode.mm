@@ -24,7 +24,7 @@
 - (id) init {
   self = [super init];
   if(self) {
-		_cppNode = boost::shared_ptr<umundo::Node>(new umundo::Node());
+		_cppNode = SharedPtr<umundo::Node>(new umundo::Node());
   }
   return self;
 }

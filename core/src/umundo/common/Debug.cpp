@@ -32,6 +32,8 @@
 
 #ifdef WIN32
 #include <io.h>
+#else
+#include <unistd.h> // isatty
 #endif
 
 #define RESET       0
@@ -199,6 +201,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	if (lvl == 1) severity = "WARNING";
 	if (lvl == 2) severity = "INFO";
 	if (lvl == 3) severity = "DEBUG";
+	if (lvl == 3) severity = "TRACE";
 
 	char* padding = (char*)malloc((longestFilename - (strlen(filename) + lineNumberLength)) + 1);
 	assert(padding != NULL);
@@ -313,129 +316,61 @@ void Debug::stackTraceSigHandler(int sig) {
 
 #endif
 
-Mutex Traceable::_mutex;
-std::map<std::string, boost::weak_ptr<std::ofstream> > Traceable::_files;
+std::map<int, int> Trace::_threadNesting;
 
-Traceable::Traceable() {
-}
+Trace::Trace(const char* fmt, const char* filename, const int line, ...) {
 
-Traceable::~Traceable() {
-	ScopeLock lock(_mutex);
-	if (_traceFile) {
-		_traceFile->flush();
+	_threadId = Thread::getThreadId();
+
+	std::string prefix;
+	for (int i = 0; i < _threadNesting[_threadId]; i++) {
+		prefix += "  ";
 	}
-}
+	_threadNesting[_threadId]++;
 
-bool Traceable::setTraceFile(const std::string& filename) {
-	_traceFileName = filename;
-	ScopeLock lock(_mutex);
-	if (_files.find(_traceFileName) == _files.end() || _files[_traceFileName].lock() == NULL) {
-		_traceFile = boost::shared_ptr<std::ofstream>(new std::ofstream(_traceFileName.c_str()));
-		if (!_traceFile)
-			return false;
-		_files[_traceFileName] = _traceFile;
+	char* message;
+	va_list args;
+	va_start(args, line);
+	vasprintf(&message, fmt, args);
+	va_end(args);
+
+	_msg = prefix + message;
+	free(message);
+
+	char* pathSepPos = (char*)filename;
+	while((pathSepPos = strchr(pathSepPos + 1, PATH_SEPERATOR))) {
+		_file = pathSepPos + 1;
+	}
+
+	_line = line;
+
+#ifdef ANDROID
+	__android_log_print(ANDROID_LOG_VERBOSE, logDomain, "%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "->", _msg.c_str());
+#else
+	if (useColors) {
+		printf("\e[%d;%d;%dm %02d|%s:%d: %s %s\e[0m\n", RESET, YELLOW + 30, BLACK + 40, _threadId, _file.c_str(), _line, "->", _msg.c_str());
 	} else {
-		_traceFile = _files[_traceFileName].lock();
+		printf("%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "->", _msg.c_str());
 	}
-	return true;
+#endif
 }
 
-void Traceable::trace(const std::string& traceMsg, std::map<std::string, std::string> info) {
-	if (_traceFile) {
-		ScopeLock lock(_mutex);
+Trace::~Trace() {
 
-		info["threadId"] = toStr(Thread::getThreadId());
-		info["this"] = toStr(this);
-
-		(*_traceFile) << Thread::getTimeStampMs() <<  ": " << traceMsg << " ### ";
-		std::map<std::string, std::string>::iterator infoIter = info.begin();
-		if (infoIter != info.end()) {
-			(*_traceFile) << "[ ";
-			while(infoIter != info.end()) {
-				(*_traceFile) << infoIter->first << "=" << infoIter->second << " ## ";
-				infoIter++;
-			}
-			(*_traceFile) << "]";
-		}
-		(*_traceFile) << std::endl;
+#ifdef ANDROID
+	__android_log_print(ANDROID_LOG_VERBOSE, logDomain, "%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "<-", _msg.c_str());
+#else
+	if (useColors) {
+		printf("\e[%d;%d;%dm %02d|%s:%d: %s %s\e[0m\n", RESET, YELLOW + 30, BLACK + 40, _threadId, _file.c_str(), _line, "<-", _msg.c_str());
+	} else {
+		printf("%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "<-", _msg.c_str());
 	}
+
+	_threadNesting[_threadId]--;
+
+#endif
+
 }
-
-void Traceable::replay(const std::string& filename) {
-	uint64_t now = 0;
-	int64_t fileOffset = 0;
-	std::ifstream traceFile(filename.c_str());
-	if (!traceFile) {
-		UM_LOG_WARN("Replaying %s: Cannot open file", filename.c_str());
-		return;
-	}
-	std::string line = "";
-	while (!traceFile.eof()) {
-		std::getline(traceFile, line);
-		//std::cout << line << std::endl;
-		size_t lastMatch = 0;
-
-		// match time of trace
-		size_t currMatch = line.find(": ");
-		uint64_t linetime = strTo<uint64_t>(line.substr(lastMatch, currMatch));
-		lastMatch = currMatch;
-
-		// match message
-		lastMatch += 2;
-		currMatch = line.find(" ###", lastMatch);
-		if (currMatch == std::string::npos)
-			continue;
-		std::string msg = line.substr(lastMatch, currMatch - lastMatch);
-		lastMatch = currMatch;
-
-		// match info
-		std::map<std::string, std::string> info;
-		currMatch = line.find(" [ ", lastMatch);
-		if (currMatch != std::string::npos) {
-			lastMatch = currMatch + 3;
-			while(true) {
-				currMatch = line.find("=", lastMatch);
-				if (currMatch == std::string::npos)
-					break;
-
-				std::string key = line.substr(lastMatch, currMatch - lastMatch);
-				lastMatch = currMatch + 1;
-				currMatch = line.find(" ## ", lastMatch);
-
-				std::string value = line.substr(lastMatch, currMatch - lastMatch);
-				info[key] = value;
-				lastMatch = currMatch + 4;
-			}
-		}
-
-		// wait until we are in sync with the trace event
-		now = Thread::getTimeStampMs();
-		if (fileOffset == 0)
-			fileOffset = now - linetime;
-
-		int64_t toWait = (linetime + fileOffset) - now;
-		if (toWait > 0) {
-			Thread::sleepMs(toWait);
-		}
-
-//    std::cout << msg << " [ ";
-//    std::map<std::string, std::string>::iterator infoIter = info.begin();
-//    while(infoIter != info.end()) {
-//      std::cout << infoIter->first << "=" << infoIter->second << " ";
-//      infoIter++;
-//    }
-//    std::cout << "]" << std::endl;
-
-		retrace(msg, info);
-	}
-}
-
-
-/*
-	std::string _traceFileName;
-	boost::shared_ptr<std::ofstream> _streams;
-
- */
 
 
 }

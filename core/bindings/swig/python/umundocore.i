@@ -53,7 +53,7 @@ typedef std::list list;
 using std::string;
 using std::vector;
 using std::map;
-using boost::shared_ptr;
+using SharedPtr;
 using namespace umundo;
 %}
 
@@ -127,34 +127,35 @@ using namespace umundo;
 %ignore SubscriberImpl;
 %ignore SubscriberStubImpl;
 %ignore EndPointImpl;
+%ignore RMutex;
 %ignore Mutex;
 %ignore Thread;
 %ignore Monitor;
 %ignore MemoryBuffer;
-%ignore ScopeLock;
+%ignore RScopeLock;
 
 //******************************
 // Ignore PIMPL Constructors
 //******************************
 
-%ignore Node(const boost::shared_ptr<NodeImpl>);
+%ignore Node(const SharedPtr<NodeImpl>);
 %ignore Node(const Node&);
-%ignore NodeStub(const boost::shared_ptr<NodeStubImpl>);
+%ignore NodeStub(const SharedPtr<NodeStubImpl>);
 %ignore NodeStub(const NodeStub&);
-%ignore NodeStubBase(const boost::shared_ptr<NodeStubBaseImpl>);
+%ignore NodeStubBase(const SharedPtr<NodeStubBaseImpl>);
 %ignore NodeStubBase(const NodeStubBase&);
 
-%ignore EndPoint(const boost::shared_ptr<EndPointImpl>);
+%ignore EndPoint(const SharedPtr<EndPointImpl>);
 %ignore EndPoint(const EndPoint&);
 
-%ignore Publisher(const boost::shared_ptr<PublisherImpl>);
+%ignore Publisher(const SharedPtr<PublisherImpl>);
 %ignore Publisher(const Publisher&);
-%ignore PublisherStub(const boost::shared_ptr<PublisherStubImpl>);
+%ignore PublisherStub(const SharedPtr<PublisherStubImpl>);
 %ignore PublisherStub(const PublisherStub&);
 
-%ignore Subscriber(const boost::shared_ptr<SubscriberImpl>);
+%ignore Subscriber(const SharedPtr<SubscriberImpl>);
 %ignore Subscriber(const Subscriber&);
-%ignore SubscriberStub(const boost::shared_ptr<SubscriberStubImpl>);
+%ignore SubscriberStub(const SharedPtr<SubscriberStubImpl>);
 %ignore SubscriberStub(const SubscriberStub&);
 
 //***********************************************

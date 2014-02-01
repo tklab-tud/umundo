@@ -33,7 +33,7 @@
       return nil;
     } else {
       std::string cppChannelName([channelName cStringUsingEncoding: NSASCIIStringEncoding]);
-      _cppPub = boost::shared_ptr<umundo::Publisher>(new umundo::Publisher(cppChannelName));
+      _cppPub = SharedPtr<umundo::Publisher>(new umundo::Publisher(cppChannelName));
     }
   }
   return self;

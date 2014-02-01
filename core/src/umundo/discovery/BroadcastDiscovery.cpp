@@ -21,16 +21,16 @@ BroadcastDiscovery::BroadcastDiscovery() {
 BroadcastDiscovery::~BroadcastDiscovery() {
 }
 
-boost::shared_ptr<BroadcastDiscovery> BroadcastDiscovery::getInstance() {
+SharedPtr<BroadcastDiscovery> BroadcastDiscovery::getInstance() {
 	if (_instance.get() == NULL) {
-		_instance = boost::shared_ptr<BroadcastDiscovery>(new BroadcastDiscovery());
+		_instance = SharedPtr<BroadcastDiscovery>(new BroadcastDiscovery());
 		_instance->start();
 	}
 	return _instance;
 }
-boost::shared_ptr<BroadcastDiscovery> BroadcastDiscovery::_instance;
+SharedPtr<BroadcastDiscovery> BroadcastDiscovery::_instance;
 
-boost::shared_ptr<Implementation> BroadcastDiscovery::create() {
+SharedPtr<Implementation> BroadcastDiscovery::create() {
 	return getInstance();
 }
 

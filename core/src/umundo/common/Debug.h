@@ -32,6 +32,12 @@
 #define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
 #define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
 
+#ifdef ENABLE_TRACING
+#define UM_TRACE(fmt, ...) umundo::Trace trace##__LINE__(fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#else
+#define UM_TRACE(fmt, ...) 1
+#endif
+
 // never strip logging
 #if 0
 #ifndef BUILD_DEBUG
@@ -78,30 +84,17 @@ public:
 #endif
 };
 
-/**
- * Inherit this class to enable tracing for a class.
- */
-class DLLEXPORT Traceable {
+
+class DLLEXPORT Trace {
 public:
-	Traceable();
-	virtual ~Traceable();
-	bool setTraceFile(const std::string& filename);
-
-	void replay(const std::string& filename);
-
+	Trace(const char* fmt, const char* filename, const int line, ...);
+	~Trace();
 protected:
-	void trace(const std::string& traceMsg) {
-		trace(traceMsg, std::map<std::string, std::string>());
-	}
-	void trace(const std::string& traceMsg, std::map<std::string, std::string> info);
-	virtual void retrace(const std::string& msg, std::map<std::string, std::string> info) {};
-
-
-	std::string _traceFileName;
-	boost::shared_ptr<std::ofstream> _traceFile;
-
-	static Mutex _mutex;
-	static std::map<std::string, boost::weak_ptr<std::ofstream> > _files;
+	static std::map<int, int> _threadNesting;
+	std::string _msg;
+	std::string _file;
+	int _threadId;
+	int _line;
 };
 
 }

@@ -33,36 +33,43 @@
 #include <condition_variable>
 #endif
 
+#ifdef WITH_CPP11
+#define tthread std
+#endif
+
 // this is a hack until we get a compiler firewall per Pimpl
-#ifdef _WIN32
-# if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
-#   define THREAD_WIN32 1
-# endif
-#else
-# if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
-#   define THREAD_PTHREAD 1
-# endif
+#ifndef WITH_CPP11
+#	ifdef _WIN32
+#		if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
+#			define THREAD_WIN32 1
+#		endif
+#	else
+#		if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
+#			define THREAD_PTHREAD 1
+#		endif
+#	endif
+
+#	if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
+#		error No thread implementation choosen
+#	endif
+
+#	ifdef THREAD_PTHREAD
+#		include <pthread.h>
+#		include <errno.h>
+#	endif
+#	ifdef THREAD_WIN32
+#		define WIN32_LEAN_AND_MEAN
+#		define NOMINMAX
+#		include <windows.h>
+#		undef WIN32_LEAN_AND_MEAN
+#	endif
 #endif
 
-#if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
-#error No thread implementation choosen
-#endif
-
-#ifdef THREAD_PTHREAD
-#include <pthread.h>
-#include <errno.h>
-#endif
-#ifdef THREAD_WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#undef WIN32_LEAN_AND_MEAN
-#endif
 
 #ifdef DEBUG_THREADS
 #define UMUNDO_SCOPE_LOCK(mutex) \
 UM_LOG_DEBUG("Locking mutex %p", &mutex); \
-ScopeLock lock(mutex);
+RScopeLock lock(mutex);
 
 #define UMUNDO_LOCK(mutex) \
 UM_LOG_DEBUG("Locking mutex %p", &mutex); \
@@ -97,7 +104,7 @@ monitor.broadcast();
 #endif
 
 #ifndef DEBUG_THREADS
-#define UMUNDO_SCOPE_LOCK(mutex) ScopeLock lock(mutex);
+#define UMUNDO_SCOPE_LOCK(mutex) RScopeLock lock(mutex);
 #define UMUNDO_LOCK(mutex) mutex.lock();
 #define UMUNDO_TRYLOCK(mutex) mutex.tryLock();
 #define UMUNDO_UNLOCK(mutex) mutex.unlock();
@@ -133,31 +140,21 @@ public:
 private:
 	bool _isStarted;
 	static void runWrapper(void*);
-#ifdef WITH_CPP11
-	std::thread* _thread;
-#else
 	tthread::thread* _thread;
-#endif
 
 };
 
 /**
  * Platform independent mutual exclusion.
  */
-#ifdef WITH_CPP11
-typedef std::recursive_mutex Mutex;
-#else
-typedef tthread::recursive_mutex Mutex;
-#endif
+typedef tthread::recursive_mutex RMutex;
+typedef tthread::mutex Mutex;
 
 /**
  * Instantiate on stack to give code in scope below exclusive access.
  */
-#ifdef WITH_CPP11
-typedef std::lock_guard<std::recursive_mutex> ScopeLock;
-#else
-typedef tthread::lock_guard<tthread::recursive_mutex> ScopeLock;
-#endif
+typedef tthread::lock_guard<tthread::recursive_mutex> RScopeLock;
+typedef tthread::lock_guard<tthread::mutex> ScopeLock;
 
 /**
  * See comments from Schmidt on condition variables in windows:
@@ -173,10 +170,10 @@ public:
 	void signal();
 	void signal(int nrThreads);
 	void broadcast();
-	void wait(Mutex& mutex) {
+	void wait(RMutex& mutex) {
 		return wait(mutex, 0);
 	}
-	void wait(Mutex& mutex, uint32_t ms);
+	void wait(RMutex& mutex, uint32_t ms);
 
 private:
 #ifdef WITH_CPP11

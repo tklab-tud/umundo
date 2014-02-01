@@ -45,7 +45,7 @@
 @interface UMSubscriber :
 NSObject {
 	@public
-	boost::shared_ptr<umundo::Subscriber> _cppSub;
+	SharedPtr<umundo::Subscriber> _cppSub;
 	id<UMSubscriberReceiver> _receiver;
 }
 - (id) initWithChannel:

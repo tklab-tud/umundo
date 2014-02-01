@@ -25,8 +25,8 @@ namespace umundo {
 
 void PBDeserializer::init(Options*) {}
 
-boost::shared_ptr<Implementation> PBDeserializer::create() {
-	boost::shared_ptr<Implementation> instance(new PBDeserializer());
+SharedPtr<Implementation> PBDeserializer::create() {
+	SharedPtr<Implementation> instance(new PBDeserializer());
 	return instance;
 }
 

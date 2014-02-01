@@ -103,21 +103,21 @@ Factory::Factory() {
 #endif
 }
 
-boost::shared_ptr<Implementation> Factory::create(const std::string& name) {
+SharedPtr<Implementation> Factory::create(const std::string& name) {
 	Factory* factory = getInstance();
-	ScopeLock lock(factory->_mutex);
+	RScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) == factory->_prototypes.end()) {
 		UM_LOG_WARN("No prototype registered for %s", name.c_str());
-		return boost::shared_ptr<Implementation>();
+		return SharedPtr<Implementation>();
 	}
-	boost::shared_ptr<Implementation> implementation = factory->_prototypes[name]->create();
+	SharedPtr<Implementation> implementation = factory->_prototypes[name]->create();
 	factory->_implementations.push_back(implementation);
 	return implementation;
 }
 
 void Factory::registerPrototype(const std::string& name, Implementation* prototype) {
 	Factory* factory = getInstance();
-	ScopeLock lock(factory->_mutex);
+	RScopeLock lock(factory->_mutex);
 	if (factory->_prototypes.find(name) != factory->_prototypes.end()) {
 		UM_LOG_WARN("Overwriting existing prototype for %s", name.c_str());
 	}
@@ -130,9 +130,9 @@ void Factory::registerPrototype(const std::string& name, Implementation* prototy
 void Factory::suspendInstances() {
 	Factory* factory = getInstance();
 	UMUNDO_LOCK(factory->_mutex);
-	std::vector<boost::weak_ptr<Implementation> >::reverse_iterator implIter = factory->_implementations.rbegin();
+	std::vector<WeakPtr<Implementation> >::reverse_iterator implIter = factory->_implementations.rbegin();
 	while(implIter != factory->_implementations.rend()) {
-		boost::shared_ptr<Implementation> implementation = implIter->lock();
+		SharedPtr<Implementation> implementation = implIter->lock();
 		if (implementation.get() != NULL) {
 			implementation->suspend();
 		} else {
@@ -150,9 +150,9 @@ void Factory::resumeInstances() {
 	return;
 	Factory* factory = getInstance();
 	UMUNDO_LOCK(factory->_mutex);
-	std::vector<boost::weak_ptr<Implementation> >::iterator implIter = factory->_implementations.begin();
+	std::vector<WeakPtr<Implementation> >::iterator implIter = factory->_implementations.begin();
 	while(implIter != factory->_implementations.end()) {
-		boost::shared_ptr<Implementation> implementation = implIter->lock();
+		SharedPtr<Implementation> implementation = implIter->lock();
 		if (implementation.get() != NULL) {
 			implementation->resume();
 			implIter++;

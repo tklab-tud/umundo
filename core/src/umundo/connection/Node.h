@@ -41,7 +41,7 @@ class Discovery;
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
-class DLLEXPORT NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<EndPoint> { //, public boost::enable_shared_from_this<NodeImpl> {
+class DLLEXPORT NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<EndPoint> { //, public EnableSharedFromThis<NodeImpl> {
 public:
 	NodeImpl();
 	virtual ~NodeImpl();
@@ -94,7 +94,7 @@ public:
 
 	Node();
 	Node(uint16_t nodePort, uint16_t pubPort);
-	Node(boost::shared_ptr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
+	Node(SharedPtr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
 	Node(const Node& other) : NodeStubBase(other._impl), _impl(other._impl) { }
 	virtual ~Node();
 
@@ -162,7 +162,7 @@ public:
 		return _impl->resume();
 	}
 
-	boost::shared_ptr<NodeImpl> getImpl() const {
+	SharedPtr<NodeImpl> getImpl() const {
 		return _impl;
 	}
 
@@ -192,7 +192,7 @@ public:
 protected:
 	void init();
 
-	boost::shared_ptr<NodeImpl> _impl;
+	SharedPtr<NodeImpl> _impl;
 
 	friend class Discovery;
 };

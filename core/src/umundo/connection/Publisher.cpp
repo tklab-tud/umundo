@@ -75,11 +75,11 @@ Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter
 void Publisher::init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
 	switch (type) {
 	case ZEROMQ:
-		_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("pub.zmq"));
+		_impl = StaticPtrCast<PublisherImpl>(Factory::create("pub.zmq"));
 		_impl->implType = ZEROMQ;
 		break;
 	case RTP:
-		_impl = boost::static_pointer_cast<PublisherImpl>(Factory::create("pub.rtp"));
+		_impl = StaticPtrCast<PublisherImpl>(Factory::create("pub.rtp"));
 		_impl->implType = RTP;
 		break;
 

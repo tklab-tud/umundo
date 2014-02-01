@@ -71,7 +71,7 @@ public:
 	std::map<std::string, std::map<std::string, ServiceDescription> > _remoteSvcDesc; ///< Remote mgrIds to channel names to descriptions of remote services
 	Publisher* _svcPub;   ///< publish service queries
 	Subscriber* _svcSub;  ///< subscribe to service queries
-	Mutex _mutex;
+	RMutex _mutex;
 
 	std::map<std::string, std::list<std::pair<uint64_t, Message*> > > _pendingMessages;
 };

@@ -39,7 +39,7 @@ RTPPublisher::RTPPublisher() : _isSuspended(false), _multicast(false), _initDone
 }
 
 void RTPPublisher::init(Options* config) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t min=16384;		//minimum rtp port
 	uint16_t max=65534;		//maximum rtp port
@@ -111,13 +111,13 @@ RTPPublisher::~RTPPublisher() {
 #endif // WIN32
 }
 
-boost::shared_ptr<Implementation> RTPPublisher::create() {
-	return boost::shared_ptr<RTPPublisher>(new RTPPublisher());
+SharedPtr<Implementation> RTPPublisher::create() {
+	return SharedPtr<RTPPublisher>(new RTPPublisher());
 }
 
 void RTPPublisher::suspend() {
 	//TODO: do something useful on android/ios (e.g. send BYE to subscribers etc.)
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (_isSuspended)
 		return;
 	_isSuspended = true;
@@ -125,14 +125,14 @@ void RTPPublisher::suspend() {
 
 void RTPPublisher::resume() {
 	//TODO: do something useful on android/ios (e.g. send BYE to subscribers etc.)
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	if (!_isSuspended)
 		return;
 	_isSuspended = false;
 };
 
 int RTPPublisher::waitForSubscribers(int count, int timeoutMs) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	uint64_t now = Thread::getTimeStampMs();
 	while (unique_keys(_domainSubs) < (unsigned int)count) {
 		_pubLock.wait(_mutex, timeoutMs);
@@ -143,7 +143,7 @@ int RTPPublisher::waitForSubscribers(int count, int timeoutMs) {
 }
 
 void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t port=sub.getPort();
 	std::string ip=node.getIP();
@@ -186,7 +186,7 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 }
 
 void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status;
 	uint16_t port=sub.getPort();
 	std::string ip=node.getIP();
@@ -237,7 +237,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 }
 
 void RTPPublisher::send(Message* msg) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	int status=0;
 	bool marker=strTo<bool>(msg->getMeta("marker"));
 	if(!msg->getMeta("marker").size())

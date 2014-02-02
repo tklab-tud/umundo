@@ -180,8 +180,6 @@ ZeroMQNode::~ZeroMQNode() {
 void ZeroMQNode::init(Options* options) {
 	UM_TRACE("init");
 
-	return;
-
 	_options = options->getKVPs();
 	_port = strTo<uint16_t>(_options["node.port.node"]);
 	_pubPort = strTo<uint16_t>(_options["node.port.pub"]);
@@ -332,16 +330,8 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 
 	_subs[sub.getUUID()] = sub;
 
-	/**
-	 * We had reproducable segfaults with gcc4.8 when iterating _connTo.
-	 * _connTo.size() would report as 0 but nodeIter was != _connTo.end()
-	 * I am giving up for now and added _connTo.size() > 0 in the while condition
-	 */
-
 	std::map<std::string, SharedPtr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
-	UM_LOG_ERR("_connTo size: %d / nodeIter == _connTo.end(): %s", _connTo.size(), (nodeIter == _connTo.end()) ? "true" : "false");
 	while (nodeIter != _connTo.end()) {
-		UM_LOG_ERR("_connTo loop size: %d", _connTo.size());
 		if (nodeIter->second && nodeIter->second->node) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();

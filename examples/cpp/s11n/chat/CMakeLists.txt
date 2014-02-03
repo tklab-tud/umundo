@@ -37,7 +37,7 @@ find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # process .proto files and generate serializer classes
-include("${FINDUMUNDO_CMAKE_PATH}/UseUMundo.cmake")
+include("${FINDUMUNDO_CMAKE_PATH}/UseUMUNDO.cmake")
 UMUNDO_PROTOBUF_GENERATE_CPP_S11N(PROTO_SRCS PROTO_HDRS "${PROJECT_SOURCE_DIR}/proto/ChatS11N.proto")
 include_directories(${CMAKE_BINARY_DIR}/protobuf/generated)
 

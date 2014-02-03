@@ -27,7 +27,7 @@ LIST(APPEND CLIENT_LIBRARIES umundorpc)
 # run protobuf for umundo
 ############################################################
 
-include(UseUMundo)
+include(UseUMUNDO)
 
 # process .proto files
 file(GLOB_RECURSE PROTOBUF_INTERFACES *.proto)

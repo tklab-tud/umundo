@@ -1,6 +1,6 @@
 # only reenable if we found an implementation
 set(BUILD_UMUNDO_RPC OFF)
-include(UseUMundo)
+include(UseUMUNDO)
 
 ###########################################
 # Protocol Buffers

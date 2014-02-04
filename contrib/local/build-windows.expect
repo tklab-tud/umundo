@@ -3,8 +3,10 @@
 set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
+set UMUNDO_COMPILER_VER $::env(UMUNDO_COMPILER_VER)
+set UMUNDO_VCVARSALL $::env(UMUNDO_VCVARSALL)
+set UMUNO_PROTOBUF_ROOT $::env(UMUNO_PROTOBUF_ROOT)
 set BUILD_TESTS $::env(BUILD_TESTS)
-
 
 set local_prompt {sradomski$ }
 set initial_remote_prompt "C*>"
@@ -62,19 +64,11 @@ if {$redeploy} {
 			umundo/package/cross-compiled/android
 	expect eof
 
-	if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-		eval spawn \
-			zip -r umundo-win.zip \
-				umundo/contrib/prebuilt/windows-x86
-		expect eof
+	eval spawn \
+		zip -r umundo-win.zip \
+			umundo/contrib/prebuilt
+	expect eof
 
-	} else {
-		eval spawn \
-			zip -r umundo-win.zip \
-				umundo/contrib/prebuilt/windows-x86_64
-		expect eof
-	
-	}
 	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.zip
 	expect {
 		"ETA"              { exp_continue }
@@ -110,11 +104,11 @@ if {$redeploy} {
 }
 
 # setup directories
-send "rmdir \/S \/Q build-umundo-${UMUNDO_BUILD_ARCH}\r"
+send "rmdir \/S \/Q build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
-send "mkdir build-umundo-${UMUNDO_BUILD_ARCH}\r"
+send "mkdir build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
-send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
+send "cd build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
 
 ##############################
@@ -124,13 +118,9 @@ expect -re $remote_prompt
 
 # "c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
 # send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat x86_amd64\"\n"
-if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
-	expect -re $remote_prompt
-} else {
-	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat\" x86_amd64\r"
-	expect -re $remote_prompt
-}
+send "${UMUNDO_VCVARSALL}\r"
+expect -re $remote_prompt
+
 ##############################
 # compile in debug configuration
 
@@ -141,7 +131,7 @@ send \
 	-DBUILD_TESTS=${BUILD_TESTS} \
 	-DDIST_PREPARE=ON \
 	-DCMAKE_VERBOSE_MAKEFILE=OFF \
-	-DPROTOBUF_SRC_ROOT_FOLDER=\"C:/Users/sradomski/Desktop/protobuf-2.4.1-${UMUNDO_BUILD_ARCH}\" \
+	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNO_PROTOBUF_ROOT}\" \
 	..\\umundo\r"
 expect -re $remote_prompt
 
@@ -178,7 +168,8 @@ send \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DBUILD_TESTS=${BUILD_TESTS} \
 	-DDIST_PREPARE=ON \
-	-DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNO_PROTOBUF_ROOT}\" \
+	..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake\n\r"
@@ -223,31 +214,17 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
 send "cd ..\r"
 expect -re $remote_prompt
 
-if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-  send "zip -r win-package-x86.zip umundo\\package\\windows-x86\r"
-} else {
-  send "zip -r win-package-x86_64.zip umundo\\package\\windows-x86_64\r"
-}
+send "zip -r win-package.zip umundo\\package\\windows*\r"
 
 send "exit\r"
 expect -re $local_prompt
 eval cd ~/Documents/TK/Code/
 
-if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-  eval spawn "scp epikur-win7-64.local:win-package-x86.zip ."
-  expect -re $local_prompt
-  eval spawn "unzip -o win-package-x86.zip"
-  expect -re $local_prompt
-  eval spawn "rm win-package-x86.zip"
-  expect -re $local_prompt
-
-} else {
-  eval spawn "scp epikur-win7-64.local:win-package-x86_64.zip ."
-  expect -re $local_prompt
-  eval spawn "unzip -o win-package-x86_64.zip"
-  expect -re $local_prompt
-  eval spawn "rm win-package-x86_64.zip"
-  expect -re $local_prompt
-}
+eval spawn "scp epikur-win7-64.local:win-package.zip ."
+expect -re $local_prompt
+eval spawn "unzip -o win-package.zip"
+expect -re $local_prompt
+eval spawn "rm win-package.zip"
+expect -re $local_prompt
 
 exit

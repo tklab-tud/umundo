@@ -69,6 +69,15 @@ if (WIN32)
 	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}-${MSVC_VERSION})
 endif()
 
+set(MSVC_NAME)
+if (MSVC_VERSION LESS 1600)
+	message(WARNING "Only MSVC2010 and MSVC2013 are supported via prebuilts")
+elseif(MSVC_VERSION LESS 1800)
+	set(MSVC_NAME msvc2010)
+else()
+	set(MSVC_NAME msvc2013)
+endif()
+
 ################################################################
 # Configuration of library type, linking and language bindings
 ################################################################
@@ -295,7 +304,7 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION
 	file (STRINGS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt" PREBUILT_LIBRARIES_VERSION)
 endif()
 if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_LIBRARIES_VERSION}")
-	message(STATUS "Prebuilt libraries unversioned, too old or non-existant - downloading (again)")
+	message(STATUS "Prebuilt libraries unversioned, too old or non-existant - downloading (again) / ${PREBUILT_LIBRARIES_VERSION} vs ${UMUNDO_VERSION}")
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}
 	)
@@ -622,11 +631,21 @@ if (DIST_PREPARE)
 		endif()
 	else()
 		if (WIN32 AND HOST_64BIT)
-			set(OUTPUT_DIR
-				${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC})
+			if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+				set(OUTPUT_DIR
+					${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${MSVC_NAME})
+			else()
+				set(OUTPUT_DIR
+					${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64/${CMAKE_CXX_COMPILER_ID_LC})
+			endif()
 		else()
-			set(OUTPUT_DIR
-				${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC})
+			if (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+				set(OUTPUT_DIR
+					${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${MSVC_NAME})
+			else()
+				set(OUTPUT_DIR
+					${PROJECT_SOURCE_DIR}/package/${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_CXX_COMPILER_ID_LC})
+				endif()
 		endif()
 	endif()
 else()
@@ -672,6 +691,10 @@ else()
 endif()
 if (BUILD_UMUNDO_S11N)
 	find_package(Protobuf)
+	if (PROTOBUF_FOUND)
+		file(STRINGS "${PROTOBUF_INCLUDE_DIR}/google/protobuf/stubs/common.h" PROTOBUF_VERSION_HPP_CONTENTS REGEX "#define GOOGLE_PROTOBUF_VERSION ([0-9]*)")
+		STRING(REGEX MATCH "[0-9]+" PROTOBUF_VERSION ${PROTOBUF_VERSION_HPP_CONTENTS})
+	endif()
 endif()
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
 

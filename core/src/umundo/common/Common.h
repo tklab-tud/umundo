@@ -40,6 +40,8 @@
 #pragma warning (disable : 4267)
 // 'this' : used in base member initializer list (TypedSubscriber)
 #pragma warning (disable : 4355)
+// _impl.get() is cast to bool for shared_ptr for c++11, causes performance warning
+#pragma warning (disable : 4800)
 
 #endif
 

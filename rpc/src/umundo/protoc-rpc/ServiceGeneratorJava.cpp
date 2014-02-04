@@ -23,10 +23,8 @@
 #include <iostream>
 
 #include <google/protobuf/compiler/plugin.h>
-#include <google/protobuf/compiler/java/java_generator.h>
 #include <google/protobuf/compiler/java/java_file.h>
 #include <google/protobuf/compiler/java/java_helpers.h>
-#include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/descriptor.pb.h>
 

@@ -41,10 +41,7 @@ FIND_LIBRARY(RE_LIBRARY_DEBUG
 if (RE_LIBRARY_DEBUG)
 	list(APPEND RE_LIBRARY debug ${RE_LIBRARY_DEBUG})
 else()
-	if (NOT WIN32)
-		# fall back to release library in debug builds on unices
-		list(APPEND RE_LIBRARY debug ${RE_LIBRARY_RELEASE})
-	endif()
+	list(APPEND RE_LIBRARY debug ${RE_LIBRARY_RELEASE})
 endif()
 
 # handle the QUIETLY and REQUIRED arguments and set OPENAL_FOUND to TRUE if

@@ -27,14 +27,17 @@ if (FREENECT_H_INCLUDE_DIR)
 	list(APPEND FREENECT_INCLUDE_DIR ${FREENECT_H_INCLUDE_DIR})
 endif()
 
-pkg_check_modules (LIBUSB_PKG libusb-1.0)
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h
-  PATHS
-  ${LIBUSB_PKG_INCLUDE_DIRS}
-  /usr/include/libusb-1.0
-  /usr/include
-  /usr/local/include
-)
+if (NOT WIN32)
+	pkg_check_modules (LIBUSB_PKG libusb-1.0)
+	find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h
+	  PATHS
+	  ${LIBUSB_PKG_INCLUDE_DIRS}
+	  /usr/include/libusb-1.0
+	  /usr/include
+	  /usr/local/include
+	)
+endif()
+
 if (LIBUSB_INCLUDE_DIR)
 	list(APPEND FREENECT_INCLUDE_DIR ${LIBUSB_INCLUDE_DIR})
 endif()

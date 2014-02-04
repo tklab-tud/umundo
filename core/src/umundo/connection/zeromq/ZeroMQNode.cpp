@@ -250,7 +250,7 @@ void ZeroMQNode::init(Options* options) {
 	_stdSockets[0].fd = _stdSockets[1].fd = _stdSockets[2].fd = _stdSockets[3].fd = 0;
 	_stdSockets[0].events = _stdSockets[1].events = _stdSockets[2].events = _stdSockets[3].events = ZMQ_POLLIN;
 
-//	start();
+	start();
 }
 
 SharedPtr<Implementation> ZeroMQNode::create() {

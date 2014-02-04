@@ -60,6 +60,11 @@ IF NOT EXIST "src\zmq.cpp" (
 	goto :DONE
 )
 
+echo.
+echo Building with MCVC ver %MSVC_VER% for %CPU_ARCH% into %DEST_DIR%
+echo.
+pause
+
 devenv /upgrade builds/msvc/msvc10.sln
 
 mkdir %DEST_DIR%\include

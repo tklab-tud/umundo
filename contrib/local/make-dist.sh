@@ -63,24 +63,44 @@ if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ]; then
   expect build-linux.expect
 fi
 
-echo -n "Build umundo for Windows 32Bit? [y/N]: "; read BUILD_WIN32
-if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ]; then
+echo -n "Build umundo for Windows? [y/N]: "; read BUILD_WIN
+if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   echo "Start the Windows 64Bit system named 'epikur-win7-64' and press return" && read
   echo == BUILDING UMUNDO FOR Windows 32Bit =========================================================
   export UMUNDO_BUILD_HOST=epikur-win7-64
-  export UMUNDO_BUILD_ARCH=32
-  # winsshd needs an xterm ..
-  TERM=xterm expect build-windows.expect
-fi
 
-echo -n "Build umundo for Windows 64Bit? [y/N]: "; read BUILD_WIN64
-if [ "$BUILD_WIN64" == "y" ] || [ "$BUILD_WIN64" == "Y" ]; then
-  echo "Start the Windows 64Bit system named 'epikur-win7-64' and press return" && read
-  echo == BUILDING UMUNDO FOR Windows 64Bit =========================================================
-  export UMUNDO_BUILD_HOST=epikur-win7-64
+  # VS2010 32Bit x86
+  # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
+  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
+  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-32\""
+  # export UMUNDO_BUILD_ARCH=32
+  # export UMUNDO_COMPILER_VER=1600
+  # TERM=xterm expect build-windows.expect
+  
+  # VS2010 64Bit amd64
+  # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" amd64
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-64\""
   export UMUNDO_BUILD_ARCH=64
-  # winsshd needs an xterm ..
+  export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
+
+  # VS2013 32Bit x86
+  # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" x86
+  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
+  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-32\""
+  # export UMUNDO_BUILD_ARCH=32
+  # export UMUNDO_COMPILER_VER=1800
+  # TERM=xterm expect build-windows.expect
+  
+  # VS2013 64Bit amd64
+  # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" amd64
+  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
+  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-64\""
+  # export UMUNDO_BUILD_ARCH=64
+  # export UMUNDO_COMPILER_VER=1800
+  # TERM=xterm expect build-windows.expect
+  
 fi
 
 echo -n "Build umundo for Mac OSX? [y/N]: "; read BUILD_MAC
@@ -131,24 +151,13 @@ if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$B
 fi
 
 if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
- echo -n "Package umundo for Windows 32Bit? [y/N]: "; read BUILD_WIN32 
+ echo -n "Package umundo for Windows? [y/N]: "; read BUILD_WIN
 fi
-if [ "$BUILD_WIN32" == "y" ] || [ "$BUILD_WIN32" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
   echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
   echo == PACKAGING UMUNDO FOR Windows 32Bit =========================================================
   export UMUNDO_BUILD_HOST=epikur-win7-64
   export UMUNDO_BUILD_ARCH=32
-  TERM=xterm expect package-windows.expect
-fi
-
-if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
-  echo -n "Package umundo for Windows 64Bit? [y/N]: "; read BUILD_WIN64 
-fi
-if [ "$BUILD_WIN64" == "y" ] || [ "$BUILD_WIN64" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-  echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
-  echo == PACKAGING UMUNDO FOR Windows 64Bit =========================================================
-  export UMUNDO_BUILD_HOST=epikur-win7-64
-  export UMUNDO_BUILD_ARCH=64
   TERM=xterm expect package-windows.expect
 fi
 

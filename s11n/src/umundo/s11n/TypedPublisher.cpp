@@ -31,14 +31,13 @@
 namespace umundo {
 
 TypedPublisher::TypedPublisher(const std::string& channelName) : Publisher(channelName) {
-	_greeterWrapper = NULL;
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBSerializer();
 #endif
 		Factory::registerPrototype("typeSerializer", _registeredPrototype);
 	}
-	_impl = StaticPtrCast<TypeSerializerImpl>(Factory::create("typeSerializer"));
+	_impl = SharedPtr<TypedPublisherImpl>(new TypedPublisherImpl);
 	assert(_impl != NULL);
 }
 TypeSerializerImpl* TypedPublisher::_registeredPrototype = NULL;
@@ -46,23 +45,20 @@ TypeSerializerImpl* TypedPublisher::_registeredPrototype = NULL;
 TypedPublisher::~TypedPublisher() {
 }
 
-Message* TypedPublisher::prepareMsg(const std::string& type, void* obj) {
+TypedPublisherImpl::TypedPublisherImpl() {
+	_impl = StaticPtrCast<TypeSerializerImpl>(Factory::create("typeSerializer"));
+}
+
+Message* TypedPublisherImpl::prepareMsg(const std::string& type, void* obj) {
 	Message* msg = new Message();
 	prepareMsg(msg, type, obj);
 	return msg;
 }
 
-void TypedPublisher::prepareMsg(Message* msg, const std::string& type, void* obj) {
+void TypedPublisherImpl::prepareMsg(Message* msg, const std::string& type, void* obj) {
 	std::string buffer = _impl->serialize(type, obj);
 	msg->setData(buffer.data(), buffer.size());
 	msg->putMeta("um.s11n.type", type);
-}
-
-
-void TypedPublisher::sendObj(const std::string& type, void* obj) {
-	Message* msg = prepareMsg(type, obj);
-	send(msg);
-	delete msg;
 }
 
 void TypedPublisher::setGreeter(TypedGreeter* greeter) {
@@ -74,7 +70,7 @@ void TypedPublisher::setGreeter(TypedGreeter* greeter) {
 	}
 }
 
-void TypedPublisher::registerType(const std::string& type, void* serializer) {
+void TypedPublisherImpl::registerType(const std::string& type, void* serializer) {
 	_impl->registerType(type, serializer);
 }
 
@@ -82,13 +78,13 @@ TypedPublisher::GreeterWrapper::GreeterWrapper(TypedGreeter* typedGreeter, Typed
 
 TypedPublisher::GreeterWrapper::~GreeterWrapper() {}
 
-void TypedPublisher::GreeterWrapper::welcome(const Publisher& atPub, const SubscriberStub& sub) {
+void TypedPublisher::GreeterWrapper::welcome(Publisher& atPub, const SubscriberStub& sub) {
 	if (_typedGreeter != NULL) {
 		_typedGreeter->welcome(*_typedPub, sub);
 	}
 }
 
-void TypedPublisher::GreeterWrapper::farewell(const Publisher& fromPub, const SubscriberStub& sub) {
+void TypedPublisher::GreeterWrapper::farewell(Publisher& fromPub, const SubscriberStub& sub) {
 	if (_typedGreeter != NULL) {
 		_typedGreeter->farewell(*_typedPub, sub);
 	}

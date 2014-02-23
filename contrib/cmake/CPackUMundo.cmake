@@ -18,34 +18,48 @@ file(GLOB_RECURSE PLATFORM_LIBS
 
 # sort host-native libraries into installation components
 foreach(PLATFORM_LIB ${PLATFORM_LIBS})
-	if (PLATFORM_LIB MATCHES ".*Native.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
+	if (OFF)
+	elseif (PLATFORM_LIB MATCHES ".*umundo.*ative.*ava.*")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/java COMPONENT librarySwig)
+		# message("${PLATFORM_LIB} -> ignored as they are in the jar")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+	elseif (PLATFORM_LIB MATCHES ".*umundo.*ative.*harp.*")
+		STRING(REGEX REPLACE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/" "" PLATFORM_LIB_REL ${PLATFORM_LIB})
+		STRING(REGEX MATCH "[^/\\](.*)[/\\]" LAST_PATH_COMPONENT ${PLATFORM_LIB_REL})
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/${LAST_PATH_COMPONENT} COMPONENT librarySwig)
+		# message("${PLATFORM_LIB} -> share/umundo/bindings/${LAST_PATH_COMPONENT}")
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
 	elseif (PLATFORM_LIB MATCHES ".*umundo.*harp.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwig)
+		# message("${PLATFORM_LIB} -> share/umundo/bindings")
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-	elseif (PLATFORM_LIB MATCHES ".*umundo.*ava.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/lib COMPONENT librarySwig)
+	elseif (PLATFORM_LIB MATCHES ".*umundo.*ono.*")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwig)
+		# message("${PLATFORM_LIB} -> share/umundo/bindings")
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-	elseif (PLATFORM_LIB MATCHES ".*umundoserial.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-	elseif (PLATFORM_LIB MATCHES ".*umundocore.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-	elseif (PLATFORM_LIB MATCHES ".*umundorpc.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
-	elseif (PLATFORM_LIB MATCHES ".*umundoutil.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
+	elseif (PLATFORM_LIB MATCHES ".*umundo-.*\\.lib")
+		# .lib files from the binaries on windows -> ignore
+		# message("${PLATFORM_LIB} -> IGNORED!")
 	elseif (PLATFORM_LIB MATCHES ".*umundo.*")
+		# rest into lib directory
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
+		# message("${PLATFORM_LIB} -> lib")
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
 	else()
 		message(STATUS "PACKAGE RELEASE UNK ${PLATFORM_LIB} - not packaging")
 	endif()
 endforeach()
+
+# file(GLOB_RECURSE PLATFORM_BINS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+# foreach(PLATFORM_BIN ${PLATFORM_BINS})
+# 	if (OFF)
+# 	elseif (PLATFORM_BIN MATCHES ".*\\.lib")
+# 	elseif (PLATFORM_BIN MATCHES ".*\\.exp")
+# 	else()
+# 		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT tools)
+# 	endif()
+# endforeach()
+# 
 
 ########################################
 # Pre-built libraries for host platform
@@ -102,22 +116,58 @@ install(FILES ${PROJECT_SOURCE_DIR}/contrib/cmake/UseUMUNDO.cmake DESTINATION sh
 GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
 if (DIST_PREPARE)
 	if (EXISTS "${PROJECT_SOURCE_DIR}/package/umundo.jar")
-		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig)
+		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwig)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
 	endif()
 else()
 	if (UMUNDONATIVEJAVA_LOCATION)
-		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/java COMPONENT librarySwig OPTIONAL)
+		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwig OPTIONAL)
 		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
 	endif()
 endif()
 
-# The CSharp bindings are already picked up as a host-native dll above
-# GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
-# if (UMUNDONATIVECSHARP_LOCATION)
-# 	install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll DESTINATION share/umundo/lib COMPONENT librarySwig)
-# 	list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-# endif()
+# copy over 64 and 32 bit for native part of csharp bindings
+if (DIST_PREPARE AND NOT APPLE)
+	GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
+	if (UMUNDONATIVECSHARP_LOCATION)
+		# we built the csharp bindings, try to find the other bit-depth one
+		if (WIN32)
+			if (HOST_64BIT)
+				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86/msvc-${MSVC_VERSION}/lib")
+				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
+			else()
+				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86_64/msvc-${MSVC_VERSION}/lib")
+				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
+			endif()
+		elseif(UNIX)
+			if (HOST_64BIT)
+				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-i686/gnu/lib")
+				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
+			else()
+				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-x86_64/gnu/lib")
+				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
+			endif()
+		endif()
+				
+		file(GLOB_RECURSE CSHARP_OTHER_LIBS
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.a
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.so
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.lib
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.dylib
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.jnilib
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.dll
+			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.pdb
+		)
+		
+		foreach(CSHARP_OTHER_LIB ${CSHARP_OTHER_LIBS})
+			message("CSHARP_OTHER_LIB: ${CSHARP_OTHER_LIB} -> share/umundo/bindings/${LAST_PATH_COMPONENT}")
+			STRING(REGEX REPLACE "${CSHARP_OTHER_INSTALL_PATH}/" "" CSHARP_OTHER_LIB_REL ${CSHARP_OTHER_LIB})
+			STRING(REGEX MATCH "[^/\\](.*)[/\\]" LAST_PATH_COMPONENT ${CSHARP_OTHER_LIB_REL})
+			install(FILES "${CSHARP_OTHER_LIB}" DESTINATION share/umundo/bindings/${LAST_PATH_COMPONENT} COMPONENT librarySwig OPTIONAL)
+		endforeach()
+		
+	endif()
+endif()
 
 
 ################################################################################
@@ -199,58 +249,60 @@ endif()
 # Sample projects
 ################################################################################
 
-# umundo-pingpong: XCode for iOS
-if (APPLE)
-	file(GLOB_RECURSE IOS_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/ios/umundo-pingpong*/*)
-	foreach(IOS_PINGPONG_SAMPLE_FILE ${IOS_PINGPONG_SAMPLE})
-		# strip root
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${IOS_PINGPONG_SAMPLE_FILE})
+if (DIST_PREPARE)
+	# umundo-pingpong: XCode for iOS
+	if (APPLE)
+		file(GLOB_RECURSE IOS_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/ios/umundo-pingpong*/*)
+		foreach(IOS_PINGPONG_SAMPLE_FILE ${IOS_PINGPONG_SAMPLE})
+			# strip root
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${IOS_PINGPONG_SAMPLE_FILE})
+			get_filename_component(REL_PATH ${REL_PATH} PATH)
+	#		message("Installing ${IOS_PINGPONG_SAMPLE_FILE} in share/umundo/samples/${REL_PATH}")
+			install(FILES ${IOS_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		endforeach()
+		list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+	endif()
+
+	# umundo-pingpong: Eclipse for Android
+	file(GLOB_RECURSE ANDROID_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/android/*)
+	foreach(ANDROID_PINGPONG_SAMPLE_FILE ${ANDROID_PINGPONG_SAMPLE})
+	#	message("ANDROID_PINGPONG_SAMPLE_FILE: ${ANDROID_PINGPONG_SAMPLE_FILE}")
+		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
 		get_filename_component(REL_PATH ${REL_PATH} PATH)
-#		message("Installing ${IOS_PINGPONG_SAMPLE_FILE} in share/umundo/samples/${REL_PATH}")
-		install(FILES ${IOS_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 	endforeach()
 	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
-endif()
 
-# umundo-pingpong: Eclipse for Android
-file(GLOB_RECURSE ANDROID_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/android/*)
-foreach(ANDROID_PINGPONG_SAMPLE_FILE ${ANDROID_PINGPONG_SAMPLE})
-#	message("ANDROID_PINGPONG_SAMPLE_FILE: ${ANDROID_PINGPONG_SAMPLE_FILE}")
-	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
-	get_filename_component(REL_PATH ${REL_PATH} PATH)
-	install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
-endforeach()
-list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+	# umundo-pingpong: Visual Studio for CSharp
+	if (WIN32)
+		file(GLOB_RECURSE CSHARP_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/csharp/*)
+		foreach(CSHARP_PINGPONG_SAMPLE_FILE ${CSHARP_PINGPONG_SAMPLE})
+	#		message("CSHARP_PINGPONG_SAMPLE_FILE: ${CSHARP_PINGPONG_SAMPLE_FILE}")
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${CSHARP_PINGPONG_SAMPLE_FILE})
+			get_filename_component(REL_PATH ${REL_PATH} PATH)
+			install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		endforeach()
+		list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
+	endif()
 
-# umundo-pingpong: Visual Studio for CSharp
-if (WIN32)
-	file(GLOB_RECURSE CSHARP_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/csharp/*)
-	foreach(CSHARP_PINGPONG_SAMPLE_FILE ${CSHARP_PINGPONG_SAMPLE})
-#		message("CSHARP_PINGPONG_SAMPLE_FILE: ${CSHARP_PINGPONG_SAMPLE_FILE}")
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${CSHARP_PINGPONG_SAMPLE_FILE})
+	# All the java samples
+	file(GLOB_RECURSE JAVA_SAMPLES ${PROJECT_SOURCE_DIR}/examples/java/*)
+	foreach(JAVA_SAMPLES_FILE ${JAVA_SAMPLES})
+		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${JAVA_SAMPLES_FILE})
 		get_filename_component(REL_PATH ${REL_PATH} PATH)
-		install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		install(FILES ${JAVA_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 	endforeach()
+
+	# All the cpp samples
+	file(GLOB_RECURSE CPP_SAMPLES ${PROJECT_SOURCE_DIR}/examples/cpp/*)
+	foreach(CPP_SAMPLES_FILE ${CPP_SAMPLES})
+		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${CPP_SAMPLES_FILE})
+		get_filename_component(REL_PATH ${REL_PATH} PATH)
+		install(FILES ${CPP_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+	endforeach()
+
 	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 endif()
-
-# All the java samples
-file(GLOB_RECURSE JAVA_SAMPLES ${PROJECT_SOURCE_DIR}/examples/java/*)
-foreach(JAVA_SAMPLES_FILE ${JAVA_SAMPLES})
-	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${JAVA_SAMPLES_FILE})
-	get_filename_component(REL_PATH ${REL_PATH} PATH)
-	install(FILES ${JAVA_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
-endforeach()
-
-# All the cpp samples
-file(GLOB_RECURSE CPP_SAMPLES ${PROJECT_SOURCE_DIR}/examples/cpp/*)
-foreach(CPP_SAMPLES_FILE ${CPP_SAMPLES})
-	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${CPP_SAMPLES_FILE})
-	get_filename_component(REL_PATH ${REL_PATH} PATH)
-	install(FILES ${CPP_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
-endforeach()
-
-list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 
 ########################################
 # House keeping
@@ -271,6 +323,7 @@ list (REMOVE_DUPLICATES UMUNDO_CPACK_COMPONENTS)
 if (UNIX)
 	if (APPLE)
 		set(CPACK_GENERATOR "PackageMaker;TGZ")
+		# set(CPACK_GENERATOR "ZIP")
 	else()
 		set(CPACK_GENERATOR "DEB;RPM;TGZ")
 	endif()
@@ -278,6 +331,7 @@ if (UNIX)
 endif()
 if (WIN32)
 	set(CPACK_GENERATOR "NSIS;ZIP")
+	#set(CPACK_GENERATOR "ZIP")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "uMundo")
 	# pairs of executables and labels for start menu
 	set(CPACK_NSIS_MENU_LINKS
@@ -299,8 +353,19 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${UMUNDO_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${UMUNDO_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${UMUNDO_VERSION_PATCH})
 
-if (HOST_64BIT AND WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64-${CPACK_PACKAGE_VERSION}")
+if (WIN32)
+	if (HOST_64BIT)
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${MSVC_NAME}-${CMAKE_SYSTEM_PROCESSOR}_64-${CPACK_PACKAGE_VERSION}")
+	else()
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${MSVC_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CPACK_PACKAGE_VERSION}")
+	endif()
+elseif(APPLE)
+	if (MACOSX_VERSION VERSION_LESS 10.9)
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-libstdc++-universal-${CPACK_PACKAGE_VERSION}")
+	else()
+		# mavericks forces libc++, compatible with 10.7
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-libc++-universal-${CPACK_PACKAGE_VERSION}")
+	endif()
 else()
 	set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}-${CPACK_PACKAGE_VERSION}")
 endif()

@@ -322,7 +322,7 @@ void BonjourDiscovery::unadvertise(MDNSAd* node) {
 	DNSServiceRefDeallocate(_localAds[node].serviceRegister);
 	_localAds.erase(node);
 	// this is required for browsereply to report vanished nodes?
-	DNSServiceProcessResult(_mainDNSHandle);
+//	DNSServiceProcessResult(_mainDNSHandle);
 	_ads--;
 }
 
@@ -524,21 +524,19 @@ void DNSSD_API BonjourDiscovery::browseReply(
 
 			if (replyIter->flags & kDNSServiceFlagsAdd) {
 				// is this a brand new service?
+				MDNSAd* ad;
 				if (query.remoteAds.find(replyIter->serviceName) == query.remoteAds.end()) {
-					MDNSAd* newAd = new MDNSAd();
-					newAd->domain = replyIter->domain;
-					newAd->name = replyIter->serviceName;
-					newAd->regType = replyIter->regtype;
-					query.remoteAds[replyIter->serviceName] = newAd;
+					ad = new MDNSAd();
+					ad->domain = replyIter->domain;
+					ad->name = replyIter->serviceName;
+					ad->regType = replyIter->regtype;
+					query.remoteAds[replyIter->serviceName] = ad;
 				} else {
-					// we sometimes get multiple invocations for the same service / ifindex
-					UM_LOG_DEBUG("browseReply: ignoring subsequent additions of known service");
-					replyIter++;
-					continue;
+					ad = query.remoteAds[replyIter->serviceName];
 				}
 
 				assert(query.remoteAds.find(replyIter->serviceName) != query.remoteAds.end());
-				MDNSAd* ad = query.remoteAds[replyIter->serviceName];
+				assert(ad);
 
 				// a service was added, just resolve the service and do not report anything
 				DNSServiceRef serviceResolveRef = myself->_mainDNSHandle;
@@ -873,7 +871,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 
 	MDNSAd* ad = (MDNSAd*)context_;
 	if (ad->interfaces.find(interfaceIndex_) == ad->interfaces.end()) {
-		// was removed already
+		UM_LOG_WARN("addrInfoReply called for node %p on interface already gone", context_);
 		return;
 	}
 
@@ -913,7 +911,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		while(replyIter != myself->_pendingAddrInfoReplies.end()) {
 
 			MDNSAd* ad = (MDNSAd*)replyIter->context;
-
+			
 			// deallocate address resolver
 			if(myself->_remoteAds[ad].serviceGetAddrInfo.find(replyIter->interfaceIndex) != myself->_remoteAds[ad].serviceGetAddrInfo.end()) {
 				// make sure ther is no service resolver around
@@ -951,6 +949,8 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		myself->_pendingAddrInfoReplies.clear();
 		//myself->dumpQueries();
 
+		UM_LOG_DEBUG("%d added, %d changed", added.size(), changed.size());
+		
 		// notify listeners about changes
 		for(std::map<std::string, MDNSAd*>::iterator changeIter = changed.begin();
 		        changeIter != changed.end();
@@ -974,7 +974,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 			for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 			        listIter != queryIter->second.queries.end();
 			        listIter++) {
-				UM_LOG_INFO("addrInfoReply:%s/%s of type %s was added", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
+				UM_LOG_INFO("addrInfoReply:%s/%s of type %s was added at ", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
 				(*listIter)->rs->added(addIter->second);
 			}
 		}

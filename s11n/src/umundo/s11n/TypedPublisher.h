@@ -39,6 +39,17 @@ public:
 	virtual void registerType(const std::string& type, void* serializer) = 0;
 };
 
+class DLLEXPORT TypedPublisherImpl : public EnableSharedFromThis<TypedPublisherImpl> {
+public:
+	TypedPublisherImpl();
+	Message* prepareMsg(const std::string& type, void* obj);
+	void prepareMsg(Message* msg, const std::string& type, void* obj);
+	void registerType(const std::string& type, void* serializer);
+
+protected:
+	SharedPtr<TypeSerializerImpl> _impl;
+};
+
 /**
  * Base class for Typed Greeters.
  */
@@ -60,8 +71,8 @@ private:
 	public:
 		GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
 		virtual ~GreeterWrapper();
-		void welcome(const Publisher& atPub, const SubscriberStub& sub);
-		void farewell(const Publisher& fromPub, const SubscriberStub& sub);
+		void welcome(Publisher& atPub, const SubscriberStub& sub);
+		void farewell(Publisher& fromPub, const SubscriberStub& sub);
 
 	protected:
 		TypedGreeter* _typedGreeter;
@@ -73,7 +84,7 @@ private:
 public:
 	TypedPublisher() : _impl() {}
 	TypedPublisher(const std::string& channelName);
-	TypedPublisher(SharedPtr<TypeSerializerImpl> const impl) :  _impl(impl) { }
+	TypedPublisher(SharedPtr<TypedPublisherImpl> const impl) :  _impl(impl) { }
 	TypedPublisher(const TypedPublisher& other) : Publisher(other), _impl(other._impl) { }
 	virtual ~TypedPublisher();
 
@@ -90,20 +101,31 @@ public:
 		return _impl != other._impl;
 	}
 
-
 	TypedPublisher& operator=(const TypedPublisher& other) {
 		Publisher::operator=(other);
 		_impl = other._impl;
+		_greeterWrapper = other._greeterWrapper;
 		return *this;
 	} // operator=
 
-	Message* prepareMsg(const std::string&, void* obj);
-	void prepareMsg(Message* msg, const std::string& type, void* obj);
-	void sendObj(const std::string& type, void* obj);
-	void registerType(const std::string& type, void* serializer);
+	Message* prepareMsg(const std::string& type, void* obj) {
+		return _impl->prepareMsg(type, obj);
+	}
+	void prepareMsg(Message* msg, const std::string& type, void* obj) {
+		return _impl->prepareMsg(msg, type, obj);
+	}
+	void sendObj(const std::string& type, void* obj) {
+		Message* msg = _impl->prepareMsg(type, obj);
+		send(msg);
+		delete msg;
+	}
+	void registerType(const std::string& type, void* serializer) {
+		_impl->registerType(type, serializer);
+	}
+	
 	void setGreeter(TypedGreeter* greeter);
 private:
-	SharedPtr<TypeSerializerImpl> _impl;
+	SharedPtr<TypedPublisherImpl> _impl;
 
 	GreeterWrapper* _greeterWrapper;
 	static TypeSerializerImpl* _registeredPrototype; ///< The instance we registered at the factory

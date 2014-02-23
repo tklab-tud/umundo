@@ -49,8 +49,8 @@ public:
 	}
 
 	// Greeter Interface
-	void welcome(const Publisher&, const SubscriberStub&);
-	void farewell(const Publisher&, const SubscriberStub&);
+	void welcome(Publisher&, const SubscriberStub&);
+	void farewell(Publisher&, const SubscriberStub&);
 
 	void receive(Message* msg);
 

@@ -5,6 +5,10 @@ exp_internal 0
 set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
+set UMUNDO_OUT_DEST $::env(UMUNDO_OUT_DEST)
+set UMUNDO_COMPILER_VER $::env(UMUNDO_COMPILER_VER)
+set UMUNDO_VCVARSALL $::env(UMUNDO_VCVARSALL)
+set ANT_BINARY $::env(ANT_BINARY)
 
 set local_prompt {sradomski$ }
 
@@ -14,7 +18,7 @@ set local_prompt {sradomski$ }
 eval cd ~/Documents/TK/Code/
 
 eval spawn \
-	find ./umundo/package -name *NativeJava* -exec zip -r umundo-jni.zip \\{\\} \\\;
+	find ./umundo/package -name *NativeJava* -exec zip -qr umundo-jni.zip \\{\\} \\\;
 expect eof
 
 eval spawn "scp -r umundo-jni.zip ${UMUNDO_BUILD_HOST}.local:\\umundo-jni.zip"
@@ -51,28 +55,46 @@ expect {
 send "set prompt=easy_to_recognize \r"
 expect -re $remote_prompt {  }
 
-send "unzip umundo-jni.zip\r"
+send "unzip -q umundo-jni.zip\r"
 expect {
 	timeout            { puts "Timeout when unzipping JNIs"; exit;  }
 	replace          { puts "REPLACING"; send "A\r"; exp_continue; }
 	-re $remote_prompt { puts "SUCCESS"; }
 }
 
-send "cd build-umundo-${UMUNDO_BUILD_ARCH}\r"
+send "${UMUNDO_VCVARSALL}\r"
 expect -re $remote_prompt
-
-if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\vcvars32.bat\"\r"
-	expect -re $remote_prompt
-} else {
-	send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat\" x86_amd64\r"
-	expect -re $remote_prompt
-}
 
 ##############################
 # package
 
-send "\"cmake.exe\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DDIST_PREPARE=ON -DPROTOBUF_SRC_ROOT_FOLDER=C:/Users/sradomski/Desktop/protobuf-2.4.1 ..\\umundo\r"
+send "cd %HOMEPATH%\r"
+expect -re $remote_prompt
+send "cd \"umundo\\contrib\\java\" \r"
+expect -re $remote_prompt
+
+# only now can we build the jars
+send "${ANT_BINARY} \
+				-Dlib.dir=\"C:/Users/sradomski/umundo/package\" \
+				-Dsrc.dir=\"C:/Users/sradomski/umundo\" \
+				-Dbuild.dir=\"C:/Users/sradomski/build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\" \
+				-Dbuild.type=Release \
+				-Dexclude.debug=OFF \
+				-Dexclude.jni=OFF \
+				-f build-java.xml\r"
+expect -re $remote_prompt
+
+# send "move /Y \"C:\\Users\\sradomski\\umundo\\package\\umundo.jar\" \"${UMUNDO_OUT_DEST}\\lib\\umundo.jar\" \r"
+# expect -re $remote_prompt
+
+
+send "cd %HOMEPATH%\r"
+expect -re $remote_prompt
+send "cd build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
+expect -re $remote_prompt
+
+# retrigger cpack
+send "cmake ..\umundo\r"
 expect -re $remote_prompt
 
 send "nmake package\r"
@@ -90,11 +112,14 @@ expect eof
 
 eval cd ~/Documents/TK/Code/
 
-if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-	eval spawn "scp -r epikur-win7-64.local:build-umundo-32\\\\umundo-windows* umundo/installer/"
-} else {
-	eval spawn "scp -r epikur-win7-64.local:build-umundo-64\\\\umundo-windows* umundo/installer/"
-}
+eval spawn "scp -r epikur-win7-64.local:build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\\\\umundo-windows* umundo/installer/"
+
+# if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
+# 	eval spawn "scp -r epikur-win7-64.local:build-umundo-32\\\\umundo-windows* umundo/installer/"
+# } else {
+# 	eval spawn "scp -r epikur-win7-64.local:build-umundo-64\\\\umundo-windows* umundo/installer/"
+# }
+
 expect eof
 
 exit

@@ -85,6 +85,12 @@
 	<copy todir="${lib.dir}/jni" flatten="true">
 		<fileset refid="all.jni" />
 	</copy>
+	
+  <pathconvert pathsep="${line.separator}|   |-- "             
+      property="echo.all.jni"             
+      refid="all.jni">
+  </pathconvert>
+  <echo>${echo.all.jni}</echo>
 
 	<!-- delete an eventual old jar -->
 	<delete dir="${lib.dir}/umundo.jar" />

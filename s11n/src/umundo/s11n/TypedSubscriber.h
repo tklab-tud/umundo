@@ -24,6 +24,7 @@
 #include "umundo/common/Common.h"
 #include "umundo/connection/Subscriber.h"
 #include "umundo/common/Implementation.h"
+#include "umundo/common/Message.h"
 
 namespace umundo {
 
@@ -35,23 +36,38 @@ public:
 /**
  * Base class for Type Deserializer to map strings to objects.
  */
-class DLLEXPORT TypeDeserializerImpl : public Implementation, public Receiver {
+class DLLEXPORT TypeDeserializerImpl : public Implementation {
 public:
-	TypeDeserializerImpl() : _recv(NULL) {}
+	TypeDeserializerImpl() {}
 	virtual ~TypeDeserializerImpl();
 	virtual void* deserialize(const std::string& type, Message* msg) = 0;
 	virtual void destroyObj(void* obj) = 0;
 	virtual void registerType(const std::string& type, void* deserializer) = 0;
+
+protected:
+};
+
+class DLLEXPORT TypedSubscriberImpl : public Receiver, public EnableSharedFromThis<TypedSubscriberImpl> {
+public:
+	TypedSubscriberImpl();
 	void receive(Message* msg);
+	virtual void registerType(const std::string& type, void* deserializer) {
+		return _impl->registerType(type, deserializer);
+	}
+	virtual void* deserialize(const std::string& type, Message* msg) {
+		return _impl->deserialize(type, msg);
+	}
 
 	virtual void setReceiver(TypedReceiver* recv) {
 		_recv = recv;
 	}
-
+	
 protected:
+	Subscriber _sub;
 	TypedReceiver* _recv;
+	SharedPtr<TypeDeserializerImpl> _impl;
 };
-
+	
 /**
  * Facade for an object receiving subscriber.
  */
@@ -61,7 +77,7 @@ public:
 	TypedSubscriber() : _impl() {}
 	TypedSubscriber(const std::string& channelName);
 	TypedSubscriber(const std::string& channelName, TypedReceiver* receiver);
-	TypedSubscriber(SharedPtr<TypeDeserializerImpl> const impl) : _impl(impl) { }
+	TypedSubscriber(SharedPtr<TypedSubscriberImpl> const impl) : _impl(impl) { }
 	TypedSubscriber(const TypedSubscriber& other) : Subscriber(other), _impl(other._impl) { }
 	virtual ~TypedSubscriber();
 
@@ -84,18 +100,36 @@ public:
 		return *this;
 	} // operator=
 
-	void registerType(const std::string& type, void* serializer);
-
-	virtual void setReceiver(TypedReceiver* recv) {
-		_impl->setReceiver(recv);
-		Subscriber::setReceiver(_impl.get());
+	void registerType(const std::string& type, void* deserializer) {
+		_impl->registerType(type, deserializer);
 	}
 
-	virtual std::string getType(Message* msg);
-	virtual void* deserialize(Message* msg);
+	virtual void setReceiver(TypedReceiver* recv) {
+		if (recv != NULL) {
+			Subscriber::setReceiver(_impl.get());
+			_impl->setReceiver(recv);
+		} else {
+			Subscriber::setReceiver(NULL);
+			_impl->setReceiver(recv);
+		}
+	}
+
+	virtual std::string getType(Message* msg) {
+		if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+			return msg->getMeta("um.s11n.type");
+		}
+		return "";
+	}
+	
+	virtual void* deserialize(Message* msg) {
+		if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
+			return _impl->deserialize(msg->getMeta("um.s11n.type"), msg);
+		}
+		return NULL;
+	}
 
 private:
-	SharedPtr<TypeDeserializerImpl> _impl;
+	SharedPtr<TypedSubscriberImpl> _impl;
 	static TypeDeserializerImpl* _registeredPrototype; ///< The instance we registered at the factory
 };
 

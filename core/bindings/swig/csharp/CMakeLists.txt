@@ -1,3 +1,12 @@
+# unset all library suffixes as swig will hardcode a library without
+SET(LIB_POSTFIX ${CMAKE_LIBRARY_POSTFIX})
+
+SET(CMAKE_DEBUG_POSTFIX "")
+SET(CMAKE_RELEASE_POSTFIX "")
+SET(CMAKE_RELWITHDEBINFO_POSTFIX "")
+SET(CMAKE_MINSIZEREL_POSTFIX "")
+SET(CMAKE_LIBRARY_POSTFIX "")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if (MSVC)
 	# MSVC does not include inttypes.h but SWIG needs it
@@ -23,6 +32,13 @@ SET(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/${UMUNDO_CSHARP_DIR}")
 SWIG_ADD_MODULE(umundoNativeCSharp csharp umundocore.i)
 set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 
+set_target_properties(umundoNativeCSharp
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/csharp${LIB_POSTFIX}"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/csharp${LIB_POSTFIX}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/csharp${LIB_POSTFIX}"
+)
+
 # if (HOST_64BIT)
 # 	set_target_properties(umundoNativeCSharp PROPERTIES COMPILE_FLAGS "-DHOST_64BIT")
 # endif()
@@ -35,4 +51,4 @@ set_target_properties(umundoNativeCSharp PROPERTIES FOLDER "Bindings")
 SWIG_LINK_LIBRARIES(umundoNativeCSharp umundocore)
 SWIG_LINK_LIBRARIES(umundoNativeCSharp ${UMUNDOCORE_LIBRARIES})
 
-INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig DESTINATION share/umundo/lib)
+INSTALL_LIBRARY(TARGETS umundoNativeCSharp COMPONENT librarySwig DESTINATION share/umundo/bindings/csharp${LIB_POSTFIX})

@@ -14,6 +14,8 @@ void ChatReceiver::receive(void* obj, Message* msg) {
 		} else if (chatMsg->type() == ChatMsg::NORMAL) {
 			std::cout << chatMsg->username() << ": " << chatMsg->message() << std::endl;
 		}
+    // with typed objects, user code responsible to deallocate!
+    delete chatMsg;
 	}
 }
 
@@ -74,5 +76,9 @@ int main(int argc, char** argv) {
 		delete chatMsg;
 	}
 	
+//	chatNode.removePublisher(chatPub);
+//	chatNode.removeSubscriber(chatSub);
+//	disc.remove(chatNode);
+
 	return 0;
 }

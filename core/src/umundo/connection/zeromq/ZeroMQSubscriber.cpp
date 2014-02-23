@@ -74,7 +74,10 @@ void ZeroMQSubscriber::init(Options* config) {
 ZeroMQSubscriber::~ZeroMQSubscriber() {
 	UM_LOG_INFO("deleting subscriber for %s", _channelName.c_str());
 	stop();
-	join();
+	
+	char tmp[4];
+	zmq_send(_writeOpSocket, tmp, 4, 0) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // unblock poll
+	join(); // wait for thread to finish
 
 	zmq_close(_subSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_readOpSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
@@ -180,6 +183,8 @@ void ZeroMQSubscriber::setReceiver(Receiver* receiver) {
 	_receiver = receiver;
 	if (_receiver != NULL) {
 		start();
+	} else {
+		UM_LOG_INFO("Unsetting receiver - subscriber stopped");
 	}
 }
 

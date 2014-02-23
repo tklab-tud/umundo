@@ -104,8 +104,8 @@ while (nodeIter_ != _connFrom.end()) {\
 		zmq_msg_init(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno));\
 		zmq_msg_copy(&broadCastMsgCopy_, &msg) && UM_LOG_ERR("zmq_msg_copy: %s", zmq_strerror(errno));\
 		UM_LOG_DEBUG("%s: Broadcasting to %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(nodeIter_->first).c_str()); \
-		zmq_send(_nodeSocket, nodeIter_->first.c_str(), nodeIter_->first.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));\
-		zmq_msg_send(&broadCastMsgCopy_, _nodeSocket, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));\
+		zmq_send(_nodeSocket, nodeIter_->first.c_str(), nodeIter_->first.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT); \
+		zmq_msg_send(&broadCastMsgCopy_, _nodeSocket, ZMQ_DONTWAIT); \
 		zmq_msg_close(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));\
 	}\
 	nodeIter_++;\
@@ -138,7 +138,7 @@ ZeroMQNode::~ZeroMQNode() {
 	join(); // wait for thread to finish
 
 	COMMON_VARS;
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 
 	PREPARE_MSG(shutdownMsg, 4 + 37);
 	writePtr = writeVersionAndType(writePtr, Message::UM_SHUTDOWN);
@@ -291,7 +291,7 @@ uint16_t ZeroMQNode::bindToFreePort(void* socket, const std::string& transport, 
 }
 
 std::map<std::string, NodeStub> ZeroMQNode::connectedFrom() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("connectedFrom");
 
 	std::map<std::string, NodeStub> from;
@@ -305,7 +305,7 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedFrom() {
 }
 
 std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("connectedTo");
 
 	std::map<std::string, NodeStub> to;
@@ -321,7 +321,7 @@ std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
 }
 
 void ZeroMQNode::addSubscriber(Subscriber& sub) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("addSubscriber");
 	if (_subs.find(sub.getUUID()) != _subs.end())
 		return;
@@ -350,7 +350,7 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 }
 
 void ZeroMQNode::removeSubscriber(Subscriber& sub) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("removeSubscriber");
 
 	if (_subs.find(sub.getUUID()) == _subs.end())
@@ -359,17 +359,19 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 	UM_LOG_INFO("%s removed subscriber %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
 
 	std::map<std::string, SharedPtr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
-	while (_connTo.size() > 0 && nodeIter != _connTo.end()) {
-		std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
-		std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
+	while (nodeIter != _connTo.end()) {
+		if (nodeIter->second->node) {
+			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
+			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 
-		// iterate all remote publishers and remove from sub
-		while (pubIter != pubs.end()) {
-			if(sub.matches(pubIter->second.getChannelName())) {
-				sub.removed(pubIter->second, nodeIter->second->node);
-				sendSubRemoved(nodeIter->first.c_str(), sub, pubIter->second);
+			// iterate all remote publishers and remove from sub
+			while (pubIter != pubs.end()) {
+				if(sub.matches(pubIter->second.getChannelName())) {
+					sub.removed(pubIter->second, nodeIter->second->node);
+					sendSubRemoved(nodeIter->first.c_str(), sub, pubIter->second);
+				}
+				pubIter++;
 			}
-			pubIter++;
 		}
 		nodeIter++;
 	}
@@ -377,7 +379,7 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 }
 
 void ZeroMQNode::addPublisher(Publisher& pub) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("addPublisher");
 	COMMON_VARS;
 
@@ -402,7 +404,7 @@ void ZeroMQNode::addPublisher(Publisher& pub) {
 }
 
 void ZeroMQNode::removePublisher(Publisher& pub) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("removePublisher");
 	COMMON_VARS;
 
@@ -429,7 +431,7 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 }
 
 void ZeroMQNode::added(EndPoint endPoint) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("added");
 
 	UM_LOG_INFO("%s: Adding endpoint at %s://%s:%d",
@@ -456,7 +458,7 @@ void ZeroMQNode::added(EndPoint endPoint) {
 }
 
 void ZeroMQNode::removed(EndPoint endPoint) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("removed");
 
 	UM_LOG_INFO("%s: Removing endpoint at %s://%s:%d",
@@ -923,7 +925,7 @@ void ZeroMQNode::processOpComm() {
 }
 
 void ZeroMQNode::updateSockets() {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("updateSockets");
 
 	if (_sockets != NULL)
@@ -988,7 +990,7 @@ void ZeroMQNode::run() {
 		std::list<std::pair<uint32_t, std::string> >::const_iterator nodeSockIter = _nodeSockets.begin();
 		while(nodeSockIter != _nodeSockets.end()) {
 			if (_sockets[nodeSockIter->first].revents & ZMQ_POLLIN) {
-				ScopeLock lock(_mutex);
+				RScopeLock lock(_mutex);
 				if (_connTo.find(nodeSockIter->second) != _connTo.end()) {
 					processClientComm(_connTo[nodeSockIter->second]);
 				} else {
@@ -1001,19 +1003,19 @@ void ZeroMQNode::run() {
 
 
 		if (_sockets[0].revents & ZMQ_POLLIN) {
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			processNodeComm();
 			DRAIN_SOCKET(_nodeSocket);
 		}
 
 		if (_sockets[1].revents & ZMQ_POLLIN) {
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			processPubComm();
 			DRAIN_SOCKET(_pubSocket);
 		}
 
 		if (_sockets[2].revents & ZMQ_POLLIN) {
-			ScopeLock lock(_mutex);
+			RScopeLock lock(_mutex);
 			processOpComm();
 			DRAIN_SOCKET(_readOpSocket);
 		}
@@ -1063,7 +1065,7 @@ void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 }
 
 void ZeroMQNode::removeStaleNodes(uint64_t now) {
-	ScopeLock lock(_mutex);
+	RScopeLock lock(_mutex);
 	UM_TRACE("removeStaleNodes");
 	std::map<std::string, SharedPtr<NodeConnection> >::iterator pendingNodeIter = _connTo.begin();
 	while(_connTo.size() > 0 && pendingNodeIter != _connTo.end()) {

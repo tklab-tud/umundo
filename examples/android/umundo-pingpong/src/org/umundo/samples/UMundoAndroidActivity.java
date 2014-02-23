@@ -1,5 +1,7 @@
 package org.umundo.samples;
 
+import org.umundo.core.Discovery;
+import org.umundo.core.Discovery.DiscoveryType;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
 import org.umundo.core.Publisher;
@@ -38,6 +40,7 @@ public class UMundoAndroidActivity extends Activity {
 
 	TextView tv;
 	Thread testPublishing;
+	Discovery disc;
 	Node node;
 	Publisher fooPub;
 	Subscriber fooSub;
@@ -100,11 +103,17 @@ public class UMundoAndroidActivity extends Activity {
 //		System.loadLibrary("umundoNativeJava");
 		System.loadLibrary("umundoNativeJava_d");
 
+		disc = new Discovery(DiscoveryType.MDNS);
+    
 		node = new Node();
+		disc.add(chatNode);
+
 		fooPub = new Publisher("pingpong");
 		node.addPublisher(fooPub);
+    
 		fooSub = new Subscriber("pingpong", new TestReceiver());
 		node.addSubscriber(fooSub);
+    
 		testPublishing = new Thread(new TestPublishing());
 		testPublishing.start();
 	}

@@ -41,8 +41,8 @@ if (!File::Spec->file_name_is_absolute($installer_dir)) {
 
 my $descriptions = require "installer-manifest/descriptions.pm";
 
-my ($mac_archive, $linux32_archive, $linux64_archive, $win32_archive, $win64_archive, $rasp_pi_archive);
-my ($mac_files, $linux32_files, $linux64_files, $win32_files, $win64_files, $rasp_pi_files);
+my ($mac_archive, $linux32_archive, $linux64_archive, $win32_archive, $win64_archive);
+my ($mac_files, $linux32_files, $linux64_files, $win32_files, $win64_files);
 
 chdir $installer_dir;
 foreach (sort <*>) {
@@ -50,21 +50,19 @@ foreach (sort <*>) {
 	$mac_archive         = File::Spec->rel2abs($_, getcwd) if (m/.*darwin.*\.tar\.gz/i);
 	$linux32_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-i686.*\.tar\.gz/i);
 	$linux64_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-x86_64.*\.tar\.gz/i);
-	$rasp_pi_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-armv6l.*\.tar\.gz/i);
-	$win32_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86-.*\.zip/i);
-	$win64_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86_64.*\.zip/i);
+	$win32_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-msvc2010-x86-.*\.zip/i);
+	$win64_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-msvc2010-x86_64.*\.zip/i);
 }
 
 print STDERR "No archive for MacOSX found!\n" if (!$mac_archive);
 print STDERR "No archive for Linux 32Bit found!\n" if (!$linux32_archive);
 print STDERR "No archive for Linux 64Bit found!\n" if (!$linux64_archive);
-print STDERR "No archive for Raspberry Pi found!\n" if (!$rasp_pi_archive);
 print STDERR "No archive for Windows 32Bit found!\n" if (!$win32_archive);
 print STDERR "No archive for Windows 64Bit found!\n" if (!$win64_archive);
 
 my $version;
 if ($mac_archive) {
-	$mac_archive =~ m/.*darwin-i386-(.*)\.tar\.gz/;
+	$mac_archive =~ m/.*umundo-linux-i686-(.*)\.tar\.gz/;
 	$version = $1;
 } else {
 	$version = shift;
@@ -74,32 +72,43 @@ if ($mac_archive) {
 %{$mac_files}      = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $mac_archive`)      if $mac_archive;
 %{$linux32_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $linux32_archive`)  if $linux32_archive;
 %{$linux64_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $linux64_archive`)  if $linux64_archive;
-%{$rasp_pi_files}  = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `tar tzf $rasp_pi_archive`)  if $rasp_pi_archive;
 %{$win32_files}    = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `unzip -l $win32_archive`)   if $win32_archive;
 %{$win64_files}    = map { $_ => 1 } map { s/^[^\/]*\///; $_ } split("\n", `unzip -l $win64_archive`)   if $win64_archive;
 
 #print Dumper($rasp_pi_files);
 #exit;
 
-my $tmpdir = File::Temp->newdir() or die($!);
-chdir $tmpdir or die($!);
+# my $tmpdir = File::Temp->newdir() or die($!);
+my $tmpdir = $installer_dir . "/manifest";
+if ( ! -d $tmpdir ) {
+  mkdir($tmpdir . "/manifest") or die($!);
+  chdir $tmpdir or die($!);
 
-if ($mac_archive)     { system("tar", "xzf",  $mac_archive);     checkFiles("darwin-i386",    $mac_files); }
-if ($linux32_archive) { system("tar", "xzf",  $linux32_archive); checkFiles("linux-i686",     $linux32_files); }
-if ($linux64_archive) { system("tar", "xzf",  $linux64_archive); checkFiles("linux-x86_64",   $linux64_files); }
-if ($rasp_pi_archive) { system("tar", "xzf",  $rasp_pi_archive); checkFiles("linux-armv6l",   $rasp_pi_files); }
-if ($win32_archive)   { system("unzip", "-q", $win32_archive);   checkFiles("windows-x86",    $win32_files); }
-if ($win64_archive)   { system("unzip", "-q", $win64_archive);   checkFiles("windows-x86_64", $win64_files); }
+  print "$mac_archive\n";
+  print "$linux32_archive\n";
+  print "$linux64_archive\n";
+  print "$win32_archive\n";
+  print "$win64_archive\n";
+
+  if ($mac_archive)     { system("tar", "xzf",  $mac_archive); }     #checkFiles("darwin-i386",    $mac_files); }
+  if ($linux32_archive) { system("tar", "xzf",  $linux32_archive); } #checkFiles("linux-i686",     $linux32_files); }
+  if ($linux64_archive) { system("tar", "xzf",  $linux64_archive); } #checkFiles("linux-x86_64",   $linux64_files); }
+  #if ($rasp_pi_archive) { system("tar", "xzf",  $rasp_pi_archive); #checkFiles("linux-armv6l",   $rasp_pi_files); }
+  if ($win32_archive)   { system("unzip", "-q", $win32_archive); }  #checkFiles("windows-x86",    $win32_files); }
+  if ($win64_archive)   { system("unzip", "-q", $win64_archive); }  #checkFiles("windows-x86_64", $win64_files); }
+} else {
+  chdir $tmpdir or die($!);
+}
 
 my $rv;
-mkdir("content") or die($!);
+mkdir("content");
 foreach (sort <*>) {
 	next if m/^\./;
 	next if m/.*content/;
 	if ($_ !~ /.*windows.*/i) {
 		$rv = `ditto $_/usr/local content`;
 	} else {
-		$rv = `ditto $_ content`;		
+		$rv = `ditto $_ content`;
 	}
 	$rv = `rm -rf $_`;
 }
@@ -122,10 +131,14 @@ $rv = `rm -rf content/include/umundo-objc`;
 
 chdir "content/" or die($!);
 
-my $tree_list = `tree -a -h --noreport --charset ISO-8859-1`;
-my $flat_list = `find -s .`;
+my $tree_list = `tree -a -h --noreport --charset ISO-8859-1` or die($!);
+my $flat_list = `find -s .` or die($!);
 
-print "Writing ${orig_cwd}/Report.html\n";
+# print Dumper($tree_list);
+# print Dumper($flat_list);
+# exit();
+
+print "Writing ${script_dir}/../../installer/ReadMe.html\n";
 open(REPORT, ">", "${script_dir}/../../installer/ReadMe.html") or die($!);
 
 print REPORT '<html><body>'."\n";
@@ -150,7 +163,6 @@ and they are listed in the <i>availability</i> column.</p>
 <tr><td><b>L64</b></td><td>Linux x86_64 installers</td></tr>
 <tr><td><b>W32</b></td><td>Windows x86 installers</td></tr>
 <tr><td><b>W64</b></td><td>Windows x86_64 installers</td></tr>
-<tr><td><b>RPI</b></td><td>Raspberry Pi linux-armv6l installers</td></tr>
 </table>
 
 <p>Only the first occurence of a library is commented, the <tt>_d</tt> suffix signifies debug libraries, the <tt>64</tt> 
@@ -162,11 +174,9 @@ print REPORT '<tr><th align="left">Availability</th><th align="left">Filename</t
 print REPORT '<tr><td valign="top">'."\n";
 print REPORT '<pre>'."\n";
 
-#print Dumper($rasp_pi_files);
-
 foreach my $file (split("\n", $flat_list)) {
 	if ($file eq '.') {
-		print REPORT '<font bgcolor="#ccc">MAC|L32|L64|W32|W64|RPI</font>'."\n";
+		print REPORT '<font bgcolor="#ccc">MAC|L32|L64|W32|W64</font>'."\n";
 		next;
 	}
 	if (-d $file) {
@@ -180,7 +190,6 @@ foreach my $file (split("\n", $flat_list)) {
 	(exists($linux64_files->{"usr/local/$file"}) ? print REPORT " X  " : print REPORT " -  ");
 	(exists(  $win32_files->{"$file"})           ? print REPORT " X  " : print REPORT " -  ");
 	(exists(  $win64_files->{"$file"})           ? print REPORT " X  " : print REPORT " -  ");
-	(exists($rasp_pi_files->{"usr/local/$file"}) ? print REPORT " X  " : print REPORT " -  ");
 	print REPORT "\n";
 }
 

@@ -174,7 +174,7 @@ protected:
 
 	std::map<std::string, Subscription> _subscriptions;
 
-	Mutex _mutex;
+	RMutex _mutex;
 	uint64_t _lastNodeInfoBroadCast;
 	uint64_t _lastDeadNodeRemoval;
 	bool _allowLocalConns;

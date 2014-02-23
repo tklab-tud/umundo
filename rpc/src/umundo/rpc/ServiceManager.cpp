@@ -50,7 +50,7 @@ std::map<std::string, Subscriber> ServiceManager::getSubscribers() {
  *
  * Send all local continuous queries.
  */
-void ServiceManager::welcome(const Publisher& pub, const SubscriberStub& subStub) {
+void ServiceManager::welcome(Publisher& pub, const SubscriberStub& subStub) {
 	RScopeLock lock(_mutex);
 	UM_LOG_INFO("found remote ServiceManager - sending %d queries", _localQueries.size());
 	std::map<ServiceFilter, ResultSet<ServiceDescription>*>::iterator queryIter = _localQueries.begin();
@@ -76,7 +76,7 @@ void ServiceManager::welcome(const Publisher& pub, const SubscriberStub& subStub
 /**
  * A ServiceManager was removed.
  */
-void ServiceManager::farewell(const Publisher& pub, const SubscriberStub& subStub) {
+void ServiceManager::farewell(Publisher& pub, const SubscriberStub& subStub) {
 	RScopeLock lock(_mutex);
 	UM_LOG_INFO("removed remote ServiceManager - notifying", _localQueries.size());
 

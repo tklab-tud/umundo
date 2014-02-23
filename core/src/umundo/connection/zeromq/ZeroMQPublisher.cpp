@@ -130,8 +130,11 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
-	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) // only perform greeting for first occurence of subscriber
-		_greeter->welcome(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())), sub);
+	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {
+		// only perform greeting for first occurence of subscriber
+		Publisher pub(StaticPtrCast<PublisherImpl>(shared_from_this()));
+		_greeter->welcome(pub, sub);
+	}
 
 	if (_queuedMessages.find(sub.getUUID()) != _queuedMessages.end()) {
 		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[sub.getUUID()].size());
@@ -164,8 +167,10 @@ void ZeroMQPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	UM_LOG_INFO("Publisher %s lost subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
 
 	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
-		if (_greeter != NULL)
-			_greeter->farewell(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())), sub);
+		if (_greeter != NULL) {
+			Publisher pub(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())));
+			_greeter->farewell(pub, sub);
+		}
 		_subs.erase(sub.getUUID());
 	}
 

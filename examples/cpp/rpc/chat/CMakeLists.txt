@@ -43,5 +43,6 @@ add_executable(chat-rpc
 	${PROTO_SRCS}
 )
 target_link_libraries(chat-rpc 
-  ${UMUNDO_LIBRARIES} 
+  ${UMUNDO_LIBRARIES}
+	${PROTOBUF_LIBRARIES}
 )

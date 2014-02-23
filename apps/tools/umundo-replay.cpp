@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
 			}
 
 			readPos += 2;
-			uint64_t dataSize = *(uint64_t*)(readPos);
-			readPos += sizeof(uint64_t);
+			uint64_t dataSize = readPos - buffer;
+//			readPos += sizeof(uint64_t);
 			msg->setData(readPos, dataSize);
 
 			uint64_t now = Thread::getTimeStampMs();

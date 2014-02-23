@@ -201,7 +201,6 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	if (lvl == 1) severity = "WARNING";
 	if (lvl == 2) severity = "INFO";
 	if (lvl == 3) severity = "DEBUG";
-	if (lvl == 3) severity = "TRACE";
 
 	char* padding = (char*)malloc((longestFilename - (strlen(filename) + lineNumberLength)) + 1);
 	assert(padding != NULL);

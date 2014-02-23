@@ -22,15 +22,6 @@ else
 	export BUILD_TESTS=OFF
 fi
 
-echo -n "Build umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI
-if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ]; then
-  echo "Start the Raspberry Pi system named 'raspberrypi' and press return" && read
-  echo == BUILDING UMUNDO FOR Raspberry Pi =========================================================
-  export UMUNDO_BUILD_HOST=raspberrypi
-  export UMUNDO_BUILD_ARCH=32
-  expect build-linux.expect
-fi
-
 # make sure to cross-compile before windows as we will copy all the files into the VMs
 echo -n "Build umundo for iOS? [y/N]: "; read BUILD_IOS
 if [ "$BUILD_IOS" == "y" ] || [ "$BUILD_IOS" == "Y" ]; then
@@ -43,6 +34,15 @@ if [ "$BUILD_ANDROID" == "y" ] || [ "$BUILD_ANDROID" == "Y" ]; then
   echo == BUILDING UMUNDO FOR Android =========================================================
   export ANDROID_NDK=~/Developer/SDKs/android-ndk-r8b
   ${DIR}/../build-scripts/build-umundo-android.sh
+fi
+
+echo -n "Build umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI
+if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ]; then
+  echo "Start the Raspberry Pi system named 'raspberrypi' and press return" && read
+  echo == BUILDING UMUNDO FOR Raspberry Pi =========================================================
+  export UMUNDO_BUILD_HOST=raspberrypi
+  export UMUNDO_BUILD_ARCH=32
+  expect build-linux.expect
 fi
 
 echo -n "Build umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32
@@ -66,47 +66,54 @@ fi
 echo -n "Build umundo for Windows? [y/N]: "; read BUILD_WIN
 if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   echo "Start the Windows 64Bit system named 'epikur-win7-64' and press return" && read
-  echo == BUILDING UMUNDO FOR Windows 32Bit =========================================================
   export UMUNDO_BUILD_HOST=epikur-win7-64
 
   # VS2010 32Bit x86
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
-  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
-  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-32\""
-  # export UMUNDO_BUILD_ARCH=32
-  # export UMUNDO_COMPILER_VER=1600
-  # TERM=xterm expect build-windows.expect
+  echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1600 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-32\""
+  export UMUNDO_BUILD_ARCH=32
+  export UMUNDO_COMPILER_VER=1600
+  TERM=xterm expect build-windows.expect
   
   # VS2010 64Bit amd64
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" amd64
+  echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
   export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-64\""
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
-
+  
   # VS2013 32Bit x86
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" x86
-  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
-  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-32\""
-  # export UMUNDO_BUILD_ARCH=32
-  # export UMUNDO_COMPILER_VER=1800
-  # TERM=xterm expect build-windows.expect
+  echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1800 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-32\""
+  export UMUNDO_BUILD_ARCH=32
+  export UMUNDO_COMPILER_VER=1800
+  TERM=xterm expect build-windows.expect
   
   # VS2013 64Bit amd64
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" amd64
-  # export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
-  # export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-64\""
-  # export UMUNDO_BUILD_ARCH=64
-  # export UMUNDO_COMPILER_VER=1800
-  # TERM=xterm expect build-windows.expect
+  echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1800 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-64\""
+  export UMUNDO_BUILD_ARCH=64
+  export UMUNDO_COMPILER_VER=1800
+  TERM=xterm expect build-windows.expect
   
 fi
 
 echo -n "Build umundo for Mac OSX? [y/N]: "; read BUILD_MAC
 if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
-  echo == BUILDING UMUNDO FOR Mac OSX =========================================================
-  /bin/bash build-macosx.sh
+  echo "Start the Mountain Lion system named 'epikur.ml' and press return" && read
+  echo == BUILDING UMUNDO FOR Mac OSX libstdc++ ===========================================
+  export UMUNDO_BUILD_HOST=epikur-ml
+  expect build-macosx.expect
+  export UMUNDO_BUILD_HOST=epikur
+  expect build-macosx.expect
 fi
 
 ############################
@@ -155,9 +162,43 @@ if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PAC
 fi
 if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
   echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
-  echo == PACKAGING UMUNDO FOR Windows 32Bit =========================================================
+  export ANT_BINARY="\"C:\Program Files\apache-ant-1.8.4\bin\ant\""
   export UMUNDO_BUILD_HOST=epikur-win7-64
+
+  # VS2010 32Bit x86
+  # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
+  echo == PACKAGING UMUNDO FOR Windows 32Bit MSVC1600 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
   export UMUNDO_BUILD_ARCH=32
+  export UMUNDO_COMPILER_VER=1600
+  export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86\msvc-1600"
+  TERM=xterm expect package-windows.expect
+  
+  # VS2010 64Bit amd64
+  # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" amd64
+  echo == PACKAGING UMUNDO FOR Windows 64Bit MSVC1600 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
+  export UMUNDO_BUILD_ARCH=64
+  export UMUNDO_COMPILER_VER=1600
+  export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86_64\msvc-1600"
+  TERM=xterm expect package-windows.expect
+  
+  # # VS2013 32Bit x86
+  # # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" x86
+  echo == PACKAGING UMUNDO FOR Windows 32Bit MSVC1800 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
+  export UMUNDO_BUILD_ARCH=32
+  export UMUNDO_COMPILER_VER=1800
+  export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86\msvc-1800"
+  TERM=xterm expect package-windows.expect
+  
+  # # VS2013 64Bit amd64
+  # # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" amd64
+  echo == PACKAGING UMUNDO FOR Windows 64Bit MSVC1800 ===============================================
+  export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
+  export UMUNDO_BUILD_ARCH=64
+  export UMUNDO_COMPILER_VER=1800
+  export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86_64\msvc-1800"
   TERM=xterm expect package-windows.expect
 fi
 
@@ -165,17 +206,17 @@ if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PAC
   echo -n "Package umundo for MacOSX? [y/N]: "; read BUILD_MAC 
 fi
 if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-  echo == PACKAGING UMUNDO FOR MacOSX =========================================================
-  cd /tmp/build-umundo
-  # rerun cmake for new cpack files
-  cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.6 -DDIST_PREPARE=ON -DCMAKE_BUILD_TYPE=Release ${DIR}/../..
-  make package
-  cp umundo*darwin* ${DIR}/../../installer
-  cd ${DIR}
+  echo Start the MacOSX system named 'epikur-ml' again && read
+  echo == PACKAGING UMUNDO FOR Mac OSX libstdc++ ===========================================
+  export UMUNDO_BUILD_HOST=epikur-ml
+  expect package-macosx.expect
+  echo == PACKAGING UMUNDO FOR Mac OSX libc++ ===========================================
+  export UMUNDO_BUILD_HOST=epikur
+  expect package-macosx.expect
 fi
 
 ############################
 # Validate installers
 ############################
 
-./validate-installers.pl ${DIR}/../../installer
+#./validate-installers.pl ${DIR}/../../installer

@@ -4,12 +4,9 @@
 
 set timeout 600
 set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
-set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
 set BUILD_TESTS $::env(BUILD_TESTS)
 
-set prompt "sradomski@"
-append prompt ${UMUNDO_BUILD_HOST}
-append prompt {:[a-zA-Z~\/\-]+\$ }
+set prompt {sradomski\$ }
 
 eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
 expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
@@ -21,7 +18,7 @@ expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; ex
 eval cd ~/Documents/TK/Code/
 
 # check age of archive against modification date
-eval spawn find ./umundo -newer umundo-linux.zip
+eval spawn find ./umundo -newer umundo-macosx.zip
 set redeploy 0;
 expect {
 	"find:*No such file" { set redeploy 1; }
@@ -34,62 +31,37 @@ expect {
 }
 set redeploy 1;
 
-
 if {$redeploy} {
-	eval spawn rm umundo-linux.zip
+	eval spawn rm umundo-macosx.zip
 	expect -re $prompt
 
 	eval spawn \
-		zip -qr umundo-linux.zip umundo/ --exclude \
+		zip -qr umundo-macosx.zip umundo/ --exclude \
 		__\* \
 		umundo/contrib\* \
 		umundo/.git/\* \
 		umundo/build\* \
 		umundo/installer/umundo\* \
 		umundo/package\* \
-		umundo/docs/html\* \
-		umundo/examples/ios\* \
-		umundo/examples/android\*
+		umundo/docs/html\*
 	expect -re $prompt
 	eval spawn \
-		zip -qr umundo-linux.zip \
-			umundo/contrib/csharp \
+		zip -qr umundo-macosx.zip \
 			umundo/contrib/cmake \
 			umundo/contrib/java \
-			umundo/contrib/prebuilt/include
+			umundo/contrib/prebuilt/include \
 			
 	expect -re $prompt
 	
-	if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
+	eval spawn \
+		zip -qr umundo-macosx.zip \
+			umundo/contrib/prebuilt/darwin-i386 \
+			umundo/package/cross-compiled/android \
+			umundo/examples/android \
+			
+	expect -re $prompt
 
-		eval spawn \
-			zip -qr umundo-linux.zip \
-				umundo/contrib/prebuilt/linux-armv6l
-		expect -re $prompt
-		
-	} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
-
-		eval spawn \
-			zip -qr umundo-linux.zip \
-				umundo/contrib/prebuilt/linux-x86_64 \
-				umundo/package/cross-compiled/android \
-				umundo/examples/android
-				
-		expect -re $prompt
-	
-	} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
-
-		eval spawn \
-			zip -qr umundo-linux.zip \
-				umundo/contrib/prebuilt/linux-i686 \
-				umundo/package/cross-compiled/android \
-				umundo/examples/android
-				
-		expect -re $prompt
-	
-	}
-
-	eval spawn scp -4 umundo-linux.zip sradomski@${UMUNDO_BUILD_HOST}.local:~/umundo-linux.zip
+	eval spawn scp -4 umundo-macosx.zip sradomski@${UMUNDO_BUILD_HOST}.local:~/umundo-macosx.zip
 	expect {
 		"ETA"              { exp_continue }
 		"The authenticity" { send "yes\n"; exp_continue; }
@@ -103,23 +75,14 @@ if {$redeploy} {
 
 eval spawn ssh ${UMUNDO_BUILD_HOST}.local.
 
-# expect -re $prompt { send "sudo mkdir -p ~/sshfs/\n" }
-# expect -re $prompt { send "sudo chown sradomski.sradomski ~/sshfs/\n" }
-# expect -re $prompt { send "sshfs sradomski@epikur.local:/Users/sradomski ~/sshfs/\n" }
-
 # unpack archive if required
 if {$redeploy} {
 	send "rm -rf umundo\r"
 	expect -re $prompt
 
-	send "unzip -q umundo-linux.zip\r"
+	send "unzip -q umundo-macosx.zip\r"
 	expect "umundo/"          { exp_continue } \
 	       -re $prompt { }
-}
-
-if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
-	expect -re $prompt { send "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-armhf/\n" }
-	expect -re $prompt { send "export UMUNDO_PACKAGE_CURR_ARCH_ONLY=ON\n" }
 }
 
 ##############################
@@ -141,21 +104,23 @@ expect -re $prompt {
 		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
 		~/umundo\n"
 }
+
 expect -re $prompt { send "make\n" }
 
 expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt    { send "\n" }
 
+# we can't build java here as the jar needs to contain native code from the other platforms
 # expect -re $prompt { send "make java\n" }
 # expect "Building CXX" { exp_continue } \
 #        "Linking CXX" { exp_continue } \
 #        -re $prompt { send "\n" }
 
-expect -re $prompt { send "make mono\n" }
-expect "Building CXX" { exp_continue } \
-       "Linking CXX" { exp_continue } \
-       -re $prompt { send "\n" }
+# expect -re $prompt { send "make mono\n" }
+# expect "Building CXX" { exp_continue } \
+#        "Linking CXX" { exp_continue } \
+#        -re $prompt { send "\n" }
 
 if { [string compare $BUILD_TESTS "ON"] == 0 } {
   expect -re $prompt { send "make test\n" }
@@ -188,10 +153,10 @@ expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt    { send "\n" }
 
-# expect -re $prompt { send "make java\n" }
-# expect "Building CXX" { exp_continue } \
-#        "Linking CXX" { exp_continue } \
-#        -re $prompt { send "\n" }
+expect -re $prompt { send "make java\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt { send "\n" }
 
 expect -re $prompt { send "make mono\n" }
 expect "Building CXX" { exp_continue } \
@@ -324,44 +289,22 @@ if { [string compare $BUILD_TESTS "ON"] == 0 } {
 send "cd \n"
 expect -re $prompt
 
-send "rm linux-package*.zip\n"
+send "rm macosx-package*.zip\n"
 expect -re $prompt
 
-if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
-  send "zip -qr linux-package-armv6l.zip umundo/package/linux-armv6l\n"
-} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
-  send "zip -qr linux-package-x86_64.zip umundo/package/linux-x86_64\n"
-} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
-  send "zip -qr linux-package-i686.zip umundo/package/linux-i686\n"
-}
+send "zip -qr macosx-package.zip umundo/package/darwin*\n"
 expect -re $prompt
 
 send "exit\r"
 expect -re $prompt
 eval cd ~/Documents/TK/Code/
 
-if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
-	eval spawn "scp raspberrypi.local:linux-package-armv6l.zip ."
-	expect -re $prompt
-	eval spawn "unzip -qo linux-package-armv6l.zip"
-	expect -re $prompt
-	eval spawn "rm linux-package-armv6l.zip"
-	expect -re $prompt
-} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
-	eval spawn "scp debian64.local:linux-package-x86_64.zip ."
-	expect -re $prompt
-	eval spawn "unzip -qo linux-package-x86_64.zip"
-	expect -re $prompt
-	eval spawn "rm linux-package-x86_64.zip"
-	expect -re $prompt
-} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
-	eval spawn "scp debian.local:linux-package-i686.zip ."
-	expect -re $prompt
-	eval spawn "unzip -qo linux-package-i686.zip"
-	expect -re $prompt
-	eval spawn "rm linux-package-i686.zip"
-	expect -re $prompt
-}
+eval spawn "scp ${UMUNDO_BUILD_HOST}.local:macosx-package.zip ."
+expect -re $prompt
+eval spawn "unzip -qo macosx-package.zip"
+expect -re $prompt
+eval spawn "rm macosx-package.zip"
+expect -re $prompt
 
 
 exit

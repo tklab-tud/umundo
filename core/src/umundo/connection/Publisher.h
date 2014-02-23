@@ -43,8 +43,8 @@ class Publisher;
 class DLLEXPORT Greeter {
 public:
 	virtual ~Greeter() {};
-	virtual void welcome(const Publisher&, const SubscriberStub&) = 0;
-	virtual void farewell(const Publisher&, const SubscriberStub&) = 0;
+	virtual void welcome(Publisher&, const SubscriberStub&) = 0;
+	virtual void farewell(Publisher&, const SubscriberStub&) = 0;
 };
 
 class DLLEXPORT PublisherConfig : public Options {

@@ -27,19 +27,33 @@ namespace org.umundo.s11n.demo
         static void Main(string[] args)
         {
             /*
-             * Make sure this path contains the umundoNativeCSharp.dll!
-             */
-            SetDllDirectory("C:\\Program Files\\uMundo\\lib");
+            * Make sure this path contains the umundoNativeCSharp.dll!
+            */
+            if (System.Environment.Is64BitProcess)
+            {
+               SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp64");
+            }
+            else
+            {
+             SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp");
+            }
+
             org.umundo.core.Node node = new org.umundo.core.Node();
+            
+            org.umundo.core.Discovery disc = new org.umundo.core.Discovery(Discovery.DiscoveryType.MDNS);
+            disc.add(node);
+            
             TypedPublisher pub = new TypedPublisher("s11ndemo");
             node.addPublisher(pub);
+            
             TestTypedReceiver ttr = new TestTypedReceiver();
             TypedSubscriber sub = new TypedSubscriber("s11ndemo", ttr);
             node.addSubscriber(sub);
-            // Currently not working in C#
-            //Console.WriteLine("Waiting for subsrcibers...");
-            //int subs = pub.waitForSubscribers(2);
-            //Console.WriteLine(subs + " subscribers");
+
+            Console.WriteLine("Waiting for subscribers...");
+            int subs = pub.waitForSubscribers(1);
+            Console.WriteLine(subs + " subscribers");
+
             AMessage msg = new AMessage();
             msg.a = 42;
             msg.b = 43;

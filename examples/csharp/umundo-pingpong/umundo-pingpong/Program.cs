@@ -36,12 +36,18 @@ namespace umundo_pingpong
 
         static void Main(string[] args)
         {
-        	/*
-        	 * Make sure this path contains the umundoNativeCSharp.dll!
-        	 */
-            
-            SetDllDirectory("Y:\\Documents\\TK\\Code\\umundo\\build\\vs13-win64\\lib");
-            //SetDllDirectory("C:\\Users\\sradomski\\Desktop\\build\\umundo\\lib");
+            /*
+             * Make sure this path contains the umundoNativeCSharp.dll!
+             */
+            if (System.Environment.Is64BitProcess)
+            {
+                SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp64");
+            }
+            else
+            {
+              SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp");
+            }
+
             org.umundo.core.Node node = new org.umundo.core.Node();
             org.umundo.core.Discovery disc = new org.umundo.core.Discovery(Discovery.DiscoveryType.MDNS);
             disc.add(node);

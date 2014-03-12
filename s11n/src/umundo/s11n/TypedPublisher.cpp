@@ -37,6 +37,7 @@ TypedPublisher::TypedPublisher(const std::string& channelName) : Publisher(chann
 #endif
 		Factory::registerPrototype("typeSerializer", _registeredPrototype);
 	}
+	_greeterWrapper = NULL;
 	_impl = SharedPtr<TypedPublisherImpl>(new TypedPublisherImpl);
 	assert(_impl != NULL);
 }

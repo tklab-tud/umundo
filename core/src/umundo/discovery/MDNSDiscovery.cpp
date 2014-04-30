@@ -71,8 +71,8 @@ MDNSDiscovery::~MDNSDiscovery() {
 	}
 
 	for (std::map<EndPoint, MDNSAd*>::iterator adIter = _localAds.begin();
-			 adIter != _localAds.end();
-			 adIter++) {
+	        adIter != _localAds.end();
+	        adIter++) {
 		delete(adIter->second);
 	}
 
@@ -202,7 +202,7 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 		UM_LOG_WARN("MDNS reported new node without ipv4 address -> ignoring until we found one");
 		return;
 	}
-	
+
 	if(_remoteAds.find(remoteAd) != _remoteAds.end()) {
 		UM_LOG_WARN("MDNS reported existing node %s in %s as new", _remoteAds[remoteAd].getAddress().c_str(), _config["mdns.domain"].c_str());
 

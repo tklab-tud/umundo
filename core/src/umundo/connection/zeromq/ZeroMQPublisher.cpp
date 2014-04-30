@@ -61,6 +61,8 @@ void ZeroMQPublisher::init(Options* config) {
 ZeroMQPublisher::~ZeroMQPublisher() {
 	UM_LOG_INFO("deleting publisher for %s", _channelName.c_str());
 
+	std::string pubId("um.pub.intern." + _uuid);
+//	zmq_unbind(_pubSocket, std::string("inproc://" + pubId).c_str()) && UM_LOG_WARN("zmq_unbind: %s", zmq_strerror(errno));
 	zmq_close(_pubSocket);
 
 	// clean up pending messages

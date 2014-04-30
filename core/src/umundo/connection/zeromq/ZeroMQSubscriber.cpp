@@ -74,10 +74,18 @@ void ZeroMQSubscriber::init(Options* config) {
 ZeroMQSubscriber::~ZeroMQSubscriber() {
 	UM_LOG_INFO("deleting subscriber for %s", _channelName.c_str());
 	stop();
-	
+
 	char tmp[4];
 	zmq_send(_writeOpSocket, tmp, 4, 0) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // unblock poll
 	join(); // wait for thread to finish
+
+	std::string subId("um.sub." + _uuid);
+	std::string readOpId("inproc://um.node.readop." + _uuid);
+	zmq_disconnect(_writeOpSocket, readOpId.c_str()) && UM_LOG_ERR("zmq_disconnect %s: %s", readOpId.c_str(), zmq_strerror(errno));
+
+	// not needed for inproc?
+//	zmq_unbind(_readOpSocket, readOpId.c_str()) && UM_LOG_WARN("zmq_unbind: %s", zmq_strerror(errno));
+//	zmq_unbind(_subSocket, std::string("inproc://" + subId).c_str()) && UM_LOG_WARN("zmq_unbind: %s", zmq_strerror(errno));
 
 	zmq_close(_subSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
 	zmq_close(_readOpSocket) && UM_LOG_WARN("zmq_close: %s",zmq_strerror(errno));
@@ -259,7 +267,8 @@ Message* ZeroMQSubscriber::getNextMsg() {
 		zmq_msg_init(&message) && UM_LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
 		int rc;
-		rc = zmq_recvmsg(_subSocket, &message, ZMQ_DONTWAIT);
+//		rc = zmq_msg_recv(&message, _subSocket, ZMQ_DONTWAIT);
+		rc = zmq_recvmsg(_subSocket, &message, 0);
 		if (rc < 0) {
 			UM_LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
 			zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));

@@ -86,7 +86,7 @@ if (NET_RTP)
 		)
 	endif()
 	
-	if(OPENGL_FOUND AND GLUT_FOUND AND GLUT_Xi_LIBRARY_FOUND)
+	if(OPENGL_FOUND AND GLUT_FOUND)
 		include_directories(${OPENGL_INCLUDE_DIR})
 		include_directories(${GLUT_INCLUDE_DIR})
 		

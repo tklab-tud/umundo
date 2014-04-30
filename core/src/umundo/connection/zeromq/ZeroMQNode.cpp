@@ -422,8 +422,10 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&pubRemovedMsg, _writeOpSocket, 0) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
-	_buckets.back().nrMetaMsgSent++;
-	_buckets.back().sizeMetaMsgSent += bufferSize;
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgSent++;
+		_buckets.back().sizeMetaMsgSent += bufferSize;
+	}
 
 	zmq_msg_close(&pubRemovedMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 	_pubs.erase(pub.getUUID());
@@ -504,8 +506,10 @@ void ZeroMQNode::processNodeComm() {
 
 	// read first message
 	RECV_MSG(_nodeSocket, header);
-	_buckets.back().nrMetaMsgRcvd++;
-	_buckets.back().sizeMetaMsgRcvd += msgSize;
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgRcvd++;
+		_buckets.back().sizeMetaMsgRcvd += msgSize;
+	}
 
 	std::string from(recvBuffer, msgSize);
 	zmq_msg_close(&header) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
@@ -526,8 +530,10 @@ void ZeroMQNode::processNodeComm() {
 			RECV_MSG(_nodeSocket, content);
 		}
 
-		_buckets.back().nrMetaMsgRcvd++;
-		_buckets.back().sizeMetaMsgRcvd += msgSize;
+		if (_buckets.size() > 0) {
+			_buckets.back().nrMetaMsgRcvd++;
+			_buckets.back().sizeMetaMsgRcvd += msgSize;
+		}
 
 		// assume the mesage has at least version and type
 		if (REMAINING_BYTES_TOREAD < 4) {
@@ -561,16 +567,19 @@ void ZeroMQNode::processNodeComm() {
 			// reply with our uuid and publishers
 			UM_LOG_INFO("%s: Replying with CONNECT_REP and %d pubs on _nodeSocket to %s", SHORT_UUID(_uuid).c_str(), _pubs.size(), SHORT_UUID(from).c_str());
 			zmq_send(_nodeSocket, from.c_str(), from.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // return to sender
-			_buckets.back().nrMetaMsgSent++;
-			_buckets.back().sizeMetaMsgSent += from.length();
+			if (_buckets.size() > 0) {
+				_buckets.back().nrMetaMsgSent++;
+				_buckets.back().sizeMetaMsgSent += from.length();
+			}
 
 			zmq_msg_t replyNodeInfoMsg;
 			writeNodeInfo(&replyNodeInfoMsg, Message::UM_CONNECT_REP);
 
 			zmq_sendmsg(_nodeSocket, &replyNodeInfoMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
-			_buckets.back().nrMetaMsgSent++;
-			_buckets.back().sizeMetaMsgSent += zmq_msg_size(&replyNodeInfoMsg);
-
+			if (_buckets.size() > 0) {
+				_buckets.back().nrMetaMsgSent++;
+				_buckets.back().sizeMetaMsgSent += zmq_msg_size(&replyNodeInfoMsg);
+			}
 			zmq_msg_close(&replyNodeInfoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 			break;
 		}
@@ -830,7 +839,7 @@ void ZeroMQNode::processOpComm() {
 		if (type == Message::UM_PUB_ADDED) {
 			zmq_connect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		} else {
-			zmq_disconnect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
+			zmq_disconnect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_disconnect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		}
 
 		// tell every other node that we changed publishers
@@ -906,9 +915,10 @@ void ZeroMQNode::processOpComm() {
 		assert(writePtr - writeBuffer == zmq_msg_size(&connReqMsg));
 
 		zmq_sendmsg(clientConn->socket, &connReqMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
-		_buckets.back().nrMetaMsgSent++;
-		_buckets.back().sizeMetaMsgSent += 4;
-
+		if (_buckets.size() > 0) {
+			_buckets.back().nrMetaMsgSent++;
+			_buckets.back().sizeMetaMsgSent += 4;
+		}
 		zmq_msg_close(&connReqMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 
 		break;
@@ -1034,9 +1044,10 @@ void ZeroMQNode::run() {
 				if (channelName.size() == 0)
 					channelName = std::string((char*)zmq_msg_data(&message));
 
-				_buckets.back().nrChannelMsg[channelName]++;
-				_buckets.back().sizeChannelMsg[channelName] += msgSize;
-
+				if (_buckets.size() > 0) {
+					_buckets.back().nrChannelMsg[channelName]++;
+					_buckets.back().sizeChannelMsg[channelName] += msgSize;
+				}
 				zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
 				zmq_msg_send(&message, _pubSocket, more ? ZMQ_SNDMORE: 0) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
 				zmq_msg_close (&message) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
@@ -1395,9 +1406,10 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&subAddedMsg, clientSocket, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
-	_buckets.back().nrMetaMsgSent++;
-	_buckets.back().sizeMetaMsgSent += bufferSize;
-
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgSent++;
+		_buckets.back().sizeMetaMsgSent += bufferSize;
+	}
 	zmq_msg_close(&subAddedMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
@@ -1424,9 +1436,10 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&subRemovedMsg, clientSocket, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
-	_buckets.back().nrMetaMsgSent++;
-	_buckets.back().sizeMetaMsgSent += bufferSize;
-
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgSent++;
+		_buckets.back().sizeMetaMsgSent += bufferSize;
+	}
 	zmq_msg_close(&subRemovedMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 
 }

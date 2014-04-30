@@ -31,11 +31,11 @@ namespace org.umundo.s11n.demo
             */
             if (System.Environment.Is64BitProcess)
             {
-               SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp64");
+               SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp64");
             }
             else
             {
-             SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp");
+             SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp");
             }
 
             org.umundo.core.Node node = new org.umundo.core.Node();

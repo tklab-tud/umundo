@@ -61,13 +61,13 @@ public:
 	virtual void setReceiver(TypedReceiver* recv) {
 		_recv = recv;
 	}
-	
+
 protected:
 	Subscriber _sub;
 	TypedReceiver* _recv;
 	SharedPtr<TypeDeserializerImpl> _impl;
 };
-	
+
 /**
  * Facade for an object receiving subscriber.
  */
@@ -120,7 +120,7 @@ public:
 		}
 		return "";
 	}
-	
+
 	virtual void* deserialize(Message* msg) {
 		if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
 			return _impl->deserialize(msg->getMeta("um.s11n.type"), msg);

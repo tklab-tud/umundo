@@ -72,11 +72,56 @@ bool testSubscriberStress() {
 	return true;
 }
 
+class StressReceiver : public Receiver {
+	void receive(Message* msg) {
+		std::cout << "i";
+	}
+};
+
+int testContinuousStress() {
+	char* payload = (char*)malloc(4096);
+	for (int i = 0; i < 4096; i++) {
+		payload[i] = (char)i;
+	}
+
+	Discovery disc(Discovery::MDNS);
+	Node node1;
+	StressReceiver rcv;
+	disc.add(node1);
+
+	while(true) {
+		Publisher pub1("stress");
+		Subscriber sub1("stress", &rcv);
+
+		node1.addPublisher(pub1);
+		node1.addSubscriber(sub1);
+
+
+		int i = 500;
+		while(i-- > 0) {
+			std::cout << "o";
+			Message* msg = new Message(payload, 4096);
+			pub1.send(msg);
+			delete msg;
+			Thread::sleepMs(10);
+		}
+
+		node1.removePublisher(pub1);
+		node1.removeSubscriber(sub1);
+
+	}
+	disc.remove(node1);
+}
+
 int main(int argc, char** argv) {
+#if 1
+
+	testContinuousStress();
 	if (!testDiscoveryStress())
 		return EXIT_FAILURE;
 	if (!testSubscriberStress())
 		return EXIT_FAILURE;
 	assert(NodeImpl::instances == 0);
 	return EXIT_SUCCESS;
+#endif
 }

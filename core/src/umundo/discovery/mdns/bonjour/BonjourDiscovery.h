@@ -179,7 +179,7 @@ protected:
 	RMutex _mutex;
 	Monitor _monitor;
 
-	static SharedPtr<BonjourDiscovery> _instance;  ///< The singleton instance.
+	static WeakPtr<BonjourDiscovery> _instance;  ///< The singleton instance.
 
 	friend class BonjourNodeStub;
 	friend class Factory;

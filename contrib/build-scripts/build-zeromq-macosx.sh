@@ -53,6 +53,8 @@ LDFLAGS="${MACOSX_VERSION_MIN} -arch x86_64" \
 --enable-static \
 --prefix=${BUILD_DIR}/x86_64
 
+sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
+
 make -j2 install
 make clean
 
@@ -66,6 +68,8 @@ LDFLAGS="${MACOSX_VERSION_MIN} -arch x86_64" \
 --enable-static \
 --prefix=${BUILD_DIR}/x86_64_d
 
+sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
+
 make -j2 install
 make clean
 
@@ -77,6 +81,8 @@ LDFLAGS="${MACOSX_VERSION_MIN} -arch i386" \
 --enable-static \
 --prefix=${BUILD_DIR}/i386
 
+sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
+
 make -j2 install
 make clean
 
@@ -87,6 +93,8 @@ CXXFLAGS="-g ${MACOSX_VERSION_MIN} -arch i386" \
 LDFLAGS="${MACOSX_VERSION_MIN} -arch i386" \
 --enable-static \
 --prefix=${BUILD_DIR}/i386_d
+
+sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
 
 make -j2 install
 make clean

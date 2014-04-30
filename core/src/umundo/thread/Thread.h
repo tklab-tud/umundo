@@ -131,6 +131,12 @@ public:
 		return _isStarted;
 	}
 
+	bool isJoinable() {
+		if (_thread)
+			return _thread->joinable();
+		return false;
+	}
+
 	static void yield();
 	static void sleepMs(uint32_t ms);
 	static void sleepNs(uint32_t ns);

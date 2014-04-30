@@ -35,7 +35,7 @@ TypeDeserializerImpl::~TypeDeserializerImpl() {
 TypedSubscriberImpl::TypedSubscriberImpl() : _recv(NULL) {
 	_impl = StaticPtrCast<TypeDeserializerImpl>(Factory::create("typeDeserializer"));
 }
-	
+
 void TypedSubscriberImpl::receive(Message* msg) {
 	if (msg->getMeta().find("um.s11n.type") != msg->getMeta().end()) {
 		// explicit type given and known

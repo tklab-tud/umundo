@@ -32,9 +32,9 @@ void checkError(PaError err, int fatal=1) {
 		return;
 	if(fatal)
 		Pa_Terminate();
-	std::cout << "An error occured while using the portaudio stream" << std::endl;
-	std::cout << "Error number: " << err << std::endl;
-	std::cout << "Error message: " << Pa_GetErrorText( err ) << std::endl;
+//	std::cout << "An error occured while using the portaudio stream" << std::endl;
+//	std::cout << "Error number: " << err << std::endl;
+//	std::cout << "Error message: " << Pa_GetErrorText( err ) << std::endl;
 	if(fatal)
 		exit(err);
 }
@@ -44,9 +44,9 @@ public:
 	TestReceiver() {};
 	void receive(Message* msg) {
 		if(msg->getMeta("type")=="RTP") {
-			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
+//			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
 			if(Pa_IsStreamStopped(output_stream)==1) {				//start output stream when first packed is received
-				Thread::sleepMs(256);									//wait some time to compensate network delay
+//				Thread::sleepMs(10);									//wait some time to compensate network delay
 				checkError(Pa_StartStream(output_stream));
 			}
 			checkError(Pa_WriteStream(output_stream, msg->data(), FRAMES_PER_BUFFER), 0);
@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
 
 	printf("umundo-phone version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
+	// data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
+	RTPPublisherConfig pubConfig(FRAMES_PER_BUFFER);
 	Publisher pubFoo(Publisher::RTP, "phone", &pubConfig);
 
 	TestReceiver testRecv;

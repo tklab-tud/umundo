@@ -57,29 +57,32 @@ void BonjourDiscovery::init(Options*) {
 }
 
 SharedPtr<BonjourDiscovery> BonjourDiscovery::getInstance() {
-	if (_instance.get() == NULL) {
-		_instance = SharedPtr<BonjourDiscovery>(new BonjourDiscovery());
+	SharedPtr<BonjourDiscovery> instance = _instance.lock();
+
+	if (!instance) {
+		instance = SharedPtr<BonjourDiscovery>(new BonjourDiscovery());
 #ifdef DISC_BONJOUR_EMBED
 		UM_LOG_DEBUG("Initializing embedded mDNS server");
 		int err = embedded_mDNSInit();
 		if (err) {
 			UM_LOG_WARN("mDNS_Init returned error: %s", errCodeToString(err).c_str());
 		} else {
-			_instance->start();
+			instance->start();
 		}
 #else
-		DNSServiceErrorType error = DNSServiceCreateConnection(&_instance->_mainDNSHandle);
+		DNSServiceErrorType error = DNSServiceCreateConnection(&instance->_mainDNSHandle);
 		if (error) {
 			UM_LOG_WARN("DNSServiceCreateConnection returned error: %s", errCodeToString(error).c_str());
 		} else {
-			_instance->_activeFDs[DNSServiceRefSockFD(_instance->_mainDNSHandle)] = _instance->_mainDNSHandle;
-			_instance->start();
+			instance->_activeFDs[DNSServiceRefSockFD(instance->_mainDNSHandle)] = instance->_mainDNSHandle;
+			instance->start();
 		}
 #endif
+		_instance = instance;
 	}
-	return _instance;
+	return instance;
 }
-SharedPtr<BonjourDiscovery> BonjourDiscovery::_instance;
+WeakPtr<BonjourDiscovery> BonjourDiscovery::_instance;
 
 BonjourDiscovery::BonjourDiscovery() {
 	_mainDNSHandle = NULL;
@@ -101,6 +104,12 @@ BonjourDiscovery::~BonjourDiscovery() {
 #endif
 	stop();
 	join(); // we have deadlock in embedded?
+
+//	while (isJoinable()) { // CSharp bindings croaks on Thread::sleep in run?
+//		Thread::sleepMs(2000);
+//		std::cout << "Still trying to join" << std::endl;
+//		join();
+//	}
 
 #ifdef DISC_BONJOUR_EMBED
 	// notify every other host that we are about to vanish
@@ -166,19 +175,26 @@ void BonjourDiscovery::run() {
 
 #ifdef DISC_BONJOUR_EMBED
 	while(isStarted()) {
+//		std::cout << "Still started" << std::endl;
 		UMUNDO_LOCK(_mutex);
+//		std::cout << "locked" << std::endl;
 		tv.tv_sec  = BONJOUR_REPOLL_SEC;
 		tv.tv_usec = BONJOUR_REPOLL_USEC;
 		embedded_mDNSmainLoop(tv);
-		_monitor.signal();
+//		_monitor.signal();
 		UMUNDO_UNLOCK(_mutex);
+//		std::cout << "unlocked" << std::endl;
 		// give other threads a chance to react before locking again
-//#ifdef WIN32
-		Thread::sleepMs(100);
-//#else
+//		std::cout << "yield" << std::endl;
 //		Thread::yield();
-//#endif
+//		std::cout << "back" << std::endl;
+#ifdef WIN32
+		Thread::sleepMs(100);
+#else
+		Thread::yield();
+#endif
 	}
+
 #else
 
 	fd_set readfds;
@@ -911,7 +927,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		while(replyIter != myself->_pendingAddrInfoReplies.end()) {
 
 			MDNSAd* ad = (MDNSAd*)replyIter->context;
-			
+
 			// deallocate address resolver
 			if(myself->_remoteAds[ad].serviceGetAddrInfo.find(replyIter->interfaceIndex) != myself->_remoteAds[ad].serviceGetAddrInfo.end()) {
 				// make sure ther is no service resolver around
@@ -950,7 +966,7 @@ void DNSSD_API BonjourDiscovery::addrInfoReply(
 		//myself->dumpQueries();
 
 		UM_LOG_DEBUG("%d added, %d changed", added.size(), changed.size());
-		
+
 		// notify listeners about changes
 		for(std::map<std::string, MDNSAd*>::iterator changeIter = changed.begin();
 		        changeIter != changed.end();

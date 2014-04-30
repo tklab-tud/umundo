@@ -39,14 +39,14 @@ namespace umundo_pingpong
             /*
              * Make sure this path contains the umundoNativeCSharp.dll!
              */
-            if (System.Environment.Is64BitProcess)
-            {
-                SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp64");
-            }
-            else
-            {
-              SetDllDirectory("C:\\Program Files\\uMundo\\share\\bindings\\csharp");
-            }
+          if (System.Environment.Is64BitProcess)
+          {
+             SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp64");
+          }
+          else
+          {
+           SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp");
+          }
 
             org.umundo.core.Node node = new org.umundo.core.Node();
             org.umundo.core.Discovery disc = new org.umundo.core.Discovery(Discovery.DiscoveryType.MDNS);

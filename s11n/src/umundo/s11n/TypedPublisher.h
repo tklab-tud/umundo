@@ -122,7 +122,7 @@ public:
 	void registerType(const std::string& type, void* serializer) {
 		_impl->registerType(type, serializer);
 	}
-	
+
 	void setGreeter(TypedGreeter* greeter);
 private:
 	SharedPtr<TypedPublisherImpl> _impl;

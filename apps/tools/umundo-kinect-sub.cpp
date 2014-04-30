@@ -86,10 +86,12 @@ public:
 			if(marker) {
 				if(_start) {
 					//output info for last complete frame
+#if 0
 					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
 					          << " (remote time offset: " << _timeOffset
 					          << "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
 					          << "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
+#endif
 					//calculate packet misses (and output statistics about them)
 					int start_miss=0;
 					int sum=0;
@@ -116,10 +118,12 @@ public:
 							stream << " " << start_miss << "-479";
 						sum+=479-start_miss+1;
 					}
+#if 0
 					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)";
 					if(sum)
 						std::cout << " missed rows detail: " << stream.str();
 					std::cout << std::endl << std::flush;
+#endif
 				}
 				//clear packetloss mask
 				for(unsigned int i=0; i<480; i++)

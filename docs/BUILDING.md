@@ -118,10 +118,13 @@ This section will detail the preparation of the respective platforms to ultimate
 
 All the build-dependencies are straight forward to install using <tt>port</tt>
 from [MacPorts](http://www.macports.org/). The rest is most likely distributed
-as precompiled binaries with umundo. I promise to describe the process more
-thoroughly the next time I install on a fresh MacOSX system. For now, just
-install packages via port until all dependencies are met and CMake stops
-complaining while preparing the build-artifacts.
+as precompiled binaries with umundo. 
+
+	$ sudo port install cmake swig swig-java protobuf-cpp protobuf-java
+
+If you like the Mono/CSharp bindings, do install the respective package
+
+	$ sudo port install swig mono swig-csharp
 
 Once you have installed all the dependencies you need, you can invoke CMake to
 create Makefiles or a Xcode project.
@@ -193,8 +196,16 @@ If CMake does not find your JDK location, make sure JAVA_HOME is set:
 	$ echo $JAVA_HOME
 	/usr/lib/jvm/java-7-openjdk-i386
 
-<b>Note:</b> If you are still not able to generate the Java bindings, double check that your JAVA_HOME directory actually 
-contains an include directory with the JNI header files.
+If it is not, you can use the <tt>/etc/environment</tt> file to export the variable system wide:
+
+	$ sudo nano /etc/environment
+	> JAVA_HOME="/usr/lib/jvm/java-7-openjdk-i386" 
+
+<b>Note:</b> If you are still not able to generate the Java bindings, double check that your JAVA_HOME directory actually contains an include directory with the JNI header files.
+
+For the Mono language bindings, just install <tt>mono-devel</tt>
+
+	$ sudo apt-get install swig mono-devel
 
 ### Preparing *yum based* distributions
 
@@ -588,3 +599,4 @@ structure.
      |
      |-core/bindings/java/CMakeLists.txt
      |          Find the JNI libraries and use SWIG to build the Java wrappers.
+

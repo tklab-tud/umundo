@@ -10,7 +10,7 @@ set -e
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 CWD=`pwd`
-BUILD_DIR="/tmp/build-umundo-ios"
+BUILD_DIR="/tmp/build-umundo-android"
 
 rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
 cd ${BUILD_DIR}

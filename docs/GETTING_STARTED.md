@@ -63,13 +63,12 @@ uMundo applications.
 
 ### Basic Concept
 
-You start by instantiating a node and specify its domain in the constructor. Then you add
+You start by instantiating a node and add it to a discovery object. Then you add
 publishers and subscribers specifying their channel name in the constructor. The subscriber
 also requires a receiver when invoking its constructor. There are some basic facts that you
 can rely upon, or that we would at least consider bugs if observed otherwise:
 
-1. Two nodes can only see each other if they are in the same domain.
-	1. Using the default constructor of a node implicitly uses the default domain.
+1. Nodes need to be connected via explicit <tt>added(EndPoint)</tt> or a discovery object.
 2. A publisher will send messages to a subscriber if they have the same channel name <b>and</b> were added to at least
 one pair of nodes within the same domain.
 	1. Publishers will not send messages to subscribers within the same node.

@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (!channel.length() > 0)
+	if (channel.length() == 0)
 		printUsageAndExit();
 
 	Discovery disc(Discovery::MDNS, domain);

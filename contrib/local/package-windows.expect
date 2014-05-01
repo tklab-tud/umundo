@@ -84,9 +84,8 @@ send "${ANT_BINARY} \
 				-f build-java.xml\r"
 expect -re $remote_prompt
 
-# send "move /Y \"C:\\Users\\sradomski\\umundo\\package\\umundo.jar\" \"${UMUNDO_OUT_DEST}\\lib\\umundo.jar\" \r"
-# expect -re $remote_prompt
-
+send "move /Y \"C:\\Users\\sradomski\\umundo\\package\\umundo.jar\" \"${UMUNDO_OUT_DEST}\\lib\\umundo.jar\" \r"
+expect -re $remote_prompt
 
 send "cd %HOMEPATH%\r"
 expect -re $remote_prompt
@@ -94,7 +93,7 @@ send "cd build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
 expect -re $remote_prompt
 
 # retrigger cpack
-send "cmake ..\umundo\r"
+send "cmake ..\\umundo\r"
 expect -re $remote_prompt
 
 send "nmake package\r"

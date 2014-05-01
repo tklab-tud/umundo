@@ -96,108 +96,6 @@ various stages of maturity:
 
 </dl>
 
-## Status
-
-The authority on the state of uMundo is
-<a href="http://umundo.tk.informatik.tu-darmstadt.de/cdash/index.php?project=umundo">
-our build-server</a>. The tests, while not numerous, are rather strict as there
-are plenty of <tt>asserts</tt> in the source code. We plan to add more test-slaves
-as they become available.
-
-<table>
-	<tr><th>Platform</th><th>Issues</th></tr>
-	<tr><td>Mac OSX 10.7</td><td>
-		<ul>
-			<li>umundo.s11n employs the C++ generator for ProtoBuf as the various Objective-C generators are out of date (just use <tt>.mm</tt> file extensions).
-		</ul>
-	</td></tr>
-
-	<tr><td>iOS 5.x / 6.x</td><td>
-		<ul>
-			<li>umundo.s11n uses the C++ generator as with Mac OSX.
-			<li>The automated test are not executed on the build-server.
-		</ul>
-	</td></tr>
-	<tr><td>Windows 7</td><td>
-		<ul>
-			<li>Everything builds and runs just fine with MS Visual Compiler and Visual Studio 10 and NMake.
-			<li>We do not support MinGW as we would need precompiled libraries for our build-time dependencies. Feel free to put them as static libraries into contrib/prebuilt/ if you manage to compile them.
-		</ul>
-	</td></tr>
-	<tr><td>Debian Linux 6.0.4</td><td>
-		<ul>
-			<li>Everything builds and runs just fine with GCC.
-		</ul>
-	</td></tr>
-	<tr><td>Raspberry Pi</td><td>
-		<ul>
-			<li>Everything builds and runs just fine with GCC.
-		</ul>
-	</td></tr>
-	<tr><td>Android 2.3</td><td>
-		<ul>
-			<li>Worked whenever we tried, but we cannot automatically test on the simulator, as <a href="http://developer.android.com/guide/developing/devices/emulator.html#emulatornetworking">google does not deem multicast to be important</a>.
-			<li>The automated test are not executed on the build-server.
-		</ul>
-	</td></tr>
-</table>
-
-<table>
-	<tr><th>Language Bindings</th><th>Issues</th></tr>
-
-	<tr><td>Java</td><td>
-		<ul>
-			<li>No known issues.
-		</ul>
-	</td></tr>
-
-	<tr><td>CSharp</td><td>
-		<ul>
-			<li>Make sure to use 64Bit on 64Bit systems.
-			<li>No umundo.rpc implementation yet.
-		</ul>
-	</td></tr>
-
-	<tr><td>Objective C</td><td>
-		<ul>
-			<li>No umundo.rpc implementation yet, just use <tt>.mm</tt> extensions and the C++ implementation.
-		</ul>
-	</td></tr>
-	
-	<tr><td>Python</td><td>
-		<ul>
-			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected if they leave scope.
-			<li>Not part of the SDK yet.
-			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
-		</ul>
-	</td></tr>
-
-	<tr><td>Perl</td><td>
-		<ul>
-			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected if they leave scope.
-			<li>Not part of the SDK yet.
-			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
-		</ul>
-	</td></tr>
-
-	<tr><td>PHP5</td><td>
-		<ul>
-			<li>Only umundo.core is available.
-			<li>Object instances get garbage collected if they leave scope.
-			<li>Not part of the SDK yet.
-			<li>Messages are not copied into runtime but destroyed when <tt>received</tt> returns.
-		</ul>
-	</td></tr>
-
-</table>
-
-<b>Note:</b> The scripting languages still have the problem of <b>premature garbage collection</b>.
-If you assign e.g. a <tt>Publisher</tt> to a <tt>Node</tt>, the node will only take the pointer to
-the underlying C++ object and not keep a reference to the language specific instance. This means
-that the respective garbage collectors will potentially remove these objects while they are still
-being used. This applies to all umundo.core objects.
 
 ## FAQ
 
@@ -227,7 +125,7 @@ being used. This applies to all umundo.core objects.
 		you should check:
 		<ul>
 			<li>Are the subscriber and publisher added to different nodes?
-			<li>Are the nodes in the same (or default) domain?
+			<li>Are the nodes in added to compatible Discovery objects?
 			<li>Does the channel name of the subscriber match the publisher's?
 			<li>Is the publisher already connected to the subscriber? <br />
 				<p style="padding-left: 1em;">You can use <tt>int Publisher.waitForSubscribers(int n)</tt> 
@@ -254,12 +152,20 @@ being used. This applies to all umundo.core objects.
 [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
 private static extern void SetDllDirectory(string lpPathName);
 
-if (System.Environment.Is64BitOperatingSystem) {
-	SetDllDirectory("..\\..\\..\\lib\\win64");
+if (System.Environment.Is64BitProcess) {
+    SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp64");
 } else {
-	SetDllDirectory("..\\..\\..\\lib\\win32");
+    SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp");
 }
 		</pre></p>
+	</dd>
+
+	<dt><b>The C# bindings are leaking memory!</b></dt>
+	<dd>No they are not, the bindings implement what Microsoft calls the 
+		<a href="http://msdn.microsoft.com/en-us/library/498928w2.aspx">Dispose Pattern</a>.
+		It seems like the managed part of the various objects (e.g. a Message) do not build up
+		enough pressure for the garbage collector to run. You will have to call their <tt>Dispose()</tt>
+		method manually or use the <tt>using</tt> statement.
 	</dd>
 
 	<dt><b>When using umundo from the installers on linux <tt>libpcre.so.3</tt> was not found, what gives?</b></dt>

@@ -36,14 +36,14 @@ if [ "$BUILD_ANDROID" == "y" ] || [ "$BUILD_ANDROID" == "Y" ]; then
   ${DIR}/../build-scripts/build-umundo-android.sh
 fi
 
-echo -n "Build umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI
-if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ]; then
-  echo "Start the Raspberry Pi system named 'raspberrypi' and press return" && read
-  echo == BUILDING UMUNDO FOR Raspberry Pi =========================================================
-  export UMUNDO_BUILD_HOST=raspberrypi
-  export UMUNDO_BUILD_ARCH=32
-  expect build-linux.expect
-fi
+# echo -n "Build umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI
+# if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ]; then
+#   echo "Start the Raspberry Pi system named 'raspberrypi' and press return" && read
+#   echo == BUILDING UMUNDO FOR Raspberry Pi =========================================================
+#   export UMUNDO_BUILD_HOST=raspberrypi
+#   export UMUNDO_BUILD_ARCH=32
+#   expect build-linux.expect
+# fi
 
 echo -n "Build umundo for Linux 32Bit? [y/N]: "; read BUILD_LINUX32
 if [ "$BUILD_LINUX32" == "y" ] || [ "$BUILD_LINUX32" == "Y" ]; then
@@ -72,7 +72,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
   echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-32\""
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-32\""
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
@@ -81,7 +81,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" amd64
   echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1600-64\""
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-64\""
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
@@ -90,7 +90,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" x86
   echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1800 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-32\""
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-32\""
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1800
   TERM=xterm expect build-windows.expect
@@ -99,7 +99,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" amd64
   echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1800 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf-2.5.0-1800-64\""
+  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-64\""
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1800
   TERM=xterm expect build-windows.expect
@@ -115,6 +115,7 @@ if [ "$BUILD_MAC" == "y" ] || [ "$BUILD_MAC" == "Y" ]; then
   export UMUNDO_BUILD_HOST=epikur
   expect build-macosx.expect
 fi
+
 
 ############################
 # Create installers
@@ -146,16 +147,16 @@ if [ "$BUILD_LINUX64" == "y" ] || [ "$BUILD_LINUX64" == "Y" ] || [ "$BUILD_PACKA
   expect package-linux.expect
 fi
 
-if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
- echo -n "Package umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI 
-fi
-if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
-  echo Start the Raspberry Pi system named 'raspberrypi' again && read
-  echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
-  export UMUNDO_BUILD_HOST=raspberrypi
-  export UMUNDO_BUILD_ARCH=32
-  expect package-linux.expect
-fi
+# if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
+#  echo -n "Package umundo for Raspberry Pi? [y/N]: "; read BUILD_RASPBERRY_PI 
+# fi
+# if [ "$BUILD_RASPBERRY_PI" == "y" ] || [ "$BUILD_RASPBERRY_PI" == "Y" ] || [ "$BUILD_PACKAGES" == "a" ]; then
+#   echo Start the Raspberry Pi system named 'raspberrypi' again && read
+#   echo == PACKAGING UMUNDO FOR Raspberry Pi =========================================================
+#   export UMUNDO_BUILD_HOST=raspberrypi
+#   export UMUNDO_BUILD_ARCH=32
+#   expect package-linux.expect
+# fi
 
 if [ "$BUILD_PACKAGES" == "n" ] || [ "$BUILD_PACKAGES" == "N" ] || [ "$BUILD_PACKAGES" == "" ]; then
  echo -n "Package umundo for Windows? [y/N]: "; read BUILD_WIN

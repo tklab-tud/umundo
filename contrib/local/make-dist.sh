@@ -72,16 +72,16 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
   echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-32\""
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-32\""
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
-  
+
   # VS2010 64Bit amd64
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" amd64
   echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-64\""
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-64\""
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1600
   TERM=xterm expect build-windows.expect
@@ -90,7 +90,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" x86
   echo == BUILDING UMUNDO FOR Windows 32Bit MSVC1800 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-32\""
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-32\""
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1800
   TERM=xterm expect build-windows.expect
@@ -99,7 +99,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ]; then
   # %comspec% /k ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"" amd64
   echo == BUILDING UMUNDO FOR Windows 64Bit MSVC1800 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
-  export UMUNO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-64\""
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-64\""
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1800
   TERM=xterm expect build-windows.expect
@@ -165,13 +165,14 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == 
   echo Start the Windows 64Bit system named 'epikur-win7-64' again && read
   export ANT_BINARY="\"C:\Program Files\apache-ant-1.8.4\bin\ant\""
   export UMUNDO_BUILD_HOST=epikur-win7-64
-
+    
   # VS2010 32Bit x86
   # C:\Windows\System32\cmd.exe /k ""C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"" x86
   echo == PACKAGING UMUNDO FOR Windows 32Bit MSVC1600 ===============================================
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" x86"
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1600
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-32\""
   export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86\msvc-1600"
   TERM=xterm expect package-windows.expect
   
@@ -181,6 +182,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == 
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat\" amd64"
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1600
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1600-64\""
   export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86_64\msvc-1600"
   TERM=xterm expect package-windows.expect
   
@@ -190,6 +192,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == 
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" x86"
   export UMUNDO_BUILD_ARCH=32
   export UMUNDO_COMPILER_VER=1800
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-32\""
   export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86\msvc-1800"
   TERM=xterm expect package-windows.expect
   
@@ -199,6 +202,7 @@ if [ "$BUILD_WIN" == "y" ] || [ "$BUILD_WIN" == "Y" ] || [ "$BUILD_PACKAGES" == 
   export UMUNDO_VCVARSALL="\"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat\" amd64"
   export UMUNDO_BUILD_ARCH=64
   export UMUNDO_COMPILER_VER=1800
+  export UMUNDO_PROTOBUF_ROOT="\"C:\Users\sradomski\Desktop\protobuf\protobuf-2.5.0-1800-64\""
   export UMUNDO_OUT_DEST="C:\Users\sradomski\umundo\package\windows-x86_64\msvc-1800"
   TERM=xterm expect package-windows.expect
 fi

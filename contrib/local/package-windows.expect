@@ -8,6 +8,7 @@ set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
 set UMUNDO_OUT_DEST $::env(UMUNDO_OUT_DEST)
 set UMUNDO_COMPILER_VER $::env(UMUNDO_COMPILER_VER)
 set UMUNDO_VCVARSALL $::env(UMUNDO_VCVARSALL)
+set UMUNDO_PROTOBUF_ROOT $::env(UMUNDO_PROTOBUF_ROOT)
 set ANT_BINARY $::env(ANT_BINARY)
 
 set local_prompt {sradomski$ }
@@ -84,17 +85,44 @@ send "${ANT_BINARY} \
 				-f build-java.xml\r"
 expect -re $remote_prompt
 
-send "move /Y \"C:\\Users\\sradomski\\umundo\\package\\umundo.jar\" \"${UMUNDO_OUT_DEST}\\lib\\umundo.jar\" \r"
-expect -re $remote_prompt
+# send "move /Y \"C:\\Users\\sradomski\\umundo\\package\\umundo.jar\" \"${UMUNDO_OUT_DEST}\\lib\\umundo.jar\" \r"
+# expect -re $remote_prompt
 
 send "cd %HOMEPATH%\r"
 expect -re $remote_prompt
 send "cd build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
-expect -re $remote_prompt
+#expect -re $remote_prompt
 
-# retrigger cpack
-send "cmake ..\\umundo\r"
-expect -re $remote_prompt
+#send "rmdir \/S \/Q build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
+#expect -re $remote_prompt
+#send "mkdir build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
+#expect -re $remote_prompt
+#send "cd build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\r"
+#expect -re $remote_prompt
+
+# expect -re $remote_prompt { 
+# 	send "cmake \
+# 	-DCMAKE_BUILD_TYPE=Release \
+# 	-DBUILD_SHARED_LIBS=OFF \
+# 	-DBUILD_BINDINGS=ON \
+# 	-DBUILD_UMUNDO_APPS=OFF \
+# 	-DBUILD_UMUNDO_TOOLS=ON \
+# 	-DBUILD_TESTS=OFF \
+# 	-DDIST_PREPARE=ON \
+# 	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNDO_PROTOBUF_ROOT}\" \
+# 	..\\umundo\r"
+# }
+
+expect -re $remote_prompt { 
+	send "cmake \
+	..\\umundo\r"
+}
+
+
+expect -re $remote_prompt { send "nmake\r" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $remote_prompt    { send "\r" }
 
 send "nmake package\r"
 expect {
@@ -112,13 +140,6 @@ expect eof
 eval cd ~/Documents/TK/Code/
 
 eval spawn "scp -r epikur-win7-64.local:build-umundo-${UMUNDO_COMPILER_VER}-${UMUNDO_BUILD_ARCH}\\\\umundo-windows* umundo/installer/"
-
-# if { [string compare $UMUNDO_BUILD_ARCH 32] == 0 } {
-# 	eval spawn "scp -r epikur-win7-64.local:build-umundo-32\\\\umundo-windows* umundo/installer/"
-# } else {
-# 	eval spawn "scp -r epikur-win7-64.local:build-umundo-64\\\\umundo-windows* umundo/installer/"
-# }
-
 expect eof
 
 exit

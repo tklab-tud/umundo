@@ -81,7 +81,7 @@ if ($mac_archive) {
 # my $tmpdir = File::Temp->newdir() or die($!);
 my $tmpdir = $installer_dir . "/manifest";
 if ( ! -d $tmpdir ) {
-  mkdir($tmpdir . "/manifest") or die($!);
+  mkdir($tmpdir) or die($! . ":" . $tmpdir);
   chdir $tmpdir or die($!);
 
   print "$mac_archive\n";

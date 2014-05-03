@@ -74,15 +74,14 @@ expect -re $prompt {
 		~/umundo\n" 
 }
 expect -re $prompt { send "make\n" }
-
-expect -re $prompt { send "make mono\n" }
 expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt    { send "\n" }
 
-expect "Building CXX" { exp_continue } \
-       "Linking CXX" { exp_continue } \
-       -re $prompt    { send "\n" }
+# expect -re $prompt { send "make mono\n" }
+# expect "Building CXX" { exp_continue } \
+#        "Linking CXX" { exp_continue } \
+#        -re $prompt    { send "\n" }
 
 expect -re $prompt { send "make package\n" }
 expect "CPack"        { exp_continue; } \

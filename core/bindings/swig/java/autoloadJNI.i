@@ -30,68 +30,70 @@ import java.io.InputStream;
 		// do we want the debug build?
 		if (System.getProperty("umundo.debug") != null) {
 			debugPrefix = "_d";
-		}
+      // just do not load any JNI code - we dropped it in 0.4.4
+      } else {
 
-		// dispatch os.type for filename
-		String osSuffix = "";
-		String os = System.getProperty("os.name").toLowerCase();
-		if (os.indexOf("win") >= 0) {
-			osSuffix = ".dll";
-		} else if(os.indexOf("mac") >= 0) {
-			osSuffix = ".jnilib";				
-			osPrefix = "lib";				
-		} else if(os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0) {
-			osSuffix = ".so";				
-			osPrefix = "lib";				
-		} else if(os.indexOf("sunos") >= 0) {
-		 		throw new RuntimeException("Solaris not supported yet - ask me about it.");
-		} else {
-			throw new RuntimeException("Unknown platform " + os);
-		}
-    try {
-			// get the class object for this class, and get the location of it
-			final Class c = umundoNativeJavaJNI.class;
-			final URL location = c.getProtectionDomain().getCodeSource().getLocation();
+  		// dispatch os.type for filename
+  		String osSuffix = "";
+  		String os = System.getProperty("os.name").toLowerCase();
+  		if (os.indexOf("win") >= 0) {
+  			osSuffix = ".dll";
+  		} else if(os.indexOf("mac") >= 0) {
+  			osSuffix = ".jnilib";				
+  			osPrefix = "lib";				
+  		} else if(os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0) {
+  			osSuffix = ".so";				
+  			osPrefix = "lib";				
+  		} else if(os.indexOf("sunos") >= 0) {
+  		 		throw new RuntimeException("Solaris not supported yet - ask me about it.");
+  		} else {
+  			throw new RuntimeException("Unknown platform " + os);
+  		}
+      try {
+  			// get the class object for this class, and get the location of it
+  			final Class c = umundoNativeJavaJNI.class;
+  			final URL location = c.getProtectionDomain().getCodeSource().getLocation();
 
-			// jars are just zip files, get the input stream for the lib
-			ZipFile zf = new ZipFile(new File(location.toURI()));
+  			// jars are just zip files, get the input stream for the lib
+  			ZipFile zf = new ZipFile(new File(location.toURI()));
 			
-			fullLibName = osPrefix + libName + bitWidth + debugPrefix + osSuffix;
-			System.out.println("Trying to load " + fullLibName);
-			InputStream in = null;
-			try {
-				in = zf.getInputStream(zf.getEntry(fullLibName));
-			} catch (Exception e) {
-				// release build not found, try the debug build if not used already
-				if (debugPrefix.length() == 0) {
-					fullLibName = osPrefix + libName + bitWidth + "_d" + osSuffix;
-					System.out.println("Trying to load " + fullLibName);
-					in = zf.getInputStream(zf.getEntry(fullLibName));
-				} else {
-					throw(e);
-				}
-			}
+  			fullLibName = osPrefix + libName + bitWidth + debugPrefix + osSuffix;
+  			System.out.println("Trying to load " + fullLibName);
+  			InputStream in = null;
+  			try {
+  				in = zf.getInputStream(zf.getEntry(fullLibName));
+  			} catch (Exception e) {
+  				// release build not found, try the debug build if not used already
+  				if (debugPrefix.length() == 0) {
+  					fullLibName = osPrefix + libName + bitWidth + "_d" + osSuffix;
+  					System.out.println("Trying to load " + fullLibName);
+  					in = zf.getInputStream(zf.getEntry(fullLibName));
+  				} else {
+  					throw(e);
+  				}
+  			}
 			
-			// create a temp file and an input stream for it
-			File f = File.createTempFile("JARLIB-", "-" + fullLibName);
-			FileOutputStream out = new FileOutputStream(f);
+  			// create a temp file and an input stream for it
+  			File f = File.createTempFile("JARLIB-", "-" + fullLibName);
+  			FileOutputStream out = new FileOutputStream(f);
 
-			// copy the lib to the temp file
-			byte[] buf = new byte[1024];
-			int len;
-			while ((len = in.read(buf)) > 0)
-				out.write(buf, 0, len);
-			in.close();
-			out.close();
+  			// copy the lib to the temp file
+  			byte[] buf = new byte[1024];
+  			int len;
+  			while ((len = in.read(buf)) > 0)
+  				out.write(buf, 0, len);
+  			in.close();
+  			out.close();
 
-			// load the lib specified by its absolute path and delete it
-			System.load(f.getAbsolutePath());
-			f.delete();
+  			// load the lib specified by its absolute path and delete it
+  			System.load(f.getAbsolutePath());
+  			f.delete();
 
-    } catch (FileNotFoundException e) {
-      System.err.println(e);
-    } catch (Exception e) {
-      System.err.println("Warning: failed to load native library " + fullLibName + " use System.load() yourself.");
+      } catch (FileNotFoundException e) {
+        System.err.println(e);
+      } catch (Exception e) {
+        System.err.println("Warning: failed to load native library " + fullLibName + " use System.load() yourself.");
+      }
     }
   }
 %}

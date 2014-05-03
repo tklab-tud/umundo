@@ -5,7 +5,7 @@ set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
 set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
 set UMUNDO_COMPILER_VER $::env(UMUNDO_COMPILER_VER)
 set UMUNDO_VCVARSALL $::env(UMUNDO_VCVARSALL)
-set UMUNO_PROTOBUF_ROOT $::env(UMUNO_PROTOBUF_ROOT)
+set UMUNDO_PROTOBUF_ROOT $::env(UMUNDO_PROTOBUF_ROOT)
 set BUILD_TESTS $::env(BUILD_TESTS)
 
 set local_prompt {sradomski$ }
@@ -121,41 +121,6 @@ send "${UMUNDO_VCVARSALL}\r"
 expect -re $remote_prompt
 
 ##############################
-# compile in debug configuration
-
-send \
-	"\"cmake.exe\" -G \"NMake Makefiles\" \
-	-DCMAKE_BUILD_TYPE=Debug \
-	-DBUILD_BINDINGS=ON \
-	-DBUILD_SHARED_LIBS=OFF \
-	-DBUILD_UMUNDO_APPS=OFF \
-	-DBUILD_UMUNDO_TOOLS=OFF \
-	-DBUILD_TESTS=${BUILD_TESTS} \
-	-DDIST_PREPARE=ON \
-	-DCMAKE_VERBOSE_MAKEFILE=OFF \
-	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNO_PROTOBUF_ROOT}\" \
-	..\\umundo\r"
-expect -re $remote_prompt
-
-send "nmake\r"
-expect {
-	"Building" { exp_continue; }
-	"Linking" { exp_continue; }
-	"fatal error"      { exit }
-  -re $remote_prompt      { }
-}
-
-# we cant build jars here as we do not have all JNIs
-
-send "nmake csharp\r"
-expect {
-	"Building" { exp_continue; }
-	"Linking" { exp_continue; }
-	"fatal error"      { exit }
-  -re $remote_prompt      { }
-}
-
-##############################
 # compile in release configuration
 
 send \
@@ -167,7 +132,30 @@ send \
 	-DBUILD_UMUNDO_TOOLS=ON \
 	-DBUILD_TESTS=${BUILD_TESTS} \
 	-DDIST_PREPARE=ON \
-	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNO_PROTOBUF_ROOT}\" \
+	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNDO_PROTOBUF_ROOT}\" \
+	..\\umundo\r"
+expect -re $remote_prompt
+
+send "nmake\n\r"
+expect {
+	timeout            { puts "Timeout when building"; exit;  }
+	"Building" { puts "Building"; exp_continue; }
+	"Scanning" { puts "Scanning"; exp_continue; }
+	"Linking" { puts "Linking"; exp_continue; }
+  -re $remote_prompt { puts "Continuing";  }
+}
+
+# for some weird reason we get linker errors with the first build?!
+send \
+	"\"cmake\" -G \"NMake Makefiles\" \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DBUILD_SHARED_LIBS=OFF \
+	-DBUILD_BINDINGS=ON \
+	-DBUILD_UMUNDO_APPS=OFF \
+	-DBUILD_UMUNDO_TOOLS=ON \
+	-DBUILD_TESTS=${BUILD_TESTS} \
+	-DDIST_PREPARE=ON \
+	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNDO_PROTOBUF_ROOT}\" \
 	..\\umundo\r"
 expect -re $remote_prompt
 
@@ -180,6 +168,7 @@ expect {
 	"fatal error"      { puts "Dying"; exit; }
   -re $remote_prompt { puts "Continuing";  }
 }
+
 
 # send "nmake java\n\r"
 # expect {

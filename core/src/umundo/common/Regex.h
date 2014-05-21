@@ -34,7 +34,7 @@ namespace umundo {
  *
  * Matches are expressed as pairs of offset and length.
  */
-class DLLEXPORT Regex {
+class UMUNDO_API Regex {
 public:
 	Regex(const std::string&);
 	~Regex();

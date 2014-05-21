@@ -34,7 +34,7 @@ class Node;
  * Discovery implementor basis class (bridge pattern).
  * \see Discovery
  */
-class DLLEXPORT DiscoveryImpl : public Implementation {
+class UMUNDO_API DiscoveryImpl : public Implementation {
 public:
 	virtual ~DiscoveryImpl() {}
 
@@ -63,7 +63,7 @@ public:
  *
  * \sa DiscoveryImpl, Factory, NodeQuery, NodeStub
  */
-class DLLEXPORT Discovery {
+class UMUNDO_API Discovery {
 public:
 
 	enum DiscoveryType {
@@ -151,7 +151,7 @@ protected:
 };
 
 
-class DLLEXPORT MDNSDiscoveryOptions : public Options {
+class UMUNDO_API MDNSDiscoveryOptions : public Options {
 public:
 	enum Protocol {
 	    TCP, UDP

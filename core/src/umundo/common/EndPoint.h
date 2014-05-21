@@ -27,7 +27,7 @@
 
 namespace umundo {
 
-class DLLEXPORT EndPointImpl {
+class UMUNDO_API EndPointImpl {
 public:
 	EndPointImpl() :
 		_port(0),
@@ -109,7 +109,7 @@ protected:
 /**
  * Anything that is addressable in TCP/IP networks.
  */
-class DLLEXPORT EndPoint {
+class UMUNDO_API EndPoint {
 public:
 
 	/**

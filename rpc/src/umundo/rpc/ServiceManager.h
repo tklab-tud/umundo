@@ -30,7 +30,7 @@ namespace umundo {
 /**
  * Manage Services and connects to other ServiceManagers.
  */
-class DLLEXPORT ServiceManager : public Receiver, public Connectable, public Greeter {
+class UMUNDO_API ServiceManager : public Receiver, public Connectable, public Greeter {
 public:
 	ServiceManager();
 	virtual ~ServiceManager();

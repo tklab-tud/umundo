@@ -70,7 +70,7 @@ namespace umundo {
  *
  * trueForSuccess() || UM_LOG_WARN("Failed to succeed");
  */
-class DLLEXPORT Debug {
+class UMUNDO_API Debug {
 public:
 	static const char* relFileName(const char* filename);
 	static bool logMsg(int lvl, const char* fmt, const char* filename, const int line, ...);
@@ -85,7 +85,7 @@ public:
 };
 
 
-class DLLEXPORT Trace {
+class UMUNDO_API Trace {
 public:
 	Trace(const char* fmt, const char* filename, const int line, ...);
 	~Trace();

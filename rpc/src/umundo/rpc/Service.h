@@ -34,7 +34,7 @@ class ServiceStub;
  *
  * @sa ServiceManager
  */
-class DLLEXPORT ServiceDescription {
+class UMUNDO_API ServiceDescription {
 public:
 	ServiceDescription(std::map<std::string, std::string>);
 	ServiceDescription();
@@ -96,7 +96,7 @@ protected:
 /**
  * A ServiceFilter can be used with the ServiceManager to get ServiceDescriptions.
  */
-class DLLEXPORT ServiceFilter {
+class UMUNDO_API ServiceFilter {
 public:
 	struct Rule {
 		std::string key;
@@ -165,7 +165,7 @@ private:
 /**
  * Local representation of a remote umundo Service%s.
  */
-class DLLEXPORT ServiceStub : public TypedReceiver, public Connectable {
+class UMUNDO_API ServiceStub : public TypedReceiver, public Connectable {
 public:
 	ServiceStub(const std::string& channel);
 	ServiceStub(const ServiceDescription& svcDesc);
@@ -201,7 +201,7 @@ protected:
 /**
  * Abstract base class for all Service Implementations.
  */
-class DLLEXPORT Service : public ServiceStub {
+class UMUNDO_API Service : public ServiceStub {
 public:
 	Service();
 	virtual ~Service();

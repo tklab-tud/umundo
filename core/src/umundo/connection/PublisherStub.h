@@ -57,7 +57,7 @@ protected:
 /**
  * Representation of a remote Publisher.
  */
-class DLLEXPORT PublisherStub : public EndPoint {
+class UMUNDO_API PublisherStub : public EndPoint {
 public:
 	PublisherStub() : _impl() { }
 	PublisherStub(SharedPtr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }

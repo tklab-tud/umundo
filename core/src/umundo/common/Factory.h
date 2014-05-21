@@ -37,7 +37,7 @@ class Options;
  *
  * \see PublisherImpl, SubscriberImpl, DiscoveryImpl, NodeImpl
  */
-class DLLEXPORT Factory {
+class UMUNDO_API Factory {
 public:
 	static Factory* getInstance();
 	static SharedPtr<Implementation> create(const std::string&);

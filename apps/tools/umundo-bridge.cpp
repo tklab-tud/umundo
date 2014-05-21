@@ -71,10 +71,10 @@ int main(int argc, char** argv) {
 	if (domain)
 		mdnsOpts.setDomain(domain);
 	Discovery disc(Discovery::MDNS, &mdnsOpts);
-
+	
 	Node node;
 	disc.add(node);
-
+	
 	std::string hostname(argv[optind]);
 	NodeStub endPoint;
 

@@ -38,7 +38,7 @@ class PBErrorReporter;
 /**
  * TypeSerializerImpl implementor with ProtoBuf.
  */
-class DLLEXPORT PBSerializer : public TypeSerializerImpl {
+class UMUNDO_API PBSerializer : public TypeSerializerImpl {
 public:
 	PBSerializer();
 	virtual ~PBSerializer();
@@ -68,7 +68,7 @@ private:
 	static RMutex protoMutex;
 };
 
-class DLLEXPORT PBErrorReporter : public google::protobuf::compiler::MultiFileErrorCollector {
+class UMUNDO_API PBErrorReporter : public google::protobuf::compiler::MultiFileErrorCollector {
 public:
 	PBErrorReporter() {}
 	virtual ~PBErrorReporter() {}

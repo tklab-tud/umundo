@@ -28,7 +28,7 @@
 
 namespace umundo {
 
-class DLLEXPORT TypedReceiver {
+class UMUNDO_API TypedReceiver {
 public:
 	virtual void receive(void* object, Message* msg) = 0;
 };
@@ -36,7 +36,7 @@ public:
 /**
  * Base class for Type Deserializer to map strings to objects.
  */
-class DLLEXPORT TypeDeserializerImpl : public Implementation {
+class UMUNDO_API TypeDeserializerImpl : public Implementation {
 public:
 	TypeDeserializerImpl() {}
 	virtual ~TypeDeserializerImpl();
@@ -47,7 +47,7 @@ public:
 protected:
 };
 
-class DLLEXPORT TypedSubscriberImpl : public Receiver, public EnableSharedFromThis<TypedSubscriberImpl> {
+class UMUNDO_API TypedSubscriberImpl : public Receiver, public EnableSharedFromThis<TypedSubscriberImpl> {
 public:
 	TypedSubscriberImpl();
 	void receive(Message* msg);
@@ -71,7 +71,7 @@ protected:
 /**
  * Facade for an object receiving subscriber.
  */
-class DLLEXPORT TypedSubscriber : public Subscriber {
+class UMUNDO_API TypedSubscriber : public Subscriber {
 public:
 
 	TypedSubscriber() : _impl() {}

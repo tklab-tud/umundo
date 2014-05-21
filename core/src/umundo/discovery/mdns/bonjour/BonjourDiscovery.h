@@ -51,7 +51,7 @@ class NodeQuery;
  *  http://developer.apple.com/library/mac/#documentation/networking/Conceptual/dns_discovery_api/Introduction.html<br />
  *  http://developer.apple.com/opensource/
  */
-class DLLEXPORT BonjourDiscovery : public MDNSDiscoveryImpl, public Thread {
+class UMUNDO_API BonjourDiscovery : public MDNSDiscoveryImpl, public Thread {
 public:
 	BonjourDiscovery();
 	virtual ~BonjourDiscovery();

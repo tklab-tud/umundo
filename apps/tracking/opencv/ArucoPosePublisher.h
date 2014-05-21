@@ -14,7 +14,7 @@ namespace umundo {
 using namespace cv;
 using namespace aruco;
 
-class DLLEXPORT ArucoPosePublisher : public Thread {
+class UMUNDO_API ArucoPosePublisher : public Thread {
 public:
 	ArucoPosePublisher(const string&, const string&);
 	virtual ~ArucoPosePublisher();

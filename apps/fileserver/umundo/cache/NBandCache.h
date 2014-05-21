@@ -23,7 +23,7 @@ namespace umundo {
 
 class NBandCacheItem;
 
-class DLLEXPORT NBandProxyCacheItem : public SCacheItem {
+class UMUNDO_API NBandProxyCacheItem : public SCacheItem {
 public:
 	NBandProxyCacheItem();
 	set<SCacheItem*> getNext();
@@ -37,7 +37,7 @@ public:
 };
 
 
-class DLLEXPORT NBandCacheItem : public SCacheItem {
+class UMUNDO_API NBandCacheItem : public SCacheItem {
 public:
 	NBandCacheItem(string name, string band);
 
@@ -62,7 +62,7 @@ public:
 	bool _isPrepared;
 };
 
-class DLLEXPORT NBandCachePtr : public SCachePointer {
+class UMUNDO_API NBandCachePtr : public SCachePointer {
 public:
 	NBandCachePtr();
 
@@ -81,7 +81,7 @@ public:
 //	NBandCacheItem* _item;
 };
 
-class DLLEXPORT NBandCache : public SCache {
+class UMUNDO_API NBandCache : public SCache {
 public:
 	NBandCache(uint64_t size);
 

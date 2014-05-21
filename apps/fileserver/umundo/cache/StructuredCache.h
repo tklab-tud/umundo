@@ -36,7 +36,7 @@ class CacheProfiler;
  * subclasses thereof to access SCacheItems in the cache as this will allow the cache to page out items
  * that are "further away" form the pointers.
  */
-class DLLEXPORT SCachePointer {
+class UMUNDO_API SCachePointer {
 public:
 	SCachePointer() {}
 	virtual ~SCachePointer() {}
@@ -57,7 +57,7 @@ public:
  * paging out their contents. If the pressure drops or their relevance increases,
  * they are to reload their content.
  */
-class DLLEXPORT SCacheItem {
+class UMUNDO_API SCacheItem {
 public:
 	virtual ~SCacheItem();
 
@@ -91,7 +91,7 @@ protected:
 /**
  * A SCache orders its items in a graph and puts pressure on those far away from items pointed to.
  */
-class DLLEXPORT SCache : public Thread {
+class UMUNDO_API SCache : public Thread {
 public:
 	SCache(uint64_t size);
 	virtual ~SCache();

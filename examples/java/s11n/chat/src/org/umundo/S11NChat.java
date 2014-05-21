@@ -131,7 +131,7 @@ public class S11NChat {
 	}
 
 	public static void main(String[] args) {
-		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+//		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
 		S11NChat chat = new S11NChat();
 		chat.run();
 	}

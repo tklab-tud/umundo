@@ -6,7 +6,7 @@
 
 namespace umundo {
 
-class DLLEXPORT RandomCacheItem : public SCacheItem {
+class UMUNDO_API RandomCacheItem : public SCacheItem {
 public:
 	RandomCacheItem(string name);
 	~RandomCacheItem();
@@ -20,7 +20,7 @@ public:
 	string _name;
 };
 
-class DLLEXPORT RandomCachePtr : public SCachePointer {
+class UMUNDO_API RandomCachePtr : public SCachePointer {
 public:
 	RandomCachePtr();
 
@@ -29,7 +29,7 @@ public:
 	const string getItemName();
 };
 
-class DLLEXPORT RandomCache : public SCache {
+class UMUNDO_API RandomCache : public SCache {
 public:
 	RandomCache(uint64_t size);
 

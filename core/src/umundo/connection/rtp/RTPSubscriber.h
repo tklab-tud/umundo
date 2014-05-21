@@ -38,7 +38,7 @@ namespace umundo {
 class PublisherStub;
 class NodeStub;
 
-class DLLEXPORT RTPSubscriber : public SubscriberImpl, public Thread {
+class UMUNDO_API RTPSubscriber : public SubscriberImpl, public Thread {
 public:
 	SharedPtr<Implementation> create();
 	void init(Options*);

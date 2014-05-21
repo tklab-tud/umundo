@@ -23,7 +23,7 @@
 
 namespace umundo {
 
-class DLLEXPORT DirectoryListingClient : public DirectoryListingServiceStub {
+class UMUNDO_API DirectoryListingClient : public DirectoryListingServiceStub {
 public:
 	DirectoryListingClient(ServiceDescription*, ResultSet<DirectoryEntry>*);
 	~DirectoryListingClient();

@@ -30,7 +30,7 @@ template<class T>
 /**
  * Templated interface to be notified about addition, removal or changes of objects.
  */
-class DLLEXPORT ResultSet {
+class UMUNDO_API ResultSet {
 public:
 	virtual ~ResultSet() {}
 

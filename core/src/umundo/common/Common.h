@@ -1,6 +1,6 @@
 /**
  *  @file
- *  @brief      Set pragmas, handle DLLEXPORT and import symbols into umundo namespace.
+ *  @brief      Set pragmas, handle UMUNDO_API and import symbols into umundo namespace.
  *  @author     2012 Stefan Radomski (stefan.radomski@cs.tu-darmstadt.de)
  *  @copyright  Simplified BSD
  *
@@ -73,12 +73,12 @@
 
 #if defined(_WIN32) && !defined(UMUNDO_STATIC)
 #	ifdef COMPILING_DLL
-#		define DLLEXPORT __declspec(dllexport)
+#		define UMUNDO_API __declspec(dllexport)
 #	else
-#		define DLLEXPORT __declspec(dllimport)
+#		define UMUNDO_API __declspec(dllimport)
 #	endif
 #else
-#	define DLLEXPORT
+#	define UMUNDO_API
 #endif
 
 // #if defined UNIX || defined IOS || defined IOSSIM

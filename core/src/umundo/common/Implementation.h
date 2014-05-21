@@ -32,7 +32,7 @@ class Options;
  * Concrete implementors are registered at program initialization at the Factory and
  * instantiated for every Abstraction that needs an implementation.
  */
-class DLLEXPORT Implementation {
+class UMUNDO_API Implementation {
 public:
 	Implementation() : _isSuspended(false) {}
 	/** @name Life Cycle Management */
@@ -57,7 +57,7 @@ private:
  * some way to abstract option data. We could also pass it to Factory::create(), but I
  * like the idea of a dedicated init phase.
  */
-class DLLEXPORT Options {
+class UMUNDO_API Options {
 public:
 	virtual ~Options() {}
 	virtual std::string getType() = 0;

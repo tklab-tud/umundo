@@ -554,6 +554,13 @@ void DNSSD_API BonjourDiscovery::browseReply(
 				assert(query.remoteAds.find(replyIter->serviceName) != query.remoteAds.end());
 				assert(ad);
 
+				// This happens with somewhat unorthodox NIC configurations
+				if (ad->interfaces.find(replyIter->ifIndex) != ad->interfaces.end()) {
+					UM_LOG_WARN("Service '%s' at interface %d was already reported!", replyIter->serviceName.c_str(), replyIter->ifIndex);
+					replyIter++;
+					continue;
+				}
+
 				// a service was added, just resolve the service and do not report anything
 				DNSServiceRef serviceResolveRef = myself->_mainDNSHandle;
 

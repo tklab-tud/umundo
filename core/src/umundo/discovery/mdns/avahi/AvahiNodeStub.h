@@ -37,7 +37,7 @@ class AvahiNodeStubDiscovery;
 /**
  * Concrete nodestub implementor for avahi (bridge pattern).
  */
-class DLLEXPORT AvahiNodeStub : public NodeStubImpl {
+class UMUNDO_API AvahiNodeStub : public NodeStubImpl {
 public:
 	AvahiNodeStub();
 	virtual ~AvahiNodeStub();

@@ -21,8 +21,8 @@
 // macros from cmake
 %import "umundo/config.h"
 
-// set DLLEXPORT macro to empty string
-#define DLLEXPORT
+// set UMUNDO_API macro to empty string
+#define UMUNDO_API
 
 // SWIG does not recognize 'using std::string' from an include
 typedef std::string string;

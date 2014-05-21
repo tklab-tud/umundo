@@ -9,8 +9,8 @@
 // macros from cmake
 %import "umundo/config.h"
 
-// set DLLEXPORT macro to empty string
-#define DLLEXPORT
+// set UMUNDO_API macro to empty string
+#define UMUNDO_API
 
 // this needs to be up here for the template
 %include "../../../../core/src/umundo/common/ResultSet.h"

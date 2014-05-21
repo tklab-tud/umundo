@@ -33,13 +33,13 @@ class TypedPublisher;
 /**
  * Base class for Type Serializer to map objects to strings.
  */
-class DLLEXPORT TypeSerializerImpl : public Implementation {
+class UMUNDO_API TypeSerializerImpl : public Implementation {
 public:
 	virtual std::string serialize(const std::string& type, void* obj) = 0;
 	virtual void registerType(const std::string& type, void* serializer) = 0;
 };
 
-class DLLEXPORT TypedPublisherImpl : public EnableSharedFromThis<TypedPublisherImpl> {
+class UMUNDO_API TypedPublisherImpl : public EnableSharedFromThis<TypedPublisherImpl> {
 public:
 	TypedPublisherImpl();
 	Message* prepareMsg(const std::string& type, void* obj);
@@ -53,7 +53,7 @@ protected:
 /**
  * Base class for Typed Greeters.
  */
-class DLLEXPORT TypedGreeter {
+class UMUNDO_API TypedGreeter {
 public:
 	virtual void welcome(TypedPublisher atPub, const SubscriberStub& sub) = 0;
 	virtual void farewell(TypedPublisher fromPub, const SubscriberStub& sub) = 0;
@@ -62,12 +62,12 @@ public:
 /**
  * Facade for an object sending publisher.
  */
-class DLLEXPORT TypedPublisher : public Publisher {
+class UMUNDO_API TypedPublisher : public Publisher {
 private:
 	/**
 	 * Untyped greeter to wrap a TypedGreeter for a TypedPublisher.
 	 */
-	class DLLEXPORT GreeterWrapper : public Greeter {
+	class UMUNDO_API GreeterWrapper : public Greeter {
 	public:
 		GreeterWrapper(TypedGreeter* typedGreeter, TypedPublisher* typedPub);
 		virtual ~GreeterWrapper();

@@ -25,7 +25,7 @@
 
 namespace umundo {
 
-class DLLEXPORT DirectoryListingService : public DirectoryListingServiceBase, public Thread {
+class UMUNDO_API DirectoryListingService : public DirectoryListingServiceBase, public Thread {
 public:
 	DirectoryListingService(const string& directory);
 	virtual ~DirectoryListingService();

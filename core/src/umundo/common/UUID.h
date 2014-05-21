@@ -29,7 +29,7 @@ namespace umundo {
 /**
  * UUID Generator for 36 byte UUIDs
  */
-class DLLEXPORT UUID {
+class UMUNDO_API UUID {
 public:
 	static const std::string getUUID();
 	static bool isUUID(const std::string& uuid);

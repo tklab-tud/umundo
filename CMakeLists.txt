@@ -410,7 +410,7 @@ if (BUILD_TESTS)
 endif()
 
 # some compiler flags
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
 	# best practices from scott meyers
@@ -446,9 +446,10 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		# gcc 4.8 features
 		if (CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
 			if (HOST_64BIT)
-				add_definitions(-fsanitize=address)
-				add_definitions(-fno-omit-frame-pointer)			
-				add_definitions(-fsanitize=thread)
+				add_definitions(-fno-omit-frame-pointer)
+				# we need to link against samoething to avoid undef refs tsan*
+#				add_definitions(-fsanitize=thread)
+#				add_definitions(-fsanitize=address)
 			endif()
 			add_definitions(-O0)
 		endif()
@@ -471,7 +472,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	else()
 		add_definitions(-rdynamic)
 	endif()
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_definitions("-DZMQ_STATIC")
 	if (BUILD_PREFER_STATIC_PCRE)
 		add_definitions("-DPCRE_STATIC")
@@ -520,7 +521,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 		set(${FLAGS} "${${FLAGS}} ${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099 /LTCG /NODEFAULTLIB:MSVCRTD")
 	endforeach()
 
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	add_definitions("-fPIC")
 	
 	if (BUILD_WITH_CPP11)

@@ -36,7 +36,7 @@ class ZeroMQNode;
 /**
  * Concrete publisher implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQPublisher : public PublisherImpl, public EnableSharedFromThis<ZeroMQPublisher>  {
+class UMUNDO_API ZeroMQPublisher : public PublisherImpl, public EnableSharedFromThis<ZeroMQPublisher>  {
 public:
 	virtual ~ZeroMQPublisher();
 

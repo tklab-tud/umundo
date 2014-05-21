@@ -31,7 +31,7 @@ class Type;
 /**
  * Definition of message types and abstraction of message (bridge pattern).
  */
-class DLLEXPORT Message {
+class UMUNDO_API Message {
 public:
 	enum Type {
 	    UM_VERSION            = 0xF004, // version 0.4 of the message format

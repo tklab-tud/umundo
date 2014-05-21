@@ -55,7 +55,7 @@ public:
  *
  * This class is a concrete implementor (in the bridge pattern sense) for the Discovery subsystem.
  */
-class DLLEXPORT BroadcastDiscovery : public DiscoveryImpl, public Thread {
+class UMUNDO_API BroadcastDiscovery : public DiscoveryImpl, public Thread {
 public:
 	virtual ~BroadcastDiscovery();
 	static SharedPtr<BroadcastDiscovery> getInstance();  ///< Return the singleton instance.

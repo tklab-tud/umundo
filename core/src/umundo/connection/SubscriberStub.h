@@ -33,7 +33,7 @@ namespace umundo {
 class NodeStub;
 class Message;
 
-class DLLEXPORT SubscriberStubImpl : public EndPointImpl {
+class UMUNDO_API SubscriberStubImpl : public EndPointImpl {
 public:
 	SubscriberStubImpl() : _uuid(UUID::getUUID()) {}
 	virtual ~SubscriberStubImpl() {}
@@ -59,7 +59,7 @@ protected:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberStub : public EndPoint {
+class UMUNDO_API SubscriberStub : public EndPoint {
 public:
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }

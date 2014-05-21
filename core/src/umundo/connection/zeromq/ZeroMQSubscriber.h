@@ -34,7 +34,7 @@ class NodeStub;
 /**
  * Concrete subscriber implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQSubscriber : public SubscriberImpl, public Thread {
+class UMUNDO_API ZeroMQSubscriber : public SubscriberImpl, public Thread {
 public:
 	SharedPtr<Implementation> create();
 	void init(Options*);

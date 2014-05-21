@@ -31,7 +31,7 @@ namespace umundo {
 /**
  * TypeDeserializerImpl implementor with ProtoBuf.
  */
-class DLLEXPORT PBDeserializer : public TypeDeserializerImpl {
+class UMUNDO_API PBDeserializer : public TypeDeserializerImpl {
 public:
 	PBDeserializer() {}
 	virtual ~PBDeserializer() {}

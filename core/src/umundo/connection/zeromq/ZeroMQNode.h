@@ -75,7 +75,7 @@ class NodeQuery;
 /**
  * Concrete node implementor for 0MQ (bridge pattern).
  */
-class DLLEXPORT ZeroMQNode : public Thread, public NodeImpl, public EnableSharedFromThis<ZeroMQNode> {
+class UMUNDO_API ZeroMQNode : public Thread, public NodeImpl, public EnableSharedFromThis<ZeroMQNode> {
 public:
 
 	virtual ~ZeroMQNode();

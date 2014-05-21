@@ -36,7 +36,7 @@ namespace umundo {
 /**
  * Concrete publisher implementor for RTP (bridge pattern).
  */
-class DLLEXPORT RTPPublisher : public PublisherImpl {
+class UMUNDO_API RTPPublisher : public PublisherImpl {
 public:
 	virtual ~RTPPublisher();
 

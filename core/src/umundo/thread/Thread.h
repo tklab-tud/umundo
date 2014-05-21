@@ -119,7 +119,7 @@ namespace umundo {
 /**
  * Platform independent parallel control-flows.
  */
-class DLLEXPORT Thread {
+class UMUNDO_API Thread {
 public:
 	Thread();
 	virtual ~Thread();
@@ -167,7 +167,7 @@ typedef tthread::lock_guard<tthread::mutex> ScopeLock;
  * http://www.cs.wustl.edu/~schmidt/win32-cv-1.html (we choose 3.2)
  */
 
-class DLLEXPORT Monitor {
+class UMUNDO_API Monitor {
 public:
 	Monitor();
 //	Monitor::Monitor(const Monitor& other);

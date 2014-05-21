@@ -10,9 +10,9 @@ namespace umundo {
 
 using std::list;
 
-class DLLEXPORT UITracer {
+class UMUNDO_API UITracer {
 public:
-	class DLLEXPORT Traceable {
+	class UMUNDO_API Traceable {
 	public:
 		virtual void replayTrace(const string& event) = 0;
 	};
@@ -29,7 +29,7 @@ protected:
 	std::fstream _file;
 };
 
-class DLLEXPORT NGramModel {
+class UMUNDO_API NGramModel {
 public:
 	struct Occurences {
 		int prefixLength;
@@ -66,7 +66,7 @@ protected:
 	static bool mostCommonFirst(Occurences, Occurences);
 };
 
-class DLLEXPORT SPA {
+class UMUNDO_API SPA {
 public:
 	SPA(NGramModel* model) : _model(model) {}
 	virtual ~SPA() {}

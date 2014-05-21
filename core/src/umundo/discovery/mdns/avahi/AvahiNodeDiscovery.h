@@ -37,7 +37,7 @@ class AvahiNodeStub;
 /**
  * Concrete discovery implementor for avahi (bridge pattern).
  */
-class DLLEXPORT AvahiNodeDiscovery : public DiscoveryImpl, public Thread {
+class UMUNDO_API AvahiNodeDiscovery : public DiscoveryImpl, public Thread {
 public:
 	virtual ~AvahiNodeDiscovery();
 	static shared_ptr<AvahiNodeDiscovery> getInstance();

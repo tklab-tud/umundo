@@ -40,14 +40,14 @@ class Publisher;
  * A greeter can be registered at a publisher to send a message, whenever a new subscriber
  * is added to the publisher.
  */
-class DLLEXPORT Greeter {
+class UMUNDO_API Greeter {
 public:
 	virtual ~Greeter() {};
 	virtual void welcome(Publisher&, const SubscriberStub&) = 0;
 	virtual void farewell(Publisher&, const SubscriberStub&) = 0;
 };
 
-class DLLEXPORT PublisherConfig : public Options {
+class UMUNDO_API PublisherConfig : public Options {
 public:
 	virtual std::string getType() {
 		return "PublisherConfig";
@@ -56,7 +56,7 @@ public:
 	std::string channelName;
 };
 
-class DLLEXPORT RTPPublisherConfig : public PublisherConfig {
+class UMUNDO_API RTPPublisherConfig : public PublisherConfig {
 public:
 	std::string getType() {
 		return "RTPPublisherConfig";
@@ -94,7 +94,7 @@ public:
 /**
  * Publisher implementor basis class (bridge pattern)
  */
-class DLLEXPORT PublisherImpl : public PublisherStubImpl, public Implementation {
+class UMUNDO_API PublisherImpl : public PublisherStubImpl, public Implementation {
 public:
 	PublisherImpl();
 	virtual ~PublisherImpl();
@@ -143,7 +143,7 @@ protected:
  *
  * We need to overwrite everything and use the concrete implementors fields.
  */
-class DLLEXPORT Publisher : public PublisherStub {
+class UMUNDO_API Publisher : public PublisherStub {
 public:
 	enum PublisherType {
 	    // these have to fit the subscriber types!

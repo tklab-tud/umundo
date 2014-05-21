@@ -106,7 +106,7 @@ public class UMundoAndroidActivity extends Activity {
 		disc = new Discovery(DiscoveryType.MDNS);
     
 		node = new Node();
-		disc.add(chatNode);
+		disc.add(node);
 
 		fooPub = new Publisher("pingpong");
 		node.addPublisher(fooPub);

@@ -37,6 +37,6 @@
 	</target>
 
 	<target name="run" depends="compile">
-		<java classpath="${umundo.jar}:${protobuf.jar}:${bin}" classname="org.umundo.Chat" />
+		<java classpath="${umundo.jar}:${protobuf.jar}:${bin}" classname="org.umundo.S11NChat" />
 	</target>
 </project>

@@ -37,7 +37,7 @@ namespace umundo {
 class Connectable;
 class Discovery;
 
-class DLLEXPORT NodeStubBaseImpl : public EndPointImpl {
+class UMUNDO_API NodeStubBaseImpl : public EndPointImpl {
 public:
 	std::string getUUID() const {
 		return _uuid;
@@ -54,7 +54,7 @@ protected:
 /**
  * Representation of a remote umundo Node.
  */
-class DLLEXPORT NodeStubBase : public EndPoint {
+class UMUNDO_API NodeStubBase : public EndPoint {
 public:
 	NodeStubBase() : _impl() { }
 	NodeStubBase(SharedPtr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
@@ -96,7 +96,7 @@ protected:
 	SharedPtr<NodeStubBaseImpl> _impl;
 };
 
-class DLLEXPORT NodeStubImpl : public NodeStubBaseImpl {
+class UMUNDO_API NodeStubImpl : public NodeStubBaseImpl {
 public:
 	virtual void addPublisher(const PublisherStub& pub) {
 		_pubs[pub.getUUID()] = pub;
@@ -143,7 +143,7 @@ private:
 
 };
 
-class DLLEXPORT NodeStub : public NodeStubBase {
+class UMUNDO_API NodeStub : public NodeStubBase {
 public:
 	NodeStub() : _impl() { }
 	NodeStub(SharedPtr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }

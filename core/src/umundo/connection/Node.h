@@ -41,7 +41,7 @@ class Discovery;
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
-class DLLEXPORT NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<EndPoint> { //, public EnableSharedFromThis<NodeImpl> {
+class UMUNDO_API NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<EndPoint> { //, public EnableSharedFromThis<NodeImpl> {
 public:
 	NodeImpl();
 	virtual ~NodeImpl();
@@ -89,7 +89,7 @@ private:
 /**
  * The local umundo node abstraction (bridge pattern).
  */
-class DLLEXPORT Node : public NodeStubBase {
+class UMUNDO_API Node : public NodeStubBase {
 public:
 
 	Node();
@@ -200,7 +200,7 @@ protected:
 /**
  * Convinience class to register an entity with many publishers / subscribers.
  */
-class DLLEXPORT Connectable {
+class UMUNDO_API Connectable {
 public:
 	virtual ~Connectable() {};
 	// namepace qualifiers are required for swig typemaps!
@@ -220,7 +220,7 @@ public:
 	}
 };
 
-class DLLEXPORT NodeOptions : public Options {
+class UMUNDO_API NodeOptions : public Options {
 public:
 	enum Protocol {
 	    TCP, UDP

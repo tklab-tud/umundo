@@ -40,14 +40,14 @@ class PublisherStub;
 /**
  * Interface for client classes to get byte-arrays from subscribers.
  */
-class DLLEXPORT Receiver {
+class UMUNDO_API Receiver {
 public:
 	virtual ~Receiver() {}
 	virtual void receive(Message* msg) = 0;
 	friend class Subscriber;
 };
 
-class DLLEXPORT SubscriberConfig : public Options {
+class UMUNDO_API SubscriberConfig : public Options {
 public:
 	std::string getType() {
 		return "SubscriberConfig";
@@ -56,7 +56,7 @@ public:
 	std::string uuid;
 };
 
-class DLLEXPORT RTPSubscriberConfig : public SubscriberConfig {
+class UMUNDO_API RTPSubscriberConfig : public SubscriberConfig {
 public:
 	std::string getType() {
 		return "RTPSubscriberConfig";
@@ -83,7 +83,7 @@ public:
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
-class DLLEXPORT SubscriberImpl : public SubscriberStubImpl, public Implementation {
+class UMUNDO_API SubscriberImpl : public SubscriberStubImpl, public Implementation {
 public:
 	SubscriberImpl();
 	virtual ~SubscriberImpl();
@@ -128,7 +128,7 @@ protected:
  * constructor without a receiver and the setReceiver method are required for Java as we cannot
  * inherit publishers while being its receiver at the same time as is used for the TypedSubscriber.
  */
-class DLLEXPORT Subscriber : public SubscriberStub {
+class UMUNDO_API Subscriber : public SubscriberStub {
 public:
 	enum SubscriberType {
 	    // these have to fit the publisher types!

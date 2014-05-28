@@ -1,25 +1,26 @@
 <project name="umundo-chat" default="run">
 
-	<property file="build.properties"/>
-	<property name="src" value="src"/>
-	<property name="bin" value="bin"/>
+	<property file="build.properties" />
+	<property name="src" value="src" />
+	<property name="bin" value="bin" />
 
 	<target name="clean">
-   		<delete dir="${bin}"/>
+		<delete dir="${bin}" />
 	</target>
-	
+
 	<target name="compile">
-	  <mkdir dir="${bin}" />
-		<javac destdir="${bin}" debuglevel="lines,vars,source" debug="on" encoding="utf-8" includeantruntime="false">
-			<src path="${src}"/>
-      <classpath>
-        <pathelement location="${umundo.jar}"/>
-      </classpath>
-			<include name="**/*.java"/>
+		<mkdir dir="${bin}" />
+		<javac destdir="${bin}" debuglevel="lines,vars,source" debug="on"
+			encoding="utf-8" includeantruntime="false">
+			<src path="${src}" />
+			<classpath>
+				<pathelement location="${umundo.jar}" />
+			</classpath>
+			<include name="**/*.java" />
 		</javac>
 	</target>
-	
+
 	<target name="run" depends="compile">
-		<java classpath="${umundo.jar}:${bin}" classname="org.umundo.Chat" />
+		<java classpath="${umundo.jar}:${bin}" classname="org.umundo.CoreChat"/>
 	</target>
 </project>

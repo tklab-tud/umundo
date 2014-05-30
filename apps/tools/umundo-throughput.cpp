@@ -31,12 +31,14 @@ using namespace umundo;
 RMutex mutex;
 bool isClient = false;
 bool isServer = false;
+size_t currSeqNr = 0;
 
 // server
 size_t bytesPerSecond = 1024 * 1024;
 size_t mtu = 1280;
 double pcntLossOk = 0;
 size_t waitForSubs = 0;
+size_t packetsWritten = 0;
 
 // client
 size_t bytesRcvd = 0;
@@ -49,6 +51,7 @@ public:
 	size_t pktsRcvd;
 	size_t pktsDropped;
 	size_t bytesRcvd;
+	size_t pktsLate;
 	double pcntLoss;
 	std::string name;
 };
@@ -61,7 +64,7 @@ class ThroughputReceiver : public Receiver {
 		bytesRcvd += msg->size();
 		pktsRecvd++;
 		
-		size_t currSeqNr = strTo<size_t>(msg->getMeta("seqNr"));
+		currSeqNr = strTo<size_t>(msg->getMeta("seqNr"));
 		
 		if (currSeqNr < lastSeqNr)
 			lastSeqNr = 0;
@@ -87,19 +90,16 @@ public:
 		report.pktsRcvd    = strTo<size_t>(msg->getMeta("pkts.rcvd"));
 		report.pktsDropped = strTo<size_t>(msg->getMeta("pkts.dropped"));
 		report.bytesRcvd   = strTo<size_t>(msg->getMeta("bytes.rcvd"));
-		
+
+		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
+		report.pktsLate = currSeqNr - lastSeqNr;
+			
 		if (report.pktsDropped > 0) {
 			double onePerc = (double)(report.pktsDropped + report.pktsRcvd) * 0.01;
 			onePerc = (std::max)(onePerc, 0.0001);
 			report.pcntLoss = (std::min)((double)report.pktsDropped / onePerc, 100.0);
 		} else {
 			report.pcntLoss = 0;
-		}
-		
-		if (report.pcntLoss <= pcntLossOk) {
-			bytesPerSecond *= 1.1;
-		} else {
-			bytesPerSecond *= 0.9;
 		}
 	}
 };
@@ -118,13 +118,13 @@ class ThroughputGreeter : public Greeter {
 void printUsageAndExit() {
 	printf("umundo-throughput version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-throughput -s|-c [-l N] [-m MTU] [-w N]\n");
+	printf("\tumundo-throughput -s|-c [-l N] [-m N] [-w N]\n");
 	printf("\n");
 	printf("Options\n");
 	printf("\t-c                 : act as a client\n");
 	printf("\t-s                 : act as a server\n");
 	printf("\t-l                 : acceptable packet loss in percent\n");
-	printf("\t-m                 : MTU to use on server (defaults to 1280)\n");
+	printf("\t-m <number>        : MTU to use on server (defaults to 1280)\n");
 	printf("\t-w <number>        : wait for given number of subscribers before testing\n");
 	exit(1);
 }
@@ -146,6 +146,26 @@ std::string bytesToDisplay(size_t nrBytes) {
 		return ss.str();
 	}
 	ss << ((double)nrBytes / (double)(1024 * 1024 * 1024)) << "GB";
+	return ss.str();
+}
+
+std::string timeToDisplay(size_t ns) {
+	std::stringstream ss;
+	ss << std::setprecision(5);
+	
+	if (ns < 1000) {
+		ss << ns << "ns";
+		return ss.str();
+	}
+	if (ns < 1000 * 1000) {
+		ss << ((double)ns / (double)1000) << "us";
+		return ss.str();
+	}
+	if (ns < 1000 * 1000 * 1000) {
+		ss << ((double)ns / (double)(1000 * 1000)) << "ms";
+		return ss.str();
+	}
+	ss << ((double)ns / (double)(1000 * 1000 * 1000)) << "s";
 	return ss.str();
 }
 
@@ -196,24 +216,21 @@ int main(int argc, char** argv) {
 		char* data = (char*)malloc(dataSize);
 		Message* msg = new Message(data, dataSize);
 
-		unsigned long seqNr = 0;
 		unsigned long bytesWritten = 0;
-		unsigned long packetsWritten = 0;
 
 		uint64_t now = Thread::getTimeStampMs();
 		while(1) {
-			msg->putMeta("seqNr", toStr(++seqNr));
+			msg->putMeta("seqNr", toStr(++currSeqNr));
 			pub.send(msg);
 			
 			bytesWritten += dataSize;
 			packetsWritten++;
 			
-			size_t packetsPerSecond = 0;
 			size_t delay = 0;
 			// sleep just enough to reach the desired bps
 			{
 				RScopeLock lock(mutex);
-				packetsPerSecond = bytesPerSecond / dataSize;
+				size_t packetsPerSecond = (std::max)(bytesPerSecond / dataSize, (size_t)1);
 				delay = (1000000000) / packetsPerSecond;
 			}
 			
@@ -223,30 +240,74 @@ int main(int argc, char** argv) {
 				
 //				std::cout << FORMAT_COL << bytesToDisplay(bytesPerSecond) + "/s";
 				std::cout << FORMAT_COL << bytesToDisplay(bytesWritten) + "/s";
-				std::cout << FORMAT_COL << "#" + toStr(packetsWritten);
-				std::cout << FORMAT_COL << toStr(delay) + "ns ---" << std::endl;
+				std::cout << FORMAT_COL << toStr(packetsWritten) + "pkt/s";
+				std::cout << FORMAT_COL << timeToDisplay(delay);
 
-				if (reports.size() > 0) {
+				if (reports.size() == 0) {
+					std::cout << FORMAT_COL << "---";
+					std::cout << std::endl;
+				} else {
+					
+					double decreasePressure = 0;
+					
+					// print report messages
+					std::map<std::string, Report>::iterator repIter = reports.begin();
+
+					while(repIter != reports.end()) {
+						const Report& report = repIter->second;
+						// see if we need to decrease bandwidth
+						if (report.pktsLate > packetsWritten / 2) {
+							// client is lagging more than half a second, scale back somewhat
+							decreasePressure = (std::max)(1.1, decreasePressure);
+						}
+						if (report.pcntLoss > pcntLossOk) {
+							// we lost packages, scale back somewhat
+							decreasePressure = (std::max)((double)report.pktsDropped / report.pktsRcvd, decreasePressure);
+							decreasePressure = (std::min)(decreasePressure, 4.0);
+						}
+						if (report.pktsLate > 3 * packetsWritten) {
+							// queues explode! scale back alot!
+							decreasePressure = (std::max)((double)report.pktsLate / packetsWritten, decreasePressure);
+							decreasePressure = (std::min)(decreasePressure, 4.0);
+						}
+						repIter++;
+					}
+					
+					if (decreasePressure > 0) {
+						bytesPerSecond *= (1.0 / decreasePressure);
+						bytesPerSecond = (std::max)(bytesPerSecond, (size_t)(1024));
+						std::cout << FORMAT_COL << 1.0 / decreasePressure;
+					} else {
+						bytesPerSecond *= 1.1;
+						std::cout << FORMAT_COL << 1.1;
+					}
+					std::cout << FORMAT_COL << "---";
+					std::cout << std::endl;
+
 					
 					std::cout << FORMAT_COL << "bytes recv";
 					std::cout << FORMAT_COL << "pkts recv";
 					std::cout << FORMAT_COL << "pkts loss";
 					std::cout << FORMAT_COL << "% loss";
-					std::cout << FORMAT_COL << "name" << std::endl;
-
-					// print report messages
-					std::map<std::string, Report>::iterator repIter = reports.begin();
+					std::cout << FORMAT_COL << "pkts late";
+					std::cout << FORMAT_COL << "name";
+					std::cout << std::endl;
+					
+					repIter = reports.begin();
 					while(repIter != reports.end()) {
 						const Report& report = repIter->second;
 						std::cout << FORMAT_COL << bytesToDisplay(report.bytesRcvd) + "/s";
 						std::cout << FORMAT_COL << toStr(report.pktsRcvd) + "pkt/s";
 						std::cout << FORMAT_COL << toStr(report.pktsDropped) + "pkt/s";
 						std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
+						std::cout << FORMAT_COL << toStr(report.pktsLate) + "pkt";
 						if (repIter->first.size() >= 6)
 							std::cout << FORMAT_COL << repIter->first.substr(0, 6);
 						std::cout << std::endl;
+
 						repIter++;
 					}
+
 					std::cout << std::endl;
 				}
 				

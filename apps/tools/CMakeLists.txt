@@ -173,3 +173,16 @@ if (NOT WIN32)
 		COMPONENT tools 
 	)
 endif()
+
+if (WIN32)
+	add_executable(umundo-throughput umundo-throughput.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+else()
+	add_executable(umundo-throughput umundo-throughput.cpp)
+endif()
+target_link_libraries(umundo-throughput umundocore)
+set_target_properties(umundo-throughput PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-throughput
+	COMPONENT tools 
+)

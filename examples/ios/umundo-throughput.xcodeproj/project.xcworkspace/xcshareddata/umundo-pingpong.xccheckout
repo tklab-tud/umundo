@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>BCDA9AE8-6C3E-433A-B750-7DA9D1B2DE0C</string>
+	<key>IDESourceControlProjectName</key>
+	<string>umundo-throughput</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>6ACAB533-956F-4630-9774-F6D36E657AB4</key>
+		<string>https://github.com/tklab-tud/umundo.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>examples/ios/umundo-throughput.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>6ACAB533-956F-4630-9774-F6D36E657AB4</key>
+		<string>../../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/tklab-tud/umundo.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>6ACAB533-956F-4630-9774-F6D36E657AB4</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>6ACAB533-956F-4630-9774-F6D36E657AB4</string>
+			<key>IDESourceControlWCCName</key>
+			<string>umundo</string>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -22,6 +22,7 @@
 #define CORE_H_LCUIJIJM
 
 #include "umundo-objc/core/UMNode.h"
+#include "umundo-objc/core/UMDiscovery.h"
 #include "umundo-objc/core/UMSubscriber.h"
 #include "umundo-objc/core/UMPublisher.h"
 

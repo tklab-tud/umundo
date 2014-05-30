@@ -51,22 +51,22 @@ echo
 mkdir -p ${BUILD_DIR} &> /dev/null
 cd ${BUILD_DIR}
 
-# rm -rf *
-# cmake ${DIR}/../../ \
-# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
-# -DDIST_PREPARE=ON \
-# -DBUILD_UMUNDO_APPS=OFF \
-# -DBUILD_UMUNDO_TOOLS=OFF \
-# -DBUILD_UMUNDO_S11N=OFF \
-# -DBUILD_UMUNDO_RPC=OFF \
-# -DBUILD_UMUNDO_UTIL=OFF \
-# -DBUILD_BINDINGS=ON \
-# -DBUILD_SHARED_LIBS=OFF \
-# -DBUILD_PREFER_STATIC_LIBRARIES=ON \
-# -DANDROID_ABI="armeabi" \
-# -DCMAKE_BUILD_TYPE=Debug
-# make -j2
-# make -j2 java
+rm -rf *
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+-DANDROID_ABI="armeabi" \
+-DCMAKE_BUILD_TYPE=Debug
+make -j2
+make -j2 java
 
 rm -rf *
 cmake ${DIR}/../../ \
@@ -85,22 +85,22 @@ cmake ${DIR}/../../ \
 make -j2
 make -j2 java
 
-# rm -rf *
-# cmake ${DIR}/../../ \
-# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
-# -DDIST_PREPARE=ON \
-# -DBUILD_UMUNDO_APPS=OFF \
-# -DBUILD_UMUNDO_TOOLS=OFF \
-# -DBUILD_UMUNDO_S11N=OFF \
-# -DBUILD_UMUNDO_RPC=OFF \
-# -DBUILD_UMUNDO_UTIL=OFF \
-# -DBUILD_BINDINGS=ON \
-# -DBUILD_SHARED_LIBS=OFF \
-# -DBUILD_PREFER_STATIC_LIBRARIES=ON \
-# -DANDROID_ABI="x86" \
-# -DCMAKE_BUILD_TYPE=Debug
-# make -j2
-# make -j2 java
+rm -rf *
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DDIST_PREPARE=ON \
+-DBUILD_UMUNDO_APPS=OFF \
+-DBUILD_UMUNDO_TOOLS=OFF \
+-DBUILD_UMUNDO_S11N=OFF \
+-DBUILD_UMUNDO_RPC=OFF \
+-DBUILD_UMUNDO_UTIL=OFF \
+-DBUILD_BINDINGS=ON \
+-DBUILD_SHARED_LIBS=OFF \
+-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+-DANDROID_ABI="x86" \
+-DCMAKE_BUILD_TYPE=Debug
+make -j2
+make -j2 java
 
 rm -rf *
 cmake ${DIR}/../../ \

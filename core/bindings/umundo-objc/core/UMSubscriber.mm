@@ -40,6 +40,8 @@ public:
          forKey:[NSString stringWithCString:metaIter->first.c_str() encoding:[NSString defaultCStringEncoding]]];
       }
       [_objcReceiver received:nsData withMeta:nsMeta];
+      [nsData release];
+      [nsMeta release];
 #if HAS_AUTORELEASE_POOL
     }
 #else

@@ -113,6 +113,16 @@ various stages of maturity:
 		this is due to the rather low ulimit for open file-handles on MacOSX
 		(<tt>ulimit -n</tt> gives 256).</dd>
 
+	<dt><b>Is uMundo Thread-Safe?</b></dt>
+	<dd>Well, the individual objects are not, uMundo as a whole is though. That is
+		you cannot send via the same publisher object on many threads without locking,
+		but you can use a publisher per thread. Sending on a publisher is even lock-free
+		as far as uMundo is conceirned, if we were to make the single objects thread-safe,
+		even single-threaded applications would pay the performance hit of locking for
+		mutual exclusion. Therefore, it is your responsibility to serialize access to the
+		individual objects among threads.
+	</dd>
+
 	<dt><b>Why am I not receiving messages?</b></dt>
 	<dd>First make sure that your network is setup correctly by running two instances of <tt>umundo-pingpong</tt>.
 		If you do not receive <tt>i</tt>'s to your <tt>o</tt>'s make sure that:

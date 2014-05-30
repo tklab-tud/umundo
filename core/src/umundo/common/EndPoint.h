@@ -102,7 +102,7 @@ protected:
 	bool _isInProcess;
 	std::string _host;
 	std::string _domain;
-	long _lastSeen;
+	unsigned long long _lastSeen;
 
 };
 

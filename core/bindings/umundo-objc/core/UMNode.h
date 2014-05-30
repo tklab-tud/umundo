@@ -35,6 +35,7 @@
  */
 @interface UMNode :
 NSObject {
+	@public
 	SharedPtr<umundo::Node> _cppNode;
 }
 

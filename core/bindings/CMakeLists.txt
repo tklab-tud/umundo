@@ -228,7 +228,7 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
-			COMMENT "Creating the library for Mono ...")
+			COMMENT "Creating umundoCSharp.dll for Mono ...")
    add_dependencies(mono umundoNativeCSharp)
 		if (BUILD_TESTS)
 			add_dependencies(ALL_TESTS mono)

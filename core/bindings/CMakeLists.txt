@@ -224,7 +224,7 @@ if (UMUNDONATIVECSHARP_LOCATION)
 				copy ${PROJECT_SOURCE_DIR}/s11n/src/umundo-csharp/ITypedGreeter.cs ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core
 			COMMAND ${DMCS_EXECUTABLE}
 				-target:library
-				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoMono.dll
+				/out:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundoCSharp.dll
 				/r:${PROJECT_SOURCE_DIR}/contrib/csharp/protobuf-net-r580/Full/net30/protobuf-net.dll
 				*.cs
 				WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/core/bindings/swig/csharp/org/umundo/core

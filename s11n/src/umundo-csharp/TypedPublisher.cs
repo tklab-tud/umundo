@@ -61,7 +61,57 @@ namespace org.umundo.s11n
             }
         }
 
-        private Message PrepareMessage(String type, byte[] buffer)
+        /// <summary>
+        /// Retrieves a message from the given serializable that can be sent over umundo.
+        /// The name is automatically determined.
+        /// </summary>
+        /// <param name="serializable">the object to send</param>
+        /// <returns></returns>
+        public Message PrepareMessage(ISerializable serializable)
+        {
+            byte[] buffer = Serialize(serializable);
+            string type = serializable.GetType().Name;
+            return PrepareMessage(type, buffer);
+        }
+
+        /// <summary>
+        /// Retrieves a message from the given extensible that can be sent over umundo.
+        /// The name is automatically determined.
+        /// </summary>
+        /// <param name="extensible">the object to send</param>
+        /// <returns></returns>
+        public Message PrepareMessage(IExtensible extensible)
+        {
+            byte[] buffer = Serialize(extensible);
+            string type = extensible.GetType().Name;
+            return PrepareMessage(type, buffer);
+        }
+
+        /// <summary>
+        /// Retrieves a message from the given serializable that can be sent over umundo.
+        /// </summary>
+        /// <param name="type">type of the object to send</param>
+        /// <param name="serializable">the object to send</param>
+        /// <returns></returns>
+        public Message PrepareMessage(string type, ISerializable serializable)
+        {
+            byte[] buffer = Serialize(serializable);
+            return PrepareMessage(type, buffer);
+        }
+
+        /// <summary>
+        /// Retrieves a message from the given extensible that can be sent over umundo.
+        /// </summary>
+        /// <param name="type">type of the object to send</param>
+        /// <param name="extensible">the object to send</param>
+        /// <returns></returns>
+        public Message PrepareMessage(string type, IExtensible extensible)
+        {
+            byte[] buffer = Serialize(extensible);
+            return PrepareMessage(type, buffer);
+        }
+
+        private Message PrepareMessage(string type, byte[] buffer)
         {
             Message msg = new Message();
             msg.setData(buffer);
@@ -75,10 +125,9 @@ namespace org.umundo.s11n
         /// </summary>
         /// <param name="type">type of the object to send</param>
         /// <param name="o">the object to send</param>
-        public void SendObject(String type, ISerializable o)
+        public void SendObject(string type, ISerializable o)
         {
-            byte[] buffer = Serialize(o);
-            Message message = PrepareMessage(type, buffer);
+            Message message = PrepareMessage(type, o);
             send(message);
         }
 
@@ -88,9 +137,7 @@ namespace org.umundo.s11n
         /// <param name="o">the object to send</param>
         public void SendObject(ISerializable o)
         {
-            byte[] buffer = Serialize(o);
-            string type = o.GetType().Name;
-            Message message = PrepareMessage(type, buffer);
+            Message message = PrepareMessage(o);
             send(message);
         }
 

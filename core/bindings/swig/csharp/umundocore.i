@@ -440,10 +440,6 @@ using System.Runtime.InteropServices;
 %ignore Configuration;
 
 %ignore NodeConfig;
-%ignore PublisherConfig;
-%ignore SubscriberConfig;
-%ignore RTPPublisherConfig;
-%ignore RTPSubscriberConfig;
 
 %ignore EndPointImpl;
 %ignore DiscoveryImpl;

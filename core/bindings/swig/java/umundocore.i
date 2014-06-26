@@ -451,8 +451,6 @@ public HashMap<String, String> getMeta() {
 %ignore Implementation;
 %ignore Configuration;
 %ignore NodeConfig;
-%ignore PublisherConfig;
-%ignore SubscriberConfig;
 %ignore EndPointImpl;
 %ignore DiscoveryImpl;
 %ignore NodeImpl;

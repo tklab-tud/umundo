@@ -29,9 +29,28 @@
 # TODO: give a sensible error message when building the jar fails
 cmake_minimum_required(VERSION 2.8.7)
 
+cmake_policy(PUSH)
 IF((CMAKE_VERSION VERSION_EQUAL "2.8.12") OR (CMAKE_VERSION VERSION_GREATER "2.8.12"))
 	CMAKE_POLICY(SET CMP0022 OLD) 
 ENDIF() 
+
+if(POLICY CMP0042)
+	cmake_policy(SET CMP0042 OLD)
+endif()
+if(POLICY CMP0045)
+	cmake_policy(SET CMP0045 OLD)
+endif()
+if(POLICY CMP0046)
+	cmake_policy(SET CMP0046 OLD)
+endif()
+if(POLICY CMP0026)
+	cmake_policy(SET CMP0026 OLD)
+endif()
+if(POLICY CMP0038)
+	cmake_policy(SET CMP0038 OLD)
+endif()
+
+
 
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
@@ -232,7 +251,7 @@ endif()
 SET(UMUNDO_PLATFORM_ID)
 SET(UMUNDO_PLATFORM_PATH)
 
-if (CMAKE_CROSSCOMPILING)
+if (CMAKE_CROSSCOMPILING)	
 	if (IOS)
 		SET(UMUNDO_PLATFORM_ID "ios")
 	elseif (ANDROID)
@@ -243,10 +262,13 @@ if (CMAKE_CROSSCOMPILING)
 else()
 	if (WIN32 AND 64BIT_HOST)
 		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64")
+	elseif (APPLE)
+		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-i386")
 	else()
 		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}")
 	endif()
 endif()
+
 
 if (CMAKE_CROSSCOMPILING)
 	if (IOS)
@@ -1071,6 +1093,8 @@ endif()
 
 # see contrib/cmake/CPackUMundo.cmake
 include(contrib/cmake/CPackUMundo.cmake)
+
+cmake_policy(POP)
 
 # This must always be last!
 include(CPack)

@@ -36,7 +36,7 @@ public:
 	PBDeserializer() {}
 	virtual ~PBDeserializer() {}
 
-	void init(Options*);
+	void init(const Options*);
 	SharedPtr<Implementation> create();
 	void* deserialize(const std::string& type, Message* msg);
 	void destroyObj(void* obj);

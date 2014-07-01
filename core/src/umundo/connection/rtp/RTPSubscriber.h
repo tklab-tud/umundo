@@ -41,7 +41,7 @@ class NodeStub;
 class UMUNDO_API RTPSubscriber : public SubscriberImpl, public Thread {
 public:
 	SharedPtr<Implementation> create();
-	void init(Options*);
+	void init(const Options*);
 	virtual ~RTPSubscriber();
 	void suspend();
 	void resume();

@@ -34,7 +34,7 @@ SharedPtr<Implementation> BroadcastDiscovery::create() {
 	return getInstance();
 }
 
-void BroadcastDiscovery::init(Options*) {
+void BroadcastDiscovery::init(const Options*) {
 	/*
 	 * This is where you can setup the non-prototype instance, i.e. not the one
 	 * in the factory, but the one created from the prototype.

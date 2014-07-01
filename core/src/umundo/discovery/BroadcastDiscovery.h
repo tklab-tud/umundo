@@ -61,7 +61,7 @@ public:
 	static SharedPtr<BroadcastDiscovery> getInstance();  ///< Return the singleton instance.
 
 	SharedPtr<Implementation> create();
-	void init(Options*);
+	void init(const Options*);
 	void suspend();
 	void resume();
 

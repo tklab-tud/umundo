@@ -106,6 +106,62 @@ protected:
 
 };
 
+class UMUNDO_API EndPointOptions : public Options {
+public:
+	enum Protocol {
+		TCP, UDP
+	};
+	
+	EndPointOptions(uint16_t port) {
+		setPort(port);
+		options["endpoint.ip"] = "*";
+	}
+	
+	EndPointOptions() {
+		options["endpoint.ip"] = "*";
+	}
+	
+	EndPointOptions(const std::string& address) {
+		size_t colonPos = address.find_last_of(":");
+		if(colonPos == std::string::npos || address.length() < 6 + 8 + 1 + 1) {
+			UM_LOG_ERR("Endpoint address '%s' invalid", address.c_str());
+			return;
+		}
+		
+		std::string transport = address.substr(0,3);
+		std::string ip = address.substr(6, colonPos - 6);
+		std::string port = address.substr(colonPos + 1, address.length() - colonPos + 1);
+		
+		if (transport != "tcp") {
+			UM_LOG_ERR("Endpoint transport '%s' invalid", transport.c_str());
+			return;
+		}
+		
+		if (!isNumeric(port.c_str(), 10) ||
+				port.find("-") != std::string::npos ||
+				port.find(".") != std::string::npos) {
+			UM_LOG_ERR("Endpoint port '%s' invalid", port.c_str());
+			return;
+		}
+		
+		setPort(strTo<uint16_t>(port));
+		setIP(ip);
+	}
+	
+	std::string getType() {
+		return "EndPointConfig";
+	}
+		
+	void setPort(uint16_t nodePort) {
+		options["endpoint.port"] = toStr(nodePort);
+	}
+	
+	void setIP(const std::string nodeIp) {
+		options["endpoint.ip"] = toStr(nodeIp);
+	}
+	
+};
+
 /**
  * Anything that is addressable in TCP/IP networks.
  */
@@ -126,7 +182,7 @@ public:
 		std::string ip = address.substr(6, colonPos - 6);
 		std::string port = address.substr(colonPos + 1, address.length() - colonPos + 1);
 
-		if (transport != "tcp" && transport != "udp") {
+		if (transport != "tcp") {
 			UM_LOG_ERR("Endpoint transport '%s' invalid", transport.c_str());
 			return;
 		}
@@ -143,7 +199,7 @@ public:
 		_impl->setIP(ip);
 		_impl->setPort(strTo<uint16_t>(port));
 	}
-
+	
 	EndPoint() : _impl() { }
 	EndPoint(SharedPtr<EndPointImpl> const impl) : _impl(impl) { }
 	EndPoint(const EndPoint& other) : _impl(other._impl) { }

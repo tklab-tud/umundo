@@ -35,7 +35,7 @@ namespace umundo {
 
 ZeroMQSubscriber::ZeroMQSubscriber() {}
 
-void ZeroMQSubscriber::init(Options* config) {
+void ZeroMQSubscriber::init(const Options* config) {
 //	_config = StaticPtrCast<SubscriberConfig>(config);
 
 	(_subSocket     = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_SUB))     || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));

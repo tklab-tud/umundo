@@ -83,7 +83,7 @@ public:
 	/** @name Implementor */
 	//@{
 	SharedPtr<Implementation> create();
-	void init(Options*);
+	void init(const Options*);
 	void suspend();
 	void resume();
 	//@}

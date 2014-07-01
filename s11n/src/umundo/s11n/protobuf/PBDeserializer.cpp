@@ -23,7 +23,7 @@
 
 namespace umundo {
 
-void PBDeserializer::init(Options*) {}
+void PBDeserializer::init(const Options*) {}
 
 SharedPtr<Implementation> PBDeserializer::create() {
 	SharedPtr<Implementation> instance(new PBDeserializer());

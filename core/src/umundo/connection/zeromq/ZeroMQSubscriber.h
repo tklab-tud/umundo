@@ -37,7 +37,7 @@ class NodeStub;
 class UMUNDO_API ZeroMQSubscriber : public SubscriberImpl, public Thread {
 public:
 	SharedPtr<Implementation> create();
-	void init(Options*);
+	void init(const Options*);
 	virtual ~ZeroMQSubscriber();
 	void suspend();
 	void resume();

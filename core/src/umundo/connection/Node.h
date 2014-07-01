@@ -75,11 +75,16 @@ public:
 			return _pubs[uuid];
 		return nullPub;
 	}
+	
+	virtual void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
+		_pubMonitors.push_back(monitor);
+	}
 
 
 protected:
 	std::map<std::string, Publisher> _pubs;
 	std::map<std::string, Subscriber> _subs;
+	std::list<ResultSet<PublisherStub>* > _pubMonitors;
 
 private:
 	Publisher nullPub;
@@ -118,6 +123,10 @@ public:
 		return *this;
 	} // operator=
 
+	void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
+		_impl->addPublisherMonitor(monitor);
+	}
+	
 	/** @name Publish / Subscriber Maintenance */
 	//@{
 

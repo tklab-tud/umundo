@@ -1347,6 +1347,13 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 
 	nodeStub.getImpl()->addPublisher(pubStub);
 
+	std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
+	while(monitorIter != _pubMonitors.end()) {
+		(*monitorIter)->added(pubStub);
+		(*monitorIter)->changed(pubStub);
+		monitorIter++;
+	}
+	
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
 		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
@@ -1371,6 +1378,13 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 		return;
 	}
 
+	std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
+	while(monitorIter != _pubMonitors.end()) {
+		(*monitorIter)->removed(pubStub);
+		(*monitorIter)->changed(pubStub);
+		monitorIter++;
+	}
+	
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
 		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {

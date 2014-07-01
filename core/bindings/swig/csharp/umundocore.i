@@ -439,8 +439,6 @@ using System.Runtime.InteropServices;
 %ignore Implementation;
 %ignore Configuration;
 
-%ignore NodeConfig;
-
 %ignore EndPointImpl;
 %ignore DiscoveryImpl;
 %ignore NodeImpl;

@@ -52,7 +52,7 @@ SharedPtr<Implementation> BonjourDiscovery::create() {
 	return getInstance();
 }
 
-void BonjourDiscovery::init(Options*) {
+void BonjourDiscovery::init(const Options*) {
 	// do nothing?
 }
 

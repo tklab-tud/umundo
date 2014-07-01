@@ -158,7 +158,7 @@ const std::vector<Interface> Host::getInterfaces() {
 				currIfc.ipv4.push_back(std::string((char*)&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, 4));
 				break;
 			case AF_INET6:
-				currIfc.ipv4.push_back(std::string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
+				currIfc.ipv6.push_back(std::string((char*)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 6));
 				break;
 # ifdef LLADDR
 			case AF_LINK:

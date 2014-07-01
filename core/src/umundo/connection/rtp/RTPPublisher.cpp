@@ -38,7 +38,7 @@ RTPPublisher::RTPPublisher() : _isSuspended(false), _multicast(false), _initDone
 #endif // WIN32
 }
 
-void RTPPublisher::init(Options* config) {
+void RTPPublisher::init(const Options* config) {
 	RScopeLock lock(_mutex);
 	int status;
 	uint16_t min=16384;		//minimum rtp port

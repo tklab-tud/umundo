@@ -38,6 +38,37 @@ namespace umundo {
 class Connectable;
 class Discovery;
 
+class UMUNDO_API NodeOptions : public EndPointOptions {
+public:
+
+	NodeOptions(uint16_t nodePort, uint16_t pubPort) {
+		setPort(nodePort);
+		setPubPort(pubPort);
+		options["node.allowLocal"] = toStr(false);
+	}
+	
+	NodeOptions() {
+		options["node.allowLocal"] = toStr(false);
+	}
+	
+	NodeOptions(const std::string& address) : EndPointOptions(address) {
+		setPubPort(strTo<uint16_t>(options["endpoint.port"]) + 1);
+		options["node.allowLocal"] = toStr(false);
+	}
+
+	std::string getType() {
+		return "NodeConfig";
+	}
+	
+	void setPubPort(uint16_t pubPort) {
+		options["node.port.pub"] = toStr(pubPort);
+	}
+		
+	void allowLocalConnections(bool allow) {
+		options["node.allowLocal"] = toStr(allow);
+	}
+};
+
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
@@ -98,6 +129,7 @@ class UMUNDO_API Node : public NodeStubBase {
 public:
 
 	Node();
+	Node(const NodeOptions&);
 	Node(uint16_t nodePort, uint16_t pubPort);
 	Node(SharedPtr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
 	Node(const Node& other) : NodeStubBase(other._impl), _impl(other._impl) { }
@@ -226,39 +258,6 @@ public:
 
 	// notify connectable that it has been removed from a node
 	virtual void removedFromNode(Node& node) {
-	}
-};
-
-class UMUNDO_API NodeOptions : public Options {
-public:
-	enum Protocol {
-	    TCP, UDP
-	};
-
-	NodeOptions(uint16_t nodePort, uint16_t pubPort) {
-		setNodePort(nodePort);
-		setPubPort(pubPort);
-		options["node.allowLocal"] = toStr(false);
-	}
-
-	NodeOptions() {
-		options["node.allowLocal"] = toStr(false);
-	}
-
-	std::string getType() {
-		return "NodeConfig";
-	}
-
-	void setPubPort(uint16_t pubPort) {
-		options["node.port.pub"] = toStr(pubPort);
-	}
-
-	void setNodePort(uint16_t nodePort) {
-		options["node.port.node"] = toStr(nodePort);
-	}
-
-	void allowLocalConnections(bool allow) {
-		options["node.allowLocal"] = toStr(allow);
 	}
 };
 

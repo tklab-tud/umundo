@@ -38,7 +38,7 @@ RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber
 #endif // WIN32
 }
 
-void RTPSubscriber::init(Options* config) {
+void RTPSubscriber::init(const Options* config) {
 	RScopeLock lock(_mutex);
 	int status;
 	uint16_t min=16384;		//minimum rtp port

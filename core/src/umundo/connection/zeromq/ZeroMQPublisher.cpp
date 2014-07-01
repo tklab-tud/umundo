@@ -40,7 +40,7 @@ namespace umundo {
 
 ZeroMQPublisher::ZeroMQPublisher() {}
 
-void ZeroMQPublisher::init(Options* config) {
+void ZeroMQPublisher::init(const Options* config) {
 	RScopeLock lock(_mutex);
 
 	_transport = "tcp";

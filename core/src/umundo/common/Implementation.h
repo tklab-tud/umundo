@@ -37,7 +37,7 @@ public:
 	Implementation() : _isSuspended(false) {}
 	/** @name Life Cycle Management */
 	//@{
-	virtual void init(Options*) = 0; ///< initialize instance after creation
+	virtual void init(const Options*) = 0; ///< initialize instance after creation
 	virtual void suspend() {}; ///< Optional hook to suspend implementations
 	virtual void resume() {}; ///< Optional hook to resume implementations
 	//@}
@@ -62,7 +62,7 @@ public:
 	virtual ~Options() {}
 	virtual std::string getType() = 0;
 
-	std::map<std::string, std::string> getKVPs() {
+	std::map<std::string, std::string> getKVPs() const {
 		return options;
 	}
 

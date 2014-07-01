@@ -108,7 +108,7 @@ public:
 	std::vector<EndPoint> list();
 
 protected:
-	void init(Options*);
+	void init(const Options*);
 
 	std::map<std::string, std::string> _config;
 	MDNSQuery* _query;

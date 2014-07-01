@@ -43,7 +43,7 @@ SharedPtr<Implementation> PBSerializer::create() {
 	return instance;
 }
 
-void PBSerializer::init(Options* config) {
+void PBSerializer::init(const Options* config) {
 }
 
 std::string PBSerializer::serialize(const std::string& type, void* obj) {

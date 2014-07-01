@@ -46,6 +46,14 @@ Node::Node() {
 	_impl->init(&options);
 }
 
+Node::Node(const NodeOptions& options) {
+	_impl = StaticPtrCast<NodeImpl>(Factory::create("node.zmq"));
+	NodeStubBase::_impl = _impl;
+	EndPoint::_impl = _impl;
+	_impl->init(&options);
+
+}
+	
 Node::Node(uint16_t nodePort, uint16_t pubPort) {
 	_impl = StaticPtrCast<NodeImpl>(Factory::create("node.zmq"));
 	NodeStubBase::_impl = _impl;
@@ -53,7 +61,7 @@ Node::Node(uint16_t nodePort, uint16_t pubPort) {
 	NodeOptions options(nodePort, pubPort);
 	_impl->init(&options);
 }
-
+	
 Node::~Node() {
 }
 

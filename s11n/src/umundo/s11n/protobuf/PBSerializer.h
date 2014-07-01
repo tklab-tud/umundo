@@ -44,7 +44,7 @@ public:
 	virtual ~PBSerializer();
 
 	virtual SharedPtr<Implementation> create();
-	virtual void init(Options*);
+	virtual void init(const Options*);
 
 	virtual std::string serialize(const std::string& type, void* obj);
 //		virtual string serialize(void* obj);

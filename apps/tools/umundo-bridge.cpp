@@ -36,7 +36,7 @@ bool verbose = false;
 void printUsageAndExit() {
 	printf("umundo-bridge version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-bridge [-d domain] [-v] protocol://endpoint:port\n");
+	printf("\tumundo-bridge [-d domain] [-v] protocol://localIP:port protocol://remoteIP:port\n");
 	printf("\n");
 	printf("Options\n");
 	printf("\t-d <domain>        : join domain\n");
@@ -44,7 +44,8 @@ void printUsageAndExit() {
 	printf("\t-t                 : tunnel all messages\n");
 	printf("\n");
 	printf("Example\n");
-	printf("\tumundo-bridge tcp://130.32.14.22:4242\n");
+	
+	printf("\tumundo-bridge tcp://130.32.14.22:4242 tcp://53.2.23.72:4242\n");
 	exit(1);
 }
 
@@ -64,46 +65,30 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (optind >= argc)
+	if (optind >= argc - 1)
 		printUsageAndExit();
 
+	std::string localAddress = argv[optind];
+	std::string remoteAddress = argv[optind + 1];
+	
 	MDNSDiscoveryOptions mdnsOpts;
 	if (domain)
 		mdnsOpts.setDomain(domain);
 	Discovery disc(Discovery::MDNS, &mdnsOpts);
 	
-	Node node;
-	disc.add(node);
+//	Node innerNode;
+//	disc.add(innerNode);
 	
-	std::string hostname(argv[optind]);
-	NodeStub endPoint;
-
-	size_t oldPos = 0;;
-	size_t pos = 0;;
-	if ((pos = hostname.find("://", pos)) != std::string::npos) {
-		endPoint.getImpl()->setTransport(hostname.substr(0, pos));
-		oldPos = pos + 3;
-	} else {
-		endPoint.getImpl()->setTransport("tcp");
-		oldPos = pos;
-	}
-
-	if ((pos = hostname.find(":", pos + 1)) != std::string::npos) {
-		endPoint.getImpl()->setIP(hostname.substr(oldPos, pos - oldPos));
-		oldPos = pos + 1;
-	} else {
+	EndPoint endPoint(remoteAddress);
+	if (!endPoint)
 		printUsageAndExit();
-	}
 
-	if (pos + 1 < hostname.length()) {
-		std::string port(hostname.substr(oldPos));
-		endPoint.getImpl()->setPort(strTo<uint16_t>(port));
-	} else {
-		printUsageAndExit();
-	}
+	Node outerNode(localAddress);
+	outerNode.added(endPoint);
 
-	node.added(endPoint);
-
+	Publisher pub("foo");
+	outerNode.addPublisher(pub);
+	
 	while (true) {
 		Thread::sleepMs(500);
 	}

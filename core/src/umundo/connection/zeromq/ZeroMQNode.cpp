@@ -177,16 +177,16 @@ ZeroMQNode::~ZeroMQNode() {
 
 }
 
-void ZeroMQNode::init(Options* options) {
+void ZeroMQNode::init(const Options* options) {
 	UM_TRACE("init");
 
 	_options = options->getKVPs();
-	_port = strTo<uint16_t>(_options["node.port.node"]);
+	_port = strTo<uint16_t>(_options["endpoint.port"]);
 	_pubPort = strTo<uint16_t>(_options["node.port.pub"]);
 	_allowLocalConns = strTo<bool>(_options["node.allowLocal"]);
 
 	_transport = "tcp";
-	_ip = "127.0.0.1";
+	_ip = _options["endpoint.ip"];
 	_lastNodeInfoBroadCast = Thread::getTimeStampMs();
 
 	int routMand = 1;
@@ -209,10 +209,13 @@ void ZeroMQNode::init(Options* options) {
 	// connect node socket
 	if (_port > 0) {
 		std::stringstream ssNodeAddress;
-		ssNodeAddress << "tcp://*:" << _port;
+		ssNodeAddress << "tcp://" << _ip << ":" << _port;
 		zmq_bind(_nodeSocket, ssNodeAddress.str().c_str()) && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
+		UM_LOG_DEBUG("zmq_bind: Listening on %s", ssNodeAddress.str().c_str());
 	} else {
-		_port = bindToFreePort(_nodeSocket, "tcp", "*");
+		_port = bindToFreePort(_nodeSocket, "tcp", _ip);
+		UM_LOG_DEBUG("zmq_bind: Listening on %s://%s:%d", "tcp", _ip.c_str(), _port);
+
 	}
 	std::string nodeId("um.node." + _uuid);
 	zmq_bind(_nodeSocket, std::string("inproc://" + nodeId).c_str()) && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
@@ -221,10 +224,10 @@ void ZeroMQNode::init(Options* options) {
 	// connect publisher socket
 	if (_pubPort > 0) {
 		std::stringstream ssPubAddress;
-		ssPubAddress << "tcp://*:" << _pubPort;
+		ssPubAddress << "tcp://" << _ip << ":" << _pubPort;
 		zmq_bind(_pubSocket, ssPubAddress.str().c_str()) && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
 	} else {
-		_pubPort = bindToFreePort(_pubSocket, "tcp", "*");
+		_pubPort = bindToFreePort(_pubSocket, "tcp", _ip);
 	}
 	std::string pubId("um.pub." + _uuid);
 	zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));

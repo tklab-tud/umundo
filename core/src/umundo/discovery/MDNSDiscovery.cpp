@@ -28,7 +28,7 @@ SharedPtr<Implementation> MDNSDiscovery::create() {
 	return impl;
 }
 
-void MDNSDiscovery::init(Options* config) {
+void MDNSDiscovery::init(const Options* config) {
 	if (config != NULL)
 		_config = config->getKVPs();
 

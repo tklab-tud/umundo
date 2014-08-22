@@ -201,8 +201,8 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(64BIT_LIB_POSTFIX 64)
 	# additional library paths to be searched
 	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
-# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
-# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
+# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/lib64")
+# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/lib64")
 endif()
 
 if (APPLE)
@@ -231,8 +231,8 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	  set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 	endif()
 	
-# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/lib64")
-# 	LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/lib64")
+# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/lib64")
+# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/lib64")
 endif()
 
 # We use the toolchain file from http://code.google.com/p/android-cmake/
@@ -243,7 +243,7 @@ if (CMAKE_CROSSCOMPILING AND ANDROID_ABI)
 endif()
 
 #
-# Setting the CMAKE_FIND_ROOT_PATH to a list of directories will cause all CMake modules
+# Setting the CMAKE_PREFIX_PATH to a list of directories will cause all CMake modules
 # to look in these directories in addition to the system search paths:
 # http://www.vtk.org/Wiki/CMake_Cross_Compiling#Searching_and_finding_external_software
 #
@@ -298,8 +298,8 @@ if(CMAKE_CROSSCOMPILING)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni - we don't?
 		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
-		LIST(APPEND CMAKE_FIND_ROOT_PATH "/usr/local/bin") # this is needed to find swig
-		LIST(APPEND CMAKE_FIND_ROOT_PATH "/opt/local/bin") # this is needed to find protoc
+		LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/bin") # this is needed to find swig
+		LIST(APPEND CMAKE_PREFIX_PATH "/opt/local/bin") # this is needed to find protoc
 	endif ()
 endif()
 
@@ -394,26 +394,26 @@ endif()
 if (CMAKE_CROSSCOMPILING)
 	# always prefer prebuilt libraries for cross-compiling
 	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)
-	SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_FIND_ROOT_PATH}")
+	SET(CMAKE_PREFIX_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_PREFIX_PATH}")
 else()
 	OPTION(BUILD_PREFER_PREBUILT_LIBS "Search libraries in contrib/prebuilt first" ON)
 	if (BUILD_PREFER_PREBUILT_LIBS)
 		# for everything, we start our search in contrib/prebuilt
-		SET(CMAKE_FIND_ROOT_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_FIND_ROOT_PATH}")
+		SET(CMAKE_PREFIX_PATH "${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH};${CMAKE_PREFIX_PATH}")
 	else()
-		# using this trick, we search paths from find_* before CMAKE_FIND_ROOT_PATH as '/' is prepended first
-		SET(CMAKE_FIND_ROOT_PATH "/;${CMAKE_FIND_ROOT_PATH};${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH}")
+		# using this trick, we search paths from find_* before CMAKE_PREFIX_PATH as '/' is prepended first
+		SET(CMAKE_PREFIX_PATH "/;${CMAKE_PREFIX_PATH};${UMUNDO_PREBUILT_LIBRARY_PATH};${UMUNDO_PREBUILT_HEADER_PATH}")
 	endif()
 endif()
 
 # prepend some directories given at cmake invocation time
 if (CMAKE_CUSTOM_FIND_PATH)
-	SET(CMAKE_FIND_ROOT_PATH "${CMAKE_CUSTOM_FIND_PATH};${CMAKE_FIND_ROOT_PATH}")
+	SET(CMAKE_PREFIX_PATH "${CMAKE_CUSTOM_FIND_PATH};${CMAKE_PREFIX_PATH}")
 endif()
 
 #message(FATAL_ERROR "CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
 
-message(STATUS "Searching for prebuilt libraries in: ${CMAKE_FIND_ROOT_PATH}")
+message(STATUS "Searching for prebuilt libraries in: ${CMAKE_PREFIX_PATH}")
 
 if (WIN32)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/snippets)

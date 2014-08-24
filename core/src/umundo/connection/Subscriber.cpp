@@ -86,6 +86,7 @@ void Subscriber::init(SubscriberType type, const std::string& channelName, Recei
 		break;
 	}
 
+	EndPoint::_impl = _impl;
 	SubscriberStub::_impl = _impl;
 	_impl->setChannelName(channelName);
 	_impl->init(config);

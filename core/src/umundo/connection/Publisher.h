@@ -112,6 +112,9 @@ public:
 	virtual void setGreeter(Greeter* greeter)        {
 		_greeter = greeter;
 	}
+	virtual Greeter* getGreeter()        {
+		return _greeter;
+	}
 	std::map<std::string, SubscriberStub> getSubscribers() {
 		return _subs;
 	}
@@ -195,6 +198,9 @@ public:
 	}
 	void setGreeter(Greeter* greeter)                    {
 		return _impl->setGreeter(greeter);
+	}
+	Greeter* getGreeter()                    {
+		return _impl->getGreeter();
 	}
 	void putMeta(const std::string& key, const std::string& value) {
 		return _impl->putMeta(key, value);

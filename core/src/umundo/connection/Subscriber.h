@@ -173,6 +173,10 @@ public:
 	void setReceiver(Receiver* receiver) {
 		_impl->setReceiver(receiver);
 	}
+	
+	Receiver* getReceiver() {
+		return _impl->getReceiver();
+	}
 
 	virtual void setChannelName(const std::string& channelName)  {
 		_impl->setChannelName(channelName);

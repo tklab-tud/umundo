@@ -359,7 +359,7 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 	if (_subs.find(sub.getUUID()) == _subs.end())
 		return;
 
-	UM_LOG_INFO("%s removed subscriber %d on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
+	UM_LOG_INFO("%s removed subscriber %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), sub.getChannelName().c_str());
 
 	std::map<std::string, SharedPtr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
 	while (nodeIter != _connTo.end()) {
@@ -697,6 +697,16 @@ void ZeroMQNode::processPubComm() {
 			}
 		} else {
 			UM_LOG_INFO("%s: Got 0MQ unsubscription on %s", _uuid.c_str(), subChannel.c_str());
+			if (subUUID.size() && _subscriptions[subUUID].isZMQConfirmed) {
+				std::map<std::string, Publisher>::iterator pubIter = _subscriptions[subUUID].confirmed.begin();
+				while(pubIter != _subscriptions[subUUID].confirmed.end()) {
+					if(_connFrom.find(_subscriptions[subUUID].nodeUUID)!=_connFrom.end())
+						pubIter->second.removed(_subscriptions[subUUID].subStub, _connFrom[_subscriptions[subUUID].nodeUUID]->node);
+					else if(_connTo.find(_subscriptions[subUUID].nodeUUID)!=_connTo.end())
+						pubIter->second.removed(_subscriptions[subUUID].subStub, _connTo[_subscriptions[subUUID].nodeUUID]->node);
+					pubIter++;
+				}
+			}
 		}
 
 		zmq_getsockopt (_pubSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
@@ -1146,6 +1156,14 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 			}
 			localSubIter++;
 		}
+		
+		std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
+		while(monitorIter != _pubMonitors.end()) {
+			(*monitorIter)->removed(remotePubIter->second);
+			(*monitorIter)->changed(remotePubIter->second);
+			monitorIter++;
+		}
+		
 		remotePubIter++;
 	}
 

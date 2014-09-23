@@ -31,6 +31,7 @@
 #ifdef UNIX
 #include <sys/socket.h>
 #include <unistd.h> // gethostname
+#include <netdb.h>
 #if !defined(ANDROID)
 #include <ifaddrs.h>
 #endif
@@ -57,6 +58,8 @@
 	#define SOCKET int
 #endif
 
+#define TIMEOUT 8
+
 using namespace umundo;
 
 char* domain = NULL;
@@ -65,14 +68,14 @@ bool verbose = false;
 void printUsageAndExit() {
 	printf("umundo-bridge version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage:\n");
-	printf("\tumundo-bridge [-d domain] [-v] -c IPv4:port\n");
+	printf("\tumundo-bridge [-d domain] [-v] -c <hostnameOrIPv4>:<port>\n");
 	printf("\tumundo-bridge [-d domain] [-v] -l port\n");
 	printf("\n");
 	printf("Options:\n");
-	printf("\t-d <domain>        : join domain\n");
-	printf("\t-v                 : be more verbose\n");
-	printf("\t-l <port>          : listen on this udp and tcp port\n");
-	printf("\t-c <IPv4>:<port>   : connect to remote end at IPv4:port (via tcp and udp)\n");
+	printf("\t-d <domain>                  : join domain\n");
+	printf("\t-v                           : be more verbose\n");
+	printf("\t-l <port>                    : listen on this udp and tcp port\n");
+	printf("\t-c <hostnameOrIPv4>:<port>   : connect to remote end at IPv4:port (via tcp and udp)\n");
 	printf("\n");
 	printf("Examples:\n");
 	printf("\tumundo-bridge -l 4242\n");
@@ -97,32 +100,6 @@ public:
 	explicit BridgeMessageException(const std::string& what) : std::runtime_error("BridgeMessageException: "+what) { }
 	virtual ~BridgeMessageException() throw () { }
 };
-
-//class for simple handling and output of bridge node/endpoint type (local, remote)
-class BridgeType {
-public:
-	enum dummy { LOCAL, REMOTE };
-	BridgeType(dummy type) : _type(type) { }
-	BridgeType operator!() {
-		switch(_type) {
-			case BridgeType::LOCAL: return BridgeType(REMOTE);
-			case BridgeType::REMOTE: return BridgeType(LOCAL);
-		}
-		return BridgeType(LOCAL);
-	}
-	bool operator==(const BridgeType& other) const {
-		return other._type==_type;
-	}
-private:
-	dummy _type;
-};
-std::ostream& operator<<(std::ostream& os, BridgeType type) {
-	if(type==BridgeType::LOCAL)
-		os << "LOCAL";
-	else if(type==BridgeType::REMOTE)
-		os << "REMOTE";
-	return os;
-}
 
 //output of publisher or subscriber
 std::ostream& operator<<(std::ostream& os, Publisher& pub) {
@@ -223,67 +200,6 @@ public:
 	}
 };
 */
-
-//monitor addition and removal of new publishers and publish the same channel on the other side
-class PubMonitor : public ResultSet<PublisherStub> {
-private:
-	Node& _receiverNode;
-	std::map<std::string, Publisher*> _knownPubs;
-	BridgeType _type;
-	RMutex _mutex;
-	
-public:
-	PubMonitor(Node& receiverNode, BridgeType type) : _receiverNode(receiverNode), _type(type) { }
-	
-	void added(PublisherStub pubStub) {
-		RScopeLock lock(_mutex);
-		if(verbose)
-			std::cout << "Got new " << _type << " publisher: " << pubStub << " --> publishing on " << !_type << " side..." << std::endl;
-		/*
-		if(_knownPubs.find(pubStub.getUUID())!=_knownPubs.end())
-		{
-			if(verbose)
-				std::cout << _type << " publisher " << pubStub << " already known, ignoring!" << std::endl;
-			return;
-		}
-		Publisher* ownPub = new Publisher(pubStub.getChannelName());
-		GlobalGreeter* ownGreeter = new GlobalGreeter(_receiverNode, ownPub, !_type);
-		ownPub->setGreeter(ownGreeter);
-		_knownPubs[pubStub.getUUID()] = ownPub;
-		_senderNode.addPublisher(*ownPub);
-		if(verbose)
-			std::cout << "Created new " << !_type << " publisher " << ownPub->getUUID() << " for " << _type << " publisher " << pubStub.getUUID() << std::endl;
-		*/
-	}
-	
-	void removed(PublisherStub pubStub) {
-		RScopeLock lock(_mutex);
-		if(verbose)
-			std::cout << "Got removal of " << _type << " publisher: " << pubStub << " --> also removing on " << !_type << " side..." << std::endl;
-		/*
-		if(_knownPubs.find(pubStub.getUUID())==_knownPubs.end())
-		{
-			if(verbose)
-				std::cout << _type << " publisher " << pubStub << " unknown, ignoring removal!" << std::endl;
-			return;
-		}
-		std::string localUUID = _knownPubs[pubStub.getUUID()]->getUUID();
-		GlobalGreeter* greeter = dynamic_cast<GlobalGreeter*>(_knownPubs[pubStub.getUUID()]->getGreeter());
-		_knownPubs[pubStub.getUUID()]->setGreeter(NULL);
-		greeter->unsubscribeAll();
-		_senderNode.removePublisher(*_knownPubs[pubStub.getUUID()]);
-		_knownPubs.erase(pubStub.getUUID());
-		delete _knownPubs[pubStub.getUUID()];
-		delete greeter;
-		if(verbose)
-			std::cout << "Removed " << !_type << " publisher " << localUUID << " for " << _type << " publisher " << pubStub.getUUID() << std::endl;
-		*/
-	}
-	
-	void changed(PublisherStub pubStub) {
-		//do nothing here
-	}
-};
 
 //for 64bit message entry lengths see https://stackoverflow.com/questions/809902/64-bit-ntohl-in-c
 class BridgeMessage {
@@ -432,38 +348,7 @@ private:
 	
 	friend class TCPListener;
 	friend class UDPListener;
-	friend class Connector;
-};
-
-class UDPListener : public Thread {
-private:
-	SOCKET _socket;
-	MessageQueue _queue;
-	
-	UDPListener(SOCKET socket, MessageQueue& queue) : _socket(socket), _queue(queue) {
-		start();
-	}
-	
-	void run() {
-		char buffer[65536]="";
-		while(true) {
-			size_t count=recv(_socket, buffer, sizeof(buffer), 0);
-			if(count==-1)
-				throw SocketException("recv() on udp socket failed");
-			else {
-				BridgeMessage* msg;
-				try {
-					msg=new BridgeMessage(buffer, count);
-				} catch(BridgeMessageException& e) {
-					delete msg;
-					throw e;		///TODO: cancel connection and try to connect/listen again
-				}
-				_queue.write(msg);
-			}
-		}
-	}
-	
-	friend class Connector;
+	friend class ProtocolHandler;
 };
 
 class TCPListener : public Thread {
@@ -475,71 +360,139 @@ private:
 		start();
 	}
 	
-	void run() {
-		char buffer[65536]="";
-		while(true) {
-			///TODO: concat incoming data till one complete message is received (eg. packetize incoming stream)
-			size_t count=recv(_socket, buffer, sizeof(buffer), 0);
-			if(count==-1)
-				throw SocketException("recv() on tcp socket failed");
-			else {
-				BridgeMessage* msg;
-				try {
-					msg=new BridgeMessage(buffer, count);
-				} catch(BridgeMessageException& e) {
-					delete msg;
-					throw e;		///TODO: cancel connection and try to connect/listen again
-				}
-				_queue.write(msg);
-			}
-		}
+	void terminate() {
+		///TODO: terminate thread
 	}
 	
-	friend class Connector;
+	void run() {
+		try {
+			char* buffer;
+			uint32_t packetSize;
+			while(true) {
+				packetSize=0;			//stays zero after recvAll() if connection was closed
+				if(recvAll(_socket, (char*)&packetSize, sizeof(uint32_t), 0)<0)
+					throw SocketException("recv() on tcp socket failed");
+				if(packetSize==0)		//socket read returned 0 --> connection was closed
+					break;
+				buffer=(char*)malloc(packetSize);
+				if(buffer==NULL)
+					throw std::runtime_error("malloc for "+toStr(packetSize)+" bytes failed");
+				if(recvAll(_socket, buffer, packetSize, 0)<=0)
+					throw SocketException("recv() on tcp socket failed");
+				else {
+					BridgeMessage* msg;
+					try {
+						msg=new BridgeMessage(buffer, packetSize);
+					} catch(std::exception& e) {
+						delete msg;
+						throw e;
+					}
+					_queue.write(msg);
+				}
+			}
+		} catch(std::exception& e) {
+			if(verbose)
+				std::cout << "Received exception in TCPListener: " << e.what() << std::endl;
+		} catch(...) {
+			std::cout << "Received unknown exception in TCPListener"<< std::endl;
+		}
+		std::cout << "Terminating TCPListener..."<< std::endl;
+		BridgeMessage* terminationMessage = new BridgeMessage();
+		terminationMessage->set("type", "internal");
+		terminationMessage->set("source", "TCPListener");
+		terminationMessage->set("cause", "termination");
+		_queue.write(terminationMessage);
+	}
+	
+	int recvAll(SOCKET socket, char* buffer, size_t length, int flags) {
+		int retval;
+		size_t originalLength=length;
+		do {
+			retval=recv(socket, buffer, length, 0);
+			if(retval<=0)
+				return retval;
+			length-=retval;		//calculate remaining data length
+			buffer+=retval;		//advance buffer
+		} while(length>0);
+		return originalLength;
+	}
+	
+	friend class ProtocolHandler;
 };
 
-class Connector : public Thread {
+class UDPListener : public Thread {
+private:
+	SOCKET _socket;
+	MessageQueue _queue;
+	
+	UDPListener(SOCKET socket, MessageQueue& queue) : _socket(socket), _queue(queue) {
+		start();
+	}
+	
+	void terminate() {
+		///TODO: terminate thread
+	}
+	
+	void run() {
+		char buffer[65536]="";
+		try {
+			while(true) {
+				size_t count=recv(_socket, buffer, sizeof(buffer), 0);
+				if(count==-1)
+					throw SocketException("recv() on udp socket failed");
+				else {
+					BridgeMessage* msg;
+					try {
+						msg=new BridgeMessage(buffer, count);
+					} catch(std::exception& e) {
+						delete msg;
+						throw e;
+					}
+					_queue.write(msg);
+				}
+			}
+		} catch(std::exception& e) {
+			if(verbose)
+				std::cout << "Received exception in UDPListener: " << e.what() << std::endl;
+		} catch(...) {
+			std::cout << "Received unknown exception in UDPListener"<< std::endl;
+		}
+		std::cout << "Terminating UDPListener..."<< std::endl;
+		BridgeMessage* terminationMessage = new BridgeMessage();
+		terminationMessage->set("type", "internal");
+		terminationMessage->set("source", "UDPListener");
+		terminationMessage->set("cause", "termination");
+		_queue.write(terminationMessage);
+	}
+	
+	friend class ProtocolHandler;
+};
+
+class ProtocolHandler : public Thread {
 private:
 	SOCKET _tcpSocket;
 	SOCKET _udpSocket;
+	bool _handleRTP;
 	MessageQueue _messageQueue;
 	TCPListener* _tcpListener;
 	UDPListener* _udpListener;
-	bool _listening;
-	bool _handleRTP;
+	enum dummy { UDP, TCP };
 
 public:
-	enum dummy { UDP, TCP };
-	
-	Connector(uint16_t listenPort) : _listening(true), _handleRTP(false) {
-		initNetwork();
-		
-		struct sockaddr_in addr;
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = htonl(INADDR_ANY);
-		addr.sin_port = htons(listenPort);
-		
-		//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
-		int reuseaddr = 1;
-		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr))==-1)
-			throw SocketException("Could not set SO_REUSEADDR on tcp socket");
-		if(bind(_tcpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
-			throw SocketException("Could not bind tcp socket to specified port: ");
-		if(bind(_udpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
-			throw SocketException("Could not bind udp socket to specified port");
-		if(listen(_tcpSocket, SOMAXCONN)==-1)
-			throw SocketException("Could not listen on tcp socket");
+	ProtocolHandler(SOCKET tcpSocket, SOCKET udpSocket, bool handleRTP) : _tcpSocket(tcpSocket), _udpSocket(udpSocket), _handleRTP(handleRTP) {
+		_tcpListener=new TCPListener(_tcpSocket, _messageQueue);
+		if(_handleRTP)
+			_udpListener=new UDPListener(_udpSocket, _messageQueue);
+		start();
 	}
 	
-	Connector(std::string connectIP, uint16_t connectPort) : _listening(false) {
-		initNetwork();
-		
-		
-	}
-	
-	~Connector() {
-		delete _udpListener;
+	~ProtocolHandler() {
+		_tcpListener->terminate();
+		delete _tcpListener;
+		if(_handleRTP) {
+			_udpListener->terminate();
+			delete _udpListener;
+		}
 		#ifdef WIN32
 			closesocket(_tcpSocket);
 			closesocket(_udpSocket);
@@ -550,63 +503,16 @@ public:
 		#endif
 	}
 	
-	void waitForConnection() {
-		if(_listening) {
-			SOCKET newSocket;
-			struct sockaddr_in clientAddress;
-			size_t clientAddressLength=sizeof(clientAddress);
-			while(true) {
-				newSocket = accept(_tcpSocket, (struct sockaddr*)&clientAddress, &clientAddressLength);
-				if(newSocket == -1) {
-					if(errno == EINTR)
-						continue;
-					throw SocketException("Could not accept connection on tcp socket");
-				}
-				break;
-			}
-			#ifdef WIN32
-				closesocket(_tcpSocket);
-			#else
-				close(_tcpSocket);
-			#endif
-			_tcpSocket = newSocket;
-			
-			if(verbose)
-				std::cout << "Accepted connection from " << ipToStr(clientAddress.sin_addr.s_addr) << ":" << ntohs(clientAddress.sin_port) << " on tcp socket, sending serverHello message..." << std::endl;
-			
-			if(connect(_udpSocket, (sockaddr*)&clientAddress, sizeof(clientAddress))==-1)
-				throw SocketException("Could not connect udp socket to remote ip");
-			_tcpListener=new TCPListener(_tcpSocket, _messageQueue);
-			_udpListener=new UDPListener(_udpSocket, _messageQueue);
-			
-			BridgeMessage* msg=new BridgeMessage();
-			msg->set("type", "serverHello");
-			sendMessage(*msg, TCP);
-			delete msg;
-			msg=NULL;
-			for(int timeout=0; timeout<8 && msg==NULL; timeout++)	///8 seconds timeout for udp socket confirmation (clientHello)
-				msg=_messageQueue.read(1000);
-			if(msg==NULL) {
-				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
-				msg=new BridgeMessage();
-				msg->set("type", "alert");
-				msg->set("alert", "udpDysfunction");
-				sendMessage(*msg, TCP);
-				delete msg;
-			} else {
-				_handleRTP=true;
-				if(msg->get("type")!="clientHello")
-					std::cout << "WARNING: packet loss on udp connection --> using it anyway..." << std::endl;
-			}
-		} else {
-			///TODO: connect tcp and udp sockets
-		}
-		start();
-		
-	}
-	
 	void waitForDisconnection() {
 		///TODO: do something useful
+	}
+
+private:
+	void run() {
+		while(true) {
+			///TODO: read messages from the queue and process them, also alert main thread (waiting in waitForDisconnection()) when disconnected
+			Thread::sleepMs(1000);
+		}
 	}
 	
 	void sendMessage(BridgeMessage& msg, dummy channel) {
@@ -623,13 +529,267 @@ public:
 		if(send(channel==TCP ? _tcpSocket : _udpSocket, packet.c_str(), packet.length(), 0)!=packet.length())
 			throw SocketException(std::string("Could not send data on ")+(channel==TCP ? "tcp" : "udp")+" socket");
 	}
+};
+
+//monitor addition and removal of new publishers and publish the same channel on the other side
+class PubMonitor : public ResultSet<PublisherStub> {
+private:
+	Node& _receiverNode;
+	std::map<std::string, Publisher*> _knownPubs;
+	ProtocolHandler* _handler;
+	RMutex _mutex;
+	
+public:
+	PubMonitor(Node& receiverNode, ProtocolHandler* handler) : _receiverNode(receiverNode), _handler(handler) { }
+	
+	void added(PublisherStub pubStub) {
+		RScopeLock lock(_mutex);
+		if(verbose)
+			std::cout << "Got new LOCAL publisher: " << pubStub << " --> sending PUB_ADDED through bridge..." << std::endl;
+		/*
+		if(_knownPubs.find(pubStub.getUUID())!=_knownPubs.end())
+		{
+			if(verbose)
+				std::cout << _type << " publisher " << pubStub << " already known, ignoring!" << std::endl;
+			return;
+		}
+		Publisher* ownPub = new Publisher(pubStub.getChannelName());
+		GlobalGreeter* ownGreeter = new GlobalGreeter(_receiverNode, ownPub, !_type);
+		ownPub->setGreeter(ownGreeter);
+		_knownPubs[pubStub.getUUID()] = ownPub;
+		_senderNode.addPublisher(*ownPub);
+		if(verbose)
+			std::cout << "Created new " << !_type << " publisher " << ownPub->getUUID() << " for " << _type << " publisher " << pubStub.getUUID() << std::endl;
+		*/
+	}
+	
+	void removed(PublisherStub pubStub) {
+		RScopeLock lock(_mutex);
+		if(verbose)
+			std::cout << "Got removal of LOCAL publisher: " << pubStub << " --> sending PUB_REMOVED through bridge..." << std::endl;
+		/*
+		if(_knownPubs.find(pubStub.getUUID())==_knownPubs.end())
+		{
+			if(verbose)
+				std::cout << _type << " publisher " << pubStub << " unknown, ignoring removal!" << std::endl;
+			return;
+		}
+		std::string localUUID = _knownPubs[pubStub.getUUID()]->getUUID();
+		GlobalGreeter* greeter = dynamic_cast<GlobalGreeter*>(_knownPubs[pubStub.getUUID()]->getGreeter());
+		_knownPubs[pubStub.getUUID()]->setGreeter(NULL);
+		greeter->unsubscribeAll();
+		_senderNode.removePublisher(*_knownPubs[pubStub.getUUID()]);
+		_knownPubs.erase(pubStub.getUUID());
+		delete _knownPubs[pubStub.getUUID()];
+		delete greeter;
+		if(verbose)
+			std::cout << "Removed " << !_type << " publisher " << localUUID << " for " << _type << " publisher " << pubStub.getUUID() << std::endl;
+		*/
+	}
+	
+	void changed(PublisherStub pubStub) {
+		//do nothing here
+	}
+};
+
+class Connector {
+private:
+	SOCKET _tcpSocket;
+	SOCKET _udpSocket;
+	bool _listening;
+	std::string _connectIP;
+	uint16_t _connectPort;
+	bool _handoffDone;
+	enum dummy { UDP, TCP };
+
+public:
+	Connector(uint16_t listenPort) : _listening(true), _connectIP(""), _connectPort(0), _handoffDone(false) {
+		initNetwork();
+		
+		struct sockaddr_in addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+		addr.sin_port = htons(listenPort);
+		
+		//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
+		int reuseaddr = 1;
+		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr))==-1)
+			throw SocketException("Could not set SO_REUSEADDR on tcp socket");
+		if(bind(_tcpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
+			throw SocketException("Could not bind tcp socket to specified port: ");
+		if(bind(_udpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
+			throw SocketException("Could not bind udp socket to specified port");
+		if(listen(_tcpSocket, 1)==-1)
+			throw SocketException("Could not listen on tcp socket");
+	}
+	
+	Connector(std::string connectIP, uint16_t connectPort) : _listening(false), _connectIP(connectIP), _connectPort(connectPort) {
+		initNetwork();
+	}
+	
+	~Connector() {
+		if(!_handoffDone) {			//dont close our sockets if handoff to ProtocolHandler is already done
+			#ifdef WIN32
+				closesocket(_tcpSocket);
+				closesocket(_udpSocket);
+				WSACleanup();
+			#else
+				close(_tcpSocket);
+				close(_udpSocket);
+			#endif
+		}
+	}
+	
+	ProtocolHandler* waitForConnection() {
+		bool handleRTP=true;
+		struct sockaddr_in remoteAddress;
+		socklen_t remoteAddressLength=sizeof(remoteAddress);
+		
+		if(_listening) {
+			SOCKET newSocket;
+			while(true) {
+				newSocket = accept(_tcpSocket, (struct sockaddr*)&remoteAddress, &remoteAddressLength);
+				if(newSocket == -1) {
+					if(errno == EINTR)
+						continue;
+					throw SocketException("Could not accept connection on tcp socket");
+				}
+				break;
+			}
+			#ifdef WIN32
+				closesocket(_tcpSocket);
+			#else
+				close(_tcpSocket);
+			#endif
+			_tcpSocket = newSocket;
+			
+			if(verbose)
+				std::cout << "Accepted connection from " << ipToStr(remoteAddress.sin_addr.s_addr) << ":" << ntohs(remoteAddress.sin_port) << " on tcp socket, sending serverHello message..." << std::endl;
+			
+			//wait TIMEOUT seconds for clientHello on TCP channel
+			if(waitForString("clientHello", TCP, TIMEOUT, NULL, 0))
+				throw BridgeMessageException("Error while receiving initial 'clientHello' on tcp socket");
+			//send serverHello on tcp channel
+			if(send(_tcpSocket, "serverHello", 11, 0)!=11)
+				throw SocketException("Could not send data on tcp socket");
+			
+			//wait TIMEOUT seconds for clientHello on UDP channel
+			remoteAddressLength=sizeof(remoteAddress);
+			if(waitForString("clientHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength)) {
+				handleRTP=false;
+				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
+			} else {
+				if(connect(_udpSocket, (sockaddr*)&remoteAddress, sizeof(remoteAddress))==-1)
+					throw SocketException("Could not connect udp socket to remote ip");
+			}
+			//send serverHello on udp channel
+			if(handleRTP) {
+				if(send(_udpSocket, "serverHello", 11, 0)!=11)
+					std::cout << "WARNING: Could not send data on udp socket" << std::endl;
+			}
+		} else {
+			const char* hostname=_connectIP.c_str();
+			struct addrinfo hints;
+			memset(&hints, 0, sizeof(hints));
+			hints.ai_family=AF_INET;
+			hints.ai_socktype=SOCK_STREAM;
+			hints.ai_protocol=0;
+			hints.ai_flags=AI_ADDRCONFIG|AI_NUMERICSERV;
+			struct addrinfo* res=0;
+			int err=getaddrinfo(hostname, toStr(_connectPort).c_str(), &hints, &res);
+			if(err!=0)
+				throw SocketException("Failed to resolve hostname '"+_connectIP+"' (err="+toStr(err)+")");
+			if(connect(_tcpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
+				throw SocketException("Could not connect tcp socket");
+			if(connect(_udpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
+				throw SocketException("Could not connect udp socket");
+			freeaddrinfo(res);
+			
+			//send "clientHello" on both channels
+			if(send(_tcpSocket, "clientHello", 11, 0)!=11)
+				throw SocketException("Could not send data on tcp socket");
+			if(send(_udpSocket, "clientHello", 11, 0)!=11)
+				handleRTP=false;
+			
+			//wait TIMEOUT seconds for resulting serverHello on TCP channel
+			if(waitForString("serverHello", TCP, TIMEOUT, NULL, 0))
+				throw BridgeMessageException("Error while receiving initial 'serverHello' on tcp socket");
+			
+			//wait TIMEOUT seconds for resulting serverHello on UDP channel
+			if(handleRTP) {
+				remoteAddressLength=sizeof(remoteAddress);
+				try {
+					if(waitForString("serverHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength))
+						throw std::exception();		//internal error reporting to surrounding try-catch block
+				} catch(std::exception& e) {
+					handleRTP=false;
+				}
+			}
+			
+			if(!handleRTP)
+				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
+		}
+		
+		if(verbose)
+				std::cout << "Connection successfully established, now handing off to ProtocolHandler..." << std::endl;
+		
+		_handoffDone=true;
+		return new ProtocolHandler(_tcpSocket, _udpSocket, handleRTP);
+	}
 
 private:
-	void run() {
-		while(true) {
-			///TODO: read messages from the queue and process them, also alert main thread (waiting in waitForDisconnection()) when disconnected
-			Thread::sleepMs(1000);
+	bool waitForString(std::string string, dummy type, uint32_t timeout_s, struct sockaddr* srcAddr, socklen_t* addrlen) {
+		char* buffer;
+		int retval;
+		SOCKET socket;
+		struct timeval time;
+		#ifdef WIN32
+			FD_SET receive;
+		#else
+			fd_set receive;
+		#endif
+		FD_ZERO(&receive);
+		
+		if(type==TCP)
+			socket=_tcpSocket;
+		else
+			socket=_udpSocket;
+		FD_SET(socket, &receive);
+		
+		time.tv_sec=timeout_s;
+		time.tv_usec=0;
+		retval=select(socket+1, &receive, NULL, NULL, &time);
+		if(retval==EBADF || retval==EINTR || retval==EINVAL || retval==ENOMEM)
+			throw SocketException("Could not use select() on sockets (err="+toStr(retval)+")");
+		if(FD_ISSET(socket, &receive)) {
+			buffer=(char*)malloc(string.length());
+			if(type==TCP)
+				retval=recvAll(socket, buffer, string.length(), 0, srcAddr, addrlen) ? 0 : string.length();
+			else
+				retval=recvfrom(socket, buffer, string.length(), 0, srcAddr, addrlen);
+			if(retval>0 && retval!=string.length())
+				throw std::runtime_error(std::string("Could not read on ")+(type==TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+" != "+toStr(string.length())+")");
+			else if(retval<=0)
+				throw SocketException(std::string("Could not read on ")+(type==TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+")");
+			if(memcmp(buffer, string.c_str(), string.length())!=0)
+				throw std::runtime_error(std::string("Corrupt init message received on ")+(type==TCP ? "tcp" : "udp")+" socket");
+			free(buffer);
+			return false;	//string received successfully
 		}
+		return true;		//timeout
+	}
+	
+	bool recvAll(SOCKET socket, char* buffer, size_t length, int flags, struct sockaddr* srcAddr, socklen_t* addrlen) {
+		int retval;
+		do {
+			retval=recvfrom(socket, buffer, length, 0, srcAddr, addrlen);
+			if(retval<=0)
+				return true;
+			length-=retval;		//calculate remaining data length
+			buffer+=retval;		//advance buffer
+		} while(length>0);
+		return false;
 	}
 	
 	inline void initNetwork() {
@@ -649,6 +809,7 @@ int main(int argc, char** argv) {
 	std::string remoteIP = "";
 	uint16_t remotePort = 0;
 	Connector* connector;
+	ProtocolHandler* handler;
 	
 	while((option = getopt(argc, argv, "vd:l:c:")) != -1) {
 		switch(option) {
@@ -681,23 +842,22 @@ int main(int argc, char** argv) {
 	
 	if(listen) {
 		if(verbose)
-			std::cout << "Listening at local port " << listen << std::endl;
+			std::cout << "Listening at local tcp and udp port " << listen << std::endl;
 		connector = new Connector(listen);
-		connector->waitForConnection();
+		handler=connector->waitForConnection();
 	} else {
 		if(verbose)
 			std::cout << "Connecting to remote bridge instance at " << remoteIP << ":" << remotePort << std::endl;
 		connector = new Connector(remoteIP, remotePort);
-		connector->waitForConnection();
+		handler=connector->waitForConnection();
 	}
-	
-	return 0;
+	delete connector;
 	
 	//construct inner node
 	Node innerNode;
 	
 	//construct monitor and associate it to our node
-	PubMonitor innerMonitor(innerNode, BridgeType::LOCAL);
+	PubMonitor innerMonitor(innerNode, handler);
 	innerNode.addPublisherMonitor(&innerMonitor);
 	
 	//construct discovery and add inner node to discovery
@@ -709,7 +869,9 @@ int main(int argc, char** argv) {
 	
 	//mainloop
 	while(true) {
-		connector->waitForDisconnection();
+		handler->waitForDisconnection();
 		Thread::sleepMs(1000);
 	}
+	
+	delete connector;
 }

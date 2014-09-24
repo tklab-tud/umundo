@@ -340,17 +340,22 @@ private:
 				buffer=(char*)malloc(packetSize);
 				if(buffer==NULL)
 					throw std::runtime_error("malloc for "+toStr(packetSize)+" bytes failed");
-				if(recvAll(_socket, buffer, packetSize, 0)<=0)
+				if(recvAll(_socket, buffer, packetSize, 0)<=0) {
+					free(buffer);
 					throw SocketException("recv() of packet on tcp socket failed");
+				}
 				else {
 					BridgeMessage* msg;
 					try {
 						msg=new BridgeMessage(buffer, packetSize);
 					} catch(std::exception& e) {
+						free(buffer);
 						delete msg;
 						throw e;
 					}
 					_queue.write(msg);
+					free(buffer);
+					delete msg;
 				}
 			}
 		} catch(std::exception& e) {
@@ -414,6 +419,7 @@ private:
 						throw e;
 					}
 					_queue.write(msg);
+					delete msg;
 				}
 			}
 		} catch(std::exception& e) {
@@ -489,6 +495,14 @@ public:
 	}
 	
 	void send_data(std::string channelName, Message* umundoMessage) {
+		//fetch data from all "silent" subscribers and discard it
+		std::map<std::string, Subscriber*>::iterator subsIter=_knownSubs[channelName].second.begin();
+		while(subsIter!=_knownSubs[channelName].second.end()) {
+			while(subsIter->second->hasNextMsg())
+				subsIter->second->getNextMsg();
+			subsIter++;
+		}
+		//"serialize" and send umundoMessage
 		BridgeMessage msg;
 		msg["type"]="data";
 		msg["channelName"]=channelName;
@@ -504,11 +518,20 @@ public:
 		sendMessage(msg, TCP);
 	}
 	
+	//read messages from the queue and process them
+	//no locking needed (single threaded)
 	void mainloop(Node& innerNode) {
-		//read messages from the queue and process them, also alert main thread (waiting in waitForDisconnection()) when disconnected
 		while(true) {
-			///TODO: use read timeout to periodically send udp pings (to keep nat open)
-			BridgeMessage* msg_p=_queue.read();
+			///TODO: dont forget to ping via udp when only tcp is active
+			BridgeMessage* msg_p=_queue.read(15000);		//ping every 15 seconds when idle
+			if(msg_p==NULL) {		//use read timeout to periodically send tcp and udp pings (to keep nat open etc.)
+				BridgeMessage msg;
+				msg["type"]="internal";
+				msg["cause"]="ping";
+				sendMessage(msg, UDP);
+				sendMessage(msg, TCP);
+				continue;
+			}
 			BridgeMessage& msg=*msg_p;
 			if(msg["type"]=="internal") {
 				if(msg["cause"]=="termination")

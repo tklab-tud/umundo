@@ -515,6 +515,7 @@ public:
 			metadataCount++;
 			metaIter++;
 		}
+		msg["metadataCount"]=toStr(metadataCount);
 		sendMessage(msg, TCP);
 	}
 	

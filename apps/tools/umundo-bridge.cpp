@@ -355,7 +355,6 @@ private:
 					}
 					_queue.write(msg);
 					free(buffer);
-					delete msg;
 				}
 			}
 		} catch(std::exception& e) {
@@ -419,7 +418,6 @@ private:
 						throw e;
 					}
 					_queue.write(msg);
-					delete msg;
 				}
 			}
 		} catch(std::exception& e) {
@@ -495,6 +493,7 @@ public:
 	}
 	
 	void send_data(std::string channelName, Message* umundoMessage) {
+		///TODO: locking known subs mutex)
 		//fetch data from all "silent" subscribers and discard it
 		std::map<std::string, Subscriber*>::iterator subsIter=_knownSubs[channelName].second.begin();
 		while(subsIter!=_knownSubs[channelName].second.end()) {
@@ -687,6 +686,7 @@ private:
 	}
 	
 	void sendMessage(BridgeMessage& msg, dummy channel) {
+		RScopeLock lock(_shutdownMutex);
 		std::string packet;
 		if(channel==TCP) {
 			//prefix message with message length so that our tcp stream could be split into individual messages easyliy at the remote bridge instance

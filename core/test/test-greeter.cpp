@@ -6,11 +6,11 @@ using namespace umundo;
 int instances = 0;
 
 class TestGreeter : public Greeter {
-	void welcome(const Publisher& pub, const SubscriberStub& subStub) {
+	void welcome(Publisher& pub, const SubscriberStub& subStub) {
 		instances++;
 	}
 
-	void farewell(const Publisher& pub, const SubscriberStub& subStub) {
+	void farewell(Publisher& pub, const SubscriberStub& subStub) {
 		instances--;
 	}
 

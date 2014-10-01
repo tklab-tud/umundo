@@ -110,7 +110,10 @@ public:
 	virtual void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
 		_pubMonitors.push_back(monitor);
 	}
-
+	
+	virtual void clearPublisherMonitors() {
+		_pubMonitors.clear();
+	}
 
 protected:
 	std::map<std::string, Publisher> _pubs;
@@ -157,6 +160,10 @@ public:
 
 	void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
 		_impl->addPublisherMonitor(monitor);
+	}
+	
+	void clearPublisherMonitors() {
+		_impl->clearPublisherMonitors();
 	}
 	
 	/** @name Publish / Subscriber Maintenance */

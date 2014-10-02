@@ -27,6 +27,8 @@
 #include "XGetopt.h"
 #include <Winsock2.h>
 #include <Iphlpapi.h>
+#include <Ws2tcpip.h>
+typedef int socklen_t;
 #endif
 
 #ifdef UNIX
@@ -221,8 +223,8 @@ public:
 	private:
 		BridgeMessage* _msg;
 		std::string _key;
-		proxy(BridgeMessage* msg, std::string& key) : _msg(msg), _key(key) { }
 	public:
+		proxy(BridgeMessage* msg, std::string& key) : _msg(msg), _key(key) { }
 		operator const uint16_t () const {				//for use on RHS of assignment
 			return _msg->get<uint16_t>(_key);
 		}
@@ -1058,7 +1060,7 @@ public:
 		
 		//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
 		int reuseaddr = 1;
-		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr))==-1)
+		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&reuseaddr, sizeof(reuseaddr))==-1)
 			throw SocketException("Could not set SO_REUSEADDR on tcp socket");
 		if(bind(_tcpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
 			throw SocketException("Could not bind tcp socket to specified port: ");
@@ -1166,7 +1168,7 @@ public:
 				try {
 					if(waitForString("serverHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength))
 						throw std::exception();		//internal error reporting to surrounding try-catch block
-				} catch(std::exception& e) {
+				} catch(...) {
 					handleRTP=false;
 				}
 			}

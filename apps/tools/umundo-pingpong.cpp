@@ -17,6 +17,9 @@
 #include "umundo/core.h"
 #include <iostream>
 #include <string.h>
+#ifdef WIN32
+#include "XGetopt.h"
+#endif
 
 using namespace umundo;
 

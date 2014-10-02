@@ -257,7 +257,6 @@ public:
 		bool operator==(const char* str) {
 			return _msg->get(_key) == str;
 		}
-		friend BridgeMessage;
 	};
 	
 	//construct empty message

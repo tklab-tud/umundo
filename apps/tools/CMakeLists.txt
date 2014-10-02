@@ -102,7 +102,11 @@ if (NET_RTP)
 
 endif()
 
-add_executable(umundo-pingpong umundo-pingpong.cpp)
+if (WIN32)
+	add_executable(umundo-pingpong umundo-pingpong.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+else()
+	add_executable(umundo-pingpong umundo-pingpong.cpp)
+endif()
 target_link_libraries(umundo-pingpong umundocore)
 set_target_properties(umundo-pingpong PROPERTIES FOLDER "Tools")
 
@@ -181,16 +185,18 @@ if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC)
 	)
 endif()
 
-if (NOT WIN32)
+if (WIN32)
+	add_executable(umundo-bridge umundo-bridge.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+else()
 	add_executable(umundo-bridge umundo-bridge.cpp)
-	target_link_libraries(umundo-bridge umundocore)
-	set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
-
-	INSTALL_EXECUTABLE(
-		TARGETS umundo-bridge
-		COMPONENT tools 
-	)
 endif()
+target_link_libraries(umundo-bridge umundocore)
+set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-bridge
+	COMPONENT tools 
+)
 
 if (WIN32)
 	add_executable(umundo-throughput umundo-throughput.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)

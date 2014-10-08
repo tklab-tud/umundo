@@ -21,6 +21,7 @@
 #include <fstream>
 #include <exception>
 #include <queue>
+#include <cassert>
 #include <boost/shared_ptr.hpp>
 
 #ifdef WIN32
@@ -79,6 +80,7 @@ void printUsageAndExit() {
 	printf("\tumundo-bridge [-d domain] [-v] -l port\n");
 	printf("\n");
 	printf("Options:\n");
+	printf("\t-t                           : run internal tests\n");
 	printf("\t-d <domain>                  : join domain\n");
 	printf("\t-v                           : be more verbose\n");
 	printf("\t-l <port>                    : listen on this udp and tcp port\n");
@@ -87,6 +89,7 @@ void printUsageAndExit() {
 	printf("Examples:\n");
 	printf("\tumundo-bridge -l 4242\n");
 	printf("\tumundo-bridge -c 130.32.14.22:4242\n");
+	printf("\tumundo-bridge -t\n");
 	exit(1);
 }
 std::string ipToStr(uint32_t ip) {
@@ -231,6 +234,9 @@ public:
 		operator const uint32_t () const {				//for use on RHS of assignment
 			return _msg->get<uint32_t>(_key);
 		}
+		operator const int () const {					//for use on RHS of assignment
+			return _msg->get<int>(_key);
+		}
 		operator const char* () const {					//for use on RHS of assignment
 			return _msg->get(_key).c_str();
 		}
@@ -245,6 +251,10 @@ public:
 		proxy& operator=(const T& rhs) {				//for use on LHS of assignment
 			_msg->set<T>(_key, rhs);
 			return *this;
+		}
+		template <typename T>
+		bool operator==(const T data) {
+			return _msg->get<T>(_key) == data;
 		}
 		//mimic some std::string methods and behaviours used in our code
 		const char* c_str() const {
@@ -1249,6 +1259,41 @@ private:
 	}
 };
 
+//test message serialisation/deserialisation (class BridgeMessage)
+void test_BridgeMessage() {
+	BridgeMessage msg;
+	uint32_t abcd=8;
+	msg["abcd"]=abcd;									//this is automatically saved as string (via toStr(8))
+	msg["zweiundvierzig"]=42;							//this is converted to string, too
+	msg.set("setter", 42);								//this is also converted to string
+	msg.set("number", "44");							//this is already a string
+	msg["xyz"]="halloWelt";								//this is also already a string (but representing a number --> can be converted to a number)
+	msg["negativ"]=-42;									//this is a negative number
+	msg["float"]=-42.42;								//and this is a floating point number
+	std::string serialized=msg.toString();				//serialize message
+	BridgeMessage newMsg(serialized.c_str(), serialized.length());		//now deserialize our message
+	assert(newMsg.get("xyz") == "halloWelt");			//getter access
+	assert(newMsg["xyz"] == "halloWelt");				//array like access
+	assert(newMsg.get<uint32_t>("abcd") == 8);			//getter access via template (explicit strTo<uint32_t> conversion)
+	uint32_t tmp=newMsg["abcd"];						//array like access via automatic conversion to uint32_t
+	assert(tmp == 8);
+	assert(newMsg["zweiundvierzig"] == 42);				//array like access via automatic conversion
+	assert(newMsg["setter"] == 42);						//array like access via automatic conversion
+	assert(newMsg["number"] == "44");					//array like access without conversion
+	assert(newMsg["number"] == 44);						//array like access via automatic conversion
+	assert(newMsg["negativ"] == -42);					//array like access via automatic conversion
+	uint32_t tmp2 = newMsg.get<uint32_t>("negativ");	//array like access via explicit conversion
+	assert(tmp2 == (uint32_t)-42);
+	assert(newMsg["float"] == -42.42);
+}
+
+//test internal classes
+void test_All() {
+	std::cout << "Testing BridgeMessage (de-)serialisation..." << std::endl;
+	test_BridgeMessage();
+	std::cout << "All tests passed successfully..." << std::endl;
+}
+
 int main(int argc, char** argv) {
 	int option;
 	int listen = 0;
@@ -1257,30 +1302,33 @@ int main(int argc, char** argv) {
 	Connector* connector;
 	boost::shared_ptr<ProtocolHandler> handler;
 	
-	while((option = getopt(argc, argv, "vd:l:c:")) != -1) {
+	while((option = getopt(argc, argv, "tvd:l:c:")) != -1) {
 		switch(option) {
-		case 'd':
-			domain = optarg;
-			break;
-		case 'v':
-			verbose = true;
-			break;
-		case 'l':
-			listen = strTo<uint16_t>(optarg);
-			if(listen == 0)
+			case 'd':
+				domain = optarg;
+				break;
+			case 'v':
+				verbose = true;
+				break;
+			case 'l':
+				listen = strTo<uint16_t>(optarg);
+				if(listen == 0)
+					printUsageAndExit();
+				break;
+			case 'c': {
+				EndPoint endPoint(std::string("tcp://")+std::string(optarg));
+				if(!endPoint)
+					printUsageAndExit();
+				remoteIP = endPoint.getIP();
+				remotePort = endPoint.getPort();
+				break;
+			}
+			case 't':
+				test_All();
+				return 0;
+			default:
 				printUsageAndExit();
-			break;
-		case 'c': {
-			EndPoint endPoint(std::string("tcp://")+std::string(optarg));
-			if(!endPoint)
-				printUsageAndExit();
-			remoteIP = endPoint.getIP();
-			remotePort = endPoint.getPort();
-			break;
-		}
-		default:
-			printUsageAndExit();
-			break;
+				break;
 		}
 	}
 	if(optind < argc || (listen == 0 && remotePort == 0))
@@ -1335,18 +1383,4 @@ int main(int argc, char** argv) {
 			std::cout << "Reconnecting in 5 seconds..." << std::endl;
 		Thread::sleepMs(5000);
 	}
-}
-
-void test_BridgeMessage() {
-	BridgeMessage msg;
-	uint32_t abcd=8;
-	msg["abcd"]=abcd;
-	msg["xyz"]="halloWelt";
-	std::string serialized=msg.toString();
-	BridgeMessage newMsg=BridgeMessage(serialized.c_str(), serialized.length());
-	std::cout << "Got string: " << newMsg.get("xyz") << std::endl;
-	std::cout << "Got string: " << newMsg["xyz"] << std::endl;
-	std::cout << "Got: " << newMsg.get<uint32_t>("abcd") << std::endl;
-	uint32_t tmp=newMsg["abcd"];
-	std::cout << "Got: " << tmp << std::endl;
 }

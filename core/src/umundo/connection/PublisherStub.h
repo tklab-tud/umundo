@@ -59,6 +59,12 @@ protected:
  */
 class UMUNDO_API PublisherStub : public EndPoint {
 public:
+	enum PublisherType {
+	    // these have to fit the subscriber types!
+	    ZEROMQ = 0x0001,
+	    RTP    = 0x0002
+	};
+	
 	PublisherStub() : _impl() { }
 	PublisherStub(SharedPtr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
 	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }
@@ -93,6 +99,9 @@ public:
 	}
 	virtual const std::string getUUID() const             {
 		return _impl->getUUID();
+	}
+	virtual const bool isRTP() const                           {
+		return _impl->implType == RTP;
 	}
 	//@}
 

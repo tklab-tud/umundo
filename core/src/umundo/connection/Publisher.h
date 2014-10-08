@@ -148,12 +148,6 @@ protected:
  */
 class UMUNDO_API Publisher : public PublisherStub {
 public:
-	enum PublisherType {
-	    // these have to fit the subscriber types!
-	    ZEROMQ = 0x0001,
-	    RTP    = 0x0002
-	};
-
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);

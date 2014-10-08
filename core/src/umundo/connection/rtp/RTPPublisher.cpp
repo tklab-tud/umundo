@@ -29,6 +29,28 @@
 
 #include "umundo/connection/rtp/RTPPublisher.h"
 
+namespace libre {
+	//taken from libre src/rtp/rtp.c ****** MUST BE UPDATED WHEN LIBRE ITSELF IS UPDATED (libre version used: 0.4.7) ******
+	/** Defines an RTP Socket */
+	struct rtp_sock {
+		/** Encode data */
+		struct {
+			uint16_t seq;   /**< Sequence number       */
+			uint32_t ssrc;  /**< Synchronizing source  */
+		} enc;
+		int proto;              /**< Transport Protocol    */
+		void *sock_rtp;         /**< RTP Socket            */
+		void *sock_rtcp;        /**< RTCP Socket           */
+		struct sa local;        /**< Local RTP Address     */
+		struct sa rtcp_peer;    /**< RTCP address of Peer  */
+		rtp_recv_h *recvh;      /**< RTP Receive handler   */
+		rtcp_recv_h *rtcph;     /**< RTCP Receive handler  */
+		void *arg;              /**< Handler argument      */
+		struct rtcp_sess *rtcp; /**< RTCP Session          */
+		bool rtcp_mux;          /**< RTP/RTCP multiplexing */
+	};
+}
+
 namespace umundo {
 
 RTPPublisher::RTPPublisher() : _isSuspended(false), _multicast(false), _initDone(false) {
@@ -239,16 +261,25 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 void RTPPublisher::send(Message* msg) {
 	RScopeLock lock(_mutex);
 	int status=0;
+	uint32_t timestamp=0;
+	uint8_t payloadType=_payloadType;
+	uint16_t sequenceNumber=strTo<uint16_t>(msg->getMeta("sequenceNumber"));		//only for internal use by umundo-bridge
 	bool marker=strTo<bool>(msg->getMeta("marker"));
 	if(!msg->getMeta("marker").size())
 		marker=false;
 	std::string timestampIncrement=msg->getMeta("timestampIncrement");
 	if(!timestampIncrement.size())
 		timestampIncrement=_mandatoryMeta["timestampIncrement"];
-	if(timestampIncrement.size())
-		_timestamp+=strTo<uint32_t>(timestampIncrement);
-	else
-		_timestamp+=_timestampIncrement;
+	if(msg->getMeta("timestamp").size())							//mainly for internal use by umundo-bridge
+		timestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
+	else {
+		if(timestampIncrement.size())
+			timestamp=(_timestamp+=strTo<uint32_t>(timestampIncrement));
+		else
+			timestamp=(_timestamp+=_timestampIncrement);
+	}
+	if(msg->getMeta("payloadType").size())							//mainly for internal use by umundo-bridge
+		payloadType=strTo<uint8_t>(msg->getMeta("payloadType"));
 
 	//allocate buffer
 	libre::mbuf *mb = libre::mbuf_alloc(libre::RTP_HEADER_SIZE + msg->size());
@@ -262,7 +293,9 @@ void RTPPublisher::send(Message* msg) {
 	for(it_type iterator = _destinations.begin(); iterator != _destinations.end(); iterator++) {
 		//reset buffer pos to start of data
 		libre::mbuf_set_pos(mb, libre::RTP_HEADER_SIZE);
-		if((status=libre::rtp_send(_rtp_socket, &iterator->second, marker, _payloadType, _timestamp, mb)))
+		if(sequenceNumber)
+			_rtp_socket->enc.seq=sequenceNumber;
+		if((status=libre::rtp_send(_rtp_socket, &iterator->second, marker, payloadType, timestamp, mb)))
 			UM_LOG_WARN("%s: error %d in libre::rtp_send() for destination '%s': %s", SHORT_UUID(_uuid).c_str(), status, iterator->first.c_str(), strerror(status));
 	}
 	//cleanup

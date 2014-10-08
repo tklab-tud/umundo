@@ -130,12 +130,6 @@ protected:
  */
 class UMUNDO_API Subscriber : public SubscriberStub {
 public:
-	enum SubscriberType {
-	    // these have to fit the publisher types!
-	    ZEROMQ = 0x0001,
-	    RTP    = 0x0002
-	};
-
 	Subscriber() : _impl() {}
 	explicit Subscriber(const SubscriberStub& stub) : _impl(StaticPtrCast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);

@@ -788,7 +788,7 @@ public:
 			}
 			
 			//process external messages
-			if(processMessage(*msg)) {
+			if(processMessage(msg)) {
 				std::cout << "WARNING: unknown message type '" << msg->get("type") << "', protocol mismatch? --> closing connection..." << std::endl;
 				break;
 			}
@@ -800,7 +800,8 @@ public:
 
 private:
 	/// *** process incoming messages ***
-	bool processMessage(BridgeMessage& msg) {
+	bool processMessage(boost::shared_ptr<BridgeMessage> _msg) {
+		BridgeMessage& msg=*_msg;				//array notation only works with plain obkjects (not with shared_ptr containers)
 		RScopeLock lock(_shutdownMutex);		//process only when no shutdown in progress
 		if(_shutdownDone)
 			return false;
@@ -886,12 +887,12 @@ private:
 		} else if(msg["type"]=="data") {
 			Message* umundoMessage = new Message(msg["data"].c_str(), msg["data"].length());
 			uint32_t metadataCount = msg.get<uint32_t>("metadataCount");
-			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			for(uint32_t c=0; c<metadataCount; c++)
 			{
-				std::cout << "Setting metadata key '" << msg["metadataKey."+toStr(c)] << "' to value '" << msg["metadataValue."+toStr(c)] << std::endl;
+				std::cout << "Setting metadata key '" << msg["metadataKey."+toStr(c)] << "' to value '" << msg["metadataValue."+toStr(c)] << "'" << std::endl;
 				umundoMessage->putMeta(msg["metadataKey."+toStr(c)], msg["metadataValue."+toStr(c)]);
 			}
+			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			{
 				RScopeLock lock(_knownPubsMutex);
 				if(_knownPubs[msg["isRTP"]].find(msg["channelName"])!=_knownPubs[msg["isRTP"]].end())

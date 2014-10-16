@@ -181,7 +181,7 @@ private:
 	}
 	
 	template<typename T>
-	const T readFromBuffer(MessageBuffer& buffer, identity<T>) {
+	const T readFromBuffer(MessageBuffer& buffer, identity<T> dummy) {
 		const char* value=buffer.first;
 		advanceBuffer(buffer, sizeof(T));
 		return *(const T*)value;						//warning: no implicit endianes conversions done for this (unknown) types
@@ -320,6 +320,10 @@ public:
 		return output;
 	}
 	
+	operator std::string() {
+		return toString();
+	}
+	
 	template<typename T>
 	void set(const std::string& key, const T& value) {
 		isSane(key);		//throws exception on empty key
@@ -339,7 +343,6 @@ public:
 	
 	template<typename T>
 	const T get(const std::string& key) {
-		isSane(key);		//throws exception on empty key
 		return strTo<T>(get(key));
 	}
 	
@@ -726,7 +729,6 @@ public:
 		msg["isRTP"]=isRTP;
 		msg["data"]=std::string(umundoMessage->data(), umundoMessage->size());
 		uint32_t metadataCount=0;
-		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
 			std::cout << "Setting metadata key '" << metaIter->first << "' to value '" << metaIter->second << std::endl;
@@ -735,6 +737,7 @@ public:
 			metadataCount++;
 			metaIter++;
 		}
+		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
 		msg.set("metadataCount", metadataCount);
 		sendMessage(msg, isRTP ? UDP : TCP);
 	}
@@ -787,8 +790,16 @@ public:
 					std::cout << "WARNING: got internal message with unknown cause '" << msg->get("cause") << "' and source '" << msg->get("_source") << "', ignoring it..." << std::endl;
 			}
 			
+			std::cout << "D E B U G" << std::endl;
+			std::map<std::string, std::string> kvp=msg->get();
+			std::map<std::string, std::string>::iterator kvpIter = kvp.begin();
+			while(kvpIter != kvp.end()) {
+				std::cout << "KVP: " << kvpIter->first << " => " << kvpIter->second << std::endl;
+				kvpIter++;
+			}
+			
 			//process external messages
-			if(processMessage(msg)) {
+			if(processMessage(*msg)) {		//array notation only works with plain obkjects (not with shared_ptr containers)
 				std::cout << "WARNING: unknown message type '" << msg->get("type") << "', protocol mismatch? --> closing connection..." << std::endl;
 				break;
 			}
@@ -800,8 +811,7 @@ public:
 
 private:
 	/// *** process incoming messages ***
-	bool processMessage(boost::shared_ptr<BridgeMessage> _msg) {
-		BridgeMessage& msg=*_msg;				//array notation only works with plain obkjects (not with shared_ptr containers)
+	bool processMessage(BridgeMessage& msg) {
 		RScopeLock lock(_shutdownMutex);		//process only when no shutdown in progress
 		if(_shutdownDone)
 			return false;

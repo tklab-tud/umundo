@@ -726,8 +726,10 @@ public:
 		msg["isRTP"]=isRTP;
 		msg["data"]=std::string(umundoMessage->data(), umundoMessage->size());
 		uint32_t metadataCount=0;
+		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
+			std::cout << "Setting metadata key '" << metaIter->first << "' to value '" << metaIter->second << std::endl;
 			msg["metadataKey."+toStr(metadataCount)]=metaIter->first;
 			msg["metadataValue."+toStr(metadataCount)]=metaIter->second;
 			metadataCount++;
@@ -884,8 +886,12 @@ private:
 		} else if(msg["type"]=="data") {
 			Message* umundoMessage = new Message(msg["data"].c_str(), msg["data"].length());
 			uint32_t metadataCount = msg.get<uint32_t>("metadataCount");
+			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			for(uint32_t c=0; c<metadataCount; c++)
+			{
+				std::cout << "Setting metadata key '" << msg["metadataKey."+toStr(c)] << "' to value '" << msg["metadataValue."+toStr(c)] << std::endl;
 				umundoMessage->putMeta(msg["metadataKey."+toStr(c)], msg["metadataValue."+toStr(c)]);
+			}
 			{
 				RScopeLock lock(_knownPubsMutex);
 				if(_knownPubs[msg["isRTP"]].find(msg["channelName"])!=_knownPubs[msg["isRTP"]].end())

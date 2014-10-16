@@ -184,7 +184,7 @@ ServiceDescription ServiceManager::find(const ServiceFilter& svcFilter, int time
 
 	if (_findResponses.find(reqId) == _findResponses.end()) {
 		UM_LOG_INFO("Failed to find %s", svcFilter.getServiceName().c_str());
-		return NULL;
+		return ServiceDescription();
 	}
 
 	// TODO: Remove other replies as they come in!

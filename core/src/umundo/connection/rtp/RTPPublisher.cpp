@@ -204,6 +204,13 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 	_subs[sub.getUUID()] = sub;
 	_domainSubs.insert(std::make_pair(sub.getUUID(), std::make_pair(node, sub)));
+	
+	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {
+		// only perform greeting for first occurence of subscriber
+		Publisher pub(StaticPtrCast<PublisherImpl>(shared_from_this()));
+		_greeter->welcome(pub, sub);
+	}
+	
 	UMUNDO_SIGNAL(_pubLock);
 }
 
@@ -251,9 +258,13 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	}
 
 	if (_domainSubs.count(sub.getUUID()) == 1) { // about to vanish
+		if (_greeter != NULL) {
+			Publisher pub(Publisher(StaticPtrCast<PublisherImpl>(shared_from_this())));
+			_greeter->farewell(pub, sub);
+		}
 		_subs.erase(sub.getUUID());
 	}
-
+	
 	_domainSubs.erase(subIter.first);
 	UMUNDO_SIGNAL(_pubLock);
 }

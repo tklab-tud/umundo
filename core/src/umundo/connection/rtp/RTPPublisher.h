@@ -36,7 +36,7 @@ namespace umundo {
 /**
  * Concrete publisher implementor for RTP (bridge pattern).
  */
-class UMUNDO_API RTPPublisher : public PublisherImpl {
+class UMUNDO_API RTPPublisher : public PublisherImpl, public EnableSharedFromThis<RTPPublisher> {
 public:
 	virtual ~RTPPublisher();
 

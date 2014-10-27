@@ -212,7 +212,7 @@ private:
 		return buffer;
 	}
 	
-	bool isSane(const std::string& key, bool throwException=true) {
+	bool isSane(const std::string& key, bool throwException=true) const {
 		if(key.length()==0) {
 			if(throwException)
 				throw std::runtime_error("Cannot use empty key in BridgeMessage!");
@@ -223,59 +223,6 @@ private:
 	}
 
 public:
-	class proxy {
-	private:
-		BridgeMessage* _msg;
-		std::string _key;
-	public:
-		proxy(BridgeMessage* msg, std::string& key) : _msg(msg), _key(key) { }
-		operator const uint16_t () const {				//for use on RHS of assignment
-			return _msg->get<uint16_t>(_key);
-		}
-		operator const uint32_t () const {				//for use on RHS of assignment
-			return _msg->get<uint32_t>(_key);
-		}
-		operator const int () const {					//for use on RHS of assignment
-			return _msg->get<int>(_key);
-		}
-		operator const bool () const {					//for use on RHS of assignment
-			return _msg->get<bool>(_key);
-		}
-		///NOTE: add more conversions for RHS assignments here
-		operator const char* () const {					//for use on RHS of assignment
-			return _msg->get(_key).c_str();
-		}
-		operator const std::string () const {			//for use on RHS of assignment
-			return _msg->get(_key);
-		}
-		/*template <typename T>
-		operator const T& () const {					//for general use on RHS of assignment (creates ambiguities)
-			return _msg->get<T>(_key);
-		}*/
-		template <typename T>
-		proxy& operator=(const T& rhs) {				//for use on LHS of assignment
-			_msg->set<T>(_key, rhs);
-			return *this;
-		}
-		template <typename T>
-		bool operator==(const T data) {
-			return _msg->get<T>(_key) == data;
-		}
-		//mimic some std::string methods and behaviours used in our code
-		const char* c_str() const {
-			return _msg->get(_key).c_str();
-		}
-		size_t length() const {
-			return _msg->get(_key).length();
-		}
-		size_t size() const {
-			return _msg->get(_key).size();
-		}
-		bool operator==(const char* str) {
-			return _msg->get(_key) == str;
-		}
-	};
-	
 	//construct empty message
 	BridgeMessage() : _protocolVersion(1) { }
 	
@@ -330,58 +277,27 @@ public:
 		_data[key]=toStr(value);
 	}
 	
-	const std::map<std::string, std::string>& get() {
+	const std::map<std::string, std::string>& get() const {
 		return _data;
 	}
 	
-	const std::string get(const std::string& key) {
+	std::string get(const std::string& key) {
 		isSane(key);		//throws exception on empty key
-		if(isset(key))
-			return _data[key];
-		return "";
+		return _data[key];
 	}
 	
 	template<typename T>
-	const T get(const std::string& key) {
+	T get(const std::string& key) {
 		return strTo<T>(get(key));
 	}
 	
-	bool isset(const std::string& key) {
+	bool isset(const std::string& key) const {
 		isSane(key);		//throws exception on empty key
 		return _data.find(key) != _data.end();
 	}
 	
-	const proxy operator[](std::string& key) const {
-		return proxy(const_cast<BridgeMessage*>(this), key);
-	}
-
-	proxy operator[](std::string& key) {
-		return proxy(this, key);
-	}
 	
-	const proxy operator[](std::string key) const {
-		return proxy(const_cast<BridgeMessage*>(this), key);
-	}
-
-	proxy operator[](std::string key) {
-		return proxy(this, key);
-	}
-	
-	const proxy operator[](const char* key) const {
-		std::string stringKey = std::string(key);
-		return proxy(const_cast<BridgeMessage*>(this), stringKey);
-	}
-
-	proxy operator[](const char* key) {
-		std::string stringKey = std::string(key);
-		return proxy(this, stringKey);
-	}
 };
-//stream output of BridgeMessage entries
-std::ostream& operator<<(std::ostream& os, const BridgeMessage::proxy& msg) {
-	os << msg.c_str();
-	return os;
-}
 
 class MessageQueue {
 private:
@@ -505,9 +421,9 @@ private:
 		if(verbose)
 			std::cout << "Terminating TCPListener..."<< std::endl;
 		BridgeMessage terminationMessage;
-		terminationMessage["type"]="internal";
-		terminationMessage["cause"]="termination";
-		terminationMessage["_source"]="TCPListener";
+		terminationMessage.set("type", "internal");
+		terminationMessage.set("cause", "termination");
+		terminationMessage.set("_source", "TCPListener");
 		_queue.write(terminationMessage);
 	}
 	
@@ -585,9 +501,9 @@ private:
 		if(verbose)
 			std::cout << "Terminating UDPListener..."<< std::endl;
 		BridgeMessage terminationMessage;
-		terminationMessage["type"]="internal";
-		terminationMessage["cause"]="termination";
-		terminationMessage["_source"]="UDPListener";
+		terminationMessage.set("type", "internal");
+		terminationMessage.set("cause", "termination");
+		terminationMessage.set("_source", "UDPListener");
 		_queue.write(terminationMessage);
 	}
 	
@@ -651,9 +567,9 @@ public:
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
-		msg["type"]="pubAdded";
-		msg["channelName"]=channelName;
-		msg["isRTP"]=isRTP;
+		msg.set("type", "pubAdded");
+		msg.set("channelName", channelName);
+		msg.set("isRTP", isRTP);
 		sendMessage(msg, TCP);
 		{
 			RScopeLock lock(_seenPubsMutex);
@@ -667,18 +583,18 @@ public:
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
-		msg["type"]="pubRemoved";
-		msg["channelName"]=channelName;
-		msg["isRTP"]=isRTP;
+		msg.set("type", "pubRemoved");
+		msg.set("channelName", channelName);
+		msg.set("isRTP", isRTP);
 		sendMessage(msg, TCP);
 		{
 			RScopeLock lock(_seenPubsMutex);
 			_seenPubs[isRTP][channelName]--;
 			if(_seenPubs[isRTP][channelName] == 0) {		//last publisher seen --> unsubscribe all bridged subscribers for this channel
 				RScopeLock lock(_knownSubsMutex);
-				if(_knownSubs[msg["isRTP"]][msg["channelName"]].first!=NULL)
-					for(uint32_t c=0; c<_knownSubs[msg["isRTP"]][msg["channelName"]].second.size()+1; c++)
-						unsubscribe(msg["channelName"], msg["isRTP"]);
+				if(_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].first!=NULL)
+					for(uint32_t c=0; c<_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].second.size()+1; c++)
+						unsubscribe(msg.get("channelName"), msg.get<bool>("isRTP"));
 			}
 		}
 	}
@@ -689,9 +605,9 @@ public:
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
-		msg["type"]="subAdded";
-		msg["channelName"]=channelName;
-		msg["isRTP"]=isRTP;
+		msg.set("type", "subAdded");
+		msg.set("channelName", channelName);
+		msg.set("isRTP", isRTP);
 		sendMessage(msg, TCP);
 	}
 	
@@ -701,9 +617,9 @@ public:
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
-		msg["type"]="subRemoved";
-		msg["channelName"]=channelName;
-		msg["isRTP"]=isRTP;
+		msg.set("type", "subRemoved");
+		msg.set("channelName", channelName);
+		msg.set("isRTP", isRTP);
 		sendMessage(msg, TCP);
 	}
 	
@@ -724,16 +640,16 @@ public:
 		}
 		//"serialize" and send umundoMessage
 		BridgeMessage msg;
-		msg["type"]="data";
-		msg["channelName"]=channelName;
-		msg["isRTP"]=isRTP;
-		msg["data"]=std::string(umundoMessage->data(), umundoMessage->size());
+		msg.set("type", "data");
+		msg.set("channelName", channelName);
+		msg.set("isRTP", isRTP);
+		msg.set("data", std::string(umundoMessage->data(), umundoMessage->size()));
 		uint32_t metadataCount=0;
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
 			std::cout << "Setting metadata key '" << metaIter->first << "' to value '" << metaIter->second << std::endl;
-			msg["metadataKey."+toStr(metadataCount)]=metaIter->first;
-			msg["metadataValue."+toStr(metadataCount)]=metaIter->second;
+			msg.set("metadataKey."+toStr(metadataCount), metaIter->first);
+			msg.set("metadataValue."+toStr(metadataCount), metaIter->second);
 			metadataCount++;
 			metaIter++;
 		}
@@ -763,8 +679,8 @@ public:
 			if(difftime(time(NULL), lastPing)>=PING_INTERVAL) {		//difftime >= PING_INTERVAL --> ping remote host
 				lastPing=time(NULL);
 				BridgeMessage msg;
-				msg["type"]="internal";
-				msg["cause"]="ping";
+				msg.set("type", "internal");
+				msg.set("cause", "ping");
 				if(_handleRTP) {
 					if(verbose)
 						std::cout << "INFO: sending internal ping message on UDP channel..." << std::endl;
@@ -790,16 +706,8 @@ public:
 					std::cout << "WARNING: got internal message with unknown cause '" << msg->get("cause") << "' and source '" << msg->get("_source") << "', ignoring it..." << std::endl;
 			}
 			
-			std::cout << "D E B U G" << std::endl;
-			std::map<std::string, std::string> kvp=msg->get();
-			std::map<std::string, std::string>::iterator kvpIter = kvp.begin();
-			while(kvpIter != kvp.end()) {
-				std::cout << "KVP: " << kvpIter->first << " => " << kvpIter->second << std::endl;
-				kvpIter++;
-			}
-			
 			//process external messages
-			if(processMessage(*msg)) {		//array notation only works with plain obkjects (not with shared_ptr containers)
+			if(processMessage(msg)) {
 				std::cout << "WARNING: unknown message type '" << msg->get("type") << "', protocol mismatch? --> closing connection..." << std::endl;
 				break;
 			}
@@ -811,102 +719,111 @@ public:
 
 private:
 	/// *** process incoming messages ***
-	bool processMessage(BridgeMessage& msg) {
+	bool processMessage(boost::shared_ptr<BridgeMessage> msg) {
 		RScopeLock lock(_shutdownMutex);		//process only when no shutdown in progress
 		if(_shutdownDone)
 			return false;
-		if(msg["type"]=="pubAdded") {
+		
+		std::cout << "D E B U G" << std::endl;
+		std::map<std::string, std::string> kvp=msg->get();
+		std::map<std::string, std::string>::iterator kvpIter = kvp.begin();
+		while(kvpIter != kvp.end()) {
+			std::cout << "KVP: " << kvpIter->first << " => " << kvpIter->second << std::endl;
+			kvpIter++;
+		}
+		
+		if(msg->get("type")=="pubAdded") {
 			RScopeLock lock(_knownPubsMutex);
 			Publisher* ownPub;
-			if(_knownPubs[msg["isRTP"]][msg["channelName"]].first==NULL) {		//first publisher --> register actual greeter to track subscriptions
-				if(msg["isRTP"]) {
+			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first publisher --> register actual greeter to track subscriptions
+				if(msg->get<bool>("isRTP")) {
 					RTPPublisherConfig pubConfig(1, 96);		//dummy values (timestamp increment 1, payload type dynamic [RFC3551])
-					ownPub = new Publisher(Publisher::RTP, msg["channelName"], &pubConfig);
+					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
 				} else {
-					ownPub = new Publisher(Publisher::ZEROMQ, msg["channelName"]);
+					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
 				}
 				GlobalGreeter* ownGreeter = new GlobalGreeter(ownPub, shared_from_this());
 				ownPub->setGreeter(ownGreeter);
-				_knownPubs[msg["isRTP"]][msg["channelName"]].first = ownPub;
+				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = ownPub;
 				if(verbose)
-					std::cout << "Created new 'normal' LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg["channelName"] << "'" << std::endl;
+					std::cout << "Created new 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			} else {
-				if(msg["isRTP"]) {
+				if(msg->get<bool>("isRTP")) {
 					RTPPublisherConfig pubConfig(1, 96);		//dummy values (timestamp increment 1, payload type dynamic [RFC3551])
-					ownPub = new Publisher(Publisher::RTP, msg["channelName"], &pubConfig);
+					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
 				} else {
-					ownPub = new Publisher(Publisher::ZEROMQ, msg["channelName"]);
+					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
 				}
-				_knownPubs[msg["isRTP"]][msg["channelName"]].second[ownPub->getUUID()] = ownPub;
+				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[ownPub->getUUID()] = ownPub;
 				if(verbose)
-				std::cout << "Created new 'silent' LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg["channelName"] << "'" << std::endl;
+				std::cout << "Created new 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			}
 			_innerNode->addPublisher(*ownPub);
 		
-		} else if(msg["type"]=="pubRemoved") {
+		} else if(msg->get("type")=="pubRemoved") {
 			RScopeLock lock(_knownPubsMutex);
-			if(_knownPubs[msg["isRTP"]][msg["channelName"]].second.size()) {
-				Publisher* pub = _knownPubs[msg["isRTP"]][msg["channelName"]].second.begin()->second;
+			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.size()) {
+				Publisher* pub = _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.begin()->second;
 				std::string localUUID = pub->getUUID();
-				_knownPubs[msg["isRTP"]][msg["channelName"]].second.erase(localUUID);
+				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.erase(localUUID);
 				delete pub;
 				if(verbose)
-					std::cout << "Removed 'silent' LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg["channelName"] << "'" << std::endl;
+					std::cout << "Removed 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			} else {
-				if(_knownPubs[msg["isRTP"]].find(msg["channelName"])==_knownPubs[msg["isRTP"]].end() || _knownPubs[msg["isRTP"]][msg["channelName"]].first==NULL) {
+				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))==_knownPubs[msg->get<bool>("isRTP")].end() || _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {
 					if(verbose)
-						std::cout << "LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " publisher for channel '" << msg["channelName"] << "' unknown, ignoring removal!" << std::endl;
+						std::cout << "LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher for channel '" << msg->get("channelName") << "' unknown, ignoring removal!" << std::endl;
 				} else {
-					Publisher* pub = _knownPubs[msg["isRTP"]][msg["channelName"]].first;
+					Publisher* pub = _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first;
 					std::string localUUID = pub->getUUID();
 					GlobalGreeter* greeter = dynamic_cast<GlobalGreeter*>(pub->getGreeter());
 					pub->setGreeter(NULL);
 					_innerNode->removePublisher(*pub);
-					_knownPubs[msg["isRTP"]][msg["channelName"]].first = NULL;
-					_knownPubs[msg["isRTP"]].erase(msg["channelName"]);
+					_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = NULL;
+					_knownPubs[msg->get<bool>("isRTP")].erase(msg->get("channelName"));
 					delete pub;
 					delete greeter;
 					if(verbose)
-						std::cout << "Removed 'normal' LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg["channelName"] << "'" << std::endl;
+						std::cout << "Removed 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 				}
 			}
 		
-		} else if(msg["type"]=="subAdded") {
+		} else if(msg->get("type")=="subAdded") {
 			Subscriber* sub;
 			{
 				RScopeLock lock(_knownSubsMutex);
-				if(_knownSubs[msg["isRTP"]][msg["channelName"]].first==NULL) {		//first subscriber --> register actual receiver to receive the data
-					GlobalReceiver* receiver = new GlobalReceiver(msg["channelName"], msg["isRTP"], shared_from_this());
-					sub = new Subscriber(msg["isRTP"] ? Subscriber::RTP : Subscriber::ZEROMQ, msg["channelName"], receiver);
-					_knownSubs[msg["isRTP"]][msg["channelName"]].first = sub;
+				if(_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first subscriber --> register actual receiver to receive the data
+					GlobalReceiver* receiver = new GlobalReceiver(msg->get("channelName"), msg->get<bool>("isRTP"), shared_from_this());
+					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"), receiver);
+					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = sub;
 				} else {
-					sub = new Subscriber(msg["isRTP"] ? Subscriber::RTP : Subscriber::ZEROMQ, msg["channelName"]);
-					_knownSubs[msg["isRTP"]][msg["channelName"]].second[sub->getUUID()] = sub;
+					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"));
+					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[sub->getUUID()] = sub;
 				}
 			}
 			_innerNode->addSubscriber(*sub);
 			if(verbose)
-				std::cout << "Created new LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg["channelName"] << "'" << std::endl;
+				std::cout << "Created new LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
-		} else if(msg["type"]=="subRemoved") {
+		} else if(msg->get("type")=="subRemoved") {
 			std::string localUUID;
-			unsubscribe(msg["channelName"], msg["isRTP"]);
+			unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
 			if(verbose && localUUID.length())
-				std::cout << "Removed LOCAL " << (msg["isRTP"] ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg["channelName"] << "'" << std::endl;
+				std::cout << "Removed LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
-		} else if(msg["type"]=="data") {
-			Message* umundoMessage = new Message(msg["data"].c_str(), msg["data"].length());
-			uint32_t metadataCount = msg.get<uint32_t>("metadataCount");
+		} else if(msg->get("type")=="data") {
+			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
+			uint32_t metadataCount = msg->get<uint32_t>("metadataCount");
 			for(uint32_t c=0; c<metadataCount; c++)
 			{
-				std::cout << "Setting metadata key '" << msg["metadataKey."+toStr(c)] << "' to value '" << msg["metadataValue."+toStr(c)] << "'" << std::endl;
-				umundoMessage->putMeta(msg["metadataKey."+toStr(c)], msg["metadataValue."+toStr(c)]);
+				std::cout << "Setting metadata key '" << msg->get("metadataKey."+toStr(c)) << "' to value '" << msg->get("metadataValue."+toStr(c)) << "'" << std::endl;
+				umundoMessage->putMeta(msg->get("metadataKey."+toStr(c)), msg->get("metadataValue."+toStr(c)));
 			}
 			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			{
 				RScopeLock lock(_knownPubsMutex);
-				if(_knownPubs[msg["isRTP"]].find(msg["channelName"])!=_knownPubs[msg["isRTP"]].end())
-					_knownPubs[msg["isRTP"]][msg["channelName"]].first->send(umundoMessage);
+				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))!=_knownPubs[msg->get<bool>("isRTP")].end())
+					_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first->send(umundoMessage);
 			}
 			delete(umundoMessage);
 		
@@ -954,9 +871,9 @@ private:
 		
 		//wakeup mainloop (it will detect _shutdownDone == true and terminate)
 		BridgeMessage msg;
-		msg["type"]="internal";
-		msg["_source"]="ProtocolHandler";
-		msg["cause"]="termination";
+		msg.set("type", "internal");
+		msg.set("_source", "ProtocolHandler");
+		msg.set("cause", "termination");
 		_queue.write(msg);
 		
 		if(_innerNode) {
@@ -1320,34 +1237,27 @@ private:
 void test_BridgeMessage() {
 	BridgeMessage msg;
 	uint32_t abcd=8;
-	msg["abcd"]=abcd;									//this is automatically saved as string (via toStr(8))
-	msg["zweiundvierzig"]=42;							//this is converted to string, too
-	msg.set("setter", 42);								//this is also converted to string
-	msg.set("number", "44");							//this is already a string
-	msg["xyz"]="halloWelt";								//this is also already a string (but representing a number --> can be converted to a number)
-	msg["negativ"]=-42;									//this is a negative number
-	msg["float"]=-42.42;								//and this is a floating point number
-	msg["true"]=true;									//this is a boolean (true)
-	msg["false"]=false;									//this is a boolean (false)
+	msg.set("xyz", "halloWelt");						//this is already a string
+	msg.set("abcd", abcd);								//this is automatically saved as string (via toStr(8))
+	msg.set("zweiundvierzig", 42);						//this is converted to string, too
+	msg.set("number", "44");							//this is also already a string (but representing a number --> can be converted to a number later)
+	msg.set("negativ", -42);							//this is a negative number
+	msg.set("double", -42.42);							//and this is a floating point number
+	msg.set("true", true);								//this is a boolean (true)
+	msg.set("false", false);							//this is a boolean (false)
 	
 	std::string serialized=msg.toString();								//serialize message
 	BridgeMessage newMsg(serialized.c_str(), serialized.length());		//now deserialize our message again
 	
-	assert(newMsg.get("xyz") == "halloWelt");			//getter access
-	assert(newMsg["xyz"] == "halloWelt");				//array like access
-	assert(newMsg.get<uint32_t>("abcd") == 8);			//getter access via template (explicit strTo<uint32_t> conversion)
-	uint32_t tmp=newMsg["abcd"];						//array like access via automatic conversion to uint32_t
-	assert(tmp == 8);
-	assert(newMsg["zweiundvierzig"] == 42);				//array like access via automatic conversion
-	assert(newMsg["setter"] == 42);						//array like access via automatic conversion
-	assert(newMsg["number"] == "44");					//array like access without conversion
-	assert(newMsg["number"] == 44);						//array like access via automatic conversion
-	assert(newMsg["negativ"] == -42);					//array like access via automatic conversion
-	uint32_t tmp2 = newMsg.get<uint32_t>("negativ");	//getter access via template (explicit strTo<uint32_t> conversion)
-	assert(tmp2 == (uint32_t)-42);
-	assert(newMsg["float"] == -42.42);					//array like access via automatic conversion
-	assert(newMsg["true"] == true);						//array like access via automatic conversion
-	assert(newMsg["false"] == false);					//array like access via automatic conversion
+	assert(newMsg.get("xyz") == "halloWelt");
+	assert(newMsg.get<uint32_t>("abcd") == 8);
+	assert(newMsg.get<uint32_t>("zweiundvierzig") == 42);
+	assert(newMsg.get("number") == "44");
+	assert(newMsg.get<int>("number") == 44);
+	assert(newMsg.get<int>("negativ") == -42);
+	assert(newMsg.get<double>("double") == -42.42);
+	assert(newMsg.get<bool>("true") == true);
+	assert(newMsg.get<bool>("false") == false);
 }
 
 //test internal classes

@@ -133,6 +133,24 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
+add_executable(umundo-stream-send umundo-stream-send.cpp)
+target_link_libraries(umundo-stream-send umundocore)
+set_target_properties(umundo-stream-send PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-stream-send
+	COMPONENT tools 
+)
+
+add_executable(umundo-stream-receive umundo-stream-receive.cpp)
+target_link_libraries(umundo-stream-receive umundocore)
+set_target_properties(umundo-stream-receive PROPERTIES FOLDER "Tools")
+
+INSTALL_EXECUTABLE(
+	TARGETS umundo-stream-receive
+	COMPONENT tools 
+)
+
 if (WIN32)
 	add_executable(umundo-debug umundo-debug.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
 else()

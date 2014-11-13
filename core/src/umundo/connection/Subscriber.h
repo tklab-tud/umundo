@@ -76,6 +76,8 @@ public:
 	}
 
 	void setMulticastPortbase(uint16_t port) {
+		if(!options.count("sub.rtp.multicast"))
+			this->setMulticastIP("239.8.4.8");		//default multicast address for umundo rtp
 		this->setPortbase(port);
 	}
 };

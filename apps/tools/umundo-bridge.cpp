@@ -599,7 +599,7 @@ public:
 		}
 	}
 	
-	void send_subAdded(std::string channelName, bool isRTP) {
+	void send_subAdded(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
 		if(!_innerNode)		//only allow when we know our umundo node
 			return;
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
@@ -608,10 +608,15 @@ public:
 		msg.set("type", "subAdded");
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
+		msg.set("isMulticast", isMulticast);
+		if(isMulticast) {
+			msg.set("ip", ip);
+			msg.set("port", port);
+		}
 		sendMessage(msg, TCP);
 	}
 	
-	void send_subRemoved(std::string channelName, bool isRTP) {
+	void send_subRemoved(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
 		if(!_innerNode)		//only allow when we know our umundo node
 			return;
 		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
@@ -620,6 +625,11 @@ public:
 		msg.set("type", "subRemoved");
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
+		msg.set("isMulticast", isMulticast);
+		if(isMulticast) {
+			msg.set("ip", ip);
+			msg.set("port", port);
+		}
 		sendMessage(msg, TCP);
 	}
 	
@@ -793,23 +803,34 @@ private:
 			{
 				RScopeLock lock(_knownSubsMutex);
 				if(_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first subscriber --> register actual receiver to receive the data
+					
+					RTPSubscriberConfig subConfig;
+					if(msg->get<bool>("isMulticast")) {
+						subConfig.setMulticastIP(msg->get("ip"));
+						subConfig.setMulticastPortbase(msg->get<uint16_t>("port"));
+					}
 					GlobalReceiver* receiver = new GlobalReceiver(msg->get("channelName"), msg->get<bool>("isRTP"), shared_from_this());
-					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"), receiver);
+					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"), receiver, &subConfig);
 					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = sub;
 				} else {
-					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"));
+					RTPSubscriberConfig subConfig;
+					if(msg->get<bool>("isMulticast")) {
+						subConfig.setMulticastIP(msg->get("ip"));
+						subConfig.setMulticastPortbase(msg->get<uint16_t>("port"));
+					}
+					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"), NULL, &subConfig);
 					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[sub->getUUID()] = sub;
 				}
 			}
 			_innerNode->addSubscriber(*sub);
 			if(verbose)
-				std::cout << "Created new LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
+				std::cout << "Created new LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
 		} else if(msg->get("type")=="subRemoved") {
 			std::string localUUID;
 			unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
 			if(verbose && localUUID.length())
-				std::cout << "Removed LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
+				std::cout << "Removed LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
 		} else if(msg->get("type")=="data") {
 			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
@@ -839,7 +860,7 @@ private:
 		if(_knownSubs[isRTP][channelName].second.empty()) {		//last subscriber removed --> remove our master subscriber
 			if(_knownSubs[isRTP][channelName].first==NULL) {
 				if(verbose)
-					std::cout << "REMOTE " << (isRTP ? "RTP" : "ZMQ") << " subscriber for channel '" << channelName << "' unknown, ignoring removal!" << std::endl;
+					std::cout << "REMOTE unicast/multicast " << (isRTP ? "RTP" : "ZMQ") << " subscriber for channel '" << channelName << "' unknown, ignoring removal!" << std::endl;
 			} else {
 				Subscriber* sub=_knownSubs[isRTP][channelName].first;
 				localUUID=sub->getUUID();
@@ -979,18 +1000,18 @@ GlobalGreeter::GlobalGreeter(Publisher* pub, boost::shared_ptr<ProtocolHandler> 
 
 void GlobalGreeter::welcome(Publisher& pub, const SubscriberStub& subStub) {
 	if(verbose)
-		std::cout << "Got new LOCAL " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
+		std::cout << "Got new LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
 	if(verbose)
 		std::cout << "--> subscribing on REMOTE side..." << std::endl;
-	_handler->send_subAdded(_pub->getChannelName(), subStub.isRTP());
+	_handler->send_subAdded(_pub->getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
 }
 
 void GlobalGreeter::farewell(Publisher& pub, const SubscriberStub& subStub) {
 	if(verbose)
-		std::cout << "Removed LOCAL " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
+		std::cout << "Removed LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
 	if(verbose)
 		std::cout << "--> unsubscribing on REMOTE side..." << std::endl;
-	_handler->send_subRemoved(pub.getChannelName(), subStub.isRTP());
+	_handler->send_subRemoved(pub.getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
 }
 
 //monitor addition and removal of new publishers and publish the same channel on the other side

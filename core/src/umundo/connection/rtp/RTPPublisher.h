@@ -60,8 +60,7 @@ protected:
 private:
 	uint8_t _payloadType;
 	uint32_t _timestampIncrement;
-	std::string _multicastIP;
-	uint16_t _multicastPortbase;
+	uint16_t _sequenceNumber;
 	uint32_t _timestamp;
 
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
@@ -71,7 +70,6 @@ private:
 	Monitor _pubLock;
 	RMutex _mutex;
 	bool _isSuspended;
-	bool _multicast;
 	bool _initDone;
 
 	RTPHelpers *_helper;

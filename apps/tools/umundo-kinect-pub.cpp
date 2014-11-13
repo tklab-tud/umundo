@@ -107,8 +107,6 @@ int main(int argc, char** argv) {
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
 
 	RTPPublisherConfig pubConfig(1);
-	//pubConfig.setMulticastIP("224.1.2.3");
-	//pubConfig.setMulticastPortbase(42142);
 	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
 
 	Discovery disc(Discovery::MDNS);

@@ -31,7 +31,7 @@
 
 namespace umundo {
 
-RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber(0), _multicast(false), _isSuspended(false), _initDone(false) {
+RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber(0), _isSuspended(false), _initDone(false) {
 #ifdef WIN32
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
@@ -44,7 +44,7 @@ void RTPSubscriber::init(const Options* config) {
 	uint16_t min=16384;		//minimum rtp port
 	uint16_t max=65534;		//maximum rtp port
 	uint16_t portbase=strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
-	_multicastIP=config->getKVPs()["sub.rtp.multicast"];
+	std::string multicastIP=config->getKVPs()["sub.rtp.multicast"];
 	if(config->getKVPs().count("pub.rtp.multicast") && !config->getKVPs().count("pub.rtp.portbase")) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65535) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
@@ -73,16 +73,18 @@ void RTPSubscriber::init(const Options* config) {
 	if(config->getKVPs().count("sub.rtp.multicast")) {
 		struct libre::sa maddr;
 		libre::sa_init(&maddr, AF_INET);
-		if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
-			UM_LOG_WARN("%s: error %d in libre::sa_set_str(%s:%u): %s", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
+		if((status=libre::sa_set_str(&maddr, multicastIP.c_str(), _port)))
+			UM_LOG_WARN("%s: error %d in libre::sa_set_str(%s:%u): %s", SHORT_UUID(_uuid).c_str(), status, multicastIP.c_str(), _port, strerror(status));
 		else {
 			//test for multicast support
 			status=libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
 			status|=libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
 			if(status)
 				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
-			else
+			else {
+				_ip=multicastIP;
 				_multicast=true;
+			}
 		}
 	}
 
@@ -127,21 +129,21 @@ void RTPSubscriber::resume() {
 void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 	RScopeLock lock(_mutex);
 	int status;
-	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
+	uint16_t port=pub.getPort();
 
 	if(_domainPubs.count(pub.getDomain()) == 0) {
 		UM_LOG_INFO("%s: subscribing to %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
 		if(_multicast && _pubs.size()==0) {
-			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
+			UM_LOG_INFO("%s: first publisher found and we are using multicast, joining multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _ip.c_str(), _port);
 
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
-			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
-				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, ignoring publisher", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
+			if((status=libre::sa_set_str(&maddr, _ip.c_str(), _port)))
+				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, ignoring publisher", SHORT_UUID(_uuid).c_str(), status, _ip.c_str(), _port, strerror(status));
 			else if(libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr))
-				UM_LOG_ERR("%s: system not supporting multicast, ignoring publisher (%s:%d)", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
+				UM_LOG_ERR("%s: system not supporting multicast, ignoring publisher (%s:%d)", SHORT_UUID(_uuid).c_str(), _ip.c_str(), _port);
 		}
 	}
 	_pubs[pub.getUUID()] = pub;
@@ -151,8 +153,8 @@ void RTPSubscriber::added(const PublisherStub& pub, const NodeStub& node) {
 void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 	RScopeLock lock(_mutex);
 	int status;
-	uint16_t port=pub.getPort();
 	std::string ip=node.getIP();
+	uint16_t port=pub.getPort();
 
 	// TODO: This fails for publishers added via different nodes
 	if (_pubs.find(pub.getUUID()) != _pubs.end())
@@ -175,14 +177,14 @@ void RTPSubscriber::removed(const PublisherStub& pub, const NodeStub& node) {
 		UM_LOG_INFO("%s unsubscribing from %s (%s:%d)", SHORT_UUID(_uuid).c_str(), pub.getChannelName().c_str(), ip.c_str(), port);
 
 		if(_multicast && _pubs.size()==0) {
-			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
+			UM_LOG_INFO("%s: last publisher vanished and we are using multicast, leaving multicast group %s:%d now", SHORT_UUID(_uuid).c_str(), _ip.c_str(), _port);
 
 			struct libre::sa maddr;
 			libre::sa_init(&maddr, AF_INET);
-			if((status=libre::sa_set_str(&maddr, _multicastIP.c_str(), _port)))
-				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, not leaving multicast group", SHORT_UUID(_uuid).c_str(), status, _multicastIP.c_str(), _port, strerror(status));
-			else if(libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr))
-				UM_LOG_ERR("%s: system not supporting multicast, not leaving multicast group (%s:%d)", SHORT_UUID(_uuid).c_str(), _multicastIP.c_str(), _port);
+			if((status=libre::sa_set_str(&maddr, _ip.c_str(), _port)))
+				UM_LOG_ERR("%s: error %d in libre::sa_set_str(%s:%u): %s, not leaving multicast group", SHORT_UUID(_uuid).c_str(), status, _ip.c_str(), _port, strerror(status));
+			else if(libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr))
+				UM_LOG_ERR("%s: system not supporting multicast, not leaving multicast group (%s:%d)", SHORT_UUID(_uuid).c_str(), _ip.c_str(), _port);
 		}
 
 	}
@@ -207,8 +209,10 @@ void RTPSubscriber::run() {
 			msg=_queue.front();
 			_queue.pop();
 		}
-		if(!_receiver)
+		if(!_receiver) {
+			delete msg;
 			continue;
+		}
 		_receiver->receive(msg);
 		delete msg;
 	}

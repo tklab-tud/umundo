@@ -31,11 +31,17 @@ int main(int argc, char** argv) {
 	disc.add(node);
 	node.addPublisher(pubFoo);
 
+	uint16_t num=0;
+	char buf[2]="A";
 	while(1) {
-		Thread::sleepMs(100);
+		Thread::sleepMs(1000);
 		Message* msg = new Message();
-		msg->setData("ping", 4);
-		std::cout << "o" << std::endl << std::flush;
+		buf[0]=65+num++;
+		if(num==26)
+			num=0;
+		std::string ping=std::string("ping-")+std::string(buf);
+		msg->setData(ping.c_str(), ping.length());
+		std::cout << "o-" << buf << std::endl << std::flush;
 		pubFoo.send(msg);
 		delete(msg);
 	}

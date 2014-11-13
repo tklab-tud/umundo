@@ -34,7 +34,7 @@ class Type;
 class UMUNDO_API Message {
 public:
 	enum Type {
-	    UM_VERSION            = 0xF004, // version 0.4 of the message format
+	    UM_VERSION            = 0xF005, // version 0.5 of the message format
 	    UM_CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
 	    UM_CONNECT_REP        = 0x0002, // reply from a remote node
 	    UM_NODE_INFO          = 0x0003, // information about a node and its publishers

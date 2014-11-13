@@ -84,10 +84,10 @@ readPtr = recvBuffer;
 (msgSize - (readPtr - recvBuffer))
 
 #define PUB_INFO_SIZE(pub) \
-pub.getChannelName().length() + 1 + pub.getUUID().length() + 1 + 2 + 2
+pub.getChannelName().length()+1 + pub.getUUID().length()+1 + sizeof(uint16_t) + sizeof(uint16_t)
 
 #define SUB_INFO_SIZE(sub) \
-sub.getChannelName().length() + 1 + sub.getUUID().length() + 1 + 2 + 2
+sub.getChannelName().length()+1 + sub.getUUID().length()+1 + sizeof(uint16_t) + sizeof(uint16_t) + sub.getIP().length()+1 + sizeof(uint16_t)
 
 #define PREPARE_MSG(msg, size) \
 zmq_msg_t msg; \
@@ -339,7 +339,7 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 
-			// iterate all remote publishers and remove from sub
+			// iterate all remote publishers and add this sub
 			while (pubIter != pubs.end()) {
 				if(sub.matches(pubIter->second.getChannelName())) {
 					sub.added(pubIter->second, nodeIter->second->node);
@@ -367,7 +367,7 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 
-			// iterate all remote publishers and remove from sub
+			// iterate all remote publishers and remove this sub
 			while (pubIter != pubs.end()) {
 				if(sub.matches(pubIter->second.getChannelName())) {
 					sub.removed(pubIter->second, nodeIter->second->node);
@@ -1533,6 +1533,8 @@ char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
 	buffer = writeString(buffer, sub.getChannelName().c_str(), sub.getChannelName().length());
 	buffer = writeString(buffer, sub.getUUID().c_str(), sub.getUUID().length());
 	buffer = writeUInt16(buffer, sub.getImpl()->implType);
+	buffer = writeUInt16(buffer, sub.isMulticast() ? 1 : 0);
+	buffer = writeString(buffer, sub.getIP().c_str(), sub.getIP().length());
 	buffer = writeUInt16(buffer, sub.getPort());
 
 	assert(buffer - start == SUB_INFO_SIZE(sub));
@@ -1542,19 +1544,27 @@ char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
 char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl* subStub) {
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
-
+	
 	char* channelName;
 	buffer = readString(buffer, channelName, available - (buffer - start));
 	subStub->setChannelName(channelName);
-
+	
 	char* uuid;
 	buffer = readString(buffer, uuid, available - (buffer - start));
 	subStub->setUUID(uuid);
-
+	
 	uint16_t type;
 	buffer = readUInt16(buffer, type);
 	subStub->implType = type;
-
+	
+	uint16_t multicast;
+	buffer = readUInt16(buffer, multicast);
+	subStub->setMulticast(multicast==1 ? true : false);
+	
+	char* ip;
+	buffer = readString(buffer, ip, available - (buffer - start));
+	subStub->setIP(ip);
+	
 	uint16_t port;
 	buffer = readUInt16(buffer, port);
 	subStub->setPort(port);

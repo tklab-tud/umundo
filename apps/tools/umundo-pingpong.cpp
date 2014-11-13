@@ -74,8 +74,6 @@ int main(int argc, char** argv) {
 	node.addPublisher(pubFoo);
 	node.addSubscriber(subFoo);
 
-	std::cout << "Publisher: " << pubFoo.getUUID() << std::endl;
-	
 	while(1) {
 		Thread::sleepMs(1000);
 		Message* msg = new Message();

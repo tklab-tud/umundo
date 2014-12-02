@@ -1151,6 +1151,8 @@ public:
 			int err=getaddrinfo(hostname, toStr(_connectPort).c_str(), &hints, &res);
 			if(err!=0)
 				throw SocketException("Failed to resolve hostname '"+_connectIP+"' (err="+toStr(err)+")");
+			if(verbose)
+				std::cout << "Info: '" << _connectIP << "' is at " << ipToStr(((struct sockaddr_in*)&res->ai_addr)->sin_addr.s_addr) << "..." << std::endl;
 			if(connect(_tcpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
 				throw SocketException("Could not connect tcp socket");
 			if(connect(_udpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address

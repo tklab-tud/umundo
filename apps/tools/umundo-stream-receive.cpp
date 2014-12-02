@@ -70,7 +70,7 @@ public:
 };
 
 std::string ipToStr(uint32_t ip) {
-	char* ip_p=(char*)&ip;
+	uint8_t* ip_p=(uint8_t*)&ip;
 	std::string output=toStr((int)ip_p[0])+"."+toStr((int)ip_p[1])+"."+toStr((int)ip_p[2])+"."+toStr((int)ip_p[3]);
 	return output;
 }

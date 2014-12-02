@@ -93,7 +93,7 @@ void printUsageAndExit() {
 	exit(1);
 }
 std::string ipToStr(uint32_t ip) {
-	char* ip_p=(char*)&ip;
+	uint8_t* ip_p=(uint8_t*)&ip;
 	std::string output=toStr((int)ip_p[0])+"."+toStr((int)ip_p[1])+"."+toStr((int)ip_p[2])+"."+toStr((int)ip_p[3]);
 	return output;
 }
@@ -1152,7 +1152,7 @@ public:
 			if(err!=0)
 				throw SocketException("Failed to resolve hostname '"+_connectIP+"' (err="+toStr(err)+")");
 			if(verbose)
-				std::cout << "Info: '" << _connectIP << "' is at " << ipToStr(((struct sockaddr_in*)&res->ai_addr)->sin_addr.s_addr) << "..." << std::endl;
+				std::cout << "Info: '" << _connectIP << "' is at " << ipToStr(((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr) << "..." << std::endl;
 			if(connect(_tcpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
 				throw SocketException("Could not connect tcp socket");
 			if(connect(_udpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address

@@ -654,17 +654,16 @@ public:
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
 		msg.set("data", std::string(umundoMessage->data(), umundoMessage->size()));
-		uint32_t metadataCount=0;
+		uint32_t metadataCount=umundoMessage->getMeta().size();
+		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
+		msg.set("metadataCount", metadataCount);
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
 			std::cout << "Setting metadata key '" << metaIter->first << "' to value '" << metaIter->second << std::endl;
 			msg.set("metadataKey."+toStr(metadataCount), metaIter->first);
 			msg.set("metadataValue."+toStr(metadataCount), metaIter->second);
-			metadataCount++;
 			metaIter++;
 		}
-		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
-		msg.set("metadataCount", metadataCount);
 		sendMessage(msg, isRTP ? UDP : TCP);
 	}
 	
@@ -734,14 +733,6 @@ private:
 		if(_shutdownDone)
 			return false;
 		
-		std::cout << "D E B U G" << std::endl;
-		std::map<std::string, std::string> kvp=msg->get();
-		std::map<std::string, std::string>::iterator kvpIter = kvp.begin();
-		while(kvpIter != kvp.end()) {
-			std::cout << "KVP: " << kvpIter->first << " => " << kvpIter->second << std::endl;
-			kvpIter++;
-		}
-		
 		if(msg->get("type")=="pubAdded") {
 			RScopeLock lock(_knownPubsMutex);
 			Publisher* ownPub;
@@ -766,7 +757,7 @@ private:
 				}
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[ownPub->getUUID()] = ownPub;
 				if(verbose)
-				std::cout << "Created new 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
+					std::cout << "Created new 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			}
 			_innerNode->addPublisher(*ownPub);
 		
@@ -827,20 +818,19 @@ private:
 				std::cout << "Created new LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
 		} else if(msg->get("type")=="subRemoved") {
-			std::string localUUID;
-			unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
+			std::string localUUID=unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
 			if(verbose && localUUID.length())
 				std::cout << "Removed LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 		
 		} else if(msg->get("type")=="data") {
 			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
 			uint32_t metadataCount = msg->get<uint32_t>("metadataCount");
+			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			for(uint32_t c=0; c<metadataCount; c++)
 			{
 				std::cout << "Setting metadata key '" << msg->get("metadataKey."+toStr(c)) << "' to value '" << msg->get("metadataValue."+toStr(c)) << "'" << std::endl;
 				umundoMessage->putMeta(msg->get("metadataKey."+toStr(c)), msg->get("metadataValue."+toStr(c)));
 			}
-			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			{
 				RScopeLock lock(_knownPubsMutex);
 				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))!=_knownPubs[msg->get<bool>("isRTP")].end())

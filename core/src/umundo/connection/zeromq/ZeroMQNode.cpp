@@ -1560,8 +1560,8 @@ char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl
 	
 	uint16_t multicast;
 	buffer = readUInt16(buffer, multicast);
-	std::cout << "SUUUUUUUUUUUUUUUUUB MUUUUUUUUUUUUUUUUUULTICAAAAAAAAAAAAAAST [" << multicast << "] --> " << (subStub->isMulticast() ? "true" : "false") << std::endl;
 	subStub->setMulticast(multicast==1 ? true : false);
+	std::cout << "SUUUUUUUUUUUUUUUUUB MUUUUUUUUUUUUUUUUUULTICAAAAAAAAAAAAAAST [" << multicast << "] --> " << (subStub->isMulticast() ? "true" : "false") << std::endl;
 	
 	char* ip;
 	buffer = readString(buffer, ip, available - (buffer - start));

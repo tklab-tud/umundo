@@ -1296,6 +1296,7 @@ int main(int argc, char** argv) {
 	Connector* connector;
 	boost::shared_ptr<ProtocolHandler> handler;
 	
+	printf("umundo-bridge version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	while((option = getopt(argc, argv, "tvd:l:c:")) != -1) {
 		switch(option) {
 			case 'd':

@@ -74,7 +74,6 @@ bool verbose = false;
 
 //some helper functions
 void printUsageAndExit() {
-	printf("umundo-bridge version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage:\n");
 	printf("\tumundo-bridge [-d domain] [-v] -c <hostnameOrIPv4>:<port>\n");
 	printf("\tumundo-bridge [-d domain] [-v] -l port\n");
@@ -655,11 +654,9 @@ public:
 		msg.set("isRTP", isRTP);
 		msg.set("data", std::string(umundoMessage->data(), umundoMessage->size()));
 		uint32_t metadataCount=umundoMessage->getMeta().size();
-		std::cout << "SENDING METADATA COUNT: " << metadataCount << std::endl;
 		msg.set("metadataCount", metadataCount);
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
-			std::cout << "Setting metadata key '" << metaIter->first << "' to value '" << metaIter->second << std::endl;
 			msg.set("metadataKey."+toStr(metadataCount), metaIter->first);
 			msg.set("metadataValue."+toStr(metadataCount), metaIter->second);
 			metaIter++;
@@ -825,12 +822,8 @@ private:
 		} else if(msg->get("type")=="data") {
 			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
 			uint32_t metadataCount = msg->get<uint32_t>("metadataCount");
-			std::cout << "RECEIVING METADATA COUNT: " << metadataCount << std::endl;
 			for(uint32_t c=0; c<metadataCount; c++)
-			{
-				std::cout << "Setting metadata key '" << msg->get("metadataKey."+toStr(c)) << "' to value '" << msg->get("metadataValue."+toStr(c)) << "'" << std::endl;
 				umundoMessage->putMeta(msg->get("metadataKey."+toStr(c)), msg->get("metadataValue."+toStr(c)));
-			}
 			{
 				RScopeLock lock(_knownPubsMutex);
 				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))!=_knownPubs[msg->get<bool>("isRTP")].end())
@@ -1321,7 +1314,8 @@ int main(int argc, char** argv) {
 	if(optind < argc || (listen == 0 && remotePort == 0))
 		printUsageAndExit();
 	
-	//construct discovery (must be done here, because destruction of the discovery object provokes a bug which prevents subsequent constructions of new discovery objects)
+	//construct discovery (must be done here, because destruction of the discovery object provokes a bug in the mdns library
+	//which prevents subsequent constructions of new discovery objects)
 	MDNSDiscoveryOptions mdnsOpts;
 	if(domain)
 		mdnsOpts.setDomain(domain);

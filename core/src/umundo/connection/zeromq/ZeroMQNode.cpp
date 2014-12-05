@@ -1533,7 +1533,6 @@ char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
 	buffer = writeString(buffer, sub.getChannelName().c_str(), sub.getChannelName().length());
 	buffer = writeString(buffer, sub.getUUID().c_str(), sub.getUUID().length());
 	buffer = writeUInt16(buffer, sub.getImpl()->implType);
-	std::cout << "SUUUUUUUUUUUUUUUUUB MUUUUUUUUUUUUUUUUUULTICAAAAAAAAAAAAAAST --> " << (sub.isMulticast() ? "true" : "false") << std::endl;
 	buffer = writeUInt16(buffer, sub.isMulticast() ? 1 : 0);
 	buffer = writeString(buffer, sub.getIP().c_str(), sub.getIP().length());
 	buffer = writeUInt16(buffer, sub.getPort());
@@ -1561,7 +1560,6 @@ char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl
 	uint16_t multicast;
 	buffer = readUInt16(buffer, multicast);
 	subStub->setMulticast(multicast==1 ? true : false);
-	std::cout << "SUUUUUUUUUUUUUUUUUB MUUUUUUUUUUUUUUUUUULTICAAAAAAAAAAAAAAST [" << multicast << "] --> " << (subStub->isMulticast() ? "true" : "false") << std::endl;
 	
 	char* ip;
 	buffer = readString(buffer, ip, available - (buffer - start));

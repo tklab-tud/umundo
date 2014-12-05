@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	TestReceiver testRecv;
 	RTPSubscriberConfig subConfig;
 	//subConfig.setPortbase(42042);
-	subConfig.setMulticastPortbase(42042);
+	//subConfig.setMulticastPortbase(42042);
 	//subConfig.setMulticastIP("239.1.2.3");		//not needed (default multicast group: 239.8.4.8
 	Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
 

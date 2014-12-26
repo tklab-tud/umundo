@@ -148,11 +148,10 @@ public:
 //monitor subscriptions to our publishers and subscribe on the other side if neccessary
 class GlobalGreeter : public Greeter {
 private:
-	Publisher* _pub;
 	boost::shared_ptr<ProtocolHandler> _handler;
 	
 public:
-	GlobalGreeter(Publisher*, boost::shared_ptr<ProtocolHandler>);
+	GlobalGreeter(boost::shared_ptr<ProtocolHandler>);
 	void welcome(Publisher&, const SubscriberStub&);
 	void farewell(Publisher&, const SubscriberStub&);
 };
@@ -653,14 +652,15 @@ public:
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
 		msg.set("data", std::string(umundoMessage->data(), umundoMessage->size()));
-		uint32_t metadataCount=umundoMessage->getMeta().size();
-		msg.set("metadataCount", metadataCount);
+		uint32_t metadataCount=0;
 		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
 		while(metaIter!=umundoMessage->getMeta().end()) {
 			msg.set("metadataKey."+toStr(metadataCount), metaIter->first);
 			msg.set("metadataValue."+toStr(metadataCount), metaIter->second);
 			metaIter++;
+			metadataCount++;
 		}
+		msg.set("metadataCount", metadataCount);
 		sendMessage(msg, isRTP ? UDP : TCP);
 	}
 	
@@ -735,19 +735,21 @@ private:
 			Publisher* ownPub;
 			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first publisher --> register actual greeter to track subscriptions
 				if(msg->get<bool>("isRTP")) {
-					RTPPublisherConfig pubConfig(1, 96);		//dummy values (timestamp increment 1, payload type dynamic [RFC3551])
+					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
+					RTPPublisherConfig pubConfig(1, 96);
 					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
 				} else {
 					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
 				}
-				GlobalGreeter* ownGreeter = new GlobalGreeter(ownPub, shared_from_this());
+				GlobalGreeter* ownGreeter = new GlobalGreeter(shared_from_this());
 				ownPub->setGreeter(ownGreeter);
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = ownPub;
 				if(verbose)
 					std::cout << "Created new 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			} else {
 				if(msg->get<bool>("isRTP")) {
-					RTPPublisherConfig pubConfig(1, 96);		//dummy values (timestamp increment 1, payload type dynamic [RFC3551])
+					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
+					RTPPublisherConfig pubConfig(1, 96);
 					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
 				} else {
 					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
@@ -979,19 +981,19 @@ void GlobalReceiver::receive(Message* msg) {
 	_handler->send_data(_channelName, _isRTP, msg);
 }
 
-GlobalGreeter::GlobalGreeter(Publisher* pub, boost::shared_ptr<ProtocolHandler> handler) : _pub(pub), _handler(handler) { }
+GlobalGreeter::GlobalGreeter(boost::shared_ptr<ProtocolHandler> handler) : _handler(handler) { }
 
 void GlobalGreeter::welcome(Publisher& pub, const SubscriberStub& subStub) {
 	if(verbose)
-		std::cout << "Got new LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
+		std::cout << "Got new LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << pub << std::endl;
 	if(verbose)
 		std::cout << "--> subscribing on REMOTE side..." << std::endl;
-	_handler->send_subAdded(_pub->getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
+	_handler->send_subAdded(pub.getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
 }
 
 void GlobalGreeter::farewell(Publisher& pub, const SubscriberStub& subStub) {
 	if(verbose)
-		std::cout << "Removed LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << *_pub << std::endl;
+		std::cout << "Removed LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << pub << std::endl;
 	if(verbose)
 		std::cout << "--> unsubscribing on REMOTE side..." << std::endl;
 	_handler->send_subRemoved(pub.getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());

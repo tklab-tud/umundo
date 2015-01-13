@@ -295,7 +295,7 @@ if(CMAKE_CROSSCOMPILING)
 	if (IOS)
 		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY")
 	elseif (ANDROID)
-		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY") # we need both to find jni - we don't?
+		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH") # we need both to find jni - we don't?
 		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
 		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
 		LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/bin") # this is needed to find swig

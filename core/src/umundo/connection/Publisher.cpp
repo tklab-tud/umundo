@@ -87,6 +87,7 @@ void Publisher::init(PublisherType type, const std::string& channelName, Greeter
 		break;
 	}
 
+	EndPoint::_impl = _impl;
 	PublisherStub::_impl = _impl;
 	_impl->setChannelName(channelName);
 	config->channelName = channelName;

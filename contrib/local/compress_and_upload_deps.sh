@@ -9,7 +9,7 @@ CWD=`pwd`
 cd $DIR
 
 if [ "$UMUNDO_PREBUILT_HOST" == "" ]; then
-	UMUNDO_PREBUILT_HOST="admin@umundo.tk.informatik.tu-darmstadt.de"
+	UMUNDO_PREBUILT_HOST="sradomski@umundo.tk.informatik.tu-darmstadt.de"
 fi
 
 UMUNDO_PREBUILT_PATH="/var/www/html/umundo/prebuilt"

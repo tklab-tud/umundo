@@ -55,7 +55,7 @@ endif()
 # specify umundo version
 SET(UMUNDO_VERSION_MAJOR "0")
 SET(UMUNDO_VERSION_MINOR "4")
-SET(UMUNDO_VERSION_PATCH "4")
+SET(UMUNDO_VERSION_PATCH "5")
 SET(UMUNDO_VERSION "${UMUNDO_VERSION_MAJOR}.${UMUNDO_VERSION_MINOR}.${UMUNDO_VERSION_PATCH}")
 
 # build type has to be set before the project definition

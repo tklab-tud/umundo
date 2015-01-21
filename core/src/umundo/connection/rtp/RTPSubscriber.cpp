@@ -41,9 +41,10 @@ RTPSubscriber::RTPSubscriber() : _extendedSequenceNumber(0), _lastSequenceNumber
 void RTPSubscriber::init(const Options* config) {
 	RScopeLock lock(_mutex);
 	int status;
-	uint16_t min=16384;		//minimum rtp port
-	uint16_t max=65534;		//maximum rtp port
-	uint16_t portbase=strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
+	uint16_t min = 16384;		//minimum rtp port
+	uint16_t max = 65534;		//maximum rtp port
+	uint16_t portbase = strTo<uint16_t>(config->getKVPs()["sub.rtp.portbase"]);
+	
 	_multicastIP=config->getKVPs()["sub.rtp.multicast"];
 	if(config->getKVPs().count("pub.rtp.multicast") && !config->getKVPs().count("pub.rtp.portbase")) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65535) when using multicast", SHORT_UUID(_uuid).c_str());

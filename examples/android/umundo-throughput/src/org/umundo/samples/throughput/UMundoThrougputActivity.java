@@ -1,10 +1,13 @@
 package org.umundo.samples.throughput;
 
+import java.nio.ByteBuffer;
+
 import org.umundo.core.Discovery;
 import org.umundo.core.Discovery.DiscoveryType;
 import org.umundo.core.Message;
 import org.umundo.core.Node;
 import org.umundo.core.Publisher;
+import org.umundo.core.RTPSubscriberConfig;
 import org.umundo.core.Receiver;
 import org.umundo.core.Subscriber;
 
@@ -44,35 +47,46 @@ public class UMundoThrougputActivity extends Activity {
 	Thread reportPublishing;
 	Discovery disc;
 	Node node;
-	Publisher pub;
-	Subscriber sub;
-
+	Publisher reporter;
+	Subscriber tcpSub;
+	Subscriber mcastSub;
+	Subscriber rtpSub;
+	ThroughputReceiver tpRcvr;
+	
 	Object mutex = new Object();
 
 	long bytesRcvd = 0;
 	long pktsRecvd = 0;
 	long lastSeqNr = 0;
 	long pktsDropped = 0;
+	long currSeqNr = 0;
+	long lastTimeStamp = 0;
+	
+	public void sendReport(long currTimeStamp) {
+		synchronized (mutex) {
+			Message msg = new Message();
 
+			msg.putMeta("bytes.rcvd", Long.toString(bytesRcvd));
+			msg.putMeta("pkts.dropped", Long.toString(pktsDropped));
+			msg.putMeta("pkts.rcvd", Long.toString(pktsRecvd));
+			msg.putMeta("last.seq", Long.toString(lastSeqNr));
+			msg.putMeta("last.timestamp", Long.toString(currTimeStamp));
+
+			reporter.send(msg);
+			
+			pktsDropped = 0;
+			pktsRecvd = 0;
+			bytesRcvd = 0;
+		}
+
+	}
+	
 	public class ReportPublishing implements Runnable {
 
 		@Override
 		public void run() {
 			while (reportPublishing != null) {
-				synchronized (mutex) {
-					Message msg = new Message();
-
-					msg.putMeta("bytes.rcvd", Long.toString(bytesRcvd));
-					msg.putMeta("pkts.dropped", Long.toString(pktsDropped));
-					msg.putMeta("pkts.rcvd", Long.toString(pktsRecvd));
-					msg.putMeta("last.seq", Long.toString(lastSeqNr));
-
-					pub.send(msg);
-					
-					pktsDropped = 0;
-					pktsRecvd = 0;
-					bytesRcvd = 0;
-				}
+				UMundoThrougputActivity.this.sendReport(0);
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -93,7 +107,13 @@ public class UMundoThrougputActivity extends Activity {
 			synchronized (mutex) {
 				bytesRcvd += msg.getSize();
 				pktsRecvd++;
-				long currSeqNr = Long.parseLong(msg.getMeta("seqNr"));
+				
+				byte[] data = msg.getData();
+				ByteBuffer seqNr = ByteBuffer.wrap(data, 0, 8);
+				currSeqNr = seqNr.getLong();
+				
+				ByteBuffer timeStamp = ByteBuffer.wrap(data, 8, 16);
+				long currTimeStamp = timeStamp.getLong();
 				
 				if (currSeqNr < lastSeqNr)
 					lastSeqNr = 0;
@@ -103,6 +123,12 @@ public class UMundoThrougputActivity extends Activity {
 				}
 				
 				lastSeqNr = currSeqNr;
+				if (currTimeStamp - 1000 >= lastTimeStamp) {
+					sendReport(currTimeStamp);
+					lastTimeStamp = currTimeStamp;
+
+				}
+
 			}
 		}
 	}
@@ -125,21 +151,33 @@ public class UMundoThrougputActivity extends Activity {
 			Log.v("android-umundo", "Cannot get WifiManager");
 		}
 
-		// System.loadLibrary("umundoNativeJava");
-		System.loadLibrary("umundoNativeJava_d");
+		System.loadLibrary("umundoNativeJava");
+		//System.loadLibrary("umundoNativeJava_d");
 
 		disc = new Discovery(DiscoveryType.MDNS);
-
 		node = new Node();
 		disc.add(node);
 
-		pub = new Publisher("reports");
-		node.addPublisher(pub);
+		tpRcvr = new ThroughputReceiver();
+		reporter = new Publisher("reports");
+		
+		tcpSub = new Subscriber("throughput.tcp", tpRcvr);
+		
+		RTPSubscriberConfig mcastConfig = new RTPSubscriberConfig();
+		mcastConfig.setMulticastIP("224.1.2.3");
+		mcastConfig.setMulticastPortbase(42042);
+		mcastSub = new Subscriber(Subscriber.SubscriberType.RTP, "throughput.mcast", tpRcvr, mcastConfig);
 
-		sub = new Subscriber("throughput", new ThroughputReceiver());
-		node.addSubscriber(sub);
+		RTPSubscriberConfig rtpConfig = new RTPSubscriberConfig();
+		rtpConfig.setPortbase(40042);
+		rtpSub = new Subscriber(Subscriber.SubscriberType.RTP, "throughput.rtp", tpRcvr, rtpConfig);
 
-		reportPublishing = new Thread(new ReportPublishing());
-		reportPublishing.start();
+		node.addSubscriber(tcpSub);
+		node.addSubscriber(mcastSub);
+		node.addSubscriber(rtpSub);
+		node.addPublisher(reporter);
+
+//		reportPublishing = new Thread(new ReportPublishing());
+//		reportPublishing.start();
 	}
 }

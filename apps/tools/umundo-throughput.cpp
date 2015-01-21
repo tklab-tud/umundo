@@ -354,6 +354,20 @@ int main(int argc, char** argv) {
 				std::cout << FORMAT_COL << "pkts sent";
 //				std::cout << FORMAT_COL << "delay";
 				std::cout << FORMAT_COL << "scale";
+				switch (type) {
+					case PUB_RTP: {
+						std::cout << FORMAT_COL << "[RTP]";
+						break;
+					}
+					case PUB_MCAST: {
+						std::cout << FORMAT_COL << "[RTP/MCAST]";
+						break;
+					}
+					case PUB_TCP: {
+						std::cout << FORMAT_COL << "[TCP]";
+						break;
+					}
+				}
 				std::cout << FORMAT_COL << std::endl;
 
 				
@@ -464,7 +478,7 @@ int main(int argc, char** argv) {
 		Subscriber mcastSub(Subscriber::RTP, "throughput.mcast", &tpRcvr, &mcastConfig);
 
 		RTPSubscriberConfig rtpConfig;
-		rtpConfig.setPortbase(42042);
+		rtpConfig.setPortbase(40042);
 		Subscriber rtpSub(Subscriber::RTP, "throughput.rtp", &tpRcvr, &rtpConfig);
 
 		node.addSubscriber(tcpSub);

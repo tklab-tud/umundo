@@ -50,6 +50,10 @@ if(POLICY CMP0038)
 	cmake_policy(SET CMP0038 OLD)
 endif()
 
+if(POLICY CMP0054)
+	# Escape variables in if
+	cmake_policy(SET CMP0054 OLD)
+endif()
 
 
 # specify umundo version

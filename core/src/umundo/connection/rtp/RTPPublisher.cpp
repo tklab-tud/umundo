@@ -207,7 +207,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 	UM_LOG_INFO("%s: lost a subscriber (%s:%u) for channel %s", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _channelName.c_str());
 
 	if(_multicast) {
-		UM_LOG_WARN("%s: configured for multicast, not removing unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
+		UM_LOG_INFO("%s: configured for multicast, not removing unicast subscriber (%s:%u)", SHORT_UUID(_uuid).c_str(), ip.c_str(), port);
 
 		if(_subs.size()==1) {	//last subscriber
 			UM_LOG_INFO("%s: lost last multicast subscriber (%s:%u), removing multicast group %s:%u from receivers list", SHORT_UUID(_uuid).c_str(), ip.c_str(), port, _multicastIP.c_str(), _multicastPortbase);

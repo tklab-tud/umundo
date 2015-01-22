@@ -41,7 +41,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include "umundo/common/Message.h"
-#include "umundo/common/Regex.h"
 #include "umundo/common/UUID.h"
 #include "umundo/connection/zeromq/ZeroMQPublisher.h"
 #include "umundo/connection/zeromq/ZeroMQSubscriber.h"

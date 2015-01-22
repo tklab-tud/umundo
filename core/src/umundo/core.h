@@ -28,7 +28,6 @@
 #include "umundo/common/Host.h"
 #include "umundo/common/Implementation.h"
 #include "umundo/common/Message.h"
-#include "umundo/common/Regex.h"
 #include "umundo/common/UUID.h"
 #include "umundo/common/portability.h"
 #include "umundo/common/ResultSet.h"

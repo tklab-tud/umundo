@@ -156,7 +156,6 @@ public class UMundoThrougputActivity extends Activity {
 
 		disc = new Discovery(DiscoveryType.MDNS);
 		node = new Node();
-		disc.add(node);
 
 		tpRcvr = new ThroughputReceiver();
 		reporter = new Publisher("reports");
@@ -165,19 +164,36 @@ public class UMundoThrougputActivity extends Activity {
 		
 		RTPSubscriberConfig mcastConfig = new RTPSubscriberConfig();
 		mcastConfig.setMulticastIP("224.1.2.3");
-		mcastConfig.setMulticastPortbase(42042);
+		mcastConfig.setMulticastPortbase(42142);
 		mcastSub = new Subscriber(Subscriber.SubscriberType.RTP, "throughput.mcast", tpRcvr, mcastConfig);
 
 		RTPSubscriberConfig rtpConfig = new RTPSubscriberConfig();
 		rtpConfig.setPortbase(40042);
 		rtpSub = new Subscriber(Subscriber.SubscriberType.RTP, "throughput.rtp", tpRcvr, rtpConfig);
 
+//		reportPublishing = new Thread(new ReportPublishing());
+//		reportPublishing.start();
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		node.removeSubscriber(tcpSub);
+		node.removeSubscriber(mcastSub);
+		node.removeSubscriber(rtpSub);
+		node.removePublisher(reporter);
+		disc.remove(node);
+
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		disc.add(node);
 		node.addSubscriber(tcpSub);
 		node.addSubscriber(mcastSub);
 		node.addSubscriber(rtpSub);
 		node.addPublisher(reporter);
-
-//		reportPublishing = new Thread(new ReportPublishing());
-//		reportPublishing.start();
 	}
+
 }

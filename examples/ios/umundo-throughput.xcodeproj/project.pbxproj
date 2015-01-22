@@ -244,7 +244,7 @@
 					../../core/bindings,
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "";
@@ -275,7 +275,7 @@
 					../../core/bindings,
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios";
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

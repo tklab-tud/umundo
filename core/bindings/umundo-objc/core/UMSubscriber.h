@@ -33,9 +33,10 @@
 /**
  * Objective-C protocol to represent Receivers for subscribers.
  */
-@protocol UMSubscriberReceiver
+@protocol UMReceiver
 - (void)received:(NSData*)data withMeta:(NSDictionary*)meta;
 @end
+
 
 /**
  * Objective-C representation of a Subscriber%s.
@@ -44,9 +45,19 @@
 NSObject {
 	@public
 	SharedPtr<umundo::Subscriber> _cppSub;
-	id<UMSubscriberReceiver> _receiver;
+	id<UMReceiver> _receiver;
 }
-- (id) initWithChannel:(NSString*)name andReceiver:(id<UMSubscriberReceiver>)receiver;
+- (id) initTCP:(NSString*)name
+			receiver:(id<UMReceiver>)receiver;
+
+- (id) initMCast:(NSString*)name
+				receiver:(id<UMReceiver>)receiver
+				 mcastIP:(NSString*)ip
+				portBase:(short)portBase;
+
+- (id) initRTP:(NSString*)name
+			receiver:(id<UMReceiver>)receiver;
+
 @end
 
 #endif /* end of include guard: UMSUBSCRIBER_H_L4CPAZMF */

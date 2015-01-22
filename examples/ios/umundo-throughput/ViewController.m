@@ -9,7 +9,7 @@
 #import "ViewController.h"
 
 @implementation ViewController
-@synthesize text, timer, sub, pub, bytesRcvd, pktsDropped, pktsRecvd, lastSeqNr, lastTimeStamp, currTimeStamp, lock;
+@synthesize text, timer, rtpSub, mcastSub, tcpSub, reporter, bytesRcvd, pktsDropped, pktsRecvd, lastSeqNr, lastTimeStamp, currTimeStamp, lock;
 
 - (void)addText:(NSString*)theText {
   text.text = [text.text stringByAppendingString:theText];
@@ -24,12 +24,13 @@
 	[lock lock];
 	bytesRcvd += [data length];
 	pktsRecvd++;
+	
+	UInt64 currSeqNr;
+	memcpy(&currSeqNr, (char*)[data bytes] + 0, 8);
+	currSeqNr = CFSwapInt64BigToHost(currSeqNr);
 
-	NSString* seqNrStr = [meta valueForKey:@"seqNr"];
-	NSUInteger currSeqNr = [seqNrStr longLongValue];
-
-	NSString* currTimeStampStr = [meta valueForKey:@"now"];
-	currTimeStamp = [currTimeStampStr longLongValue];
+	memcpy(&currTimeStamp, (char*)[data bytes] + 8, 8);
+	currTimeStamp = CFSwapInt64BigToHost(currTimeStamp);
 
 	if (currSeqNr < lastSeqNr)
 		lastSeqNr = 0;
@@ -50,10 +51,11 @@
 - (void)accumulateStats {
 	[lock lock];
 	NSMutableString *logMsg = [[NSMutableString alloc] init];
+	[logMsg appendString:@"\n\n"];
 	[logMsg appendString:[NSString stringWithFormat:@"Byte rcvd: %ikB\n", (NSUInteger)(bytesRcvd / 1024)]];
 	[logMsg appendString:[NSString stringWithFormat:@"Pkts rcvd: %i\n", pktsRecvd]];
 	[logMsg appendString:[NSString stringWithFormat:@"Pkts drop: %i\n", pktsDropped]];
-	[logMsg appendString:[NSString stringWithFormat:@"Last Seq:  %i\n", lastSeqNr]];
+	[logMsg appendString:[NSString stringWithFormat:@"Last Seq:  %lld\n", lastSeqNr]];
 	
 	std::ostringstream bytesRcvdSS;
 	bytesRcvdSS << bytesRcvd;
@@ -77,7 +79,7 @@
 	msg->putMeta("last.seq", lastSeqNrSS.str());
 	msg->putMeta("last.timestamp", currTimeSS.str());
 
-	[pub sendMsg:msg];
+	[reporter sendMsg:msg];
 	delete msg;
 	
 	pktsDropped = 0;
@@ -118,10 +120,23 @@
 - (void)viewWillAppear:(BOOL)animated
 {
 	[super viewWillAppear:animated];
-  sub = [[UMSubscriber alloc] initWithChannel:@"throughput" andReceiver:self];
-  [[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addSubscriber:sub];
-  pub = [[UMPublisher alloc] initWithChannel:@"reports"];
-  [[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addPublisher:pub];
+	
+	tcpSub = [[UMSubscriber alloc] initTCP:@"throughput.tcp"
+																receiver:self];
+	
+	mcastSub = [[UMSubscriber alloc] initMCast:@"throughput.mcast"
+																		receiver:self
+																		 mcastIP:@"224.1.2.3"
+																		portBase:42142];
+
+	rtpSub = [[UMSubscriber alloc] initRTP:@"throughput.rtp" receiver:self];
+
+	reporter = [[UMPublisher alloc] initWithChannel:@"reports"];
+
+	[[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addSubscriber:tcpSub];
+	[[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addSubscriber:mcastSub];
+	[[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addSubscriber:rtpSub];
+  [[(AppDelegate *)[[UIApplication sharedApplication] delegate] node] addPublisher:reporter];
 
 }
 

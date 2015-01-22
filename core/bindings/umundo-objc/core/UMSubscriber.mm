@@ -22,8 +22,8 @@
 
 class umundoReceiverWrapper : public umundo::Receiver {
 public:
-  umundoReceiverWrapper(id<UMSubscriberReceiver> receiver) : _objcReceiver(receiver) {}
-  id<UMSubscriberReceiver> _objcReceiver;
+  umundoReceiverWrapper(id<UMReceiver> receiver) : _objcReceiver(receiver) {}
+  id<UMReceiver> _objcReceiver;
 	virtual void receive(umundo::Message* msg) {
 #if HAS_AUTORELEASE_POOL
     @autoreleasepool {
@@ -57,18 +57,59 @@ public:
   return self;
 }
 
-- (id) initWithChannel:(NSString*)name andReceiver:(id<UMSubscriberReceiver>)listener {
-  self = [super init];
-  if(self) {
-    if(name == nil || listener == nil) {
-      return nil;
-    } else {
-      umundo::Receiver* cListener = new umundoReceiverWrapper(listener);
-      std::string cppChannelName([name cStringUsingEncoding: NSASCIIStringEncoding]);
-      _cppSub =
-      SharedPtr<umundo::Subscriber>(new umundo::Subscriber(cppChannelName, cListener));
-    }
-  }
-  return self;
+- (id) initTCP:(NSString*)name
+			receiver:(id<UMReceiver>)receiver {
+
+	self = [super init];
+	if(self) {
+		if(name == nil || receiver == nil) {
+			return nil;
+		} else {
+			umundo::Receiver* cRecv = new umundoReceiverWrapper(receiver);
+			std::string channel([name cStringUsingEncoding: NSASCIIStringEncoding]);
+			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(channel, cRecv));
+		}
+	}
+	return self;
 }
+
+- (id) initRTP:(NSString*)name
+			receiver:(id<UMReceiver>)receiver {
+	self = [super init];
+	if (self) {
+		if (name == nil || receiver == nil) {
+			return nil;
+		} else {
+			umundo::Receiver* cRecv = new umundoReceiverWrapper(receiver);
+			std::string channel([name cStringUsingEncoding: NSASCIIStringEncoding]);
+			umundo::RTPSubscriberConfig rtpConf;
+			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(umundo::Subscriber::RTP, channel, cRecv, &rtpConf));
+		}
+	}
+	return self;
+
+}
+
+- (id) initMCast:(NSString*)name
+				receiver:(id<UMReceiver>)receiver
+				 mcastIP:(NSString*)ip
+				portBase:(short)portBase {
+	self = [super init];
+	if (self) {
+		if (name == nil || receiver == nil || ip == nil || portBase == 0) {
+			return nil;
+		} else {
+			umundo::Receiver* cRecv = new umundoReceiverWrapper(receiver);
+			std::string channel([name cStringUsingEncoding: NSASCIIStringEncoding]);
+			umundo::RTPSubscriberConfig mcastConf;
+			mcastConf.setMulticastIP([ip cStringUsingEncoding: NSASCIIStringEncoding]);
+			mcastConf.setMulticastPortbase(portBase);
+			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(umundo::Subscriber::RTP, channel, cRecv, &mcastConf));
+		}
+	}
+	return self;
+
+}
+
+
 @end

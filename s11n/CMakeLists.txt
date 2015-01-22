@@ -10,6 +10,14 @@ find_package(Protobuf)
 if (S11N_PROTOBUF AND PROTOBUF_FOUND)
 	set(BUILD_UMUNDO_S11N ON)
 
+	if(NOT EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION}")
+		message(WARNING "Not building umundo S11N: Cannot find protobuf compiler headers in ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION}")
+		set(BUILD_UMUNDO_S11N OFF PARENT_SCOPE)
+		return()
+	else()
+		include_directories(${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION})
+	endif()
+
 	# protobuf-lite is not enough as we use reflection and dynamic messages
 # 	LIST(APPEND UMUNDOS11N_LIBRARIES optimized ${PROTOBUF_LITE_LIBRARY})
 # 	LIST(APPEND UMUNDOS11N_LIBRARIES debug ${PROTOBUF_LITE_LIBRARY_DEBUG})

@@ -40,6 +40,8 @@ using ::wcslen;
 
 #define setenv(key, value, override) _putenv_s(key, value)
 
+#define strncasecmp(x,y,z) _strnicmp(x,y,z)
+
 #ifndef snprintf
 #define snprintf _snprintf
 #endif

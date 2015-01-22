@@ -11,6 +11,10 @@ if (WIN32)
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Program Files (x86)/swig") # swig.exe
 	#LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v4.0.30319") # CSharp compiler
 	LIST(APPEND CMAKE_PROGRAM_PATH "C:/Windows/Microsoft.NET/Framework/v3.5") # CSharp compiler
+
+	file(GLOB POTENTIAL_SWIG "C:/Program Files/swig*" "C:/Program Files (x86)/swig*")
+	LIST(APPEND CMAKE_PROGRAM_PATH ${POTENTIAL_SWIG}) # swig.exe
+
 endif()
 
 LIST(APPEND CMAKE_PROGRAM_PATH $ENV{SWIG_DIR})
@@ -81,7 +85,9 @@ if (UMUNDONATIVEJAVA_LOCATION)
 		SET(JAR_JNI_ROOT_PATH ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 	endif()
 
-	FIND_PROGRAM(ANT_EXECUTABLE ant PATHS $ENV{ANT_HOME}/bin ENV PATH )
+	file(GLOB POTENTIAL_ANT "C:/Program Files/apache-ant**/bin" "C:/Program Files (x86)/apache-ant**/bin")
+	FIND_PROGRAM(ANT_EXECUTABLE ant PATHS $ENV{ANT_HOME}/bin ${POTENTIAL_ANT} ENV PATH )
+
 	if (ANT_EXECUTABLE)
 		# run protoc for java
 		if (PROTOBUF_PROTOC_EXECUTABLE AND BUILD_UMUNDO_S11N)

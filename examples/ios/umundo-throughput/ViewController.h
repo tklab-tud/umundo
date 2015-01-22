@@ -20,8 +20,11 @@
 @property (nonatomic) NSUInteger pktsDropped;
 @property (nonatomic) NSUInteger pktsRecvd;
 @property (nonatomic) NSUInteger lastSeqNr;
+@property (nonatomic) long long lastTimeStamp;
+@property (nonatomic) long long currTimeStamp;
 
 - (void)accumulateStats;
 - (void)addText:(NSString*)theText;
+- (void)clearText;
 
 @end

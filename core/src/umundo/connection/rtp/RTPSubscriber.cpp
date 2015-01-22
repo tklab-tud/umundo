@@ -49,25 +49,39 @@ void RTPSubscriber::init(const Options* config) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid multicast portbase (0 < portbase < 65535) when using multicast", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	if(config->getKVPs().count("sub.rtp.portbase") && (portbase==0 || portbase==65535)) {
+	if(config->getKVPs().count("sub.rtp.portbase") &&
+		 (portbase == 0 || portbase == 65535)) {
 		UM_LOG_ERR("%s: error RTPSubscriber.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
 
-	_helper=new RTPHelpers();		//this starts the re_main() mainloop
-	if(config->getKVPs().count("sub.rtp.portbase")) {
+	_helper = new RTPHelpers(); //this starts the re_main() mainloop
+	if (config->getKVPs().count("sub.rtp.portbase")) {
 		min=portbase;
 		max=portbase+1;
 	}
+	
 	struct libre::sa ip;
 	libre::sa_init(&ip, AF_INET);
 	libre::sa_set_in(&ip, INADDR_ANY, 0);
-	if((status=RTPHelpers::call(boost::bind(libre::rtp_listen, &_rtp_socket, static_cast<int>(IPPROTO_UDP), &ip, min, max, false, rtp_recv, (void (*)(const libre::sa*, libre::rtcp_msg*, void*)) NULL, this)))) {
-		UM_LOG_ERR("%s: error %d in libre::rtp_listen()", SHORT_UUID(_uuid).c_str(), status);
+	
+	status = RTPHelpers::call(boost::bind(libre::rtp_listen, &_rtp_socket, static_cast<int>(IPPROTO_UDP),
+																				&ip,
+																				min,
+																				max,
+																				false,
+																				rtp_recv,
+																				(void (*)(const libre::sa*, libre::rtcp_msg*, void*))
+																				NULL,
+																				this));
+
+	if (status) {
+		UM_LOG_ERR("%s: error in libre::rtp_listen(): %s", SHORT_UUID(_uuid).c_str(), strerror(status));
 		delete _helper;
 		return;
 	}
-	_port=libre::sa_port(libre::rtp_local(_rtp_socket));
+	
+	_port = libre::sa_port(libre::rtp_local(_rtp_socket));
 	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket), 8192*1024);		//try to set something large
 
 	if(config->getKVPs().count("sub.rtp.multicast")) {
@@ -77,9 +91,9 @@ void RTPSubscriber::init(const Options* config) {
 			UM_LOG_WARN("%s: error %d in libre::sa_set_str(%s:%u): %s", SHORT_UUID(_uuid).c_str(), status, multicastIP.c_str(), _port, strerror(status));
 		else {
 			//test for multicast support
-			status=libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
-			status|=libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr);
-			if(status)
+			status = (libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr) ||
+								libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr));
+			if(status) {
 				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
 			else {
 				_ip=multicastIP;
@@ -88,14 +102,14 @@ void RTPSubscriber::init(const Options* config) {
 		}
 	}
 
-	_initDone=true;
+	_initDone = true;
 }
 
 RTPSubscriber::~RTPSubscriber() {
 	stop();
 	_cond.broadcast();		//wake up thread
 	join();
-	if(_initDone) {
+	if (_initDone) {
 		delete _helper;
 		libre::mem_deref(_rtp_socket);
 	}
@@ -220,32 +234,34 @@ void RTPSubscriber::run() {
 }
 
 void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rtp_header *hdr, struct libre::mbuf *mb, void *arg) {
-	RTPSubscriber *obj=(RTPSubscriber*)arg;
+	RTPSubscriber* sub = (RTPSubscriber*)arg;
 
 	if(!mbuf_get_left(mb))
 		return;
 
-	Message *msg=new Message((char*)mbuf_buf(mb), mbuf_get_left(mb), Message::NONE);
-	msg->putMeta("type", "RTP");
-	msg->putMeta("marker", toStr((bool)hdr->m));
-	msg->putMeta("SSRC", toStr(hdr->ssrc));
-	msg->putMeta("timestamp", toStr(hdr->ts));
-	msg->putMeta("payloadType", toStr(hdr->pt));
-	msg->putMeta("sequenceNumber", toStr(hdr->seq));
-	if(hdr->seq<obj->_lastSequenceNumber)		//test for sequence number overflow
-		obj->_extendedSequenceNumber++;
-	obj->_lastSequenceNumber=hdr->seq;
-	msg->putMeta("extendedSequenceNumber", toStr((obj->_extendedSequenceNumber<<16) + hdr->seq));
-	msg->putMeta("CSRCCount", toStr(hdr->cc));
+	Message* msg = new Message((char*)mbuf_buf(mb), mbuf_get_left(mb));
+	msg->putMeta("um.type", "RTP");
+	msg->putMeta("um.marker", toStr((bool)hdr->m));
+	msg->putMeta("um.ssrc", toStr(hdr->ssrc));
+	msg->putMeta("um.timestamp", toStr(hdr->ts));
+	msg->putMeta("um.payloadType", toStr(hdr->pt));
+	msg->putMeta("um.sequenceNumber", toStr(hdr->seq));
+
+	if(hdr->seq < sub->_lastSequenceNumber)		//test for sequence number overflow
+		sub->_extendedSequenceNumber++;
+	
+	sub->_lastSequenceNumber=hdr->seq;
+	msg->putMeta("um.extendedSequenceNumber", toStr((sub->_extendedSequenceNumber<<16) + hdr->seq));
+	msg->putMeta("um.csrccount", toStr(hdr->cc));
 	for(int i=0; i<hdr->cc; i++)
-		msg->putMeta("CSRC"+toStr(i), toStr(hdr->csrc[i]));
+		msg->putMeta("um.csrc"+toStr(i), toStr(hdr->csrc[i]));
 
 	//push new message into queue
 	{
-		RScopeLock lock(obj->_mutex);
-		obj->_queue.push(msg);
+		RScopeLock lock(sub->_mutex);
+		sub->_queue.push(msg);
 	}
-	obj->_cond.broadcast();
+	sub->_cond.broadcast();
 }
 
 Message* RTPSubscriber::getNextMsg() {

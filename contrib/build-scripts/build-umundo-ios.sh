@@ -8,7 +8,7 @@
 unset MACOSX_DEPLOYMENT_TARGET
 
 # be ridiculously conservative with regard to ios features
-export IPHONEOS_DEPLOYMENT_TARGET="4.0"
+export IPHONEOS_DEPLOYMENT_TARGET="6.0"
 
 # exit on error
 set -e

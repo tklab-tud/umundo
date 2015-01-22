@@ -16,7 +16,13 @@ if (PROTOBUF_FOUND AND RPC_PROTOBUF)
 
  	if (NOT CMAKE_CROSSCOMPILING)
 		# we need the private protobuf headers for the generators
-		include_directories(${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION})
+		if(NOT EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION}")
+			message(WARNING "Not building umundo RPC: Cannot find protobuf compiler headers in ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION}")
+			set(BUILD_UMUNDO_RPC OFF PARENT_SCOPE)
+			return()
+		else()
+			include_directories(${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/protobuf-${PROTOBUF_VERSION})
+		endif()
 
 		add_executable(protoc-umundo-cpp-rpc src/umundo/protoc-rpc/ServiceGeneratorCPP.cpp)
 		target_link_libraries(protoc-umundo-cpp-rpc ${PROTOBUF_PROTOC_LIBRARIES} ${PROTOBUF_LIBRARIES})

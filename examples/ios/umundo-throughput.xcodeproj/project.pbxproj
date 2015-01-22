@@ -135,6 +135,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0420;
+				TargetAttributes = {
+					95017B61150391D5002BCAAA = {
+						DevelopmentTeam = Q9EABBTP8K;
+					};
+				};
 			};
 			buildConfigurationList = 95017B5C150391D5002BCAAA /* Build configuration list for PBXProject "umundo-throughput" */;
 			compatibilityVersion = "Xcode 3.2";

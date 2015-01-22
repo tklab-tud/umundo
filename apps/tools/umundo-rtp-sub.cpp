@@ -24,23 +24,8 @@ class TestReceiver : public Receiver {
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
-		if(msg->getMeta("type")=="RTP") {
-			char *data=(char*)malloc(msg->size()+1);
-			if(data==NULL) {
-				std::cout << "RTP packet received but error in malloc" << std::endl << std::flush;
-				return;
-			}
-			memcpy(data, msg->data(), msg->size());
-			data[msg->size()]='\0';
-			std::cout << "RTP(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
-			free(data);
-		}
-		/*else
-		{
-			std::cout << "RTCP -->";
-			std::cout << " fraction='" << msg->getMeta("fraction") << "'";
-			std::cout << std::endl << std::flush;
-		}*/
+		std::string data(msg->data(), msg->size());
+		std::cout << "RTP(" << msg->size() << ") --> '" << data << "'" << std::endl << std::flush;
 	}
 };
 
@@ -49,6 +34,9 @@ int main(int argc, char** argv) {
 
 	TestReceiver testRecv;
 	RTPSubscriberConfig subConfig;
+	//subConfig.setPortbase(42042);
+	//subConfig.setMulticastPortbase(42042);
+	//subConfig.setMulticastIP("239.1.2.3");		//not needed (default multicast group: 239.8.4.8
 	Subscriber subFoo(Subscriber::RTP, "pingpong", &testRecv, &subConfig);
 
 	Discovery disc(Discovery::MDNS);

@@ -57,7 +57,6 @@ NSObject {
 
 - (id) initRTP:(NSString*)name
 			receiver:(id<UMReceiver>)receiver;
-
 @end
 
 #endif /* end of include guard: UMSUBSCRIBER_H_L4CPAZMF */

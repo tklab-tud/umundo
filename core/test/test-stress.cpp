@@ -78,7 +78,7 @@ class StressReceiver : public Receiver {
 	}
 };
 
-int testContinuousStress() {
+void testContinuousStress() {
 	char* payload = (char*)malloc(4096);
 	for (int i = 0; i < 4096; i++) {
 		payload[i] = (char)i;

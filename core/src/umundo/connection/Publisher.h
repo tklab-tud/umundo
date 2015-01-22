@@ -82,13 +82,6 @@ public:
 		options["pub.rtp.payloadType"] = toStr(type);
 	}
 
-	void setMulticastIP(std::string ip) {
-		options["pub.rtp.multicast"] = ip;
-	}
-
-	void setMulticastPortbase(uint16_t port) {
-		options["pub.rtp.multicastPortbase"] = toStr(port);
-	}
 };
 
 /**
@@ -111,6 +104,9 @@ public:
 	}
 	virtual void setGreeter(Greeter* greeter)        {
 		_greeter = greeter;
+	}
+	virtual Greeter* getGreeter()        {
+		return _greeter;
 	}
 	std::map<std::string, SubscriberStub> getSubscribers() {
 		return _subs;
@@ -145,12 +141,6 @@ protected:
  */
 class UMUNDO_API Publisher : public PublisherStub {
 public:
-	enum PublisherType {
-	    // these have to fit the subscriber types!
-	    ZEROMQ = 0x0001,
-	    RTP    = 0x0002
-	};
-
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName);
 	Publisher(const std::string& channelName, Greeter* greeter);
@@ -195,6 +185,9 @@ public:
 	}
 	void setGreeter(Greeter* greeter)                    {
 		return _impl->setGreeter(greeter);
+	}
+	Greeter* getGreeter()                    {
+		return _impl->getGreeter();
 	}
 	void putMeta(const std::string& key, const std::string& value) {
 		return _impl->putMeta(key, value);

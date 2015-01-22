@@ -63,8 +63,6 @@ protected:
 private:
 	uint16_t _extendedSequenceNumber;
 	uint16_t _lastSequenceNumber;
-	bool _multicast;
-	std::string _multicastIP;
 
 	bool _isSuspended;
 	bool _initDone;

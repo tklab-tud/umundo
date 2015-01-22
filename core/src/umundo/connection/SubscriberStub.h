@@ -35,7 +35,7 @@ class Message;
 
 class UMUNDO_API SubscriberStubImpl : public EndPointImpl {
 public:
-	SubscriberStubImpl() : _uuid(UUID::getUUID()) {}
+	SubscriberStubImpl() : _uuid(UUID::getUUID()), _multicast(false) {}
 	virtual ~SubscriberStubImpl() {}
 	virtual std::string getChannelName() const            {
 		return _channelName;
@@ -47,13 +47,21 @@ public:
 	virtual std::string getUUID() const            {
 		return _uuid;
 	}
-	virtual void setUUID(const std::string& uuid) {
+	virtual void setUUID(const std::string& uuid)  {
 		_uuid = uuid;
+	}
+
+	virtual bool isMulticast() const                 {
+		return _multicast;
+	}
+	virtual void setMulticast(const bool multicast)  {
+		_multicast = multicast;
 	}
 
 protected:
 	std::string _channelName;
 	std::string _uuid;
+	bool _multicast;
 };
 
 /**
@@ -61,6 +69,12 @@ protected:
  */
 class UMUNDO_API SubscriberStub : public EndPoint {
 public:
+	enum SubscriberType {
+	    // these have to fit the publisher types!
+	    ZEROMQ = 0x0001,
+	    RTP    = 0x0002
+	};
+
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }
 	SubscriberStub(SharedPtr<SubscriberStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
@@ -90,6 +104,12 @@ public:
 	}
 	virtual const std::string getUUID() const            {
 		return _impl->getUUID();
+	}
+	virtual const bool isRTP() const                     {
+		return _impl->implType == RTP;
+	}
+	virtual const bool isMulticast() const               {
+		return _impl->isMulticast();
 	}
 
 	SharedPtr<SubscriberStubImpl> getImpl() const {

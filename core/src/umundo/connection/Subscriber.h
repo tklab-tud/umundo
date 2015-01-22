@@ -76,6 +76,8 @@ public:
 	}
 
 	void setMulticastPortbase(uint16_t port) {
+		if(!options.count("sub.rtp.multicast"))
+			this->setMulticastIP("239.8.4.8");		//default multicast address for umundo rtp
 		this->setPortbase(port);
 	}
 };
@@ -130,12 +132,6 @@ protected:
  */
 class UMUNDO_API Subscriber : public SubscriberStub {
 public:
-	enum SubscriberType {
-	    // these have to fit the publisher types!
-	    ZEROMQ = 0x0001,
-	    RTP    = 0x0002
-	};
-
 	Subscriber() : _impl() {}
 	explicit Subscriber(const SubscriberStub& stub) : _impl(StaticPtrCast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(const std::string& channelName);
@@ -172,6 +168,10 @@ public:
 
 	void setReceiver(Receiver* receiver) {
 		_impl->setReceiver(receiver);
+	}
+
+	Receiver* getReceiver() {
+		return _impl->getReceiver();
 	}
 
 	virtual void setChannelName(const std::string& channelName)  {

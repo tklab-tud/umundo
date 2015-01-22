@@ -17,8 +17,13 @@
 #include "umundo/core.h"
 #include <iostream>
 #include <string.h>
+#ifdef WIN32
+#include "XGetopt.h"
+#endif
 
 using namespace umundo;
+
+char* domain = NULL;
 
 class TestReceiver : public Receiver {
 public:
@@ -28,13 +33,42 @@ public:
 	}
 };
 
+void printUsageAndExit() {
+	printf("Usage\n");
+	printf("\tumundo-pingpong [-d domain]\n");
+	printf("\n");
+	printf("Options\n");
+	printf("\t-d <domain>        : join domain\n");
+	printf("\n");
+	printf("Example\n");
+
+	printf("\tumundo-bridge -d local\n");
+	exit(1);
+}
+
 int main(int argc, char** argv) {
 	printf("umundo-pingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+
+	int option;
+	while ((option = getopt(argc, argv, "d:")) != -1) {
+		switch(option) {
+		case 'd':
+			domain = optarg;
+			break;
+		default:
+			printUsageAndExit();
+			break;
+		}
+	}
+
 	TestReceiver* testRecv = new TestReceiver();
 	Publisher pubFoo("pingpong");
 	Subscriber subFoo("pingpong", testRecv);
 
-	Discovery disc(Discovery::MDNS);
+	MDNSDiscoveryOptions mdnsOpts;
+	if (domain)
+		mdnsOpts.setDomain(domain);
+	Discovery disc(Discovery::MDNS, &mdnsOpts);
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);

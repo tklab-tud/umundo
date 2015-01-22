@@ -70,18 +70,19 @@ void RTPPublisher::init(const Options* config) {
 	std::map<std::string, std::string> options = config->getKVPs();
 
 	uint16_t portbase   = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint16_t>(options["pub.rtp.portbase"]) : 0);
-	_timestampIncrement = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint32_t>(options["pub.rtp.timestampIncrement"]) : 0);
-	_payloadType        = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint8_t>(options["pub.rtp.payloadType"]) : 96); //dynamic [RFC3551]
+	_timestampIncrement = (options.find("pub.rtp.timestampIncrement") !=  options.end() ? strTo<uint32_t>(options["pub.rtp.timestampIncrement"]) : 0);
+	_payloadType        = (options.find("pub.rtp.payloadType") !=  options.end() ? strTo<uint8_t>(options["pub.rtp.payloadType"]) : 96); //dynamic [RFC3551]
 
-	if (portbase ==  0 || portbase ==  65535) {
-		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
-		return;
+	if (options.find("pub.rtp.portbase") != options.end()) { // user did specify portbase
+		if((portbase > 0 && portbase < 65534)) {
+			min=portbase;
+			max=portbase+1;
+		} else {
+			UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
+		}
 	}
-
-	min = portbase;
-	max = portbase+1;
-
-	if (_timestampIncrement ==  0) {
+	
+	if (_timestampIncrement == 0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}

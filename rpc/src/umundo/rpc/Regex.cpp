@@ -17,7 +17,7 @@
  *  @endcond
  */
 
-#include "umundo/common/Regex.h"
+#include "umundo/rpc/Regex.h"
 #include <pcre.h>
 
 namespace umundo {

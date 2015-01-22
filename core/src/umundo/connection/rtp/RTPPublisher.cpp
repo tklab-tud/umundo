@@ -66,18 +66,18 @@ void RTPPublisher::init(const Options* config) {
 	int status;
 	uint16_t min = 16384;		//minimum rtp port
 	uint16_t max = 65534;		//maximum rtp port
-	
+
 	std::map<std::string, std::string> options = config->getKVPs();
-	
+
 	uint16_t portbase   = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint16_t>(options["pub.rtp.portbase"]) : 0);
 	_timestampIncrement = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint32_t>(options["pub.rtp.timestampIncrement"]) : 0);
 	_payloadType        = (options.find("pub.rtp.portbase") !=  options.end() ? strTo<uint8_t>(options["pub.rtp.payloadType"]) : 96); //dynamic [RFC3551]
-	
+
 	if (portbase ==  0 || portbase ==  65535) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	
+
 	min = portbase;
 	max = portbase+1;
 
@@ -85,37 +85,37 @@ void RTPPublisher::init(const Options* config) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
 	}
-	
+
 	_helper = new RTPHelpers();			// this starts the re_main() mainloop...
 
-	
+
 	struct libre::sa ip;
 	libre::sa_init(&ip, AF_INET);
 	libre::sa_set_in(&ip, INADDR_ANY, 0);
 	//we always have to specify a rtp_recv() handler (so specify an empty function)
 	status = RTPHelpers::call(boost::bind(libre::rtp_listen,
-																				&_rtp_socket,
-																				static_cast<int>(IPPROTO_UDP),
-																				&ip,
-																				min,
-																				max,
-																				false,
-																				rtp_recv,
-																				(void (*)(const libre::sa*, libre::rtcp_msg*, void*))
-																				NULL,
-																				this));
+	                                      &_rtp_socket,
+	                                      static_cast<int>(IPPROTO_UDP),
+	                                      &ip,
+	                                      min,
+	                                      max,
+	                                      false,
+	                                      rtp_recv,
+	                                      (void (*)(const libre::sa*, libre::rtcp_msg*, void*))
+	                                      NULL,
+	                                      this));
 	if (status) {
 		UM_LOG_ERR("%s: error %d in libre::rtp_listen(): %s", SHORT_UUID(_uuid).c_str(), status, strerror(status));
 		delete _helper;
 		return;
 	}
-	
+
 	_port           = libre::sa_port(libre::rtp_local(_rtp_socket));
 	_timestamp      = libre::rand_u32();
 	_sequenceNumber = _rtp_socket->enc.seq;
 
 	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket),
-												 8192*1024);		//try to set something large
+	                       8192*1024);		//try to set something large
 
 	_initDone = true;
 }
@@ -164,7 +164,7 @@ int RTPPublisher::waitForSubscribers(int count, int timeoutMs) {
 void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	RScopeLock lock(_mutex);
 	int status;
-	
+
 	std::string ip = sub.getIP();
 	uint16_t port = sub.getPort();
 	if (!ip.length())		//only use separate subscriber ip (for multicast support etc.), if specified
@@ -183,7 +183,7 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 	struct libre::sa addr;
 	libre::sa_init(&addr, AF_INET);
 	status = libre::sa_set_str(&addr, ip.c_str(), port);
-	
+
 	if (status) {
 		UM_LOG_WARN("%s: error %d in libre::sa_set_str(%s:%u): %s", SHORT_UUID(_uuid).c_str(), status, ip.c_str(), port, strerror(status));
 	} else {
@@ -253,15 +253,15 @@ void RTPPublisher::send(Message* msg) {
 	bool marker = strTo<bool>(msg->getMeta("um.marker"));
 	if (!msg->getMeta("um.sequenceNumber").size())
 		sequenceNumber = _sequenceNumber++;
-	
+
 	if (!msg->getMeta("marker").size())
 		marker = false;
-	
+
 	std::string timestampIncrement = msg->getMeta("um.timestampIncrement");
-	
+
 	if (!timestampIncrement.size())
 		timestampIncrement = _mandatoryMeta["um.timestampIncrement"];
-	
+
 	if (msg->getMeta("um.timestamp").size())	{					//mainly for internal use by umundo-bridge
 		timestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
 	} else {

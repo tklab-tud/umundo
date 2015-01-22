@@ -53,7 +53,7 @@ RTPHelpers::RTPHelpers() {
 			UM_LOG_ERR("libre init failed with error code %d", err);
 			return;
 		}
-		
+
 		//start libre mainloop and init our libre calling capabilities
 		{
 			RScopeLock lock(_mutex);
@@ -70,7 +70,7 @@ RTPHelpers::RTPHelpers() {
 RTPHelpers::~RTPHelpers() {
 	RScopeLock lock(_usageCountMutex);
 	_libreUsage--;
-	
+
 	if (!_libreUsage) {
 		//call() needs a function object returning an int
 		//--> cast void function to int function (and ignore fake "return value")

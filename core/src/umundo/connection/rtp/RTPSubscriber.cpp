@@ -93,17 +93,17 @@ void RTPSubscriber::init(const Options* config) {
 			//test for multicast support
 			status = (libre::udp_multicast_join((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr) ||
 			          libre::udp_multicast_leave((libre::udp_sock*)libre::rtp_sock(_rtp_socket), &maddr));
-			if(status) {
+			if(status)
 				UM_LOG_ERR("%s: system not supporting multicast, using unicast", SHORT_UUID(_uuid).c_str());
-				else {
-					_ip=multicastIP;
-					_multicast=true;
-				}
+			else {
+				_ip=multicastIP;
+				_multicast=true;
 			}
 		}
 
 		_initDone = true;
 	}
+}
 
 	RTPSubscriber::~RTPSubscriber() {
 		stop();

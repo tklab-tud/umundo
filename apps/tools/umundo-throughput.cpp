@@ -297,8 +297,6 @@ int main(int argc, char** argv) {
 		}
 		case PUB_MCAST: {
 			RTPPublisherConfig config = RTPPublisherConfig(166, 0);
-			config.setMulticastIP("224.1.2.3");
-			config.setMulticastPortbase(42042);
 			pub = Publisher(Publisher::RTP, "throughput.mcast", &config);
 			pub.setGreeter(&tpGreeter);
 			break;

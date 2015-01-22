@@ -115,24 +115,6 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
-add_executable(umundo-ping umundo-ping.cpp)
-target_link_libraries(umundo-ping umundocore)
-set_target_properties(umundo-ping PROPERTIES FOLDER "Tools")
-
-INSTALL_EXECUTABLE(
-	TARGETS umundo-ping
-	COMPONENT tools 
-)
-
-add_executable(umundo-pong umundo-pong.cpp)
-target_link_libraries(umundo-pong umundocore)
-set_target_properties(umundo-pong PROPERTIES FOLDER "Tools")
-
-INSTALL_EXECUTABLE(
-	TARGETS umundo-pong
-	COMPONENT tools 
-)
-
 add_executable(umundo-stream-send umundo-stream-send.cpp)
 target_link_libraries(umundo-stream-send umundocore)
 set_target_properties(umundo-stream-send PROPERTIES FOLDER "Tools")

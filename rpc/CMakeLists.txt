@@ -3,6 +3,14 @@ set(BUILD_UMUNDO_RPC OFF)
 include(UseUMUNDO)
 
 ###########################################
+# PCRE
+###########################################
+
+find_package(PCRE REQUIRED)
+include_directories(${PCRE_INCLUDE_DIR})
+LIST(APPEND UMUNDORPC_LIBRARIES ${PCRE_LIBRARIES})
+
+###########################################
 # Protocol Buffers
 ###########################################
 

@@ -69,14 +69,6 @@ if(NET_RTP)
 endif()
 
 ###########################################
-# PCRE
-###########################################
-
-find_package(PCRE REQUIRED)
-include_directories(${PCRE_INCLUDE_DIR})
-LIST(APPEND UMUNDOCORE_LIBRARIES ${PCRE_LIBRARIES})
-
-###########################################
 # Bonjour
 ###########################################
 if (DISC_BONJOUR OR DISC_AVAHI)

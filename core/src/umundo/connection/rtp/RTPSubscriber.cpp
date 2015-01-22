@@ -239,12 +239,36 @@ void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rt
 	if (!mbuf_get_left(mb))
 		return;
 
+#if 0
+	// From re_rtp.h
+	
+	struct rtp_header {
+	uint8_t  ver;       /**< RTP version number     */
+	bool     pad;       /**< Padding bit            */
+	bool     ext;       /**< Extension bit          */
+	uint8_t  cc;        /**< CSRC count             */
+	bool     m;         /**< Marker bit             */
+	uint8_t  pt;        /**< Payload type           */
+	uint16_t seq;       /**< Sequence number        */
+	uint32_t ts;        /**< Timestamp              */
+	uint32_t ssrc;      /**< Synchronization source */
+	uint32_t csrc[16];  /**< Contributing sources   */
+	struct {
+		uint16_t type;  /**< Defined by profile     */
+		uint16_t len;   /**< Number of 32-bit words */
+	} x;
+};
+#endif
+	
 	Message* msg = new Message((char*)mbuf_buf(mb), mbuf_get_left(mb));
 	msg->putMeta("um.type", "RTP");
+	msg->putMeta("um.version", toStr((uint16_t)hdr->ver));
+	msg->putMeta("um.extension", toStr((bool)hdr->ext));
+	msg->putMeta("um.padding", toStr((bool)hdr->pad));
 	msg->putMeta("um.marker", toStr((bool)hdr->m));
 	msg->putMeta("um.ssrc", toStr(hdr->ssrc));
 	msg->putMeta("um.timestamp", toStr(hdr->ts));
-	msg->putMeta("um.payloadType", toStr(hdr->pt));
+	msg->putMeta("um.payloadType", toStr((uint16_t)hdr->pt)); // force numeric literal
 	msg->putMeta("um.sequenceNumber", toStr(hdr->seq));
 
 	if (hdr->seq < sub->_lastSequenceNumber)		//test for sequence number overflow
@@ -252,7 +276,7 @@ void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rt
 
 	sub->_lastSequenceNumber = hdr->seq;
 	msg->putMeta("um.extendedSequenceNumber", toStr((sub->_extendedSequenceNumber<<16) + hdr->seq));
-	msg->putMeta("um.csrccount", toStr(hdr->cc));
+	msg->putMeta("um.csrccount", toStr((uint16_t)hdr->cc));
 	for (int i = 0; i<hdr->cc; i++)
 		msg->putMeta("um.csrc"+toStr(i), toStr(hdr->csrc[i]));
 

@@ -254,7 +254,7 @@ void RTPPublisher::send(Message* msg) {
 	if (!msg->getMeta("um.sequenceNumber").size())
 		sequenceNumber = _sequenceNumber++;
 
-	if (!msg->getMeta("marker").size())
+	if (!msg->getMeta("um.marker").size())
 		marker = false;
 
 	std::string timestampIncrement = msg->getMeta("um.timestampIncrement");

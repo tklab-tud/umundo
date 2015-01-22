@@ -42,7 +42,7 @@ public:
 	// Do not call directly even in child
 	void DepthCallback(void* depthData, uint32_t frameTimestamp) {
 		uint16_t *depth = static_cast<uint16_t*>(depthData);
-		uint64_t timestamp=Thread::getTimeStampMs();
+		uint64_t timestamp = Thread::getTimeStampMs();
 
 		_frameCount++;
 		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
@@ -57,13 +57,13 @@ public:
 			Message* msg = new Message();
 			//set marker to indicate new frame start and timestampIncrement so that individual rtp packets for one frame share the same rtp timestamp
 			if(i==0) {
-				msg->putMeta("timestampIncrement", toStr(1));
-				msg->putMeta("marker", toStr(true));
+				msg->putMeta("um.timestampIncrement", toStr(1));
+				msg->putMeta("um.marker", toStr(true));
 			} else {
-				msg->putMeta("timestampIncrement", toStr(0));
-				msg->putMeta("marker", toStr(false));
+				msg->putMeta("um.timestampIncrement", toStr(0));
+				msg->putMeta("um.marker", toStr(false));
 			}
-			struct RTPData *data=new struct RTPData;
+			struct RTPData *data = new struct RTPData;
 			data->row=i;
 			data->timestamp=timestamp;
 			memcpy(data->data, depth+(640*i), sizeof(uint16_t)*640);		//copy one depth data row into rtp data

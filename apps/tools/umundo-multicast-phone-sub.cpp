@@ -42,7 +42,7 @@ class TestReceiver : public Receiver {
 public:
 	TestReceiver() {};
 	void receive(Message* msg) {
-		if(msg->getMeta("type")=="RTP") {
+		if(msg->getMeta("um.type")=="RTP") {
 			std::cout << "RTP(" << msg->size() << ")" << std::endl << std::flush;
 			if(Pa_IsStreamStopped(stream)==1) {				//start output stream when first packed is received
 				Thread::sleepMs(256);							//wait some time to compensate network delay

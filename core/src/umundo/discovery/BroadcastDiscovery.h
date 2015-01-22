@@ -13,7 +13,7 @@ class NodeQuery;
 class BroadcastDiscoveryOptions : public Options {
 public:
 	enum Protocol {
-	    TCP, UDP
+		TCP, UDP
 	};
 
 	BroadcastDiscoveryOptions() {

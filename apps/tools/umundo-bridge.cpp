@@ -92,8 +92,8 @@ void printUsageAndExit() {
 	exit(1);
 }
 std::string ipToStr(uint32_t ip) {
-	uint8_t* ip_p=(uint8_t*)&ip;
-	std::string output=toStr((int)ip_p[0])+"."+toStr((int)ip_p[1])+"."+toStr((int)ip_p[2])+"."+toStr((int)ip_p[3]);
+	uint8_t* ip_p = (uint8_t*)&ip;
+	std::string output = toStr((int)ip_p[0])+"."+toStr((int)ip_p[1])+"."+toStr((int)ip_p[2])+"."+toStr((int)ip_p[3]);
 	return output;
 }
 
@@ -168,10 +168,10 @@ private:
 	};		//dummy used by proxy template
 
 	void advanceBuffer(MessageBuffer& buffer, size_t length) {
-		if(buffer.second < length)
+		if (buffer.second < length)
 			throw BridgeMessageException("Message data truncated");
-		buffer.first+=length;
-		buffer.second-=length;
+		buffer.first += length;
+		buffer.second -= length;
 	}
 
 	//proxy template to specialized template versions
@@ -182,39 +182,39 @@ private:
 
 	template<typename T>
 	const T readFromBuffer(MessageBuffer& buffer, identity<T> dummy) {
-		const char* value=buffer.first;
+		const char* value = buffer.first;
 		advanceBuffer(buffer, sizeof(T));
 		return *(const T*)value;						//warning: no implicit endianes conversions done for this (unknown) types
 	}
 
 	const uint16_t readFromBuffer(MessageBuffer& buffer, identity<uint16_t> dummy) {
-		const char* value=buffer.first;
+		const char* value = buffer.first;
 		advanceBuffer(buffer, sizeof(uint16_t));
 		return ntohs(*(const uint16_t*)value);			//uint16_t network byte order (bigEndian) to host byte order conversion
 	}
 
 	const uint32_t readFromBuffer(MessageBuffer& buffer, identity<uint32_t> dummy) {
-		const char* value=buffer.first;
+		const char* value = buffer.first;
 		advanceBuffer(buffer, sizeof(uint32_t));
 		return ntohl(*(const uint32_t*)value);			//uint32_t network byte order (bigEndian) to host byte order conversion
 	}
 
 	const std::string readFromBuffer(MessageBuffer& buffer, size_t length) {
-		const char* value=buffer.first;
+		const char* value = buffer.first;
 		advanceBuffer(buffer, length);
 		return std::string(value, length);
 	}
 
 	std::string& lengthEncoding(std::string& buffer, std::string value) {
-		uint32_t length=htonl(value.length());
-		buffer+=std::string((char*)&length, sizeof(uint32_t));
-		buffer+=value;
+		uint32_t length = htonl(value.length());
+		buffer += std::string((char*)&length, sizeof(uint32_t));
+		buffer += value;
 		return buffer;
 	}
 
-	bool isSane(const std::string& key, bool throwException=true) const {
-		if(key.length()==0) {
-			if(throwException)
+	bool isSane(const std::string& key, bool throwException = true) const {
+		if (key.length() == 0) {
+			if (throwException)
 				throw std::runtime_error("Cannot use empty key in BridgeMessage!");
 			else
 				return false;
@@ -232,21 +232,21 @@ public:
 		uint16_t version = readFromBuffer<uint16_t>(buffer);
 		switch(version) {
 		case 1:
-			_protocolVersion=version;
+			_protocolVersion = version;
 			break;
 		default:
 			throw BridgeMessageException("Unknown protocol version ("+toStr(version)+")");
 		}
 		do {
 			uint32_t keySize = readFromBuffer<uint32_t>(buffer);
-			if(!keySize)
+			if (!keySize)
 				break;			//message end reached
 			std::string key = readFromBuffer(buffer, keySize);
 			uint32_t valueSize = readFromBuffer<uint32_t>(buffer);
 			std::string value = readFromBuffer(buffer, valueSize);
-			_data[key]=value;
+			_data[key] = value;
 		} while(true);
-		if(buffer.second>0)
+		if (buffer.second>0)
 			throw BridgeMessageException("Unexpected message padding found ("+toStr(buffer.second)+" bytes)");
 	}
 
@@ -258,7 +258,7 @@ public:
 		uint16_t version = htons(_protocolVersion);
 		std::string output = std::string((char*)&version, sizeof(version));
 		//iterate over our key-value-pairs
-		for(std::map<std::string, std::string>::iterator it=_data.begin(); it!=_data.end(); ++it) {
+		for (std::map<std::string, std::string>::iterator it = _data.begin(); it != _data.end(); ++it) {
 			lengthEncoding(output, it->first);
 			lengthEncoding(output, it->second);
 		}
@@ -274,7 +274,7 @@ public:
 	template<typename T>
 	void set(const std::string& key, const T& value) {
 		isSane(key);		//throws exception on empty key
-		_data[key]=toStr(value);
+		_data[key] = toStr(value);
 	}
 
 	const std::map<std::string, std::string>& get() const {
@@ -316,7 +316,7 @@ private:
 	}
 
 	void write(BridgeMessage& msg) {
-		boost::shared_ptr<BridgeMessage> newMsg=boost::shared_ptr<BridgeMessage>(new BridgeMessage(msg));
+		boost::shared_ptr<BridgeMessage> newMsg = boost::shared_ptr<BridgeMessage>(new BridgeMessage(msg));
 		write(newMsg);
 	}
 
@@ -326,11 +326,11 @@ private:
 
 	boost::shared_ptr<BridgeMessage> read(uint32_t timeout_ms) {
 		RScopeLock lock(_mutex);
-		if(_queue.empty())
+		if (_queue.empty())
 			_cond.wait(_mutex, timeout_ms);
-		if(_queue.empty())		//timeout occured --> return NULL pointer
+		if (_queue.empty())		//timeout occured --> return NULL pointer
 			return boost::shared_ptr<BridgeMessage>();
-		boost::shared_ptr<BridgeMessage> msg=_queue.front();
+		boost::shared_ptr<BridgeMessage> msg = _queue.front();
 		_queue.pop();
 		return msg;
 	}
@@ -360,7 +360,7 @@ private:
 	}
 
 	void terminate() {
-		_terminated=true;
+		_terminated = true;
 		join();
 	}
 
@@ -378,28 +378,28 @@ private:
 #endif
 				FD_ZERO(&receive);
 				FD_SET(_socket, &receive);
-				time.tv_sec=1;
-				time.tv_usec=0;
-				int retval=select(_socket+1, &receive, NULL, NULL, &time);
-				if(retval==EBADF || retval==EINTR || retval==EINVAL || retval==ENOMEM)
-					throw SocketException("Could not use select() on sockets (err="+toStr(retval)+")");
-				if(FD_ISSET(_socket, &receive)) {
-					packetSize=htonl(0);			//stays zero after recvAll() if connection was closed
-					if(recvAll(_socket, (char*)&packetSize, sizeof(uint32_t), 0)<0)
+				time.tv_sec = 1;
+				time.tv_usec = 0;
+				int retval = select(_socket+1, &receive, NULL, NULL, &time);
+				if (retval == EBADF || retval == EINTR || retval == EINVAL || retval == ENOMEM)
+					throw SocketException("Could not use select() on sockets (err = "+toStr(retval)+")");
+				if (FD_ISSET(_socket, &receive)) {
+					packetSize = htonl(0);			//stays zero after recvAll() if connection was closed
+					if (recvAll(_socket, (char*)&packetSize, sizeof(uint32_t), 0)<0)
 						throw SocketException("recv() of packetSize on tcp socket failed");
-					packetSize=ntohl(packetSize);
-					if(packetSize==0)				//socket read returned 0 --> connection was closed
+					packetSize = ntohl(packetSize);
+					if (packetSize == 0)				//socket read returned 0 --> connection was closed
 						break;
-					buffer=(char*)malloc(packetSize);
-					if(buffer==NULL)
+					buffer = (char*)malloc(packetSize);
+					if (buffer == NULL)
 						throw std::runtime_error("malloc for "+toStr(packetSize)+" bytes failed");
-					if(recvAll(_socket, buffer, packetSize, 0)<=0) {
+					if (recvAll(_socket, buffer, packetSize, 0) <= 0) {
 						free(buffer);
 						throw SocketException("recv() of packet on tcp socket failed");
 					} else {
 						boost::shared_ptr<BridgeMessage> msg;
 						try {
-							msg=boost::shared_ptr<BridgeMessage>(new BridgeMessage(buffer, packetSize));
+							msg = boost::shared_ptr<BridgeMessage>(new BridgeMessage(buffer, packetSize));
 							msg->set("_source", "TCPListener");
 						} catch(std::exception& e) {
 							free(buffer);
@@ -411,13 +411,13 @@ private:
 				}
 			}
 		} catch(std::exception& e) {
-			if(verbose)
+			if (verbose)
 				std::cout << "Received exception in TCPListener: " << e.what() << std::endl;
 		} catch(...) {
-			if(verbose)
+			if (verbose)
 				std::cout << "Received unknown exception in TCPListener"<< std::endl;
 		}
-		if(verbose)
+		if (verbose)
 			std::cout << "Terminating TCPListener..."<< std::endl;
 		BridgeMessage terminationMessage;
 		terminationMessage.set("type", "internal");
@@ -428,13 +428,13 @@ private:
 
 	int recvAll(SOCKET socket, char* buffer, size_t length, int flags) {
 		int retval;
-		size_t originalLength=length;
+		size_t originalLength = length;
 		do {
-			retval=recv(socket, buffer, length, 0);
-			if(retval<=0)
+			retval = recv(socket, buffer, length, 0);
+			if (retval <= 0)
 				return retval;
-			length-=retval;		//calculate remaining data length
-			buffer+=retval;		//advance buffer
+			length -= retval;		//calculate remaining data length
+			buffer += retval;		//advance buffer
 		} while(length>0);
 		return originalLength;
 	}
@@ -457,12 +457,12 @@ private:
 	}
 
 	void terminate() {
-		_terminated=true;
+		_terminated = true;
 		join();
 	}
 
 	void run() {
-		char buffer[65536]="";
+		char buffer[65536] = "";
 		try {
 			while(!_terminated) {
 				//use select() to timeout every second without data (and then check if _terminated == true)
@@ -474,30 +474,30 @@ private:
 #endif
 				FD_ZERO(&receive);
 				FD_SET(_socket, &receive);
-				time.tv_sec=1;
-				time.tv_usec=0;
-				int retval=select(_socket+1, &receive, NULL, NULL, &time);
-				if(retval==EBADF || retval==EINTR || retval==EINVAL || retval==ENOMEM)
-					throw SocketException("Could not use select() on sockets (err="+toStr(retval)+")");
-				if(FD_ISSET(_socket, &receive)) {
-					size_t count=recv(_socket, buffer, sizeof(buffer), 0);
-					if(count==-1)
+				time.tv_sec = 1;
+				time.tv_usec = 0;
+				int retval = select(_socket+1, &receive, NULL, NULL, &time);
+				if (retval == EBADF || retval == EINTR || retval == EINVAL || retval == ENOMEM)
+					throw SocketException("Could not use select() on sockets (err = "+toStr(retval)+")");
+				if (FD_ISSET(_socket, &receive)) {
+					size_t count = recv(_socket, buffer, sizeof(buffer), 0);
+					if (count == -1)
 						throw SocketException("recv() on udp socket failed");
 					else {
-						boost::shared_ptr<BridgeMessage> msg=boost::shared_ptr<BridgeMessage>(new BridgeMessage(buffer, count));
+						boost::shared_ptr<BridgeMessage> msg = boost::shared_ptr<BridgeMessage>(new BridgeMessage(buffer, count));
 						msg->set("_source", "UDPListener");
 						_queue.write(msg);
 					}
 				}
 			}
 		} catch(std::exception& e) {
-			if(verbose)
+			if (verbose)
 				std::cout << "Received exception in UDPListener: " << e.what() << std::endl;
 		} catch(...) {
-			if(verbose)
+			if (verbose)
 				std::cout << "Received unknown exception in UDPListener"<< std::endl;
 		}
-		if(verbose)
+		if (verbose)
 			std::cout << "Terminating UDPListener..."<< std::endl;
 		BridgeMessage terminationMessage;
 		terminationMessage.set("type", "internal");
@@ -536,34 +536,34 @@ private:
 
 public:
 	ProtocolHandler(SOCKET tcpSocket, SOCKET udpSocket, bool handleRTP) : _tcpSocket(tcpSocket), _udpSocket(udpSocket), _handleRTP(handleRTP), _shutdownDone(false), _mainloopStarted(false) {
-		_tcpListener=new TCPListener(_tcpSocket, _queue);
-		if(_handleRTP)
-			_udpListener=new UDPListener(_udpSocket, _queue);
+		_tcpListener = new TCPListener(_tcpSocket, _queue);
+		if (_handleRTP)
+			_udpListener = new UDPListener(_udpSocket, _queue);
 	}
 
 	~ProtocolHandler() {
 		shutdown();
-		if(verbose)
+		if (verbose)
 			std::cout << "ProtocolHandler successfully destructed..." << std::endl;
 	}
 
 	void terminate() {
-		if(verbose)
+		if (verbose)
 			std::cout << "ProtocolHandler.terminate() called..." << std::endl;
 		shutdown();
 	}
 
 	void setNode(boost::shared_ptr<Node> innerNode) {
-		if(_innerNode)
+		if (_innerNode)
 			throw std::runtime_error("You are not allowed to call setNode() twice!");
 		_innerNode = innerNode;
 	}
 
 	// *** sender methods ***
 	void send_pubAdded(std::string channelName, bool isRTP) {
-		if(!_innerNode)		//only allow when we know our umundo node
+		if (!_innerNode)		//only allow when we know our umundo node
 			return;
-		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
+		if (isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
 		msg.set("type", "pubAdded");
@@ -577,9 +577,9 @@ public:
 	}
 
 	void send_pubRemoved(std::string channelName, bool isRTP) {
-		if(!_innerNode)					//only allow when we know our umundo node
+		if (!_innerNode)					//only allow when we know our umundo node
 			return;
-		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
+		if (isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
 		msg.set("type", "pubRemoved");
@@ -589,26 +589,26 @@ public:
 		{
 			RScopeLock lock(_seenPubsMutex);
 			_seenPubs[isRTP][channelName]--;
-			if(_seenPubs[isRTP][channelName] == 0) {		//last publisher seen --> unsubscribe all bridged subscribers for this channel
+			if (_seenPubs[isRTP][channelName] == 0) {		//last publisher seen --> unsubscribe all bridged subscribers for this channel
 				RScopeLock lock(_knownSubsMutex);
-				if(_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].first!=NULL)
-					for(uint32_t c=0; c<_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].second.size()+1; c++)
+				if (_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].first != NULL)
+					for (uint32_t c = 0; c<_knownSubs[msg.get<bool>("isRTP")][msg.get("channelName")].second.size()+1; c++)
 						unsubscribe(msg.get("channelName"), msg.get<bool>("isRTP"));
 			}
 		}
 	}
 
 	void send_subAdded(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
-		if(!_innerNode)		//only allow when we know our umundo node
+		if (!_innerNode)		//only allow when we know our umundo node
 			return;
-		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
+		if (isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
 		msg.set("type", "subAdded");
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
 		msg.set("isMulticast", isMulticast);
-		if(isMulticast) {
+		if (isMulticast) {
 			msg.set("ip", ip);
 			msg.set("port", port);
 		}
@@ -616,16 +616,16 @@ public:
 	}
 
 	void send_subRemoved(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
-		if(!_innerNode)		//only allow when we know our umundo node
+		if (!_innerNode)		//only allow when we know our umundo node
 			return;
-		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
+		if (isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		BridgeMessage msg;
 		msg.set("type", "subRemoved");
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
 		msg.set("isMulticast", isMulticast);
-		if(isMulticast) {
+		if (isMulticast) {
 			msg.set("ip", ip);
 			msg.set("port", port);
 		}
@@ -633,15 +633,15 @@ public:
 	}
 
 	void send_data(std::string channelName, bool isRTP, Message* umundoMessage) {
-		if(!_innerNode)		//only allow when we know our umundo node
+		if (!_innerNode)		//only allow when we know our umundo node
 			return;
-		if(isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
+		if (isRTP && !_handleRTP)		//ignore rtp messages when no udp transport is available
 			return;
 		{
 			RScopeLock lock(_knownSubsMutex);
 			//fetch data from all "silent" subscribers and discard it
-			std::map<std::string, Subscriber*>::iterator subsIter=_knownSubs[isRTP][channelName].second.begin();
-			while(subsIter!=_knownSubs[isRTP][channelName].second.end()) {
+			std::map<std::string, Subscriber*>::iterator subsIter = _knownSubs[isRTP][channelName].second.begin();
+			while(subsIter != _knownSubs[isRTP][channelName].second.end()) {
 				while(subsIter->second->hasNextMsg())
 					subsIter->second->getNextMsg();
 				subsIter++;
@@ -653,9 +653,9 @@ public:
 		msg.set("channelName", channelName);
 		msg.set("isRTP", isRTP);
 		msg.set("data", std::string(umundoMessage->data(), umundoMessage->size()));
-		uint32_t metadataCount=0;
-		std::map<std::string, std::string>::const_iterator metaIter=umundoMessage->getMeta().begin();
-		while(metaIter!=umundoMessage->getMeta().end()) {
+		uint32_t metadataCount = 0;
+		std::map<std::string, std::string>::const_iterator metaIter = umundoMessage->getMeta().begin();
+		while(metaIter != umundoMessage->getMeta().end()) {
 			msg.set("metadataKey."+toStr(metadataCount), metaIter->first);
 			msg.set("metadataValue."+toStr(metadataCount), metaIter->second);
 			metaIter++;
@@ -667,45 +667,45 @@ public:
 
 	// *** mainloop: read messages from the queue and process them (internal messages here, external messages in own private method) ***
 	void mainloop() {
-		if(!_innerNode)		//only allow when we know our umundo node
+		if (!_innerNode)		//only allow when we know our umundo node
 			throw std::runtime_error("Cannot start mainloop before setNode() was called!");
-		if(_shutdownDone)
+		if (_shutdownDone)
 			throw std::runtime_error("You cannot call mainloop() after calling terminate()!");
 		{
 			RScopeLock lock(_mainloopStartedMutex);
-			if(_mainloopStarted)
+			if (_mainloopStarted)
 				throw std::runtime_error("You cannot call mainloop() twice!");
 			_mainloopStarted = true;
 		}
-		time_t lastPing=time(NULL);
+		time_t lastPing = time(NULL);
 		while(!_shutdownDone) {
 			//use read timeout to periodically send tcp and udp pings (to keep nat open etc.)
-			boost::shared_ptr<BridgeMessage> msg=_queue.read(PING_INTERVAL*1000);		//wakeup every PING_INTERVAL seconds when idle
-			if(_shutdownDone)
+			boost::shared_ptr<BridgeMessage> msg = _queue.read(PING_INTERVAL*1000);		//wakeup every PING_INTERVAL seconds when idle
+			if (_shutdownDone)
 				break;
-			if(difftime(time(NULL), lastPing)>=PING_INTERVAL) {		//difftime >= PING_INTERVAL --> ping remote host
-				lastPing=time(NULL);
+			if (difftime(time(NULL), lastPing) >= PING_INTERVAL) {		//difftime > =  PING_INTERVAL --> ping remote host
+				lastPing = time(NULL);
 				BridgeMessage msg;
 				msg.set("type", "internal");
 				msg.set("cause", "ping");
-				if(_handleRTP) {
-					if(verbose)
+				if (_handleRTP) {
+					if (verbose)
 						std::cout << "INFO: sending internal ping message on UDP channel..." << std::endl;
 					sendMessage(msg, UDP);
 				}
-				if(verbose)
+				if (verbose)
 					std::cout << "INFO: sending internal ping message on TCP channel..." << std::endl;
 				sendMessage(msg, TCP);
 			}
-			if(!msg)
+			if (!msg)
 				continue;
 
 			//process internal messages
-			if(msg->get("type")=="internal") {
-				if(msg->get("cause")=="termination")
+			if (msg->get("type") == "internal") {
+				if (msg->get("cause") == "termination")
 					break;
-				else if(msg->get("cause")=="ping") {
-					if(verbose)
+				else if (msg->get("cause") == "ping") {
+					if (verbose)
 						std::cout << "INFO: received internal ping message using " << msg->get("_source") << "..." << std::endl;
 					continue;
 				} else
@@ -713,12 +713,12 @@ public:
 			}
 
 			//process external messages
-			if(processMessage(msg)) {
+			if (processMessage(msg)) {
 				std::cout << "WARNING: unknown message type '" << msg->get("type") << "', protocol mismatch? --> closing connection..." << std::endl;
 				break;
 			}
 		}
-		if(verbose)
+		if (verbose)
 			std::cout << "ProtocolHandler lost connection..."<< std::endl;
 		shutdown();
 	}
@@ -727,14 +727,14 @@ private:
 	/// *** process incoming messages ***
 	bool processMessage(boost::shared_ptr<BridgeMessage> msg) {
 		RScopeLock lock(_shutdownMutex);		//process only when no shutdown in progress
-		if(_shutdownDone)
+		if (_shutdownDone)
 			return false;
 
-		if(msg->get("type")=="pubAdded") {
+		if (msg->get("type") == "pubAdded") {
 			RScopeLock lock(_knownPubsMutex);
 			Publisher* ownPub;
-			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first publisher --> register actual greeter to track subscriptions
-				if(msg->get<bool>("isRTP")) {
+			if (_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first publisher --> register actual greeter to track subscriptions
+				if (msg->get<bool>("isRTP")) {
 					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
 					RTPPublisherConfig pubConfig(1, 96);
 					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
@@ -744,10 +744,10 @@ private:
 				GlobalGreeter* ownGreeter = new GlobalGreeter(shared_from_this());
 				ownPub->setGreeter(ownGreeter);
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = ownPub;
-				if(verbose)
+				if (verbose)
 					std::cout << "Created new 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			} else {
-				if(msg->get<bool>("isRTP")) {
+				if (msg->get<bool>("isRTP")) {
 					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
 					RTPPublisherConfig pubConfig(1, 96);
 					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
@@ -755,23 +755,23 @@ private:
 					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
 				}
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[ownPub->getUUID()] = ownPub;
-				if(verbose)
+				if (verbose)
 					std::cout << "Created new 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			}
 			_innerNode->addPublisher(*ownPub);
 
-		} else if(msg->get("type")=="pubRemoved") {
+		} else if (msg->get("type") == "pubRemoved") {
 			RScopeLock lock(_knownPubsMutex);
-			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.size()) {
+			if (_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.size()) {
 				Publisher* pub = _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.begin()->second;
 				std::string localUUID = pub->getUUID();
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.erase(localUUID);
 				delete pub;
-				if(verbose)
+				if (verbose)
 					std::cout << "Removed 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			} else {
-				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))==_knownPubs[msg->get<bool>("isRTP")].end() || _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {
-					if(verbose)
+				if (_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName")) == _knownPubs[msg->get<bool>("isRTP")].end() || _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {
+					if (verbose)
 						std::cout << "LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher for channel '" << msg->get("channelName") << "' unknown, ignoring removal!" << std::endl;
 				} else {
 					Publisher* pub = _knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first;
@@ -783,19 +783,19 @@ private:
 					_knownPubs[msg->get<bool>("isRTP")].erase(msg->get("channelName"));
 					delete pub;
 					delete greeter;
-					if(verbose)
+					if (verbose)
 						std::cout << "Removed 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 				}
 			}
 
-		} else if(msg->get("type")=="subAdded") {
+		} else if (msg->get("type") == "subAdded") {
 			Subscriber* sub;
 			{
 				RScopeLock lock(_knownSubsMutex);
-				if(_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first subscriber --> register actual receiver to receive the data
+				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first subscriber --> register actual receiver to receive the data
 
 					RTPSubscriberConfig subConfig;
-					if(msg->get<bool>("isMulticast")) {
+					if (msg->get<bool>("isMulticast")) {
 						subConfig.setMulticastIP(msg->get("ip"));
 						subConfig.setMulticastPortbase(msg->get<uint16_t>("port"));
 					}
@@ -804,7 +804,7 @@ private:
 					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = sub;
 				} else {
 					RTPSubscriberConfig subConfig;
-					if(msg->get<bool>("isMulticast")) {
+					if (msg->get<bool>("isMulticast")) {
 						subConfig.setMulticastIP(msg->get("ip"));
 						subConfig.setMulticastPortbase(msg->get<uint16_t>("port"));
 					}
@@ -813,22 +813,22 @@ private:
 				}
 			}
 			_innerNode->addSubscriber(*sub);
-			if(verbose)
+			if (verbose)
 				std::cout << "Created new LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 
-		} else if(msg->get("type")=="subRemoved") {
-			std::string localUUID=unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
-			if(verbose && localUUID.length())
+		} else if (msg->get("type") == "subRemoved") {
+			std::string localUUID = unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
+			if (verbose && localUUID.length())
 				std::cout << "Removed LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
 
-		} else if(msg->get("type")=="data") {
+		} else if (msg->get("type") == "data") {
 			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
 			uint32_t metadataCount = msg->get<uint32_t>("metadataCount");
-			for(uint32_t c=0; c<metadataCount; c++)
+			for (uint32_t c = 0; c<metadataCount; c++)
 				umundoMessage->putMeta(msg->get("metadataKey."+toStr(c)), msg->get("metadataValue."+toStr(c)));
 			{
 				RScopeLock lock(_knownPubsMutex);
-				if(_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName"))!=_knownPubs[msg->get<bool>("isRTP")].end())
+				if (_knownPubs[msg->get<bool>("isRTP")].find(msg->get("channelName")) != _knownPubs[msg->get<bool>("isRTP")].end())
 					_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first->send(umundoMessage);
 			}
 			delete(umundoMessage);
@@ -841,23 +841,23 @@ private:
 	std::string unsubscribe(std::string channelName, bool isRTP) {
 		RScopeLock lock(_knownSubsMutex);
 		std::string localUUID;
-		if(_knownSubs[isRTP][channelName].second.empty()) {		//last subscriber removed --> remove our master subscriber
-			if(_knownSubs[isRTP][channelName].first==NULL) {
-				if(verbose)
+		if (_knownSubs[isRTP][channelName].second.empty()) {		//last subscriber removed --> remove our master subscriber
+			if (_knownSubs[isRTP][channelName].first == NULL) {
+				if (verbose)
 					std::cout << "REMOTE unicast/multicast " << (isRTP ? "RTP" : "ZMQ") << " subscriber for channel '" << channelName << "' unknown, ignoring removal!" << std::endl;
 			} else {
-				Subscriber* sub=_knownSubs[isRTP][channelName].first;
-				localUUID=sub->getUUID();
+				Subscriber* sub = _knownSubs[isRTP][channelName].first;
+				localUUID = sub->getUUID();
 				Receiver* receiver = sub->getReceiver();
 				sub->setReceiver(NULL);
 				_innerNode->removeSubscriber(*sub);
-				_knownSubs[isRTP][channelName].first=NULL;
+				_knownSubs[isRTP][channelName].first = NULL;
 				delete sub;
 				delete receiver;
 			}
 		} else {			//this was not our last subscriber --> remove only "silent" subscriber
-			Subscriber* sub=_knownSubs[isRTP][channelName].second.begin()->second;
-			localUUID=sub->getUUID();
+			Subscriber* sub = _knownSubs[isRTP][channelName].second.begin()->second;
+			localUUID = sub->getUUID();
 			_innerNode->removeSubscriber(*sub);
 			_knownSubs[isRTP][channelName].second.erase(sub->getUUID());
 			delete sub;
@@ -867,11 +867,11 @@ private:
 
 	void shutdown() {
 		RScopeLock lock(_shutdownMutex);
-		if(_shutdownDone)
+		if (_shutdownDone)
 			return;
-		_shutdownDone=true;
+		_shutdownDone = true;
 
-		if(verbose)
+		if (verbose)
 			std::cout << "Shutting down ProtocolHandler..." << std::endl;
 
 		//wakeup mainloop (it will detect _shutdownDone == true and terminate)
@@ -881,15 +881,15 @@ private:
 		msg.set("cause", "termination");
 		_queue.write(msg);
 
-		if(_innerNode) {
+		if (_innerNode) {
 			//remove all publishers
 			{
 				RScopeLock lock(_knownPubsMutex);
-				bool isRTP=false;
+				bool isRTP = false;
 				do {
 					std::map<std::string, std::pair<Publisher*, std::map<std::string, Publisher*> > >::iterator pubIter = _knownPubs[isRTP].begin();
 					while(pubIter != _knownPubs[isRTP].end()) {		//loop over all channels
-						if(pubIter->second.second.size()) {
+						if (pubIter->second.second.size()) {
 							std::map<std::string, Publisher*>::iterator innerPubIter = pubIter->second.second.begin();
 							while(innerPubIter != pubIter->second.second.end()) {		//loop over all "silent" publishers
 								delete innerPubIter->second;
@@ -897,7 +897,7 @@ private:
 							}
 							pubIter->second.second.clear();
 						}
-						if(pubIter->second.first!=NULL) {		//remove "normal" publisher
+						if (pubIter->second.first != NULL) {		//remove "normal" publisher
 							Publisher* pub = pubIter->second.first;
 							GlobalGreeter* greeter = dynamic_cast<GlobalGreeter*>(pub->getGreeter());
 							pub->setGreeter(NULL);
@@ -908,7 +908,7 @@ private:
 						}
 						pubIter++;
 					}
-					isRTP=!isRTP;
+					isRTP = !isRTP;
 				} while(!isRTP);
 				_knownPubs.clear();
 			}
@@ -916,17 +916,17 @@ private:
 			//remove all subscribers
 			{
 				RScopeLock lock(_knownSubsMutex);
-				bool isRTP=false;
+				bool isRTP = false;
 				do {
 					std::map<std::string, std::pair<Subscriber*, std::map<std::string, Subscriber*> > >::iterator subIter = _knownSubs[isRTP].begin();
 					while(subIter != _knownSubs[isRTP].end()) {
-						for(uint32_t c=0; c<subIter->second.second.size(); c++)		//remove all "silent" subscribers
+						for (uint32_t c = 0; c<subIter->second.second.size(); c++)		//remove all "silent" subscribers
 							unsubscribe(subIter->first, isRTP);
-						if(subIter->second.first!=NULL)									//remove master subscriber
+						if (subIter->second.first != NULL)									//remove master subscriber
 							unsubscribe(subIter->first, isRTP);
 						subIter++;
 					}
-					isRTP=!isRTP;
+					isRTP = !isRTP;
 				} while(!isRTP);
 			}
 		}
@@ -937,7 +937,7 @@ private:
 			//terminate all socket listeners
 			_tcpListener->terminate();
 			delete _tcpListener;
-			if(_handleRTP) {
+			if (_handleRTP) {
 				_udpListener->terminate();
 				delete _udpListener;
 			}
@@ -957,19 +957,19 @@ private:
 
 	void sendMessage(BridgeMessage& msg, dummy channel) {
 		RScopeLock lock(_socketMutex);
-		if(_shutdownDone)		//only send messages when active
+		if (_shutdownDone)		//only send messages when active
 			return;
 		std::string packet;
-		if(channel==TCP) {
+		if (channel == TCP) {
 			//prefix message with message length so that our tcp stream could be split into individual messages easyliy at the remote bridge instance
-			std::string message=msg.toString();
-			uint32_t messageSize=htonl(message.length());
+			std::string message = msg.toString();
+			uint32_t messageSize = htonl(message.length());
 			packet = std::string((char*)&messageSize, sizeof(uint32_t));
-			packet+=message;
+			packet += message;
 		} else
-			packet=msg.toString();
-		if(send(channel==TCP ? _tcpSocket : _udpSocket, packet.c_str(), packet.length(), 0)!=packet.length())
-			throw SocketException(std::string("Could not send data on ")+(channel==TCP ? "tcp" : "udp")+" socket");
+			packet = msg.toString();
+		if (send(channel == TCP ? _tcpSocket : _udpSocket, packet.c_str(), packet.length(), 0) != packet.length())
+			throw SocketException(std::string("Could not send data on ")+(channel == TCP ? "tcp" : "udp")+" socket");
 	}
 };
 
@@ -982,17 +982,17 @@ void GlobalReceiver::receive(Message* msg) {
 GlobalGreeter::GlobalGreeter(boost::shared_ptr<ProtocolHandler> handler) : _handler(handler) { }
 
 void GlobalGreeter::welcome(Publisher& pub, const SubscriberStub& subStub) {
-	if(verbose)
+	if (verbose)
 		std::cout << "Got new LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << pub << std::endl;
-	if(verbose)
+	if (verbose)
 		std::cout << "--> subscribing on REMOTE side..." << std::endl;
 	_handler->send_subAdded(pub.getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
 }
 
 void GlobalGreeter::farewell(Publisher& pub, const SubscriberStub& subStub) {
-	if(verbose)
+	if (verbose)
 		std::cout << "Removed LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << " to publisher " << pub << std::endl;
-	if(verbose)
+	if (verbose)
 		std::cout << "--> unsubscribing on REMOTE side..." << std::endl;
 	_handler->send_subRemoved(pub.getChannelName(), subStub.isRTP(), subStub.isMulticast(), subStub.getIP(), subStub.getPort());
 }
@@ -1006,17 +1006,17 @@ public:
 	PubMonitor(boost::shared_ptr<ProtocolHandler> handler) : _handler(handler) { }
 
 	void added(PublisherStub pubStub) {
-		if(verbose)
+		if (verbose)
 			std::cout << "Got new LOCAL " << (pubStub.isRTP() ? "RTP" : "ZMQ") << " publisher: " << pubStub << std::endl;
-		if(verbose)
+		if (verbose)
 			std::cout << "--> sending PUB_ADDED for channel '" << pubStub.getChannelName() << "' through bridge..." << std::endl;
 		_handler->send_pubAdded(pubStub.getChannelName(), pubStub.isRTP());
 	}
 
 	void removed(PublisherStub pubStub) {
-		if(verbose)
+		if (verbose)
 			std::cout << "Got removal of LOCAL " << (pubStub.isRTP() ? "RTP" : "ZMQ") << " publisher: " << pubStub << std::endl;
-		if(verbose)
+		if (verbose)
 			std::cout << "--> sending PUB_REMOVED for channel '" << pubStub.getChannelName() << "' through bridge..." << std::endl;
 		_handler->send_pubRemoved(pubStub.getChannelName(), pubStub.isRTP());
 	}
@@ -1048,13 +1048,13 @@ public:
 
 		//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
 		int reuseaddr = 1;
-		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&reuseaddr, sizeof(reuseaddr))==-1)
+		if (setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&reuseaddr, sizeof(reuseaddr)) == -1)
 			throw SocketException("Could not set SO_REUSEADDR on tcp socket");
-		if(bind(_tcpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
+		if (bind(_tcpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
 			throw SocketException("Could not bind tcp socket to specified port: ");
-		if(bind(_udpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
+		if (bind(_udpSocket,(struct sockaddr*)&addr, sizeof(addr)) < 0)
 			throw SocketException("Could not bind udp socket to specified port");
-		if(listen(_tcpSocket, 1)==-1)
+		if (listen(_tcpSocket, 1) == -1)
 			throw SocketException("Could not listen on tcp socket");
 	}
 
@@ -1063,7 +1063,7 @@ public:
 	}
 
 	~Connector() {
-		if(!_handoffDone) {			//dont close our sockets if handoff to ProtocolHandler is already done
+		if (!_handoffDone) {			//dont close our sockets if handoff to ProtocolHandler is already done
 #ifdef WIN32
 			closesocket(_tcpSocket);
 			closesocket(_udpSocket);
@@ -1076,16 +1076,16 @@ public:
 	}
 
 	boost::shared_ptr<ProtocolHandler> waitForConnection() {
-		bool handleRTP=true;
+		bool handleRTP = true;
 		struct sockaddr_in remoteAddress;
-		socklen_t remoteAddressLength=sizeof(remoteAddress);
+		socklen_t remoteAddressLength = sizeof(remoteAddress);
 
-		if(_listening) {
+		if (_listening) {
 			SOCKET newSocket;
 			while(true) {
 				newSocket = accept(_tcpSocket, (struct sockaddr*)&remoteAddress, &remoteAddressLength);
-				if(newSocket == -1) {
-					if(errno == EINTR)
+				if (newSocket == -1) {
+					if (errno == EINTR)
 						continue;
 					throw SocketException("Could not accept connection on tcp socket");
 				}
@@ -1098,79 +1098,79 @@ public:
 #endif
 			_tcpSocket = newSocket;
 
-			if(verbose)
+			if (verbose)
 				std::cout << "Accepted connection from " << ipToStr(remoteAddress.sin_addr.s_addr) << ":" << ntohs(remoteAddress.sin_port) << " on tcp socket, sending serverHello message..." << std::endl;
 
 			//wait TIMEOUT seconds for clientHello on TCP channel
-			if(waitForString("clientHello", TCP, TIMEOUT, NULL, 0))
+			if (waitForString("clientHello", TCP, TIMEOUT, NULL, 0))
 				throw BridgeMessageException("Error while receiving initial 'clientHello' on tcp socket");
 			//send serverHello on tcp channel
-			if(send(_tcpSocket, "serverHello", 11, 0)!=11)
+			if (send(_tcpSocket, "serverHello", 11, 0) != 11)
 				throw SocketException("Could not send data on tcp socket");
 
 			//wait TIMEOUT seconds for clientHello on UDP channel
-			remoteAddressLength=sizeof(remoteAddress);
-			if(waitForString("clientHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength)) {
-				handleRTP=false;
+			remoteAddressLength = sizeof(remoteAddress);
+			if (waitForString("clientHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength)) {
+				handleRTP = false;
 				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
 			} else {
-				if(connect(_udpSocket, (sockaddr*)&remoteAddress, sizeof(remoteAddress))==-1)
+				if (connect(_udpSocket, (sockaddr*)&remoteAddress, sizeof(remoteAddress)) == -1)
 					throw SocketException("Could not connect udp socket to remote ip");
 			}
 			//send serverHello on udp channel
-			if(handleRTP) {
-				if(send(_udpSocket, "serverHello", 11, 0)!=11)
+			if (handleRTP) {
+				if (send(_udpSocket, "serverHello", 11, 0) != 11)
 					std::cout << "WARNING: could not send data on udp socket" << std::endl;
 			}
 		} else {
-			const char* hostname=_connectIP.c_str();
+			const char* hostname = _connectIP.c_str();
 			struct addrinfo hints;
 			memset(&hints, 0, sizeof(hints));
-			hints.ai_family=AF_INET;
-			hints.ai_socktype=SOCK_STREAM;
-			hints.ai_protocol=0;
-			hints.ai_flags=AI_ADDRCONFIG|AI_NUMERICSERV;
-			struct addrinfo* res=0;
-			int err=getaddrinfo(hostname, toStr(_connectPort).c_str(), &hints, &res);
-			if(err!=0)
-				throw SocketException("Failed to resolve hostname '"+_connectIP+"' (err="+toStr(err)+")");
-			if(verbose)
+			hints.ai_family = AF_INET;
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_protocol = 0;
+			hints.ai_flags = AI_ADDRCONFIG|AI_NUMERICSERV;
+			struct addrinfo* res = 0;
+			int err = getaddrinfo(hostname, toStr(_connectPort).c_str(), &hints, &res);
+			if (err != 0)
+				throw SocketException("Failed to resolve hostname '"+_connectIP+"' (err = "+toStr(err)+")");
+			if (verbose)
 				std::cout << "Info: '" << _connectIP << "' is at " << ipToStr(((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr) << "..." << std::endl;
-			if(connect(_tcpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
+			if (connect(_tcpSocket, res->ai_addr, res->ai_addrlen) == -1)		//use only the first returned address
 				throw SocketException("Could not connect tcp socket");
-			if(connect(_udpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
+			if (connect(_udpSocket, res->ai_addr, res->ai_addrlen) == -1)		//use only the first returned address
 				throw SocketException("Could not connect udp socket");
 			freeaddrinfo(res);
 
 			//send "clientHello" on both channels
-			if(send(_tcpSocket, "clientHello", 11, 0)!=11)
+			if (send(_tcpSocket, "clientHello", 11, 0) != 11)
 				throw SocketException("Could not send data on tcp socket");
-			if(send(_udpSocket, "clientHello", 11, 0)!=11)
-				handleRTP=false;
+			if (send(_udpSocket, "clientHello", 11, 0) != 11)
+				handleRTP = false;
 
 			//wait TIMEOUT seconds for resulting serverHello on TCP channel
-			if(waitForString("serverHello", TCP, TIMEOUT, NULL, 0))
+			if (waitForString("serverHello", TCP, TIMEOUT, NULL, 0))
 				throw BridgeMessageException("Error while receiving initial 'serverHello' on tcp socket");
 
 			//wait TIMEOUT seconds for resulting serverHello on UDP channel
-			if(handleRTP) {
-				remoteAddressLength=sizeof(remoteAddress);
+			if (handleRTP) {
+				remoteAddressLength = sizeof(remoteAddress);
 				try {
-					if(waitForString("serverHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength))
+					if (waitForString("serverHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength))
 						throw std::exception();		//internal error reporting to surrounding try-catch block
 				} catch(...) {
-					handleRTP=false;
+					handleRTP = false;
 				}
 			}
 
-			if(!handleRTP)
+			if (!handleRTP)
 				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
 		}
 
-		if(verbose)
+		if (verbose)
 			std::cout << "Connection successfully established, now handing off to ProtocolHandler..." << std::endl;
 
-		_handoffDone=true;
+		_handoffDone = true;
 		return boost::shared_ptr<ProtocolHandler>(new ProtocolHandler(_tcpSocket, _udpSocket, handleRTP));
 	}
 
@@ -1187,29 +1187,29 @@ private:
 #endif
 		FD_ZERO(&receive);
 
-		if(type==TCP)
-			socket=_tcpSocket;
+		if (type == TCP)
+			socket = _tcpSocket;
 		else
-			socket=_udpSocket;
+			socket = _udpSocket;
 		FD_SET(socket, &receive);
 
-		time.tv_sec=timeout_s;
-		time.tv_usec=0;
-		retval=select(socket+1, &receive, NULL, NULL, &time);
-		if(retval==EBADF || retval==EINTR || retval==EINVAL || retval==ENOMEM)
-			throw SocketException("Could not use select() on sockets (err="+toStr(retval)+")");
-		if(FD_ISSET(socket, &receive)) {
-			buffer=(char*)malloc(string.length());
-			if(type==TCP)
-				retval=recvAll(socket, buffer, string.length(), 0, srcAddr, addrlen) ? 0 : string.length();
+		time.tv_sec = timeout_s;
+		time.tv_usec = 0;
+		retval = select(socket+1, &receive, NULL, NULL, &time);
+		if (retval == EBADF || retval == EINTR || retval == EINVAL || retval == ENOMEM)
+			throw SocketException("Could not use select() on sockets (err = "+toStr(retval)+")");
+		if (FD_ISSET(socket, &receive)) {
+			buffer = (char*)malloc(string.length());
+			if (type == TCP)
+				retval = recvAll(socket, buffer, string.length(), 0, srcAddr, addrlen) ? 0 : string.length();
 			else
-				retval=recvfrom(socket, buffer, string.length(), 0, srcAddr, addrlen);
-			if(retval>0 && retval!=string.length())
-				throw std::runtime_error(std::string("Could not read on ")+(type==TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+" != "+toStr(string.length())+")");
-			else if(retval<=0)
-				throw SocketException(std::string("Could not read on ")+(type==TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+")");
-			if(memcmp(buffer, string.c_str(), string.length())!=0)
-				throw std::runtime_error(std::string("Corrupt init message received on ")+(type==TCP ? "tcp" : "udp")+" socket");
+				retval = recvfrom(socket, buffer, string.length(), 0, srcAddr, addrlen);
+			if (retval>0 && retval != string.length())
+				throw std::runtime_error(std::string("Could not read on ")+(type == TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+" != "+toStr(string.length())+")");
+			else if (retval <= 0)
+				throw SocketException(std::string("Could not read on ")+(type == TCP ? "tcp" : "udp")+" socket ("+toStr(retval)+")");
+			if (memcmp(buffer, string.c_str(), string.length()) != 0)
+				throw std::runtime_error(std::string("Corrupt init message received on ")+(type == TCP ? "tcp" : "udp")+" socket");
 			free(buffer);
 			return false;	//string received successfully
 		}
@@ -1219,11 +1219,11 @@ private:
 	bool recvAll(SOCKET socket, char* buffer, size_t length, int flags, struct sockaddr* srcAddr, socklen_t* addrlen) {
 		int retval;
 		do {
-			retval=recvfrom(socket, buffer, length, 0, srcAddr, addrlen);
-			if(retval<=0)
+			retval = recvfrom(socket, buffer, length, 0, srcAddr, addrlen);
+			if (retval <= 0)
 				return true;
-			length-=retval;		//calculate remaining data length
-			buffer+=retval;		//advance buffer
+			length -= retval;		//calculate remaining data length
+			buffer += retval;		//advance buffer
 		} while(length>0);
 		return false;
 	}
@@ -1242,7 +1242,7 @@ private:
 //test message serialisation/deserialisation (class BridgeMessage)
 void test_BridgeMessage() {
 	BridgeMessage msg;
-	uint32_t abcd=8;
+	uint32_t abcd = 8;
 	msg.set("xyz", "halloWelt");						//this is already a string
 	msg.set("abcd", abcd);								//this is automatically saved as string (via toStr(8))
 	msg.set("zweiundvierzig", 42);						//this is converted to string, too
@@ -1252,7 +1252,7 @@ void test_BridgeMessage() {
 	msg.set("true", true);								//this is a boolean (true)
 	msg.set("false", false);							//this is a boolean (false)
 
-	std::string serialized=msg.toString();								//serialize message
+	std::string serialized = msg.toString();								//serialize message
 	BridgeMessage newMsg(serialized.c_str(), serialized.length());		//now deserialize our message again
 
 	assert(newMsg.get("xyz") == "halloWelt");
@@ -1292,12 +1292,12 @@ int main(int argc, char** argv) {
 			break;
 		case 'l':
 			listen = strTo<uint16_t>(optarg);
-			if(listen == 0)
+			if (listen == 0)
 				printUsageAndExit();
 			break;
 		case 'c': {
 			EndPoint endPoint(std::string("tcp://")+std::string(optarg));
-			if(!endPoint)
+			if (!endPoint)
 				printUsageAndExit();
 			remoteIP = endPoint.getIP();
 			remotePort = endPoint.getPort();
@@ -1311,28 +1311,28 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-	if(optind < argc || (listen == 0 && remotePort == 0))
+	if (optind < argc || (listen == 0 && remotePort == 0))
 		printUsageAndExit();
 
 	//construct discovery (must be done here, because destruction of the discovery object provokes a bug in the mdns library
 	//which prevents subsequent constructions of new discovery objects)
 	MDNSDiscoveryOptions mdnsOpts;
-	if(domain)
+	if (domain)
 		mdnsOpts.setDomain(domain);
 	Discovery disc(Discovery::MDNS, &mdnsOpts);
 
 	while(true) {
 		try {
-			if(listen) {
-				if(verbose)
+			if (listen) {
+				if (verbose)
 					std::cout << "Listening at tcp and udp port " << listen << std::endl;
 				connector = new Connector(listen);
 			} else {
-				if(verbose)
+				if (verbose)
 					std::cout << "Connecting to remote bridge instance at " << remoteIP << ":" << remotePort << std::endl;
 				connector = new Connector(remoteIP, remotePort);
 			}
-			handler=connector->waitForConnection();
+			handler = connector->waitForConnection();
 			delete connector;
 
 			//construct inner node
@@ -1357,7 +1357,7 @@ int main(int argc, char** argv) {
 		} catch(std::runtime_error& e) {
 			std::cout << "Got runtime_error with message '" << e.what() << "'" << std::endl;
 		}
-		if(listen)
+		if (listen)
 			std::cout << "Listening for new connections in 5 seconds..." << std::endl;
 		else
 			std::cout << "Reconnecting in 5 seconds..." << std::endl;

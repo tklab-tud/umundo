@@ -109,7 +109,7 @@ protected:
 class UMUNDO_API EndPointOptions : public Options {
 public:
 	enum Protocol {
-	    TCP, UDP
+		TCP, UDP
 	};
 
 	EndPointOptions(uint16_t port) {

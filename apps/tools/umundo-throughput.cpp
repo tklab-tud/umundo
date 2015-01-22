@@ -49,9 +49,9 @@ void uint64ToChar(char a[], uint64_t num) {
 
 
 enum PubType {
-    PUB_RTP,
-    PUB_TCP,
-    PUB_MCAST
+	PUB_RTP,
+	PUB_TCP,
+	PUB_MCAST
 };
 
 RMutex mutex;

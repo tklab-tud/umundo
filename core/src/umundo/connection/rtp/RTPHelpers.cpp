@@ -30,31 +30,35 @@
 
 namespace umundo {
 
-uint32_t RTPHelpers::_libreUsage=0;
-bool RTPHelpers::_initDone=false;
-struct libre::mqueue *RTPHelpers::_mq=NULL;
-boost::function<int()> RTPHelpers::_func=NULL;
-int RTPHelpers::_retval=0;
+uint32_t RTPHelpers::_libreUsage = 0;
+int      RTPHelpers::_retval = 0;
+uint64_t RTPHelpers::_id = 0;
+bool     RTPHelpers::_initDone   = false;
+struct   libre::mqueue *RTPHelpers::_mq = NULL;
+
+boost::function<int()> RTPHelpers::_func = NULL;
+
 RMutex RTPHelpers::_usageCountMutex;
 RMutex RTPHelpers::_mutex;
 Monitor RTPHelpers::_cond;
-unsigned long RTPHelpers::_id=0;
 
 RTPHelpers::RTPHelpers() {
 	RScopeLock lock(_usageCountMutex);
-	if(!_libreUsage) {
+	if (!_libreUsage) {
 		//init libre
 		int err;
 		libre::rand_init();
-		if((err=libre::libre_init())) {
+		err = libre::libre_init();
+		if (err) {
 			UM_LOG_ERR("libre init failed with error code %d", err);
 			return;
 		}
+		
 		//start libre mainloop and init our libre calling capabilities
 		{
 			RScopeLock lock(_mutex);
-			if(!_initDone) {
-				_initDone=true;
+			if (!_initDone) {
+				_initDone = true;
 				libre::mqueue_alloc(&_mq, handler, NULL);
 			}
 		}
@@ -66,7 +70,8 @@ RTPHelpers::RTPHelpers() {
 RTPHelpers::~RTPHelpers() {
 	RScopeLock lock(_usageCountMutex);
 	_libreUsage--;
-	if(!_libreUsage) {
+	
+	if (!_libreUsage) {
 		//call() needs a function object returning an int
 		//--> cast void function to int function (and ignore fake "return value")
 		call(boost::bind((int(*)(void))libre::re_cancel));
@@ -81,16 +86,17 @@ RTPHelpers::~RTPHelpers() {
 
 void RTPHelpers::run() {
 	int err;
-	_id=Thread::getThreadId();
-	err=libre::re_main(NULL);
+	_id = Thread::getThreadId();
+	err = libre::re_main(NULL);
 	{
 		RScopeLock lock(_mutex);
 		libre::mem_deref(_mq);
-		_initDone=false;
+		_initDone = false;
 	}
 	UM_LOG_INFO("re_main() STOPPED...");
-	if(err)
+	if (err) {
 		UM_LOG_ERR("re_main() finished with error code %d", err);
+	}
 	return;
 }
 
@@ -99,13 +105,13 @@ void RTPHelpers::run() {
  * Use this for all libre calls where new fds are created
 **/
 int RTPHelpers::call(boost::function<int()> f) {
-	if(_id == Thread::getThreadId()) {
+	if (_id == Thread::getThreadId()) {
 		//we're already running in the mainloop thread, call supplied function directly
 		return f();
 	} else {
 		//we're not running in the mainloop thread, instruct libre to call supplied function via our handler
 		RScopeLock lock(_mutex);
-		_func=f;
+		_func = f;
 		libre::mqueue_push(_mq, 0, NULL);
 		_cond.wait(_mutex);
 		return _retval;
@@ -115,7 +121,8 @@ int RTPHelpers::call(boost::function<int()> f) {
 
 void RTPHelpers::handler(int id, void *data, void *arg) {
 	RScopeLock lock(_mutex);
-	_retval=_func();
+	_retval = _func();
 	_cond.broadcast();
 }
+
 }

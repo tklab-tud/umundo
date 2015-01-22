@@ -4,7 +4,7 @@
 %include <arrays_java.i>
 %include <stl.i>
 %include <inttypes.i>
-%include "stl_set.i"
+%include "../stl_set.i"
 
 // macros from cmake
 %import "umundo/config.h"
@@ -12,14 +12,8 @@
 // set UMUNDO_API macro to empty string
 #define UMUNDO_API
 
-// this needs to be up here for the template
-%include "../../../../core/src/umundo/common/ResultSet.h"
-
 %rename(equals) operator==; 
-%ignore operator bool;
-%ignore operator!=;
-%ignore operator<;
-%ignore operator=;
+%rename(isValid) operator bool;
 
 %javaconst(1);
 
@@ -68,41 +62,16 @@ using namespace umundo;
 
 //*************************************************/
 
-// Provide a nicer Java interface to STL containers
-%template(StringArray) std::vector<std::string>;
-%template(StringMap) std::map<std::string, std::string>;
-%template(PublisherMap) std::map<std::string, umundo::Publisher>;
-%template(SubscriberMap) std::map<std::string, umundo::Subscriber>;
-%template(PublisherStubMap) std::map<std::string, umundo::PublisherStub>;
-%template(SubscriberStubMap) std::map<std::string, umundo::SubscriberStub>;
-%template(NodeStubMap) std::map<std::string, umundo::NodeStub>;
-%template(EndPointResultSet) umundo::ResultSet<umundo::EndPoint>;
-%template(EndPointArray) std::vector<umundo::EndPoint>;
-%template(InterfaceArray) std::vector<umundo::Interface>;
-
 // allow Java classes to act as callbacks from C++
 %feature("director") umundo::Receiver;
 %feature("director") umundo::Connectable;
 %feature("director") umundo::Greeter;
 
+%include "../umundo_ignores.i"
+%include "../umundo_beautify.i"
+
 // enable conversion from char*, int to jbytearray
 %apply (char *STRING, size_t LENGTH) { (const char* data, size_t length) };
-
-// ignore these functions in every class
-%ignore setChannelName(string);
-%ignore setUUID(string);
-%ignore setPort(uint16_t);
-%ignore setIP(string);
-%ignore setTransport(string);
-%ignore setRemote(bool);
-%ignore setHost(string);
-%ignore setDomain(string);
-%ignore getImpl();
-%ignore getImpl() const;
-
-// ignore class specific functions
-%ignore operator!=(NodeStub* n) const;
-%ignore operator<<(std::ostream&, const NodeStub*);
 
 // rename functions
 %rename(equals) operator==(NodeStub* n) const;
@@ -136,28 +105,6 @@ using namespace umundo;
 %rename(getPublishersNative) umundo::Node::getPublishers();
 %javamethodmodifiers umundo::Node::getPublishers() "private";
 
-%extend umundo::Node {
-	std::vector<std::string> getPubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, Publisher> pubs = self->getPublishers();
-		std::map<std::string, Publisher>::iterator pubIter = pubs.begin();
-		while(pubIter != pubs.end()) {
-			keys.push_back(pubIter->first);
-			pubIter++;
-		}
-		return keys;
-	}
-	std::vector<std::string> getSubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, Subscriber> subs = self->getSubscribers();
-		std::map<std::string, Subscriber>::iterator subIter = subs.begin();
-		while(subIter != subs.end()) {
-			keys.push_back(subIter->first);
-			subIter++;
-		}
-		return keys;
-	}
-};
 
 %typemap(javaimports) umundo::Node %{
 import java.util.HashMap;
@@ -195,29 +142,6 @@ import java.util.HashMap;
 %rename(getPublishersNative) umundo::NodeStub::getPublishers();
 %javamethodmodifiers umundo::NodeStub::getPublishers() "private";
 
-%extend umundo::NodeStub {
-  std::vector<std::string> getPubKeys() {
-  	std::vector<std::string> keys;
-  	std::map<std::string, PublisherStub> pubs = self->getPublishers();
-  	std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
-  	while(pubIter != pubs.end()) {
-  		keys.push_back(pubIter->first);
-  		pubIter++;
-  	}
-  	return keys;
-  }
-  std::vector<std::string> getSubKeys() {
-  	std::vector<std::string> keys;
-  	std::map<std::string, SubscriberStub> subs = self->getSubscribers();
-  	std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
-  	while(subIter != subs.end()) {
-  		keys.push_back(subIter->first);
-  		subIter++;
-  	}
-  	return keys;
-  }
-};
-
 %typemap(javaimports) umundo::NodeStub %{
 import java.util.HashMap;
 %}
@@ -252,19 +176,6 @@ import java.util.HashMap;
 %javamethodmodifiers umundo::Publisher::setGreeter(Greeter* greeter) "private";
 %rename(getSubscribersNative) umundo::Publisher::getSubscribers();
 %javamethodmodifiers umundo::Publisher::getSubscribers() "private";
-
-%extend umundo::Publisher {
-	std::vector<std::string> getSubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, SubscriberStub> subs = self->getSubscribers();
-		std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
-		while(subIter != subs.end()) {
-			keys.push_back(subIter->first);
-			subIter++;
-		}
-		return keys;
-	}
-};
 
 %typemap(javaimports) umundo::Publisher %{
 import java.util.HashMap;
@@ -309,18 +220,6 @@ import java.util.HashMap;
 %rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
 %javamethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
 
-%extend umundo::Subscriber {
-	std::vector<std::string> getPubKeys() {
-		std::vector<std::string> keys;
-		std::map<std::string, PublisherStub> pubs = self->getPublishers();
-		std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
-		while(pubIter != pubs.end()) {
-			keys.push_back(pubIter->first);
-			pubIter++;
-		}
-		return keys;
-	}
-};
 
 %typemap(javaimports) umundo::Subscriber %{
 import java.util.HashMap;
@@ -398,19 +297,6 @@ import java.util.Vector;
 import java.util.HashMap;
 %}
 
-%extend umundo::Message {
-  std::vector<std::string> getMetaKeys() {
-  	std::vector<std::string> keys;
-  	std::map<std::string, std::string> metas = self->getMeta();
-  	std::map<std::string, std::string>::iterator metaIter = metas.begin();
-  	while(metaIter != metas.end()) {
-  		keys.push_back(metaIter->first);
-  		metaIter++;
-  	}
-  	return keys;
-  }
-};
-
 // provide convinience methods within Message Java class for meta keys
 %typemap(javacode) umundo::Message %{
 public HashMap<String, String> getMeta() {
@@ -442,31 +328,6 @@ public HashMap<String, String> getMeta() {
   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);
 }
 
-
-
-//******************************
-// Ignore whole C++ classes
-//******************************
-
-%ignore Implementation;
-%ignore Configuration;
-%ignore EndPointImpl;
-%ignore DiscoveryImpl;
-%ignore NodeImpl;
-%ignore NodeStubImpl;
-%ignore NodeStubBaseImpl;
-%ignore PublisherImpl;
-%ignore PublisherStubImpl;
-%ignore SubscriberImpl;
-%ignore SubscriberStubImpl;
-%ignore EndPointImpl;
-%ignore RMutex;
-%ignore Mutex;
-%ignore Thread;
-%ignore Monitor;
-%ignore MemoryBuffer;
-%ignore RScopeLock;
-
 //******************************
 // Make some C++ classes package local
 //******************************
@@ -481,34 +342,6 @@ public HashMap<String, String> getMeta() {
 // %typemap(javaclassmodifiers) PublisherSet "class"
 // %typemap(javaclassmodifiers) std::set<umundo::Publisher> "class"
 
-//******************************
-// Ignore PIMPL Constructors
-//******************************
-
-%ignore Node(const SharedPtr<NodeImpl>);
-%ignore Node(const Node&);
-%ignore NodeStub(const SharedPtr<NodeStubImpl>);
-%ignore NodeStub(const NodeStub&);
-%ignore NodeStubBase(const SharedPtr<NodeStubBaseImpl>);
-%ignore NodeStubBase(const NodeStubBase&);
-
-%ignore EndPoint(const SharedPtr<EndPointImpl>);
-%ignore EndPoint(const EndPoint&);
-
-%ignore Publisher(const SharedPtr<PublisherImpl>);
-%ignore Publisher(const Publisher&);
-%ignore PublisherStub(const SharedPtr<PublisherStubImpl>);
-%ignore PublisherStub(const PublisherStub&);
-
-%ignore Subscriber(const SharedPtr<SubscriberImpl>);
-%ignore Subscriber(const Subscriber&);
-%ignore SubscriberStub(const SharedPtr<SubscriberStubImpl>);
-%ignore SubscriberStub(const SubscriberStub&);
-
-%ignore Discovery(const SharedPtr<DiscoveryImpl>);
-%ignore Discovery(const Discovery&);
-
-%ignore umundo::Options::getKVPs;
 
 //***********************************************
 // Parse the header file to generate wrappers

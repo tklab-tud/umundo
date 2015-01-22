@@ -45,7 +45,7 @@ protected:
 	static Monitor _cond;
 	static boost::function<int()> _func;
 	static int _retval;
-	static unsigned long int _id;
+	static uint64_t _id;
 
 	static int call(boost::function<int()>);
 	static void handler(int, void*, void*);

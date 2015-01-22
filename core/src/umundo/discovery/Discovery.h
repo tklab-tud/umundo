@@ -67,8 +67,8 @@ class UMUNDO_API Discovery {
 public:
 
 	enum DiscoveryType {
-	    MDNS,
-	    BROADCAST
+		MDNS,
+		BROADCAST
 	};
 
 	/**
@@ -154,7 +154,7 @@ protected:
 class UMUNDO_API MDNSDiscoveryOptions : public Options {
 public:
 	enum Protocol {
-	    TCP, UDP
+		TCP, UDP
 	};
 
 	MDNSDiscoveryOptions() {

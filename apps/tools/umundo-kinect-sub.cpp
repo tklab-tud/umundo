@@ -63,7 +63,7 @@ public:
 	void receive(Message* msg) {
 
 		//handle only RTP messages
-		if(msg->getMeta("type")=="RTP") {
+		if(msg->getMeta("um.type")=="RTP") {
 			RScopeLock lock(_internalDepthMutex);
 			bool marker=strTo<bool>(msg->getMeta("marker"));
 			struct RTPData *data=(struct RTPData*)msg->data();
@@ -128,7 +128,7 @@ public:
 				//clear packetloss mask
 				for(unsigned int i=0; i<480; i++)
 					_mask[i]=false;
-				_rtpTimestamp=strTo<uint32_t>(msg->getMeta("timestamp"));
+				_rtpTimestamp=strTo<uint32_t>(msg->getMeta("um.timestamp"));
 				//we received a mark, so old frame is complete --> signal this to opengl thread
 				if(_start) {
 					_newCompleteFrame = true;

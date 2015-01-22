@@ -34,26 +34,26 @@ class Type;
 class UMUNDO_API Message {
 public:
 	enum Type {
-	    UM_VERSION            = 0xF005, // version 0.5 of the message format
-	    UM_CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
-	    UM_CONNECT_REP        = 0x0002, // reply from a remote node
-	    UM_NODE_INFO          = 0x0003, // information about a node and its publishers
-	    UM_PUB_ADDED          = 0x0004, // sent when a node added a publisher
-	    UM_PUB_REMOVED        = 0x0005, // sent when a node removed a publisher
-	    UM_SUB_ADDED          = 0x000D, // sent when a node added a subscriber
-	    UM_SUB_REMOVED        = 0x000E, // sent when a node removed a subscriber
-	    UM_SUBSCRIBE          = 0x0006, // sent when subscribing to a publisher
-	    UM_UNSUBSCRIBE        = 0x0007, // unsusbscribing from a publisher
-	    UM_DISCONNECT         = 0x0008, // node was removed
-	    UM_DEBUG              = 0x0009, // request debug info
-	    UM_ZMQ_UPDATE_SOCKETS = 0xA001, // zmq specific internal message
-	    UM_SHUTDOWN           = 0x000C, // node is shutting down
+		UM_VERSION            = 0xF005, // version 0.5 of the message format
+		UM_CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
+		UM_CONNECT_REP        = 0x0002, // reply from a remote node
+		UM_NODE_INFO          = 0x0003, // information about a node and its publishers
+		UM_PUB_ADDED          = 0x0004, // sent when a node added a publisher
+		UM_PUB_REMOVED        = 0x0005, // sent when a node removed a publisher
+		UM_SUB_ADDED          = 0x000D, // sent when a node added a subscriber
+		UM_SUB_REMOVED        = 0x000E, // sent when a node removed a subscriber
+		UM_SUBSCRIBE          = 0x0006, // sent when subscribing to a publisher
+		UM_UNSUBSCRIBE        = 0x0007, // unsusbscribing from a publisher
+		UM_DISCONNECT         = 0x0008, // node was removed
+		UM_DEBUG              = 0x0009, // request debug info
+		UM_ZMQ_UPDATE_SOCKETS = 0xA001, // zmq specific internal message
+		UM_SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
 	enum Flags { // not used yet
-	    NONE            = 0x0000,
-	    ADOPT_DATA      = 0x0001,
-	    ZERO_COPY       = 0x0002,
+		NONE            = 0x0000,
+		ADOPT_DATA      = 0x0001,
+		ZERO_COPY       = 0x0002,
 	};
 
 	static const char* typeToString(uint16_t type) {

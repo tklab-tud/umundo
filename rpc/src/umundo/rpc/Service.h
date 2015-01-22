@@ -121,15 +121,15 @@ public:
 	}
 
 	enum Predicate {
-	    OP_EQUALS       = 0x0001,
-	    OP_GREATER      = 0x0002,
-	    OP_LESS         = 0x0003,
-	    OP_STARTS_WITH  = 0x0004,
-	    OP_ENDS_WITH    = 0x0005,
-	    OP_CONTAINS     = 0x0006,
-	    MOD_NOT         = 0x1000,
-	    MASK_OP         = 0x0fff,
-	    MASK_MOD        = 0xf000,
+		OP_EQUALS       = 0x0001,
+		OP_GREATER      = 0x0002,
+		OP_LESS         = 0x0003,
+		OP_STARTS_WITH  = 0x0004,
+		OP_ENDS_WITH    = 0x0005,
+		OP_CONTAINS     = 0x0006,
+		MOD_NOT         = 0x1000,
+		MASK_OP         = 0x0fff,
+		MASK_MOD        = 0xf000,
 	};
 
 	ServiceFilter(const std::string&);

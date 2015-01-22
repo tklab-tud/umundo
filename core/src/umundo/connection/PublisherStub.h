@@ -60,9 +60,9 @@ protected:
 class UMUNDO_API PublisherStub : public EndPoint {
 public:
 	enum PublisherType {
-	    // these have to fit the subscriber types!
-	    ZEROMQ = 0x0001,
-	    RTP    = 0x0002
+		// these have to fit the subscriber types!
+		ZEROMQ = 0x0001,
+		RTP    = 0x0002
 	};
 
 	PublisherStub() : _impl() { }

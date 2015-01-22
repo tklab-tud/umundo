@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);
-	
+
 	FILE* fp=fopen(argv[1], "r");
 	while(1) {
 		Message* msg = new Message();

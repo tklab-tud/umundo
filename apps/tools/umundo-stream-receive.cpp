@@ -55,7 +55,7 @@ typedef int socklen_t;
 #endif
 
 #ifndef SOCKET
-	#define SOCKET int
+#define SOCKET int
 #endif
 
 using namespace umundo;
@@ -79,17 +79,17 @@ void initNetwork(uint16_t port) {
 	struct sockaddr_in addr;
 	struct sockaddr_in remoteAddress;
 	socklen_t remoteAddressLength=sizeof(remoteAddress);
-	#ifdef WIN32
-		WSADATA wsaData;
-		WSAStartup(MAKEWORD(2, 2), &wsaData);
-	#endif
+#ifdef WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 	out = socket(PF_INET, SOCK_STREAM, 0);
-	
+
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr.sin_port = htons(port);
-	
+
 	//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
 	int reuseaddr = 1;
 	if(setsockopt(out, SOL_SOCKET, SO_REUSEADDR, (char*)&reuseaddr, sizeof(reuseaddr))==-1)
@@ -98,7 +98,7 @@ void initNetwork(uint16_t port) {
 		throw SocketException("Could not bind tcp socket to specified port: ");
 	if(listen(out, 1)==-1)
 		throw SocketException("Could not listen on tcp socket");
-	
+
 	std::cout << "Waiting for connection on *:" << port << "..." << std::endl;
 	SOCKET newSocket;
 	while(true) {
@@ -110,13 +110,13 @@ void initNetwork(uint16_t port) {
 		}
 		break;
 	}
-	#ifdef WIN32
-		closesocket(out);
-	#else
-		close(out);
-	#endif
+#ifdef WIN32
+	closesocket(out);
+#else
+	close(out);
+#endif
 	out = newSocket;
-	
+
 	std::cout << "Accepted connection from " << ipToStr(remoteAddress.sin_addr.s_addr) << ":" << ntohs(remoteAddress.sin_port) << "..." << std::endl;
 	char buffer[4096];
 	Thread::sleepMs(4000);
@@ -143,12 +143,12 @@ public:
 
 int main(int argc, char** argv) {
 	printf("umundo-stream-receive version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	initNetwork(5040);
-	
+
 	TestReceiver* testRecv = new TestReceiver();
 	Subscriber subFoo("stream", testRecv);
-	
+
 	Discovery disc(Discovery::MDNS);
 	disc.add(node);
 	node.addSubscriber(subFoo);

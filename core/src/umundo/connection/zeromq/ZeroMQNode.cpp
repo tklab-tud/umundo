@@ -1156,14 +1156,14 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 			}
 			localSubIter++;
 		}
-		
+
 		std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
 		while(monitorIter != _pubMonitors.end()) {
 			(*monitorIter)->removed(remotePubIter->second);
 			(*monitorIter)->changed(remotePubIter->second);
 			monitorIter++;
 		}
-		
+
 		remotePubIter++;
 	}
 
@@ -1374,7 +1374,7 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 		(*monitorIter)->changed(pubStub);
 		monitorIter++;
 	}
-	
+
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
 		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
@@ -1405,7 +1405,7 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 		(*monitorIter)->changed(pubStub);
 		monitorIter++;
 	}
-	
+
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
 		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
@@ -1544,27 +1544,27 @@ char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
 char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl* subStub) {
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
-	
+
 	char* channelName;
 	buffer = readString(buffer, channelName, available - (buffer - start));
 	subStub->setChannelName(channelName);
-	
+
 	char* uuid;
 	buffer = readString(buffer, uuid, available - (buffer - start));
 	subStub->setUUID(uuid);
-	
+
 	uint16_t type;
 	buffer = readUInt16(buffer, type);
 	subStub->implType = type;
-	
+
 	uint16_t multicast;
 	buffer = readUInt16(buffer, multicast);
 	subStub->setMulticast(multicast==1 ? true : false);
-	
+
 	char* ip;
 	buffer = readString(buffer, ip, available - (buffer - start));
 	subStub->setIP(ip);
-	
+
 	uint16_t port;
 	buffer = readUInt16(buffer, port);
 	subStub->setPort(port);

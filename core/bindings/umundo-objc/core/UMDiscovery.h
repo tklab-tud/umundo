@@ -38,8 +38,10 @@ NSObject {
 }
 
 - (id) init;
-- (void)add:(UMNode*)node;
-- (void)remove:(UMNode*)node;
+- (void)add:
+(UMNode*)node;
+- (void)remove:
+(UMNode*)node;
 
 @end
 

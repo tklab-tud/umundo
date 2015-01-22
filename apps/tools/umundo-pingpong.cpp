@@ -41,14 +41,14 @@ void printUsageAndExit() {
 	printf("\t-d <domain>        : join domain\n");
 	printf("\n");
 	printf("Example\n");
-	
+
 	printf("\tumundo-bridge -d local\n");
 	exit(1);
 }
 
 int main(int argc, char** argv) {
 	printf("umundo-pingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	int option;
 	while ((option = getopt(argc, argv, "d:")) != -1) {
 		switch(option) {
@@ -60,11 +60,11 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-	
+
 	TestReceiver* testRecv = new TestReceiver();
 	Publisher pubFoo("pingpong");
 	Subscriber subFoo("pingpong", testRecv);
-	
+
 	MDNSDiscoveryOptions mdnsOpts;
 	if (domain)
 		mdnsOpts.setDomain(domain);

@@ -46,11 +46,11 @@ public:
 		setPubPort(pubPort);
 		options["node.allowLocal"] = toStr(false);
 	}
-	
+
 	NodeOptions() {
 		options["node.allowLocal"] = toStr(false);
 	}
-	
+
 	NodeOptions(const std::string& address) : EndPointOptions(address) {
 		setPubPort(strTo<uint16_t>(options["endpoint.port"]) + 1);
 		options["node.allowLocal"] = toStr(false);
@@ -59,11 +59,11 @@ public:
 	std::string getType() {
 		return "NodeConfig";
 	}
-	
+
 	void setPubPort(uint16_t pubPort) {
 		options["node.port.pub"] = toStr(pubPort);
 	}
-		
+
 	void allowLocalConnections(bool allow) {
 		options["node.allowLocal"] = toStr(allow);
 	}
@@ -106,11 +106,11 @@ public:
 			return _pubs[uuid];
 		return nullPub;
 	}
-	
+
 	virtual void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
 		_pubMonitors.push_back(monitor);
 	}
-	
+
 	virtual void clearPublisherMonitors() {
 		_pubMonitors.clear();
 	}
@@ -161,11 +161,11 @@ public:
 	void addPublisherMonitor(ResultSet<PublisherStub>* monitor) {
 		_impl->addPublisherMonitor(monitor);
 	}
-	
+
 	void clearPublisherMonitors() {
 		_impl->clearPublisherMonitors();
 	}
-	
+
 	/** @name Publish / Subscriber Maintenance */
 	//@{
 

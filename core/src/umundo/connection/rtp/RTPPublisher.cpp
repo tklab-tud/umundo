@@ -31,25 +31,25 @@
 
 //used for sequence number manipulation (umundo-bridge etc.)
 namespace libre {
-	//taken from libre src/rtp/rtp.c ****** MUST BE UPDATED WHEN LIBRE ITSELF IS UPDATED (libre version used: 0.4.7) ******
-	/** Defines an RTP Socket */
-	struct rtp_sock {
-		/** Encode data */
-		struct {
-			uint16_t seq;   /**< Sequence number       */
-			uint32_t ssrc;  /**< Synchronizing source  */
-		} enc;
-		int proto;              /**< Transport Protocol    */
-		void *sock_rtp;         /**< RTP Socket            */
-		void *sock_rtcp;        /**< RTCP Socket           */
-		struct sa local;        /**< Local RTP Address     */
-		struct sa rtcp_peer;    /**< RTCP address of Peer  */
-		rtp_recv_h *recvh;      /**< RTP Receive handler   */
-		rtcp_recv_h *rtcph;     /**< RTCP Receive handler  */
-		void *arg;              /**< Handler argument      */
-		struct rtcp_sess *rtcp; /**< RTCP Session          */
-		bool rtcp_mux;          /**< RTP/RTCP multiplexing */
-	};
+//taken from libre src/rtp/rtp.c ****** MUST BE UPDATED WHEN LIBRE ITSELF IS UPDATED (libre version used: 0.4.7) ******
+/** Defines an RTP Socket */
+struct rtp_sock {
+	/** Encode data */
+	struct {
+		uint16_t seq;   /**< Sequence number       */
+		uint32_t ssrc;  /**< Synchronizing source  */
+	} enc;
+	int proto;              /**< Transport Protocol    */
+	void *sock_rtp;         /**< RTP Socket            */
+	void *sock_rtcp;        /**< RTCP Socket           */
+	struct sa local;        /**< Local RTP Address     */
+	struct sa rtcp_peer;    /**< RTCP address of Peer  */
+	rtp_recv_h *recvh;      /**< RTP Receive handler   */
+	rtcp_recv_h *rtcph;     /**< RTCP Receive handler  */
+	void *arg;              /**< Handler argument      */
+	struct rtcp_sess *rtcp; /**< RTCP Session          */
+	bool rtcp_mux;          /**< RTP/RTCP multiplexing */
+};
 }
 
 namespace umundo {
@@ -171,13 +171,13 @@ void RTPPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 	_subs[sub.getUUID()] = sub;
 	_domainSubs.insert(std::make_pair(sub.getUUID(), std::make_pair(node, sub)));
-	
+
 	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {
 		// only perform greeting for first occurence of subscriber
 		Publisher pub(StaticPtrCast<PublisherImpl>(shared_from_this()));
 		_greeter->welcome(pub, sub);
 	}
-	
+
 	UMUNDO_SIGNAL(_pubLock);
 }
 
@@ -218,7 +218,7 @@ void RTPPublisher::removed(const SubscriberStub& sub, const NodeStub& node) {
 		}
 		_subs.erase(sub.getUUID());
 	}
-	
+
 	_domainSubs.erase(subIter.first);
 	UMUNDO_SIGNAL(_pubLock);
 }

@@ -50,7 +50,7 @@ public:
 	virtual void setUUID(const std::string& uuid)  {
 		_uuid = uuid;
 	}
-	
+
 	virtual bool isMulticast() const                 {
 		return _multicast;
 	}
@@ -74,7 +74,7 @@ public:
 	    ZEROMQ = 0x0001,
 	    RTP    = 0x0002
 	};
-	
+
 	virtual ~SubscriberStub() {}
 	SubscriberStub() : _impl() { }
 	SubscriberStub(SharedPtr<SubscriberStubImpl> const impl) : EndPoint(impl), _impl(impl) { }

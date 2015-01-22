@@ -64,7 +64,7 @@ public:
 	    ZEROMQ = 0x0001,
 	    RTP    = 0x0002
 	};
-	
+
 	PublisherStub() : _impl() { }
 	PublisherStub(SharedPtr<PublisherStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
 	PublisherStub(const PublisherStub& other) : EndPoint(other._impl), _impl(other._impl) { }

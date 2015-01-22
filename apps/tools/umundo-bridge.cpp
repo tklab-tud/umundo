@@ -59,7 +59,7 @@ typedef int socklen_t;
 #endif
 
 #ifndef SOCKET
-	#define SOCKET int
+#define SOCKET int
 #endif
 
 //clientHello/serverHello timeout
@@ -149,7 +149,7 @@ public:
 class GlobalGreeter : public Greeter {
 private:
 	boost::shared_ptr<ProtocolHandler> _handler;
-	
+
 public:
 	GlobalGreeter(boost::shared_ptr<ProtocolHandler>);
 	void welcome(Publisher&, const SubscriberStub&);
@@ -163,53 +163,55 @@ private:
 	std::map<std::string, std::string> _data;
 	typedef std::pair<const char*, size_t> MessageBuffer;
 	template<typename T>
-	struct identity { typedef T type; };		//dummy used by proxy template
-	
+	struct identity {
+		typedef T type;
+	};		//dummy used by proxy template
+
 	void advanceBuffer(MessageBuffer& buffer, size_t length) {
 		if(buffer.second < length)
 			throw BridgeMessageException("Message data truncated");
 		buffer.first+=length;
 		buffer.second-=length;
 	}
-	
+
 	//proxy template to specialized template versions
 	template<typename T>
 	const T readFromBuffer(MessageBuffer& buffer) {
 		return readFromBuffer(buffer, identity<T>());
 	}
-	
+
 	template<typename T>
 	const T readFromBuffer(MessageBuffer& buffer, identity<T> dummy) {
 		const char* value=buffer.first;
 		advanceBuffer(buffer, sizeof(T));
 		return *(const T*)value;						//warning: no implicit endianes conversions done for this (unknown) types
 	}
-	
+
 	const uint16_t readFromBuffer(MessageBuffer& buffer, identity<uint16_t> dummy) {
 		const char* value=buffer.first;
 		advanceBuffer(buffer, sizeof(uint16_t));
 		return ntohs(*(const uint16_t*)value);			//uint16_t network byte order (bigEndian) to host byte order conversion
 	}
-	
+
 	const uint32_t readFromBuffer(MessageBuffer& buffer, identity<uint32_t> dummy) {
 		const char* value=buffer.first;
 		advanceBuffer(buffer, sizeof(uint32_t));
 		return ntohl(*(const uint32_t*)value);			//uint32_t network byte order (bigEndian) to host byte order conversion
 	}
-	
+
 	const std::string readFromBuffer(MessageBuffer& buffer, size_t length) {
 		const char* value=buffer.first;
 		advanceBuffer(buffer, length);
 		return std::string(value, length);
 	}
-	
+
 	std::string& lengthEncoding(std::string& buffer, std::string value) {
 		uint32_t length=htonl(value.length());
 		buffer+=std::string((char*)&length, sizeof(uint32_t));
 		buffer+=value;
 		return buffer;
 	}
-	
+
 	bool isSane(const std::string& key, bool throwException=true) const {
 		if(key.length()==0) {
 			if(throwException)
@@ -223,17 +225,17 @@ private:
 public:
 	//construct empty message
 	BridgeMessage() : _protocolVersion(1) { }
-	
+
 	//unserialize message
 	BridgeMessage(const char* msg, size_t msgsize) {
 		MessageBuffer buffer(msg, msgsize);
 		uint16_t version = readFromBuffer<uint16_t>(buffer);
 		switch(version) {
-			case 1:
-				_protocolVersion=version;
-				break;
-			default:
-				throw BridgeMessageException("Unknown protocol version ("+toStr(version)+")");
+		case 1:
+			_protocolVersion=version;
+			break;
+		default:
+			throw BridgeMessageException("Unknown protocol version ("+toStr(version)+")");
 		}
 		do {
 			uint32_t keySize = readFromBuffer<uint32_t>(buffer);
@@ -247,10 +249,10 @@ public:
 		if(buffer.second>0)
 			throw BridgeMessageException("Unexpected message padding found ("+toStr(buffer.second)+" bytes)");
 	}
-	
+
 	//STL containers will copy themselves
 	BridgeMessage(const BridgeMessage& other) : _protocolVersion(other._protocolVersion), _data(other._data) { }
-	
+
 	//serialize message
 	std::string toString() {
 		uint16_t version = htons(_protocolVersion);
@@ -264,37 +266,37 @@ public:
 		lengthEncoding(output, "");
 		return output;
 	}
-	
+
 	operator std::string() {
 		return toString();
 	}
-	
+
 	template<typename T>
 	void set(const std::string& key, const T& value) {
 		isSane(key);		//throws exception on empty key
 		_data[key]=toStr(value);
 	}
-	
+
 	const std::map<std::string, std::string>& get() const {
 		return _data;
 	}
-	
+
 	std::string get(const std::string& key) {
 		isSane(key);		//throws exception on empty key
 		return _data[key];
 	}
-	
+
 	template<typename T>
 	T get(const std::string& key) {
 		return strTo<T>(get(key));
 	}
-	
+
 	bool isset(const std::string& key) const {
 		isSane(key);		//throws exception on empty key
 		return _data.find(key) != _data.end();
 	}
-	
-	
+
+
 };
 
 class MessageQueue {
@@ -302,26 +304,26 @@ private:
 	std::queue<boost::shared_ptr<BridgeMessage> > _queue;
 	RMutex _mutex;
 	Monitor _cond;
-	
+
 	MessageQueue() { }
-	
+
 	MessageQueue(MessageQueue& other) : _queue(other._queue), _mutex(other._mutex), _cond(other._cond) { }
-	
+
 	void write(boost::shared_ptr<BridgeMessage> msg) {
 		RScopeLock lock(_mutex);
 		_queue.push(msg);
 		_cond.broadcast();
 	}
-	
+
 	void write(BridgeMessage& msg) {
 		boost::shared_ptr<BridgeMessage> newMsg=boost::shared_ptr<BridgeMessage>(new BridgeMessage(msg));
 		write(newMsg);
 	}
-	
+
 	boost::shared_ptr<BridgeMessage> read() {
 		return read(0);
 	}
-	
+
 	boost::shared_ptr<BridgeMessage> read(uint32_t timeout_ms) {
 		RScopeLock lock(_mutex);
 		if(_queue.empty())
@@ -332,12 +334,12 @@ private:
 		_queue.pop();
 		return msg;
 	}
-	
+
 	bool empty(void) {
 		RScopeLock lock(_mutex);
 		return _queue.empty();
 	}
-	
+
 	friend class TCPListener;
 	friend class UDPListener;
 	friend class ProtocolHandler;
@@ -348,20 +350,20 @@ private:
 	SOCKET _socket;
 	MessageQueue& _queue;
 	bool _terminated;
-	
+
 	TCPListener(SOCKET socket, MessageQueue& queue) : _socket(socket), _queue(queue), _terminated(false) {
 		start();
 	}
-	
+
 	~TCPListener() {
 		terminate();
 	}
-	
+
 	void terminate() {
 		_terminated=true;
 		join();
 	}
-	
+
 	void run() {
 		try {
 			char* buffer;
@@ -369,11 +371,11 @@ private:
 			while(!_terminated) {
 				//use select() to timeout every second without data (and then check if _terminated == true)
 				struct timeval time;
-				#ifdef WIN32
-					FD_SET receive;
-				#else
-					fd_set receive;
-				#endif
+#ifdef WIN32
+				FD_SET receive;
+#else
+				fd_set receive;
+#endif
 				FD_ZERO(&receive);
 				FD_SET(_socket, &receive);
 				time.tv_sec=1;
@@ -394,8 +396,7 @@ private:
 					if(recvAll(_socket, buffer, packetSize, 0)<=0) {
 						free(buffer);
 						throw SocketException("recv() of packet on tcp socket failed");
-					}
-					else {
+					} else {
 						boost::shared_ptr<BridgeMessage> msg;
 						try {
 							msg=boost::shared_ptr<BridgeMessage>(new BridgeMessage(buffer, packetSize));
@@ -424,7 +425,7 @@ private:
 		terminationMessage.set("_source", "TCPListener");
 		_queue.write(terminationMessage);
 	}
-	
+
 	int recvAll(SOCKET socket, char* buffer, size_t length, int flags) {
 		int retval;
 		size_t originalLength=length;
@@ -437,7 +438,7 @@ private:
 		} while(length>0);
 		return originalLength;
 	}
-	
+
 	friend class ProtocolHandler;
 };
 
@@ -446,31 +447,31 @@ private:
 	SOCKET _socket;
 	MessageQueue& _queue;
 	bool _terminated;
-	
+
 	UDPListener(SOCKET socket, MessageQueue& queue) : _socket(socket), _queue(queue), _terminated(false) {
 		start();
 	}
-	
+
 	~UDPListener() {
 		terminate();
 	}
-	
+
 	void terminate() {
 		_terminated=true;
 		join();
 	}
-	
+
 	void run() {
 		char buffer[65536]="";
 		try {
 			while(!_terminated) {
 				//use select() to timeout every second without data (and then check if _terminated == true)
 				struct timeval time;
-				#ifdef WIN32
-					FD_SET receive;
-				#else
-					fd_set receive;
-				#endif
+#ifdef WIN32
+				FD_SET receive;
+#else
+				fd_set receive;
+#endif
 				FD_ZERO(&receive);
 				FD_SET(_socket, &receive);
 				time.tv_sec=1;
@@ -504,7 +505,7 @@ private:
 		terminationMessage.set("_source", "UDPListener");
 		_queue.write(terminationMessage);
 	}
-	
+
 	friend class ProtocolHandler;
 };
 
@@ -539,25 +540,25 @@ public:
 		if(_handleRTP)
 			_udpListener=new UDPListener(_udpSocket, _queue);
 	}
-	
+
 	~ProtocolHandler() {
 		shutdown();
 		if(verbose)
 			std::cout << "ProtocolHandler successfully destructed..." << std::endl;
 	}
-	
+
 	void terminate() {
 		if(verbose)
 			std::cout << "ProtocolHandler.terminate() called..." << std::endl;
 		shutdown();
 	}
-	
+
 	void setNode(boost::shared_ptr<Node> innerNode) {
 		if(_innerNode)
 			throw std::runtime_error("You are not allowed to call setNode() twice!");
 		_innerNode = innerNode;
 	}
-	
+
 	// *** sender methods ***
 	void send_pubAdded(std::string channelName, bool isRTP) {
 		if(!_innerNode)		//only allow when we know our umundo node
@@ -574,7 +575,7 @@ public:
 			_seenPubs[isRTP][channelName]++;
 		}
 	}
-	
+
 	void send_pubRemoved(std::string channelName, bool isRTP) {
 		if(!_innerNode)					//only allow when we know our umundo node
 			return;
@@ -596,7 +597,7 @@ public:
 			}
 		}
 	}
-	
+
 	void send_subAdded(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
 		if(!_innerNode)		//only allow when we know our umundo node
 			return;
@@ -613,7 +614,7 @@ public:
 		}
 		sendMessage(msg, TCP);
 	}
-	
+
 	void send_subRemoved(std::string channelName, bool isRTP, bool isMulticast, std::string ip, uint16_t port) {
 		if(!_innerNode)		//only allow when we know our umundo node
 			return;
@@ -630,7 +631,7 @@ public:
 		}
 		sendMessage(msg, TCP);
 	}
-	
+
 	void send_data(std::string channelName, bool isRTP, Message* umundoMessage) {
 		if(!_innerNode)		//only allow when we know our umundo node
 			return;
@@ -663,7 +664,7 @@ public:
 		msg.set("metadataCount", metadataCount);
 		sendMessage(msg, isRTP ? UDP : TCP);
 	}
-	
+
 	// *** mainloop: read messages from the queue and process them (internal messages here, external messages in own private method) ***
 	void mainloop() {
 		if(!_innerNode)		//only allow when we know our umundo node
@@ -698,7 +699,7 @@ public:
 			}
 			if(!msg)
 				continue;
-			
+
 			//process internal messages
 			if(msg->get("type")=="internal") {
 				if(msg->get("cause")=="termination")
@@ -707,11 +708,10 @@ public:
 					if(verbose)
 						std::cout << "INFO: received internal ping message using " << msg->get("_source") << "..." << std::endl;
 					continue;
-				}
-				else
+				} else
 					std::cout << "WARNING: got internal message with unknown cause '" << msg->get("cause") << "' and source '" << msg->get("_source") << "', ignoring it..." << std::endl;
 			}
-			
+
 			//process external messages
 			if(processMessage(msg)) {
 				std::cout << "WARNING: unknown message type '" << msg->get("type") << "', protocol mismatch? --> closing connection..." << std::endl;
@@ -729,7 +729,7 @@ private:
 		RScopeLock lock(_shutdownMutex);		//process only when no shutdown in progress
 		if(_shutdownDone)
 			return false;
-		
+
 		if(msg->get("type")=="pubAdded") {
 			RScopeLock lock(_knownPubsMutex);
 			Publisher* ownPub;
@@ -759,7 +759,7 @@ private:
 					std::cout << "Created new 'silent' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << ownPub->getUUID() << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 			}
 			_innerNode->addPublisher(*ownPub);
-		
+
 		} else if(msg->get("type")=="pubRemoved") {
 			RScopeLock lock(_knownPubsMutex);
 			if(_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second.size()) {
@@ -787,13 +787,13 @@ private:
 						std::cout << "Removed 'normal' LOCAL " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " publisher " << localUUID << " for REMOTE publisher on channel '" << msg->get("channelName") << "'" << std::endl;
 				}
 			}
-		
+
 		} else if(msg->get("type")=="subAdded") {
 			Subscriber* sub;
 			{
 				RScopeLock lock(_knownSubsMutex);
 				if(_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first==NULL) {		//first subscriber --> register actual receiver to receive the data
-					
+
 					RTPSubscriberConfig subConfig;
 					if(msg->get<bool>("isMulticast")) {
 						subConfig.setMulticastIP(msg->get("ip"));
@@ -815,12 +815,12 @@ private:
 			_innerNode->addSubscriber(*sub);
 			if(verbose)
 				std::cout << "Created new LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << sub->getUUID() << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
-		
+
 		} else if(msg->get("type")=="subRemoved") {
 			std::string localUUID=unsubscribe(msg->get("channelName"), msg->get<bool>("isRTP"));
 			if(verbose && localUUID.length())
 				std::cout << "Removed LOCAL " << (msg->get<bool>("isMulticast") ? "multicast" : "unicast") << " " << (msg->get<bool>("isRTP") ? "RTP" : "ZMQ") << " subscriber " << localUUID << " for REMOTE subscriber on channel '" << msg->get("channelName") << "'" << std::endl;
-		
+
 		} else if(msg->get("type")=="data") {
 			Message* umundoMessage = new Message(msg->get("data").c_str(), msg->get("data").length());
 			uint32_t metadataCount = msg->get<uint32_t>("metadataCount");
@@ -832,13 +832,12 @@ private:
 					_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first->send(umundoMessage);
 			}
 			delete(umundoMessage);
-		
-		}
-		else
+
+		} else
 			return true;
 		return false;
 	}
-	
+
 	std::string unsubscribe(std::string channelName, bool isRTP) {
 		RScopeLock lock(_knownSubsMutex);
 		std::string localUUID;
@@ -865,23 +864,23 @@ private:
 		}
 		return localUUID;
 	}
-	
+
 	void shutdown() {
 		RScopeLock lock(_shutdownMutex);
 		if(_shutdownDone)
 			return;
 		_shutdownDone=true;
-		
+
 		if(verbose)
 			std::cout << "Shutting down ProtocolHandler..." << std::endl;
-		
+
 		//wakeup mainloop (it will detect _shutdownDone == true and terminate)
 		BridgeMessage msg;
 		msg.set("type", "internal");
 		msg.set("_source", "ProtocolHandler");
 		msg.set("cause", "termination");
 		_queue.write(msg);
-		
+
 		if(_innerNode) {
 			//remove all publishers
 			{
@@ -909,11 +908,11 @@ private:
 						}
 						pubIter++;
 					}
-				isRTP=!isRTP;
+					isRTP=!isRTP;
 				} while(!isRTP);
 				_knownPubs.clear();
 			}
-			
+
 			//remove all subscribers
 			{
 				RScopeLock lock(_knownSubsMutex);
@@ -931,8 +930,8 @@ private:
 				} while(!isRTP);
 			}
 		}
-		
-		//lock "sockets" to prevent sendMessage() calls while closing the sockets 
+
+		//lock "sockets" to prevent sendMessage() calls while closing the sockets
 		{
 			RScopeLock lock(_socketMutex);
 			//terminate all socket listeners
@@ -942,20 +941,20 @@ private:
 				_udpListener->terminate();
 				delete _udpListener;
 			}
-			
+
 			//close all sockets
-			#ifdef WIN32
-				closesocket(_tcpSocket);
-				closesocket(_udpSocket);
-				WSACleanup();
-			#else
-				close(_tcpSocket);
-				close(_udpSocket);
-			#endif
+#ifdef WIN32
+			closesocket(_tcpSocket);
+			closesocket(_udpSocket);
+			WSACleanup();
+#else
+			close(_tcpSocket);
+			close(_udpSocket);
+#endif
 		}
 		_innerNode.reset();
 	}
-	
+
 	void sendMessage(BridgeMessage& msg, dummy channel) {
 		RScopeLock lock(_socketMutex);
 		if(_shutdownDone)		//only send messages when active
@@ -967,8 +966,7 @@ private:
 			uint32_t messageSize=htonl(message.length());
 			packet = std::string((char*)&messageSize, sizeof(uint32_t));
 			packet+=message;
-		}
-		else
+		} else
 			packet=msg.toString();
 		if(send(channel==TCP ? _tcpSocket : _udpSocket, packet.c_str(), packet.length(), 0)!=packet.length())
 			throw SocketException(std::string("Could not send data on ")+(channel==TCP ? "tcp" : "udp")+" socket");
@@ -1006,7 +1004,7 @@ private:
 
 public:
 	PubMonitor(boost::shared_ptr<ProtocolHandler> handler) : _handler(handler) { }
-	
+
 	void added(PublisherStub pubStub) {
 		if(verbose)
 			std::cout << "Got new LOCAL " << (pubStub.isRTP() ? "RTP" : "ZMQ") << " publisher: " << pubStub << std::endl;
@@ -1014,7 +1012,7 @@ public:
 			std::cout << "--> sending PUB_ADDED for channel '" << pubStub.getChannelName() << "' through bridge..." << std::endl;
 		_handler->send_pubAdded(pubStub.getChannelName(), pubStub.isRTP());
 	}
-	
+
 	void removed(PublisherStub pubStub) {
 		if(verbose)
 			std::cout << "Got removal of LOCAL " << (pubStub.isRTP() ? "RTP" : "ZMQ") << " publisher: " << pubStub << std::endl;
@@ -1022,7 +1020,7 @@ public:
 			std::cout << "--> sending PUB_REMOVED for channel '" << pubStub.getChannelName() << "' through bridge..." << std::endl;
 		_handler->send_pubRemoved(pubStub.getChannelName(), pubStub.isRTP());
 	}
-	
+
 	void changed(PublisherStub pubStub) {
 		//do nothing here
 	}
@@ -1041,13 +1039,13 @@ private:
 public:
 	Connector(uint16_t listenPort) : _listening(true), _connectIP(""), _connectPort(0), _handoffDone(false) {
 		initNetwork();
-		
+
 		struct sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 		addr.sin_port = htons(listenPort);
-		
+
 		//see http://www.microhowto.info/howto/listen_on_a_tcp_port_with_connections_in_the_time_wait_state.html#idp25744
 		int reuseaddr = 1;
 		if(setsockopt(_tcpSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&reuseaddr, sizeof(reuseaddr))==-1)
@@ -1059,29 +1057,29 @@ public:
 		if(listen(_tcpSocket, 1)==-1)
 			throw SocketException("Could not listen on tcp socket");
 	}
-	
+
 	Connector(std::string connectIP, uint16_t connectPort) : _listening(false), _connectIP(connectIP), _connectPort(connectPort) {
 		initNetwork();
 	}
-	
+
 	~Connector() {
 		if(!_handoffDone) {			//dont close our sockets if handoff to ProtocolHandler is already done
-			#ifdef WIN32
-				closesocket(_tcpSocket);
-				closesocket(_udpSocket);
-				WSACleanup();
-			#else
-				close(_tcpSocket);
-				close(_udpSocket);
-			#endif
+#ifdef WIN32
+			closesocket(_tcpSocket);
+			closesocket(_udpSocket);
+			WSACleanup();
+#else
+			close(_tcpSocket);
+			close(_udpSocket);
+#endif
 		}
 	}
-	
+
 	boost::shared_ptr<ProtocolHandler> waitForConnection() {
 		bool handleRTP=true;
 		struct sockaddr_in remoteAddress;
 		socklen_t remoteAddressLength=sizeof(remoteAddress);
-		
+
 		if(_listening) {
 			SOCKET newSocket;
 			while(true) {
@@ -1093,23 +1091,23 @@ public:
 				}
 				break;
 			}
-			#ifdef WIN32
-				closesocket(_tcpSocket);
-			#else
-				close(_tcpSocket);
-			#endif
+#ifdef WIN32
+			closesocket(_tcpSocket);
+#else
+			close(_tcpSocket);
+#endif
 			_tcpSocket = newSocket;
-			
+
 			if(verbose)
 				std::cout << "Accepted connection from " << ipToStr(remoteAddress.sin_addr.s_addr) << ":" << ntohs(remoteAddress.sin_port) << " on tcp socket, sending serverHello message..." << std::endl;
-			
+
 			//wait TIMEOUT seconds for clientHello on TCP channel
 			if(waitForString("clientHello", TCP, TIMEOUT, NULL, 0))
 				throw BridgeMessageException("Error while receiving initial 'clientHello' on tcp socket");
 			//send serverHello on tcp channel
 			if(send(_tcpSocket, "serverHello", 11, 0)!=11)
 				throw SocketException("Could not send data on tcp socket");
-			
+
 			//wait TIMEOUT seconds for clientHello on UDP channel
 			remoteAddressLength=sizeof(remoteAddress);
 			if(waitForString("clientHello", UDP, TIMEOUT, (struct sockaddr*)&remoteAddress, &remoteAddressLength)) {
@@ -1143,17 +1141,17 @@ public:
 			if(connect(_udpSocket, res->ai_addr, res->ai_addrlen)==-1)		//use only the first returned address
 				throw SocketException("Could not connect udp socket");
 			freeaddrinfo(res);
-			
+
 			//send "clientHello" on both channels
 			if(send(_tcpSocket, "clientHello", 11, 0)!=11)
 				throw SocketException("Could not send data on tcp socket");
 			if(send(_udpSocket, "clientHello", 11, 0)!=11)
 				handleRTP=false;
-			
+
 			//wait TIMEOUT seconds for resulting serverHello on TCP channel
 			if(waitForString("serverHello", TCP, TIMEOUT, NULL, 0))
 				throw BridgeMessageException("Error while receiving initial 'serverHello' on tcp socket");
-			
+
 			//wait TIMEOUT seconds for resulting serverHello on UDP channel
 			if(handleRTP) {
 				remoteAddressLength=sizeof(remoteAddress);
@@ -1164,14 +1162,14 @@ public:
 					handleRTP=false;
 				}
 			}
-			
+
 			if(!handleRTP)
 				std::cout << "WARNING: udp connection not functional --> only forwarding non-rtp pubs/subs..." << std::endl;
 		}
-		
+
 		if(verbose)
-				std::cout << "Connection successfully established, now handing off to ProtocolHandler..." << std::endl;
-		
+			std::cout << "Connection successfully established, now handing off to ProtocolHandler..." << std::endl;
+
 		_handoffDone=true;
 		return boost::shared_ptr<ProtocolHandler>(new ProtocolHandler(_tcpSocket, _udpSocket, handleRTP));
 	}
@@ -1182,19 +1180,19 @@ private:
 		int retval;
 		SOCKET socket;
 		struct timeval time;
-		#ifdef WIN32
-			FD_SET receive;
-		#else
-			fd_set receive;
-		#endif
+#ifdef WIN32
+		FD_SET receive;
+#else
+		fd_set receive;
+#endif
 		FD_ZERO(&receive);
-		
+
 		if(type==TCP)
 			socket=_tcpSocket;
 		else
 			socket=_udpSocket;
 		FD_SET(socket, &receive);
-		
+
 		time.tv_sec=timeout_s;
 		time.tv_usec=0;
 		retval=select(socket+1, &receive, NULL, NULL, &time);
@@ -1217,7 +1215,7 @@ private:
 		}
 		return true;		//timeout
 	}
-	
+
 	bool recvAll(SOCKET socket, char* buffer, size_t length, int flags, struct sockaddr* srcAddr, socklen_t* addrlen) {
 		int retval;
 		do {
@@ -1229,13 +1227,13 @@ private:
 		} while(length>0);
 		return false;
 	}
-	
+
 	inline void initNetwork() {
 		//initialize networking
-		#ifdef WIN32
-			WSADATA wsaData;
-			WSAStartup(MAKEWORD(2, 2), &wsaData);
-		#endif
+#ifdef WIN32
+		WSADATA wsaData;
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 		_tcpSocket = socket(PF_INET, SOCK_STREAM, 0);
 		_udpSocket = socket(PF_INET, SOCK_DGRAM, 0);
 	}
@@ -1253,10 +1251,10 @@ void test_BridgeMessage() {
 	msg.set("double", -42.42);							//and this is a floating point number
 	msg.set("true", true);								//this is a boolean (true)
 	msg.set("false", false);							//this is a boolean (false)
-	
+
 	std::string serialized=msg.toString();								//serialize message
 	BridgeMessage newMsg(serialized.c_str(), serialized.length());		//now deserialize our message again
-	
+
 	assert(newMsg.get("xyz") == "halloWelt");
 	assert(newMsg.get<uint32_t>("abcd") == 8);
 	assert(newMsg.get<uint32_t>("zweiundvierzig") == 42);
@@ -1282,49 +1280,48 @@ int main(int argc, char** argv) {
 	uint16_t remotePort = 0;
 	Connector* connector;
 	boost::shared_ptr<ProtocolHandler> handler;
-	
+
 	printf("umundo-bridge version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	while((option = getopt(argc, argv, "tvd:l:c:")) != -1) {
 		switch(option) {
-			case 'd':
-				domain = optarg;
-				break;
-			case 'v':
-				verbose = true;
-				break;
-			case 'l':
-				listen = strTo<uint16_t>(optarg);
-				if(listen == 0)
-					printUsageAndExit();
-				break;
-			case 'c': {
-				EndPoint endPoint(std::string("tcp://")+std::string(optarg));
-				if(!endPoint)
-					printUsageAndExit();
-				remoteIP = endPoint.getIP();
-				remotePort = endPoint.getPort();
-				break;
-			}
-			case 't':
-				test_All();
-				return 0;
-			default:
+		case 'd':
+			domain = optarg;
+			break;
+		case 'v':
+			verbose = true;
+			break;
+		case 'l':
+			listen = strTo<uint16_t>(optarg);
+			if(listen == 0)
 				printUsageAndExit();
-				break;
+			break;
+		case 'c': {
+			EndPoint endPoint(std::string("tcp://")+std::string(optarg));
+			if(!endPoint)
+				printUsageAndExit();
+			remoteIP = endPoint.getIP();
+			remotePort = endPoint.getPort();
+			break;
+		}
+		case 't':
+			test_All();
+			return 0;
+		default:
+			printUsageAndExit();
+			break;
 		}
 	}
 	if(optind < argc || (listen == 0 && remotePort == 0))
 		printUsageAndExit();
-	
+
 	//construct discovery (must be done here, because destruction of the discovery object provokes a bug in the mdns library
 	//which prevents subsequent constructions of new discovery objects)
 	MDNSDiscoveryOptions mdnsOpts;
 	if(domain)
 		mdnsOpts.setDomain(domain);
 	Discovery disc(Discovery::MDNS, &mdnsOpts);
-	
-	while(true)
-	{
+
+	while(true) {
 		try {
 			if(listen) {
 				if(verbose)
@@ -1337,23 +1334,23 @@ int main(int argc, char** argv) {
 			}
 			handler=connector->waitForConnection();
 			delete connector;
-			
+
 			//construct inner node
 			boost::shared_ptr<Node> innerNode = boost::shared_ptr<Node>(new Node());
-			
+
 			//construct monitor and associate it to our node
 			PubMonitor* innerMonitor = new PubMonitor(handler);
 			innerNode->addPublisherMonitor(innerMonitor);
-			
+
 			//add inner node to protocol handler
 			handler->setNode(innerNode);
-			
+
 			//add inner node to discovery
 			disc.add(*innerNode);
-			
+
 			//start bridge mainloop
 			handler->mainloop();
-			
+
 			//remove PubMonitor before we leave this scope and destruct our Node and handler
 			innerNode->clearPublisherMonitors();
 			delete innerMonitor;

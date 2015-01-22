@@ -26,7 +26,7 @@ public:
 	void welcome(Publisher& pub, const SubscriberStub& subStub) {
 		std::cout << "Got new LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << std::endl;
 	}
-	
+
 	void farewell(Publisher& pub, const SubscriberStub& subStub) {
 		std::cout << "Removed LOCAL " << (subStub.isMulticast() ? "multicast" : "unicast") << " " << (subStub.isRTP() ? "RTP" : "ZMQ") << " subscriber: " << subStub << std::endl;
 	}
@@ -34,15 +34,15 @@ public:
 
 int main(int argc, char** argv) {
 	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
-	
+
 	RTPPublisherConfig pubConfig(166, 0);		//PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
 	Publisher pubFoo(Publisher::RTP, "pingpong", new GlobalGreeter(), &pubConfig);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);
-	
+
 	uint16_t num=0;
 	char buf[2]="A";
 	while(1) {

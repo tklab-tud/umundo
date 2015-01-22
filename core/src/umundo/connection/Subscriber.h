@@ -169,7 +169,7 @@ public:
 	void setReceiver(Receiver* receiver) {
 		_impl->setReceiver(receiver);
 	}
-	
+
 	Receiver* getReceiver() {
 		return _impl->getReceiver();
 	}

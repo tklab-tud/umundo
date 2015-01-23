@@ -1,6 +1,6 @@
-# // automatically load the native library
-# see http://tlrobinson.net/blog/2009/03/embedding-and-loading-a-jni-library-from-a-jar/
-# see http://www.mkyong.com/java/how-to-detect-os-in-java-systemgetpropertyosname/
+// automatically load the native library
+// see http://tlrobinson.net/blog/2009/03/embedding-and-loading-a-jni-library-from-a-jar/
+// see http://www.mkyong.com/java/how-to-detect-os-in-java-systemgetpropertyosname/
 
 %pragma(java) jniclassimports=%{
 import java.net.URL;

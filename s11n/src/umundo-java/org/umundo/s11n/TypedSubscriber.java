@@ -144,7 +144,7 @@ public class TypedSubscriber extends Subscriber {
 	}
 
 	public TypedSubscriber(String channel, ITypedReceiver receiver, boolean autoRegisterTypes) {
-		super(channel);
+		super(channel, null);
 		decoratedReceiver = new DeserializingReceiverDecorator(receiver);
 		setReceiver(decoratedReceiver);
 		this.autoRegisterTypes = autoRegisterTypes;

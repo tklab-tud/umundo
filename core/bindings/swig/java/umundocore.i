@@ -91,7 +91,7 @@ using namespace umundo;
 //***************
 // Always copy messages into the JVM
 
-# messages are destroyed upon return, always pass copies to Java
+// messages are destroyed upon return, always pass copies to Java
 %typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
 
 
@@ -229,7 +229,8 @@ import java.util.HashMap;
   private Receiver _receiver;
 
   public Subscriber(String channelName, Receiver receiver) {
-    this(umundoNativeJavaJNI.new_Subscriber__SWIG_2(channelName), true);
+    this(umundoNativeJavaJNI.new_Subscriber__SWIG_0(), true);
+		setChannelName(channelName);
     setReceiver(receiver);
   }
 

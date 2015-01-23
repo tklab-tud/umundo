@@ -1,4 +1,4 @@
-# see http://www.swig.org/Doc2.0/Perl5.html#Perl5_nn8 for problems when loading
+// see http://www.swig.org/Doc2.0/Perl5.html#Perl5_nn8 for problems when loading
 
 #ifdef HOST_64BIT
 #	ifdef DEBUG

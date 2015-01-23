@@ -67,8 +67,8 @@ using namespace umundo;
 //***************
 // Always copy messages into the VM
 
-# messages are destroyed upon return, always pass copies to CSharp
-# %typemap(csdirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
+// messages are destroyed upon return, always pass copies to CSharp
+// %typemap(csdirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
 
 
 //******************************

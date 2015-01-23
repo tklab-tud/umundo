@@ -102,10 +102,10 @@ int main(int argc, char** argv) {
 	if (file.length() == 0)
 		printUsageAndExit();
 
-	MDNSDiscoveryOptions mdnsOpts;
+	DiscoveryConfigMDNS mdnsOpts;
 	if (domain.length() > 0)
 		mdnsOpts.setDomain(domain);
-	Discovery disc(Discovery::MDNS, &mdnsOpts);
+	Discovery disc(&mdnsOpts);
 
 	Node node;
 	disc.add(node);

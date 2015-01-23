@@ -96,7 +96,7 @@ bool testGeneralStuff() {
 
 		Publisher pub1("channel1");
 		Publisher pub2("channel2");
-		Subscriber sub1("channel1");
+		Subscriber sub1("channel1", NULL);
 		Node* node2 = new Node();
 
 		assert(node2->getUUID().length() == 36);

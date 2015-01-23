@@ -63,7 +63,6 @@ protected:
 
 private:
 
-	SharedPtr<umundo::SubscriberConfig> _config;
 	friend class Factory;
 };
 

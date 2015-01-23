@@ -199,7 +199,7 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 	RScopeLock lock(_mutex);
 
 	if (remoteAd->ipv4.size() == 0) {
-		UM_LOG_WARN("MDNS reported new node without ipv4 address -> ignoring until we found one");
+		UM_LOG_INFO("MDNS reported new node without ipv4 address -> ignoring until we found one");
 		return;
 	}
 

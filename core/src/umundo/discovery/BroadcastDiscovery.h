@@ -5,6 +5,17 @@
 #include "umundo/thread/Thread.h"
 #include "umundo/discovery/Discovery.h"
 
+#if (defined (__UNIX__) || defined (__APPLE__))
+#include <netinet/in.h>
+#include <netdb.h>
+#endif
+
+#if (defined (_WIN32))
+#include <winsock2.h>
+//#include <ws2tcpip.h>            //  getnameinfo ()
+//#include <iphlpapi.h>            //  GetAdaptersAddresses ()
+//#include <sys/types.h>
+#endif
 
 namespace umundo {
 
@@ -80,6 +91,23 @@ public:
 protected:
 	BroadcastDiscovery();
 	static SharedPtr<BroadcastDiscovery> _instance;  ///< The singleton instance.
+
+private:
+#if 0
+	void static setupUDPSocket();
+
+#if !defined (_WIN32)
+#define SOCKET         int
+#define closesocket    close
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#endif
+
+	static SOCKET udpSocket;
+	static sockaddr_in bCastAddress;
+	static char hostName[NI_MAXHOST];
+	static RMutex globalMutex;
+#endif
 
 	friend class Factory;
 };

@@ -70,38 +70,38 @@ public:
 bool testDiscoveryObject() {
 	// see https://developer.apple.com/library/mac/qa/qa1312/_index.html
 	std::list<Discovery> discoveries;
-	std::list<std::pair<std::string, MDNSDiscoveryOptions::Protocol> > services;
-	services.push_back(std::make_pair("afpovertcp", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("nfs", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("webdav", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("ftp", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("ssh", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("eppc", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("http", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("telnet", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("printer", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("ipp", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("pdl-datastream", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("riousbprint", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("daap", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("dpap", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("ichat", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("airport", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("xserveraid", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("distcc", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("apple-sasl", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("workstation", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("servermgr", MDNSDiscoveryOptions::TCP));
-	services.push_back(std::make_pair("raop", MDNSDiscoveryOptions::TCP));
+	std::list<std::pair<std::string, DiscoveryConfigMDNS::Protocol> > services;
+	services.push_back(std::make_pair("afpovertcp", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("nfs", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("webdav", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("ftp", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("ssh", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("eppc", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("http", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("telnet", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("printer", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("ipp", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("pdl-datastream", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("riousbprint", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("daap", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("dpap", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("ichat", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("airport", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("xserveraid", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("distcc", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("apple-sasl", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("workstation", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("servermgr", DiscoveryConfigMDNS::TCP));
+	services.push_back(std::make_pair("raop", DiscoveryConfigMDNS::TCP));
 
 
-	for (std::list<std::pair<std::string, MDNSDiscoveryOptions::Protocol> >::iterator svcIter = services.begin();
+	for (std::list<std::pair<std::string, DiscoveryConfigMDNS::Protocol> >::iterator svcIter = services.begin();
 	        svcIter != services.end();
 	        svcIter++) {
-		MDNSDiscoveryOptions mdnsConfig;
+		DiscoveryConfigMDNS mdnsConfig;
 		mdnsConfig.setServiceType(svcIter->first);
 		mdnsConfig.setProtocol(svcIter->second);
-		Discovery mdnsDisc(Discovery::MDNS, &mdnsConfig);
+		Discovery mdnsDisc(&mdnsConfig);
 
 		DiscoveryObjectResultSet rs(svcIter->first);
 
@@ -182,9 +182,9 @@ bool testMulticastDNSDiscovery() {
 
 bool testEndpointDiscovery() {
 
-	MDNSDiscoveryOptions mdnsOuterOpts;
+	DiscoveryConfigMDNS mdnsOuterOpts;
 	mdnsOuterOpts.setDomain("foo.local.");
-	Discovery discOuter(Discovery::MDNS, &mdnsOuterOpts);
+	Discovery discOuter(&mdnsOuterOpts);
 
 	EndPoint ep1("tcp://127.0.0.1:400");
 	discOuter.advertise(ep1);
@@ -313,9 +313,9 @@ bool testPubSubConnections() {
 		node1.addPublisher(pub);
 
 		for (int j = 0; j < 2; j++) {
-			Subscriber sub1("foo", NULL, NULL);
-			Subscriber sub2("foo", NULL, NULL);
-			Subscriber sub3("foo", NULL, NULL);
+			Subscriber sub1("foo", NULL);
+			Subscriber sub2("foo", NULL);
+			Subscriber sub3("foo", NULL);
 
 			int subs = 0;
 			(void)subs;
@@ -367,17 +367,24 @@ bool testPubSubConnections() {
 	return true;
 }
 
+bool testBroadCast() {
+	Discovery disc(Discovery::BROADCAST);
+	return true;
+}
 
 int main(int argc, char** argv, char** envp) {
 	setenv("UMUNDO_LOGLEVEL", "4", 1);
+	if (!testBroadCast())
+		return EXIT_FAILURE;
+
 //	if (!testMulticastDNSDiscovery())
 //		return EXIT_FAILURE;
 //	if (!testEndpointDiscovery())
 //		return EXIT_FAILURE;
 //	if (!testDiscoveryObject())
 //		return EXIT_FAILURE;
-	if (!testNodeDiscovery())
-		return EXIT_FAILURE;
+//	if (!testNodeDiscovery())
+//		return EXIT_FAILURE;
 //	if (!testPubSubConnections())
 //		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

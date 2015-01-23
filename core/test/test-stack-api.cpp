@@ -10,7 +10,7 @@ bool testStackInstantiation() {
 	Node node1;
 	Node node2;
 	Publisher pub("foo");
-	Subscriber sub("foo");
+	Subscriber sub("foo", NULL);
 	node1.addPublisher(pub);
 	node2.addSubscriber(sub);
 	Thread::sleepMs(100);

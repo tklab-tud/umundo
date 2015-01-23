@@ -290,15 +290,17 @@ int main(int argc, char** argv) {
 		Publisher pub;
 		switch (type) {
 		case PUB_RTP: {
-			RTPPublisherConfig config = RTPPublisherConfig(166, 0);
-			pub = Publisher(Publisher::RTP, "throughput.rtp", &config);
-			pub.setGreeter(&tpGreeter);
+			PublisherConfigRTP config("throughput.rtp");
+			config.setTimestampIncrement(166);
+			config.setGreeter(&tpGreeter);
+			pub = Publisher(&config);
 			break;
 		}
 		case PUB_MCAST: {
-			RTPPublisherConfig config = RTPPublisherConfig(166, 0);
-			pub = Publisher(Publisher::RTP, "throughput.mcast", &config);
-			pub.setGreeter(&tpGreeter);
+			PublisherConfigMCast config("throughput.mcast");
+			config.setTimestampIncrement(166);
+			config.setGreeter(&tpGreeter);
+			pub = Publisher(&config);
 			break;
 		}
 		case PUB_TCP: {
@@ -469,14 +471,14 @@ int main(int argc, char** argv) {
 
 		Subscriber tcpSub("throughput.tcp", &tpRcvr);
 
-		RTPSubscriberConfig mcastConfig;
+		SubscriberConfigMCast mcastConfig("throughput.mcast", &tpRcvr);
 		mcastConfig.setMulticastIP("224.1.2.3");
 		mcastConfig.setMulticastPortbase(42042);
-		Subscriber mcastSub(Subscriber::RTP, "throughput.mcast", &tpRcvr, &mcastConfig);
+		Subscriber mcastSub(&mcastConfig);
 
-		RTPSubscriberConfig rtpConfig;
+		SubscriberConfigRTP rtpConfig("throughput.rtp", &tpRcvr);
 		rtpConfig.setPortbase(40042);
-		Subscriber rtpSub(Subscriber::RTP, "throughput.rtp", &tpRcvr, &rtpConfig);
+		Subscriber rtpSub(&rtpConfig);
 
 		node.addSubscriber(tcpSub);
 		node.addSubscriber(mcastSub);

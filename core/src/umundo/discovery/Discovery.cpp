@@ -26,44 +26,56 @@
 
 namespace umundo {
 
-Discovery::Discovery(DiscoveryType type, Options* config) {
-	switch (type) {
-	case MDNS:
-		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
-		break;
-	case BROADCAST:
-		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
-		break;
-	default:
-		break;
-	}
-	if (_impl)
-		_impl->init(config);
-}
-
 Discovery::Discovery(DiscoveryType type, const std::string domain) {
+	DiscoveryConfig* config;
 	switch (type) {
 	case MDNS: {
-		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
-		MDNSDiscoveryOptions* config = new MDNSDiscoveryOptions();
-		config->setDomain(domain);
-		_impl->init(config);
+		config = new DiscoveryConfigMDNS();
 		break;
 	}
 	case BROADCAST: {
-		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
-		BroadcastDiscoveryOptions* config = new BroadcastDiscoveryOptions();
-		config->setDomain(domain);
-		_impl->init(config);
+		config = new DiscoveryConfigBCast();
 		break;
 	}
 	default:
+		config = NULL;
 		break;
+	}
+
+	if (config != NULL) {
+		if (domain.length() > 0) {
+			config->setDomain(domain);
+		} else {
+			config->setDomain("local.");
+		}
+		
+		init(config);
+		delete config;
 	}
 
 }
 
+Discovery::Discovery(DiscoveryConfig* config) {
+	init(config);
+}
+
 Discovery::~Discovery() {
+}
+
+void Discovery::init(DiscoveryConfig* config) {
+	switch (config->_type) {
+		case MDNS:
+			_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
+			break;
+		case BROADCAST:
+			_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
+			break;
+		default:
+			break;
+	}
+	if (_impl)
+		_impl->init(config);
+
 }
 
 

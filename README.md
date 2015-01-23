@@ -144,6 +144,9 @@ various stages of maturity:
 		</ul>
 	</dd>
 
+	<dt><b>Why does uMundo not use nested classes to improve its class structure?</b></dt>
+	<dd>Nested classes are not expressible in every language binding (e.g. python) via swig.</dd>
+
 	<dt><b>How do I use the language bindings?</b></dt>
 	<dd>All language bindings constitute of two components: 
 		<ul>
@@ -178,7 +181,7 @@ if (System.Environment.Is64BitProcess) {
 		method manually or use the <tt>using</tt> statement.
 	</dd>
 
-	<dt><b>When using umundo from the installers on linux <tt>libpcre.so.3</tt> was not found, what gives?</b></dt>
+	<dt><b>When using uMundo from the installers on linux <tt>libpcre.so.3</tt> was not found, what gives?</b></dt>
 	<dd>Some distributions, such as Fedora or Gentoo will not create <tt>libpcre.so.3</tt> but only <tt>libpcre.so.1.2.0</tt>.
 		Just symlink the actual library to libpcre.so.3 and rerun <tt>ldconfig</tt>.</dd>
 		

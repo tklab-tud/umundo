@@ -106,8 +106,9 @@ int main(int argc, char** argv) {
 
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
 
-	RTPPublisherConfig pubConfig(1);
-	Publisher pubFoo(Publisher::RTP, "kinect-pubsub", &pubConfig);
+	PublisherConfigRTP pubConfig("kinect-pubsub");
+	pubConfig.setTimestampIncrement(1);
+	Publisher pubFoo(&pubConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

@@ -14,10 +14,12 @@ bool testInstantiation() {
 	disc.add(node1);
 	disc.add(node2);
 
-	RTPPublisherConfig pubConfig(8000, 166, 0);		//PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
-	Publisher rtpPub(Publisher::RTP, "foo", &pubConfig);
-	RTPSubscriberConfig subConfig;
-	Subscriber rtpSub(Subscriber::RTP, "foo", &subConfig);
+	PublisherConfigRTP pubConfig("foo");
+	pubConfig.setTimestampIncrement(166);
+	Publisher rtpPub(&pubConfig);
+	
+	SubscriberConfigRTP subConfig("foo", NULL);
+	Subscriber rtpSub(&subConfig);
 
 	node1.addSubscriber(rtpSub);
 	node2.addPublisher(rtpPub);

@@ -29,7 +29,8 @@ namespace umundo {
 class NodeImpl;
 class NodeQuery;
 class Node;
-
+class DiscoveryConfig;
+	
 /**
  * Discovery implementor basis class (bridge pattern).
  * \see Discovery
@@ -77,8 +78,9 @@ public:
 	 * This will call the Factory to instantiate a new concrete implementor from its registered prototype.
 	 *
 	 */
-	Discovery(DiscoveryType, Options* = NULL); ///< Get the discovery subsystem with given type
-	Discovery(DiscoveryType, const std::string domain); ///< Convenience constructor to pass a domain
+	Discovery(DiscoveryConfig* = NULL); ///< Get the discovery subsystem with given type
+	Discovery(DiscoveryType type, const std::string domain = ""); ///< Convenience constructor to pass a domain
+
 	Discovery(SharedPtr<DiscoveryImpl> const impl) : _impl(impl) { }
 	Discovery(const Discovery& other) : _impl(other._impl) { }
 	virtual ~Discovery();
@@ -147,50 +149,68 @@ public:
 	//@}
 
 protected:
+	void init(DiscoveryConfig* config);
 	SharedPtr<DiscoveryImpl> _impl; ///< The concrete implementor instance.
 };
 
+class UMUNDO_API DiscoveryConfig : public Options {
+public:
+	void setDomain(const std::string& domain) {
+		options["mdns.domain"] = domain;
+		options["bcast.domain"] = domain;
+	}
 
-class UMUNDO_API MDNSDiscoveryOptions : public Options {
+protected:
+	DiscoveryConfig() {}
+	Discovery::DiscoveryType _type;
+	friend class Discovery;
+};
+	
+	
+class UMUNDO_API DiscoveryConfigMDNS : public DiscoveryConfig {
 public:
 	enum Protocol {
 		TCP, UDP
 	};
 
-	MDNSDiscoveryOptions() {
+	DiscoveryConfigMDNS() : DiscoveryConfig() {
+		_type = Discovery::MDNS;
 		options["mdns.domain"] = "local.";
 		options["mdns.protocol"] = "tcp";
 		options["mdns.serviceType"] = "umundo";
 	}
-
-	std::string getType() {
-		return "mdns";
-	}
-
-	void setDomain(const std::string& domain) {
-		options["mdns.domain"] = domain;
-	}
-
+	
 	void setProtocol(Protocol protocol) {
 		switch (protocol) {
-		case UDP:
-			options["mdns.protocol"] = "udp";
-			break;
-		case TCP:
-			options["mdns.protocol"] = "tcp";
-			break;
-
-		default:
-			break;
+			case UDP:
+				options["mdns.protocol"] = "udp";
+				break;
+			case TCP:
+				options["mdns.protocol"] = "tcp";
+				break;
+			default:
+				break;
 		}
 	}
-
+	
 	void setServiceType(const std::string& serviceType) {
 		options["mdns.serviceType"] = serviceType;
 	}
 
+protected:
+	friend class Discovery;
 };
 
+class UMUNDO_API DiscoveryConfigBCast : public DiscoveryConfig {
+public:
+	DiscoveryConfigBCast() : DiscoveryConfig() {
+		_type = Discovery::BROADCAST;
+	}
+	
+protected:
+	friend class Discovery;
+};
+	
 }
 
 #endif /* end of include guard: DISCOVERY_H_PWR3M1QA */

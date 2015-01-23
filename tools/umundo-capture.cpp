@@ -126,7 +126,8 @@ int main(int argc, char** argv) {
 	Discovery disc(Discovery::MDNS, domain);
 
 	Node node;
-	Subscriber sub(channel);
+	LoggingReceiver logRecv;
+	Subscriber sub(channel, &logRecv);
 
 	disc.add(node);
 
@@ -136,7 +137,6 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	sub.setReceiver(new LoggingReceiver());
 	node.addSubscriber(sub);
 
 	startedAt = Thread::getTimeStampMs();

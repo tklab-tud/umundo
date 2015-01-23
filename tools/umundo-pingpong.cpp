@@ -65,10 +65,10 @@ int main(int argc, char** argv) {
 	Publisher pubFoo("pingpong");
 	Subscriber subFoo("pingpong", testRecv);
 
-	MDNSDiscoveryOptions mdnsOpts;
+	DiscoveryConfigMDNS mdnsOpts;
 	if (domain)
 		mdnsOpts.setDomain(domain);
-	Discovery disc(Discovery::MDNS, &mdnsOpts);
+	Discovery disc(&mdnsOpts);
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);

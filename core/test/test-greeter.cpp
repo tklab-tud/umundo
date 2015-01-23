@@ -20,13 +20,16 @@ bool testGreeter() {
 	Node node1;
 	Node node2;
 
-	Publisher pub1("foobar", new TestGreeter());
+	TestGreeter greeter;
+	Publisher pub1("foobar");
+	pub1.setGreeter(&greeter);
+	
 	node1.addPublisher(pub1);
 
 	node1.added(node2);
 	node2.added(node1);
 
-	Subscriber sub1("f");
+	Subscriber sub1("f", NULL);
 	node2.addSubscriber(sub1);
 
 	pub1.waitForSubscribers(1);

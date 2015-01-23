@@ -18,7 +18,6 @@
 # BUILD_UMUNDO_S11N:BOOL               Build the C++ serialization layer
 # BUILD_UMUNDO_RPC:BOOL                Build the C++ remote procedure call layer
 # BUILD_UMUNDO_UTIL:BOOL               Build the C++ utility library
-# BUILD_UMUNDO_APPS:BOOL               Build some example applications
 # BUILD_UMUNDO_TOOLS:BOOL              Build the command-line tools
 # BUILD_WITH_CPP11:BOOL                Enable C++11
 # DIST_PREPARE:BOOL                    Prepare a distribution, everything ends up in SRC/package/PLATFORM
@@ -155,11 +154,9 @@ else()
 	OPTION(BUILD_UMUNDO_UTIL "Build umundo utilities" ON)
 endif()
 if (CMAKE_CROSSCOMPILING)
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
-	OPTION(BUILD_UMUNDO_TOOLS "Build sample applications" OFF)
+	OPTION(BUILD_UMUNDO_TOOLS "Build tools" OFF)
 else()
-	OPTION(BUILD_UMUNDO_APPS "Build sample applications" OFF)
-	OPTION(BUILD_UMUNDO_TOOLS "Build sample applications" ON)
+	OPTION(BUILD_UMUNDO_TOOLS "Build tools" ON)
 endif()
 
 if (WIN32 OR CMAKE_CROSSCOMPILING)
@@ -823,12 +820,8 @@ if (BUILD_UMUNDO_UTIL)
 	GET_DIRECTORY_PROPERTY(UTIL_INCLUDES DIRECTORY util INCLUDE_DIRECTORIES)
 	include_directories(${UTIL_INCLUDES})
 endif()
-if (BUILD_UMUNDO_APPS)
-	add_subdirectory(apps/fileserver)
-	add_subdirectory(apps/tracking/opencv)
-endif()
 if (BUILD_UMUNDO_TOOLS)
-	add_subdirectory(apps/tools)
+	add_subdirectory(tools)
 endif()
 
 if (NOT CMAKE_CROSSCOMPILING)
@@ -1041,7 +1034,6 @@ message(STATUS "  Building umundo.s11n ........... : ${BUILD_UMUNDO_S11N}")
 message(STATUS "  Building umundo.rpc ............ : ${BUILD_UMUNDO_RPC}")
 message(STATUS "  Building umundo.util ........... : ${BUILD_UMUNDO_UTIL}")
 message(STATUS "  Building umundo tests .......... : ${BUILD_TESTS}")
-message(STATUS "  Building umundo applications ... : ${BUILD_UMUNDO_APPS}")
 message(STATUS "  Building umundo tools .......... : ${BUILD_UMUNDO_TOOLS}")
 message(STATUS "  Available language bindings .... : ${AVAILABLE_LANGUAGE_BINDINGS}")
 if (BUILD_SHARED_LIBS AND BUILD_BINDINGS)

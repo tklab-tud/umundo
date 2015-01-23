@@ -36,44 +36,17 @@ PublisherImpl::~PublisherImpl() {
 }
 
 Publisher::Publisher(const std::string& channelName) {
-	PublisherConfig config;
-	init(ZEROMQ, channelName, NULL, &config);
-}
-
-Publisher::Publisher(const std::string& channelName, Greeter* greeter) {
-	PublisherConfig config;
-	init(ZEROMQ, channelName, greeter, &config);
-}
-
-Publisher::Publisher(const std::string& channelName, PublisherConfig *config) {
-	init(ZEROMQ, channelName, NULL, config);
-}
-
-Publisher::Publisher(const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
-	init(ZEROMQ, channelName, greeter, config);
-}
-
-Publisher::Publisher(PublisherType type, const std::string& channelName) {
-	PublisherConfig config;
-	init(type, channelName, NULL, &config);
-}
-
-Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter* greeter) {
-	PublisherConfig config;
-	init(type, channelName, greeter, &config);
-}
-
-Publisher::Publisher(PublisherType type, const std::string& channelName, PublisherConfig *config) {
-	init(type, channelName, NULL, config);
-}
-
-Publisher::Publisher(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
-	init(type, channelName, greeter, config);
+	PublisherConfigTCP config(channelName);
+	init(&config);
 }
 
 
-void Publisher::init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig *config) {
-	switch (type) {
+Publisher::Publisher(PublisherConfig* config) {
+	init(config);
+}
+
+void Publisher::init(PublisherConfig* config) {
+switch (config->_type) {
 	case ZEROMQ:
 		_impl = StaticPtrCast<PublisherImpl>(Factory::create("pub.zmq"));
 		_impl->implType = ZEROMQ;
@@ -89,11 +62,15 @@ void Publisher::init(PublisherType type, const std::string& channelName, Greeter
 
 	EndPoint::_impl = _impl;
 	PublisherStub::_impl = _impl;
-	_impl->setChannelName(channelName);
-	config->channelName = channelName;
-	if (greeter != NULL)
-		_impl->setGreeter(greeter);
 
+	{ // cast and look for greeter
+		PublisherConfigTCP* tcpConfig = (PublisherConfigTCP*)config;
+		if (tcpConfig->_greeter != NULL) {
+			_impl->setGreeter(tcpConfig->_greeter);
+		}
+	}
+	
+	_impl->setChannelName(config->_channelName);
 	_impl->init(config);
 }
 

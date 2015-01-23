@@ -736,10 +736,12 @@ private:
 			if (_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first publisher --> register actual greeter to track subscriptions
 				if (msg->get<bool>("isRTP")) {
 					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
-					RTPPublisherConfig pubConfig(1, 96);
-					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
+					PublisherConfigRTP pubConfig(msg->get("channelName"));
+					pubConfig.setPayloadType(96);
+					pubConfig.setTimestampIncrement(1);
+					ownPub = new Publisher(&pubConfig);
 				} else {
-					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
+					ownPub = new Publisher(msg->get("channelName"));
 				}
 				GlobalGreeter* ownGreeter = new GlobalGreeter(shared_from_this());
 				ownPub->setGreeter(ownGreeter);
@@ -749,10 +751,12 @@ private:
 			} else {
 				if (msg->get<bool>("isRTP")) {
 					//dummy values (timestamp increment 1, payload type dynamic [RFC3551]), will be overwritten when actual data is being sent
-					RTPPublisherConfig pubConfig(1, 96);
-					ownPub = new Publisher(Publisher::RTP, msg->get("channelName"), &pubConfig);
+					PublisherConfigRTP pubConfig(msg->get("channelName"));
+					pubConfig.setPayloadType(96);
+					pubConfig.setTimestampIncrement(1);
+					ownPub = new Publisher(&pubConfig);
 				} else {
-					ownPub = new Publisher(Publisher::ZEROMQ, msg->get("channelName"));
+					ownPub = new Publisher(msg->get("channelName"));
 				}
 				_knownPubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[ownPub->getUUID()] = ownPub;
 				if (verbose)
@@ -792,8 +796,33 @@ private:
 			Subscriber* sub;
 			{
 				RScopeLock lock(_knownSubsMutex);
+				SubscriberConfigRTP* subConfig;
+				GlobalReceiver* receiver = NULL;
+				
 				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first subscriber --> register actual receiver to receive the data
+					receiver = new GlobalReceiver(msg->get("channelName"), msg->get<bool>("isRTP"), shared_from_this());
+				}
 
+				// prepare subscriber configuration
+				if (msg->get<bool>("isMulticast")) {
+					subConfig = new SubscriberConfigMCast(msg->get("channelName"), receiver);
+					subConfig->setMulticastIP(msg->get("ip"));
+					subConfig->setMulticastPortbase(msg->get<uint16_t>("port"));
+				} else {
+					subConfig = new SubscriberConfigRTP(msg->get("channelName"), receiver);
+				}
+
+				sub = new Subscriber(subConfig);
+				delete subConfig;
+				
+				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {
+					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first = sub;
+				} else {
+					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[sub->getUUID()] = sub;
+				}
+
+#if 0
+				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first subscriber --> register actual receiver to receive the data
 					RTPSubscriberConfig subConfig;
 					if (msg->get<bool>("isMulticast")) {
 						subConfig.setMulticastIP(msg->get("ip"));
@@ -811,6 +840,7 @@ private:
 					sub = new Subscriber(msg->get<bool>("isRTP") ? Subscriber::RTP : Subscriber::ZEROMQ, msg->get("channelName"), NULL, &subConfig);
 					_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].second[sub->getUUID()] = sub;
 				}
+#endif
 			}
 			_innerNode->addSubscriber(*sub);
 			if (verbose)
@@ -1316,10 +1346,10 @@ int main(int argc, char** argv) {
 
 	//construct discovery (must be done here, because destruction of the discovery object provokes a bug in the mdns library
 	//which prevents subsequent constructions of new discovery objects)
-	MDNSDiscoveryOptions mdnsOpts;
+	DiscoveryConfigMDNS mdnsOpts;
 	if (domain)
 		mdnsOpts.setDomain(domain);
-	Discovery disc(Discovery::MDNS, &mdnsOpts);
+	Discovery disc(&mdnsOpts);
 
 	while(true) {
 		try {

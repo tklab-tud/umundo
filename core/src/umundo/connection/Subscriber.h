@@ -36,6 +36,7 @@ class NodeStub;
 class Message;
 class Publisher;
 class PublisherStub;
+class SubscriberConfig;
 
 /**
  * Interface for client classes to get byte-arrays from subscribers.
@@ -47,41 +48,7 @@ public:
 	friend class Subscriber;
 };
 
-class UMUNDO_API SubscriberConfig : public Options {
-public:
-	std::string getType() {
-		return "SubscriberConfig";
-	}
-	std::string channelName;
-	std::string uuid;
-};
-
-class UMUNDO_API RTPSubscriberConfig : public SubscriberConfig {
-public:
-	std::string getType() {
-		return "RTPSubscriberConfig";
-	}
-
-	RTPSubscriberConfig(uint16_t port=0) {
-		if(port)
-			setPortbase(port);
-	}
-
-	void setPortbase(uint16_t port) {
-		options["sub.rtp.portbase"] = toStr(port);
-	}
-
-	void setMulticastIP(std::string ip) {
-		options["sub.rtp.multicast"] = ip;
-	}
-
-	void setMulticastPortbase(uint16_t port) {
-		if(!options.count("sub.rtp.multicast"))
-			this->setMulticastIP("239.8.4.8");		//default multicast address for umundo rtp
-		this->setPortbase(port);
-	}
-};
-
+	
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
@@ -133,15 +100,10 @@ protected:
 class UMUNDO_API Subscriber : public SubscriberStub {
 public:
 	Subscriber() : _impl() {}
-	explicit Subscriber(const SubscriberStub& stub) : _impl(StaticPtrCast<SubscriberImpl>(stub.getImpl())) {}
-	Subscriber(const std::string& channelName);
 	Subscriber(const std::string& channelName, Receiver* receiver);
-	Subscriber(const std::string& channelName, SubscriberConfig* config);
-	Subscriber(const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
-	Subscriber(SubscriberType type, const std::string& channelName);
-	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver);
-	Subscriber(SubscriberType type, const std::string& channelName, SubscriberConfig* config);
-	Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
+	Subscriber(SubscriberConfig* config);
+
+	explicit Subscriber(const SubscriberStub& stub) : _impl(StaticPtrCast<SubscriberImpl>(stub.getImpl())) {}
 	Subscriber(SharedPtr<SubscriberImpl> const impl) : SubscriberStub(impl), _impl(impl) { }
 	Subscriber(const Subscriber& other) : SubscriberStub(other._impl), _impl(other._impl) { }
 	virtual ~Subscriber();
@@ -218,10 +180,63 @@ public:
 
 protected:
 
-	void init(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config);
+	void init(SubscriberConfig* config);
 
 	SharedPtr<SubscriberImpl> _impl;
 	friend class Node;
+};
+
+	
+class UMUNDO_API SubscriberConfig : public Options {
+protected:
+	SubscriberConfig(const std::string& channel, Receiver* receiver) : _channelName(channel), _receiver(receiver) {
+		_type = Subscriber::ZEROMQ;
+	}
+
+	std::string _channelName;
+	Receiver* _receiver;
+	SubscriberStub::SubscriberType _type;
+	
+	friend class Subscriber;
+};
+
+
+class UMUNDO_API SubscriberConfigTCP : public SubscriberConfig {
+public:
+	SubscriberConfigTCP(const std::string& channel, Receiver* receiver) : SubscriberConfig(channel, receiver) {
+		_type = Subscriber::ZEROMQ;
+	}
+
+protected:
+	friend class Subscriber;
+};
+
+
+class UMUNDO_API SubscriberConfigRTP : public SubscriberConfigTCP {
+public:
+	SubscriberConfigRTP(const std::string& channel, Receiver* receiver) : SubscriberConfigTCP(channel, receiver) {
+		_type = Subscriber::RTP;
+	}
+	
+	void setPortbase(uint16_t port) {
+		options["sub.rtp.portbase"] = toStr(port);
+	}
+	
+	void setMulticastIP(std::string ip) {
+		options["sub.rtp.multicast"] = ip;
+	}
+
+	void setMulticastPortbase(uint16_t port) {
+		if(options.find("sub.rtp.multicast") == options.end())
+			setMulticastIP("239.8.4.8");		//default multicast address for umundo rtp
+		setPortbase(port);
+	}
+};
+
+
+class UMUNDO_API SubscriberConfigMCast : public SubscriberConfigRTP {
+public:
+	SubscriberConfigMCast(const std::string& channel, Receiver* receiver) : SubscriberConfigRTP(channel, receiver) {}
 };
 
 }

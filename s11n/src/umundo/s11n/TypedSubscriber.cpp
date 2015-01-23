@@ -50,7 +50,7 @@ void TypedSubscriberImpl::receive(Message* msg) {
 	}
 }
 
-TypedSubscriber::TypedSubscriber(const std::string& channelName) : Subscriber(channelName) {
+TypedSubscriber::TypedSubscriber(const std::string& channelName) : Subscriber(channelName, NULL) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();
@@ -61,7 +61,7 @@ TypedSubscriber::TypedSubscriber(const std::string& channelName) : Subscriber(ch
 	assert(_impl != NULL);
 }
 
-TypedSubscriber::TypedSubscriber(const std::string& channelName, TypedReceiver* recv) : Subscriber(channelName) {
+TypedSubscriber::TypedSubscriber(const std::string& channelName, TypedReceiver* recv) : Subscriber(channelName, NULL) {
 	if (_registeredPrototype == NULL) {
 #ifdef S11N_PROTOBUF
 		_registeredPrototype = new PBDeserializer();

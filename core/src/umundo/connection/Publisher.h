@@ -33,6 +33,7 @@ namespace umundo {
 
 class Message;
 class Publisher;
+class PublisherConfig;
 
 /**
  * Wait for new subscribers and welcome them.
@@ -47,43 +48,6 @@ public:
 	virtual void farewell(Publisher&, const SubscriberStub&) = 0;
 };
 
-class UMUNDO_API PublisherConfig : public Options {
-public:
-	virtual std::string getType() {
-		return "PublisherConfig";
-	}
-
-	std::string channelName;
-};
-
-class UMUNDO_API RTPPublisherConfig : public PublisherConfig {
-public:
-	std::string getType() {
-		return "RTPPublisherConfig";
-	}
-
-	RTPPublisherConfig(uint32_t increment, int type=-1, uint16_t port=0) {
-		setTimestampIncrement(increment);
-		if(type>0 && type<128)		//libre limit
-			setPayloadType(type);
-		if(port)
-			setPortbase(port);
-	}
-
-	void setTimestampIncrement(uint32_t increment) {
-		options["pub.rtp.timestampIncrement"] = toStr(increment);
-	}
-
-	void setPortbase(uint16_t port) {
-		options["pub.rtp.portbase"] = toStr(port);
-	}
-
-	void setPayloadType(uint8_t type) {
-		options["pub.rtp.payloadType"] = toStr(type);
-	}
-
-};
-
 /**
  * Publisher implementor basis class (bridge pattern)
  */
@@ -93,6 +57,8 @@ public:
 	virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
+	
+	/** Meta fields to be set on every message published */
 	void putMeta(const std::string& key, const std::string& value) {
 		_mandatoryMeta[key] = value;
 	}
@@ -141,15 +107,11 @@ protected:
  */
 class UMUNDO_API Publisher : public PublisherStub {
 public:
+	
 	Publisher() : _impl() {}
-	Publisher(const std::string& channelName);
-	Publisher(const std::string& channelName, Greeter* greeter);
-	Publisher(const std::string& channelName, PublisherConfig* config);
-	Publisher(const std::string& channelName, Greeter* greeter, PublisherConfig* config);
-	Publisher(PublisherType type, const std::string& channelName);
-	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter);
-	Publisher(PublisherType type, const std::string& channelName, PublisherConfig* config);
-	Publisher(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
+	Publisher(const std::string& channelName); //< Default publisher via TCP
+	Publisher(PublisherConfig* config); //< Pass any subtype of PublisherConfig
+
 	Publisher(const SharedPtr<PublisherImpl> impl) : PublisherStub(impl), _impl(impl) { }
 	Publisher(const Publisher& other) : PublisherStub(other._impl), _impl(other._impl) { }
 	virtual ~Publisher();
@@ -217,12 +179,66 @@ public:
 	}
 
 protected:
-	void init(PublisherType type, const std::string& channelName, Greeter* greeter, PublisherConfig* config);
+	void init(PublisherConfig* config);
 
 	SharedPtr<PublisherImpl> _impl;
 	friend class Node;
 };
 
+	
+class UMUNDO_API PublisherConfig : public Options {
+protected:
+	PublisherConfig(const std::string& channel) : _channelName(channel) {}
+	std::string _channelName;
+	PublisherStub::PublisherType _type;
+	
+	friend class Publisher;
+};
+
+	
+class UMUNDO_API PublisherConfigTCP : public PublisherConfig {
+public:
+	PublisherConfigTCP(const std::string& channel) : PublisherConfig(channel), _greeter(NULL) {
+		_type = Publisher::ZEROMQ;
+	}
+	void setGreeter(Greeter* greeter) {
+		_greeter = greeter;
+	}
+protected:
+	Greeter* _greeter;
+	friend class Publisher;
+};
+
+	
+class UMUNDO_API PublisherConfigRTP : public PublisherConfigTCP {
+public:
+	PublisherConfigRTP(const std::string& channel) : PublisherConfigTCP(channel) {
+		_type = Publisher::RTP;
+	}
+
+	void setTimestampIncrement(uint32_t increment) {
+		options["pub.rtp.timestampIncrement"] = toStr(increment);
+	}
+	
+	void setPortbase(uint16_t port) {
+		options["pub.rtp.portbase"] = toStr(port);
+	}
+	
+	void setPayloadType(uint8_t type) {
+		if(type>0 && type<128) {		//libre limit
+			options["pub.rtp.payloadType"] = toStr(type);
+		} else {
+			UM_LOG_ERR("Publisher::Config::RTP:setPayloadType() error: ignoring invalid payload type");
+		}
+	}
+};
+
+	
+class UMUNDO_API PublisherConfigMCast : public PublisherConfigRTP {
+public:
+	PublisherConfigMCast(const std::string& channel) : PublisherConfigRTP(channel) {}
+};
+	
 }
 
 

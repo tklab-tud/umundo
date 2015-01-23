@@ -82,8 +82,8 @@ public:
 		} else {
 			umundo::Receiver* cRecv = new umundoReceiverWrapper(receiver);
 			std::string channel([name cStringUsingEncoding: NSASCIIStringEncoding]);
-			umundo::RTPSubscriberConfig rtpConf;
-			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(umundo::Subscriber::RTP, channel, cRecv, &rtpConf));
+			umundo::SubscriberConfigRTP rtpConf(channel, cRecv);
+			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(&rtpConf));
 		}
 	}
 	return self;
@@ -101,10 +101,10 @@ public:
 		} else {
 			umundo::Receiver* cRecv = new umundoReceiverWrapper(receiver);
 			std::string channel([name cStringUsingEncoding: NSASCIIStringEncoding]);
-			umundo::RTPSubscriberConfig mcastConf;
+			umundo::SubscriberConfigMCast mcastConf(channel, cRecv);
 			mcastConf.setMulticastIP([ip cStringUsingEncoding: NSASCIIStringEncoding]);
 			mcastConf.setMulticastPortbase(portBase);
-			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(umundo::Subscriber::RTP, channel, cRecv, &mcastConf));
+			_cppSub = SharedPtr<umundo::Subscriber>(new umundo::Subscriber(&mcastConf));
 		}
 	}
 	return self;

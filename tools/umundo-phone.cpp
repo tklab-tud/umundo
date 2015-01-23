@@ -63,12 +63,13 @@ int main(int argc, char** argv) {
 	printf("umundo-phone version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	// data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
-	RTPPublisherConfig pubConfig(FRAMES_PER_BUFFER);
-	Publisher pubFoo(Publisher::RTP, "phone", &pubConfig);
+	PublisherConfigRTP pubConfig("phone");
+	pubConfig.setTimestampIncrement(FRAMES_PER_BUFFER);
+	Publisher pubFoo(&pubConfig);
 
 	TestReceiver testRecv;
-	RTPSubscriberConfig subConfig;
-	Subscriber subFoo(Subscriber::RTP, "phone", &testRecv, &subConfig);
+	SubscriberConfigRTP subConfig("phone", &testRecv);
+	Subscriber subFoo(&subConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

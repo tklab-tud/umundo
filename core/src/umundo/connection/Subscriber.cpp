@@ -33,47 +33,20 @@ SubscriberImpl::~SubscriberImpl() {
 	instances--;
 }
 
-Subscriber::Subscriber(SubscriberType type, const std::string& channelName) {
-	SubscriberConfig config;
-	init(type, channelName, NULL, &config);
-}
-
-Subscriber::Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver) {
-	SubscriberConfig config;
-	init(type, channelName, receiver, &config);
-}
-
-Subscriber::Subscriber(SubscriberType type, const std::string& channelName, SubscriberConfig* config) {
-	init(type, channelName, NULL, config);
-}
-
-Subscriber::Subscriber(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config) {
-	init(type, channelName, receiver, config);
-}
-
-Subscriber::Subscriber(const std::string& channelName) {
-	SubscriberConfig config;
-	init(ZEROMQ, channelName, NULL, &config);
-}
-
 Subscriber::Subscriber(const std::string& channelName, Receiver* receiver) {
-	SubscriberConfig config;
-	init(ZEROMQ, channelName, receiver, &config);
+	SubscriberConfig config(channelName, receiver);
+	init(&config);
 }
 
-Subscriber::Subscriber(const std::string& channelName, SubscriberConfig* config) {
-	init(ZEROMQ, channelName, NULL, config);
-}
-
-Subscriber::Subscriber(const std::string& channelName, Receiver* receiver, SubscriberConfig* config) {
-	init(ZEROMQ, channelName, receiver, config);
+Subscriber::Subscriber(SubscriberConfig* config) {
+	init(config);
 }
 
 Subscriber::~Subscriber() {
 }
 
-void Subscriber::init(SubscriberType type, const std::string& channelName, Receiver* receiver, SubscriberConfig* config) {
-	switch (type) {
+void Subscriber::init(SubscriberConfig* config) {
+	switch (config->_type) {
 	case RTP:
 		_impl = StaticPtrCast<SubscriberImpl>(Factory::create("sub.rtp"));
 		_impl->implType = RTP;
@@ -88,10 +61,9 @@ void Subscriber::init(SubscriberType type, const std::string& channelName, Recei
 
 	EndPoint::_impl = _impl;
 	SubscriberStub::_impl = _impl;
-	_impl->setChannelName(channelName);
+	_impl->setChannelName(config->_channelName);
 	_impl->init(config);
-	if (receiver != NULL)
-		_impl->setReceiver(receiver);
+	_impl->setReceiver(config->_receiver);
 }
 
 

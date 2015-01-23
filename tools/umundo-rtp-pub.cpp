@@ -35,8 +35,10 @@ public:
 int main(int argc, char** argv) {
 	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	RTPPublisherConfig pubConfig(166, 0);		//PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
-	Publisher pubFoo(Publisher::RTP, "pingpong", new GlobalGreeter(), &pubConfig);
+	PublisherConfigRTP pubConfig("pingpong");
+	pubConfig.setTimestampIncrement(166); // PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
+	pubConfig.setGreeter(new GlobalGreeter()); // leaks a greeter instance
+	Publisher pubFoo(&pubConfig);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

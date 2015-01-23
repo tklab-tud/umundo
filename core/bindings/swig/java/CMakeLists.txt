@@ -39,7 +39,7 @@ endforeach()
 set_target_properties(umundoNativeJava PROPERTIES FOLDER "Bindings")
 
 # I am not sure why we need it twice, but we do at least on android
-SWIG_LINK_LIBRARIES(umundoNativeJava umundocore)
-SWIG_LINK_LIBRARIES(umundoNativeJava ${UMUNDOCORE_LIBRARIES})
+SWIG_LINK_LIBRARIES(umundoNativeJava umundocore umundoutil)
+SWIG_LINK_LIBRARIES(umundoNativeJava ${UMUNDOCORE_LIBRARIES} ${UMUNDOUTIL_LIBRARIES})
 
 INSTALL_LIBRARY(TARGETS umundoNativeJava COMPONENT librarySwig DESTINATION share/umundo/bindings/java)

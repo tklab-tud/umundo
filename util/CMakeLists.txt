@@ -11,6 +11,13 @@ list(APPEND UMUNDOUTIL_FILES ${UTIL_FILES})
 # include directories for our header files
 include_directories(src)
 
+###########################################
+# PCRE
+###########################################
+
+include_directories(${PCRE_INCLUDE_DIR})
+LIST(APPEND UMUNDOUTIL_LIBRARIES ${PCRE_LIBRARIES})
+
 #LIST(APPEND UMUNDOUTIL_LIBRARIES umundoutil)
 LIST(SORT UMUNDOUTIL_HEADER_FILES)
 

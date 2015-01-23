@@ -19,7 +19,7 @@
 
 #include "umundo/rpc/Service.h"
 #include "umundo/rpc/ServiceManager.h"
-#include "umundo/rpc/Regex.h"
+#include "umundo/util/Regex.h"
 #include <stdlib.h>
 #include <sstream>
 #include <ctype.h>

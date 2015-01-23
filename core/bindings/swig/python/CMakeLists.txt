@@ -42,7 +42,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 SWIG_LINK_LIBRARIES(umundoNativePython ${PYTHON_LIBRARIES})
-SWIG_LINK_LIBRARIES(umundoNativePython umundocore)
+SWIG_LINK_LIBRARIES(umundoNativePython umundocore umundoutil)
 
 set_target_properties(_umundoNativePython PROPERTIES FOLDER "Bindings")
 

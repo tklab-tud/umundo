@@ -214,6 +214,7 @@ class UMUNDO_API PublisherConfigRTP : public PublisherConfigTCP {
 public:
 	PublisherConfigRTP(const std::string& channel) : PublisherConfigTCP(channel) {
 		_type = Publisher::RTP;
+		setTimestampIncrement(150);
 	}
 
 	void setTimestampIncrement(uint32_t increment) {

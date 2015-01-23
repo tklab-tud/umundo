@@ -18,5 +18,6 @@
 
 #include "umundo/util/crypto/MD5.h"
 #include "umundo/util/Base64.h"
+#include "umundo/util/Regex.h"
 
 #endif /* end of include guard: UTIL_H_MJI32XZG */

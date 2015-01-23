@@ -29,29 +29,23 @@ namespace umundo {
 Discovery::Discovery(DiscoveryType type, const std::string domain) {
 	DiscoveryConfig* config;
 	switch (type) {
-	case MDNS: {
-		config = new DiscoveryConfigMDNS();
-		break;
-	}
 	case BROADCAST: {
 		config = new DiscoveryConfigBCast();
 		break;
 	}
 	default:
-		config = NULL;
+		config = new DiscoveryConfigMDNS();
 		break;
 	}
 
-	if (config != NULL) {
-		if (domain.length() > 0) {
-			config->setDomain(domain);
-		} else {
-			config->setDomain("local.");
-		}
-		
-		init(config);
-		delete config;
+	if (domain.length() > 0) {
+		config->setDomain(domain);
+	} else {
+		config->setDomain("local.");
 	}
+	
+	init(config);
+	delete config;
 
 }
 

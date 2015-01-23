@@ -3,14 +3,6 @@ set(BUILD_UMUNDO_RPC OFF)
 include(UseUMUNDO)
 
 ###########################################
-# PCRE
-###########################################
-
-find_package(PCRE REQUIRED)
-include_directories(${PCRE_INCLUDE_DIR})
-LIST(APPEND UMUNDORPC_LIBRARIES ${PCRE_LIBRARIES})
-
-###########################################
 # Protocol Buffers
 ###########################################
 
@@ -79,7 +71,7 @@ if (PROTOBUF_FOUND AND RPC_PROTOBUF)
 	endif()
 endif()
 
-LIST(APPEND UMUNDORPC_LIBRARIES umundorpc)
+LIST(APPEND UMUNDORPC_LIBRARIES umundorpc umundoutil)
 
 ############################################################
 # setup umundorpc library

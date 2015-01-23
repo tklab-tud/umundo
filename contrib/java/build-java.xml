@@ -12,17 +12,17 @@
 	<echo message="src:  ${build.dir}/protobuf/generated/"/>
 	<echo message="src:  ${build.dir}/core/bindings/swig/java/"/>
 	<echo message="src:  ${src.dir}/s11n/src/umundo-java/"/>
-  <!-- <echo message="src:  ${src.dir}/rpc/src/umundo-java/"/> -->
+  <echo message="src:  ${src.dir}/rpc/src/umundo-java/"/>
 	<echo message="cp:   ${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
 
   <mkdir dir="${build.dir}/core/bindings/swig/java-class/" />
   <mkdir dir="${build.dir}/protobuf/generated/" />
 
 	<javac destdir="${build.dir}/core/bindings/swig/java-class/" debug="true" includeantruntime="false" target="1.5" source="1.5">
-      <!-- <src path="${build.dir}/protobuf/generated/" /> -->
+      <src path="${build.dir}/protobuf/generated/" />
       <src path="${build.dir}/core/bindings/swig/java/" />
       <src path="${src.dir}/s11n/src/umundo-java/" />
-      <!-- <src path="${src.dir}/rpc/src/umundo-java/" /> -->
+      <src path="${src.dir}/rpc/src/umundo-java/" />
       <classpath>
           <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
       </classpath>
@@ -108,12 +108,12 @@
     <fileset dir="${src.dir}/s11n/src/umundo-java/" >
       <include name="**/*.java" />
     </fileset>
-    <!-- <fileset dir="${src.dir}/rpc/src/umundo-java/" >
+    <fileset dir="${src.dir}/rpc/src/umundo-java/" >
       <include name="**/*.java" />
-    </fileset> -->
-    <!-- <fileset dir="${build.dir}/protobuf/generated/" >
+    </fileset>
+    <fileset dir="${build.dir}/protobuf/generated/" >
       <include name="**/*.java" />
-    </fileset> -->
+    </fileset>
 		<!-- The JNI libraries -->
     <fileset dir="${lib.dir}/jni" >
       <include name="**/*" />

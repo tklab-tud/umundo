@@ -34,6 +34,7 @@
 #include "../../../../core/src/umundo/connection/Publisher.h"
 #include "../../../../core/src/umundo/connection/Subscriber.h"
 #include "../../../../core/src/umundo/discovery/Discovery.h"
+#include "../../../../util/src/umundo/util/Regex.h"
 
 #ifdef ANDROID
 // google forgot imaxdiv in the android ndk r7 libc?!
@@ -360,4 +361,5 @@ public HashMap<String, String> getMeta() {
 %include "../../../../core/src/umundo/connection/Subscriber.h"
 %include "../../../../core/src/umundo/connection/Node.h"
 %include "../../../../core/src/umundo/discovery/Discovery.h"
+%include "../../../../util/src/umundo/util/Regex.h"
 

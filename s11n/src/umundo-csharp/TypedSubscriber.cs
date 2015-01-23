@@ -77,7 +77,7 @@ namespace org.umundo.s11n
         }
 
         public TypedSubscriber(String channel, ITypedReceiver receiver)
-            : base(channel)
+            : base(channel, null)
         {
             Receiver = new RawReceiver(receiver);
             setReceiver(Receiver);

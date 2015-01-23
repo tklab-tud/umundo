@@ -210,7 +210,8 @@ using System.Runtime.InteropServices;
   // keep receiver as a reference to prevent premature GC
   private Receiver _receiver;
 
-  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharpPINVOKE.new_Subscriber__SWIG_2(channelName), true) {
+  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharpPINVOKE.new_Subscriber__SWIG_0(), true) {
+    setChannelName(channelName);
     setReceiver(receiver);
   }
   public void setReceiver(Receiver receiver) {
@@ -277,7 +278,7 @@ using System.Runtime.InteropServices;
 
 // byte[] signature for get/setData
 // see http://permalink.gmane.org/gmane.comp.programming.swig/5804
-%typemap(imtype, out="IntPtr") const char *data "byte[]"
+%typemap(imtype, out="System.IntPtr") const char *data "byte[]"
 %typemap(cstype) const char *data "byte[]"
 %typemap(in) const char *data %{ $1 = ($1_ltype)$input; %}
 %typemap(csin) const char *data "$csinput"
@@ -285,7 +286,7 @@ using System.Runtime.InteropServices;
 %typemap(csout) const char *data %{
 	{
     byte[] ret = new byte[this.getSize()]; 
-    IntPtr data = $imcall;
+    System.IntPtr data = $imcall;
     System.Runtime.InteropServices.Marshal.Copy(data, ret, 0, (int)this.getSize());
     return ret; 
   } 

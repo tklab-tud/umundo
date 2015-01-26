@@ -127,7 +127,8 @@ int main(int argc, char** argv) {
 
 	Node node;
 	LoggingReceiver logRecv;
-	Subscriber sub(channel, &logRecv);
+	Subscriber sub(channel);
+	sub.setReceiver(&logRecv);
 
 	disc.add(node);
 

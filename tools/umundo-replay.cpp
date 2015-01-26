@@ -15,7 +15,7 @@
 
 #include "umundo/config.h"
 #include "umundo/core.h"
-#include "umundo/discovery/MDNSDiscovery.h"
+#include "umundo/core/discovery/MDNSDiscovery.h"
 #include <cstdio>
 #include <string.h>
 #include <iostream>

@@ -59,10 +59,11 @@ int main(int argc, char** argv) {
 	printf("umundo-phone-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	TestReceiver testRecv;
-	SubscriberConfigRTP subConfig("multicast-phone-pubsub", &testRecv);
+	SubscriberConfigRTP subConfig("multicast-phone-pubsub");
 	subConfig.setMulticastIP("224.1.2.3");
 	subConfig.setMulticastPortbase(42042);
 	Subscriber subFoo(&subConfig);
+	subFoo.setReceiver(&testRecv);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

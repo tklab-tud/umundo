@@ -33,12 +33,13 @@ int main(int argc, char** argv) {
 	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	TestReceiver testRecv;
-	SubscriberConfigRTP subConfig("pingpong", &testRecv);
+	SubscriberConfigRTP subConfig("pingpong");
 	//subConfig.setPortbase(42042);
 	//subConfig.setMulticastPortbase(42042);
 	//subConfig.setMulticastIP("239.1.2.3");		//not needed (default multicast group: 239.8.4.8
 	Subscriber subFoo(&subConfig);
-
+	subFoo.setReceiver(&testRecv);
+	
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);

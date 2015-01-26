@@ -147,7 +147,8 @@ int main(int argc, char** argv) {
 	initNetwork(5040);
 
 	TestReceiver* testRecv = new TestReceiver();
-	Subscriber subFoo("stream", testRecv);
+	Subscriber subFoo("stream");
+	subFoo.setReceiver(testRecv);
 
 	Discovery disc(Discovery::MDNS);
 	disc.add(node);

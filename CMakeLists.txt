@@ -78,11 +78,15 @@ include("${CMAKE_MODULE_PATH}/FunctionExists.cmake")
 include("${CMAKE_MODULE_PATH}/HeaderExists.cmake")
 
 # CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
+# we resolve it with a 64bit check later
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 endif()
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
+  set(CMAKE_SYSTEM_PROCESSOR "x86")
+endif()
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-  set(CMAKE_SYSTEM_PROCESSOR "i686")
+  set(CMAKE_SYSTEM_PROCESSOR "x86")
 endif()
 
 # use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
@@ -91,22 +95,23 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # lower case version of system name and compiler for library paths
 string(TOLOWER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LC)
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CMAKE_CXX_COMPILER_ID_LC)
+
 if (WIN32)
-	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}-${MSVC_VERSION})
+	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}${MSVC_VERSION})
 endif()
 
-set(MSVC_NAME)
-set(MSVC2010 OFF)
-set(MSVC2013 OFF)
-if (MSVC_VERSION LESS 1600)
-	message(WARNING "Only MSVC2010 and MSVC2013 are supported via prebuilts")
-elseif(MSVC_VERSION LESS 1800)
-	set(MSVC2010 ON)
-	set(MSVC_NAME msvc2010)
-else()
-	set(MSVC2013 ON)
-	set(MSVC_NAME msvc2013)
-endif()
+# set(MSVC_NAME)
+# set(MSVC2010 OFF)
+# set(MSVC2013 OFF)
+# if (MSVC_VERSION LESS 1600)
+# 	message(WARNING "Only MSVC2010 and MSVC2013 are supported via prebuilts")
+# elseif(MSVC_VERSION LESS 1800)
+# 	set(MSVC2010 ON)
+# 	set(MSVC_NAME msvc2010)
+# else()
+# 	set(MSVC2013 ON)
+# 	set(MSVC_NAME msvc2013)
+# endif()
 
 ################################################################
 # Configuration of library type, linking and language bindings
@@ -120,7 +125,7 @@ endif()
 #   1.1 Except on Windows where deploying libraries is a pain
 #   1.2 Building shared libs on Windows fails as we expose STL in our public headers
 #
-# 2. When Building the language bindings, the resulting extensions should be as static as possible
+# 2. When building the language bindings, the resulting extensions should be as static as possible
 #
 # 3. There are convenience libraries name libumundo (as opposed to libumundo[core|serial|rpc])
 #    which include / link against everything.
@@ -134,7 +139,6 @@ endif()
 
 
 OPTION(BUILD_CONVENIENCE_LIB  "Build umundo convenience library" OFF)
-OPTION(BUILD_TESTS            "Build umundo tests" OFF)
 OPTION(BUILD_BINDINGS         "Build umundo language bindings" ON)
 OPTION(DIST_PREPARE           "Put libraries into the lib folder of the source tree" OFF)
 OPTION(BUILD_WITH_CPP11       "Build with C++11" OFF)
@@ -155,8 +159,10 @@ else()
 endif()
 if (CMAKE_CROSSCOMPILING)
 	OPTION(BUILD_UMUNDO_TOOLS "Build tools" OFF)
+	OPTION(BUILD_TESTS "Build tests" OFF)	
 else()
 	OPTION(BUILD_UMUNDO_TOOLS "Build tools" ON)
+	OPTION(BUILD_TESTS "Build tests" ON)	
 endif()
 
 if (WIN32 OR CMAKE_CROSSCOMPILING)
@@ -196,17 +202,8 @@ if (NOT CMAKE_SYSTEM_PROCESSOR)
 	set(CMAKE_SYSTEM_PROCESSOR x86)
 endif()
 
-# is this a 64Bit host?
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(64BIT_HOST ON)
-	set(64BIT_LIB_POSTFIX 64)
-	# additional library paths to be searched
-	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
-# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/lib64")
-# 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/lib64")
-endif()
-
 if (APPLE)
+	set(LIBCPP_NAME "libstdc++") # before mavericks
 	# get MacOSX version
 	execute_process(COMMAND /usr/bin/sw_vers -productVersion
 		OUTPUT_VARIABLE MACOSX_VERSION
@@ -220,26 +217,35 @@ if (APPLE)
 			MACOSX_VERSION_MINOR 
 			MACOSX_VERSION_PATCH)
 	endif()
+	if (MACOSX_VERSION VERSION_GREATER "10.8.99")
+		set(LIBCPP_NAME "libc++") # mavericks
+		# LIST(APPEND CMAKE_FIND_ROOT_PATH ${CMAKE_OSX_SYSROOT})
+		# make sure that we find libxml2 here first
+		set(CMAKE_FIND_ROOT_PATH ${CMAKE_OSX_SYSROOT} ${CMAKE_FIND_ROOT_PATH})
+	endif()
+	if (MACOSX_VERSION VERSION_GREATER "10.9.99")
+		if (NOT CMAKE_SIZEOF_VOID_P) # yosemite with cmake 3.0.2!
+			set(CMAKE_SIZEOF_VOID_P 8) 
+		endif()
+	endif()
 endif()
 
 # is this a 64Bit host?
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(HOST_64BIT ON)
 	set(64BIT_LIB_POSTFIX 64)
+	set(64BIT_SUFFIX "_64")
 	# additional library paths to be searched
 	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
-	if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i686")
-	  set(CMAKE_SYSTEM_PROCESSOR "x86_64")
-	endif()
-	
 # 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/lib64")
 # 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/lib64")
 endif()
 
+
 # We use the toolchain file from http://code.google.com/p/android-cmake/
 if (CMAKE_CROSSCOMPILING AND ANDROID_ABI)
 	set(ANDROID ON)
-	set(CMAKE_CROSSCOMPILING_TARGET "android")
+	set(CMAKE_CROSSCOMPILING_TARGET android)
 	set(CMAKE_SYSTEM_VERSION ${ANDROID_NATIVE_API_LEVEL})
 endif()
 
@@ -249,146 +255,160 @@ endif()
 # http://www.vtk.org/Wiki/CMake_Cross_Compiling#Searching_and_finding_external_software
 #
 
+#
+# determine platform id
+#
 SET(UMUNDO_PLATFORM_ID)
-SET(UMUNDO_PLATFORM_PATH)
-
-if (CMAKE_CROSSCOMPILING)	
-	if (IOS)
-		SET(UMUNDO_PLATFORM_ID "ios")
-	elseif (ANDROID)
-		SET(UMUNDO_PLATFORM_ID "android")
-	else()
-		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64")
-	endif()
+if (CMAKE_SYSTEM_NAME_LC)
+	set(UMUNDO_PLATFORM_ID ${CMAKE_SYSTEM_NAME_LC})
 else()
-	if (WIN32 AND 64BIT_HOST)
-		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64")
-	elseif (APPLE)
-		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-i386")
-	else()
-		SET(UMUNDO_PLATFORM_ID "${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}")
-	endif()
+	set(UMUNDO_PLATFORM_ID "unknown")
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR)
+	set(UMUNDO_PLATFORM_ID "${UMUNDO_PLATFORM_ID}-${CMAKE_SYSTEM_PROCESSOR}${64BIT_SUFFIX}")
+else()
+	set(UMUNDO_PLATFORM_ID "unknown")
+endif()
+
+if (CMAKE_CXX_COMPILER_ID_LC)
+	set(UMUNDO_PLATFORM_ID "${UMUNDO_PLATFORM_ID}-${CMAKE_CXX_COMPILER_ID_LC}")
+endif()
+
+if (LIBCPP_NAME)
+	set(UMUNDO_PLATFORM_ID "${UMUNDO_PLATFORM_ID}-${LIBCPP_NAME}")
 endif()
 
 
+# handle cross compiles
 if (CMAKE_CROSSCOMPILING)
 	if (IOS)
-		SET(UMUNDO_PLATFORM_PATH "ios")
+		SET(UMUNDO_PLATFORM_ID "ios-universal")
+		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "ONLY")
 	elseif (ANDROID)
-		SET(UMUNDO_PLATFORM_PATH "android/${ANDROID_ABI}")
+		# handle mips, x86 and arm
+		SET(UMUNDO_PLATFORM_ID "android-${ANDROID_ABI}")
+		
+		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH") # we need both to find jni - we don't?
+		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
+		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
+		
+		LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/bin") # this is needed to find swig
+		LIST(APPEND CMAKE_PREFIX_PATH "/opt/local/bin") # this is needed to find protoc
 	endif()
-elseif (APPLE)
-	SET(UMUNDO_PLATFORM_PATH "${UMUNDO_PLATFORM_ID}/${MACOSX_VERSION_MAJOR}.${MACOSX_VERSION_MINOR}/${CMAKE_CXX_COMPILER_ID_LC}")
-else()
-	set(UMUNDO_PLATFORM_PATH ${UMUNDO_PLATFORM_ID}/${CMAKE_CXX_COMPILER_ID_LC})
 endif()
-	
 
 #message(FATAL_ERROR "UMUNDO_PLATFORM_ID: ${UMUNDO_PLATFORM_ID}")
 
 SET(UMUNDO_PREBUILT_LIBRARY_PATH)
-SET(UMUNDO_PREBUILT_HEADER_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
-SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_PATH}")
+SET(UMUNDO_PREBUILT_HEADER_PATH  "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
+SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}")
 
-# search roots for libraries
-if(CMAKE_CROSSCOMPILING)
-	SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "ONLY")
-	if (IOS)
-		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH") # we need both to find jni - we don't?
-		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
-		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
-	elseif (ANDROID)
-		SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY "BOTH") # we need both to find jni - we don't?
-		SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM "BOTH")
-		SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE "BOTH")
-		LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/bin") # this is needed to find swig
-		LIST(APPEND CMAKE_PREFIX_PATH "/opt/local/bin") # this is needed to find protoc
-	endif ()
-endif()
+SET(UMUNDO_LIBRARY_HOST_URL_PREFIX "http://umundo.tk.informatik.tu-darmstadt.de/prebuilt" CACHE STRING "The root path of an URL where to look for prebuilt libraries." FORCE)
+SET(UMUNDO_LIBRARY_ARCHIVE_NAME "umundo-prebuilt-${UMUNDO_PLATFORM_ID}.tgz")
 
 #
-# Download prebuilt libraries
+# Download platform independent headers
 #
 
-SET(UMUNDO_LIBRARY_HOST_URL_PREFIX "http://umundo.tk.informatik.tu-darmstadt.de/prebuilt" CACHE STRING "The root path of an URL where to look for prebuilt libraries.")
-
-if (CMAKE_CROSSCOMPILING)
-	if (IOS)
-		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-ios.tgz)
-	elseif(ANDROID)
-		SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-android.tgz)
-	else()
-	endif()
-else()
-  SET(UMUNDO_LIBRARY_ARCHIVE_NAME umundo-prebuilt-${UMUNDO_PLATFORM_ID}.tgz)
-endif()
-
-# delete directory if unversioned or too old
+# delete if too old or unversioned
 if (EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt")
 	file (STRINGS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt" PREBUILT_INCUDES_VERSION)
 endif()
 if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_INCUDES_VERSION}")
-	message(STATUS "Prebuilt headers unversioned, too old or non-existant - downloading (again)")
+	message(STATUS "Prebuilt headers unversioned, too old or non-existent - deleting and downloading again")
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include
 	)
 endif()
 
+# download if not existing
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include)
+	message(STATUS "Downloading ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/include.tgz")
+
+	file(
+		DOWNLOAD 
+			${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/include.tgz
+			${PROJECT_SOURCE_DIR}/contrib/prebuilt/include.tgz
+		INACTIVITY_TIMEOUT 60 
+		STATUS DOWNLOAD_STATUS 
+		SHOW_PROGRESS)
+		
+	list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+	list(GET DOWNLOAD_STATUS 1 STATUS_STRING)
+	if(STATUS_CODE EQUAL 0)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include.tgz
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include.tgz
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+		file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt "${UMUNDO_VERSION}")
+	else()
+		message(FATAL_ERROR "\nDownloading header files\nFAILED with ${STATUS_STRING} (${STATUS_CODE}) \nThis should not happen, retry?")
+	endif()
+endif()
+
+#
+# Download platform dependent headers and libraries
+#
+
+# only delete if too old
 if (EXISTS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt")
 	file (STRINGS "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt" PREBUILT_LIBRARIES_VERSION)
-endif()
-if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_LIBRARIES_VERSION}")
-	message(STATUS "Prebuilt libraries unversioned, too old or non-existant - downloading (again) / ${PREBUILT_LIBRARIES_VERSION} vs ${UMUNDO_VERSION}")
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}
-	)
-endif()
-
-# download include directory
-if (NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include)
-	message(STATUS "Downloading prebuilt library headers: ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/umundo-prebuilt-include.tgz")
-	file(DOWNLOAD ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/umundo-prebuilt-include.tgz
-		${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
-		INACTIVITY_TIMEOUT 60 STATUS DOWNLOAD_STATUS  SHOW_PROGRESS)
-	list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
-	list(GET DOWNLOAD_STATUS 1 STATUS_STRING)
-	if(STATUS_CODE EQUAL 0)
+	if (NOT "${UMUNDO_VERSION}" VERSION_EQUAL "${PREBUILT_LIBRARIES_VERSION}")
+		message(STATUS "Prebuilt libraries unversioned, too old or non-existent - deleting and downloading again")
 		execute_process(
-			COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+			COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}
 		)
-		execute_process(
-			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/umundo-prebuilt-include.tgz
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
-		)
-	else()
-		message("Downloading prebuilt library headers failed with ${STATUS_STRING} - maybe the host is down?")
 	endif()
-	file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/include/VERSION.txt "${UMUNDO_VERSION}")
 endif()
 
-# download prebuilt libraries
+
 if (NOT EXISTS ${UMUNDO_PREBUILT_LIBRARY_PATH})
-	message(STATUS "Downloading prebuilt libraries: ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}")
-	file(DOWNLOAD ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}
-		${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
-		INACTIVITY_TIMEOUT 60 STATUS DOWNLOAD_STATUS  SHOW_PROGRESS)
+	message(STATUS "Cannot find prebuilt libraries in ${UMUNDO_PREBUILT_LIBRARY_PATH}")
+	message(STATUS "Trying to download ${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}")
+	file(
+		DOWNLOAD 
+			${UMUNDO_LIBRARY_HOST_URL_PREFIX}/${UMUNDO_VERSION}/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+			${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+		INACTIVITY_TIMEOUT 60 
+		STATUS DOWNLOAD_STATUS 
+		SHOW_PROGRESS)
+	
 	list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
 	list(GET DOWNLOAD_STATUS 1 STATUS_STRING)
 	if(STATUS_CODE EQUAL 0)
+		# everything worked out fine! - create dir, unpack and delete
+		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID})
 		execute_process(
 			COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}
 		)
 		execute_process(
 			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
 		)
+		file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt "${UMUNDO_VERSION}")
+	elseif(
+		NOT STATUS_CODE EQUAL 19 AND   # FTP: Invalid file / file not found
+		NOT STATUS_CODE EQUAL 22)      # HTTP: HTTP response code
+		# server was unreachable, do not create dir to retry
+		message(FATAL_ERROR "\nDownloading prebuilt libraries\nFAILED with ${STATUS_STRING} (${STATUS_CODE}) \nThis should not happen, retry?")
 	else()
-		message("Downloading prebuilt libraries failed with ${STATUS_STRING} - maybe this platform is not supported?")
+		# we did not know the file, create dir for manual libs
+		file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID})
+		execute_process(
+			COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_LIBRARY_ARCHIVE_NAME}
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/contrib/prebuilt/
+		)
+		message(FATAL_ERROR "\nPlatform is not supported!\nProvide headers and libraries in\n${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/")
 	endif()
-	file(WRITE ${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}/VERSION.txt "${UMUNDO_VERSION}")
 endif()
+
+
 
 #
 # BUILD_PREFER_PREBUILT_LIBS:
@@ -583,6 +603,7 @@ SET(CMAKE_RELWITHDEBINFO_POSTFIX "${64BIT_LIB_POSTFIX}_rd")
 SET(CMAKE_MINSIZEREL_POSTFIX "${64BIT_LIB_POSTFIX}_s")
 
 SET(CMAKE_LIBRARY_POSTFIX ${CMAKE_${BUILD_TYPE}_POSTFIX})
+# message(FATAL_ERROR "CMAKE_LIBRARY_POSTFIX: ${CMAKE_LIBRARY_POSTFIX}")
 
 ############################################################
 # Select implementations depending on build target
@@ -699,7 +720,7 @@ else()
 	OPTION(BUILD_PREFER_STATIC_RE "Prefer static RE libraries when linking" OFF)
 endif()
 
-if ((NOT APPLE) AND UNIX AND 64BIT_HOST) # pcre on debian is compiled without -fPIC
+if ((NOT APPLE) AND UNIX AND HOST_64BIT) # pcre on debian is compiled without -fPIC
 	set(BUILD_PREFER_STATIC_PCRE OFF)
 endif()
 
@@ -774,11 +795,11 @@ else()
 endif()
 
 # enable config.h style compile time options and add as "umundo/config.h"
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/umundo/config.h)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/umundo/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
 # have version.h in installations
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/core/src/umundo/version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/core/src/umundo/version.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/umundo/core/version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/umundo/core/version.h)
 
 # gcc is picky when it comes to argument order
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
@@ -793,33 +814,26 @@ endif()
 
 # include_directories is not global so we grab our subdirs property
 # and propagate them through the build tree
-add_subdirectory(core)
-GET_DIRECTORY_PROPERTY(CORE_INCLUDES DIRECTORY core INCLUDE_DIRECTORIES)
+include_directories("src")
+
+add_subdirectory("src/umundo/core")
+GET_DIRECTORY_PROPERTY(CORE_INCLUDES DIRECTORY "src/umundo/core" INCLUDE_DIRECTORIES)
 include_directories(${CORE_INCLUDES})
 
-if (BUILD_UMUNDO_S11N)
-	include_directories("s11n/src")
-endif()
-if (BUILD_UMUNDO_UTIL)
-	include_directories("util/src")
-endif()
-if (BUILD_UMUNDO_RPC)
-	include_directories("rpc/src")
-endif()
 
 if (BUILD_UMUNDO_S11N)
-	add_subdirectory(s11n)
-	GET_DIRECTORY_PROPERTY(S11N_INCLUDES DIRECTORY s11n INCLUDE_DIRECTORIES)
+	add_subdirectory(src/umundo/s11n)
+	GET_DIRECTORY_PROPERTY(S11N_INCLUDES DIRECTORY "src/umundo/s11n" INCLUDE_DIRECTORIES)
 	include_directories(${S11N_INCLUDES})
 endif()
 if (BUILD_UMUNDO_RPC)
-	add_subdirectory(rpc)
-	GET_DIRECTORY_PROPERTY(RPC_INCLUDES DIRECTORY rpc INCLUDE_DIRECTORIES)
+	add_subdirectory(src/umundo/rpc)
+	GET_DIRECTORY_PROPERTY(RPC_INCLUDES DIRECTORY "src/umundo/rpc" INCLUDE_DIRECTORIES)
 	include_directories(${RPC_INCLUDES})
 endif()
 if (BUILD_UMUNDO_UTIL)
-	add_subdirectory(util)
-	GET_DIRECTORY_PROPERTY(UTIL_INCLUDES DIRECTORY util INCLUDE_DIRECTORIES)
+	add_subdirectory(src/umundo/util)
+	GET_DIRECTORY_PROPERTY(UTIL_INCLUDES DIRECTORY "src/umundo/util" INCLUDE_DIRECTORIES)
 	include_directories(${UTIL_INCLUDES})
 endif()
 if (BUILD_UMUNDO_TOOLS)
@@ -832,6 +846,14 @@ endif()
 
 # we have to use CMAKE_TOOLCHAIN_FILE to avoid "not used" warning with existing binary dir
 if (CMAKE_TOOLCHAIN_FILE)
+endif()
+
+############################################################
+# process other directories
+############################################################
+
+if (BUILD_BINDINGS)
+	add_subdirectory(src/bindings/core)
 endif()
 
 ############################################################
@@ -1081,12 +1103,12 @@ message(STATUS "  Binaries will end up in ........ : " ${REL_CMAKE_RUNTIME_OUTPU
 ############################################################
 
 if(BUILD_TESTS)
-	add_subdirectory(core/test)
+	add_subdirectory(tests/core)
 	if (BUILD_UMUNDO_S11N)
-		add_subdirectory(s11n/test)
+		add_subdirectory(tests/s11n)
 	endif()
 	if (BUILD_UMUNDO_RPC)
-		add_subdirectory(rpc/test)
+		add_subdirectory(tests/rpc)
 	endif()
 	include (CTest)
 endif()

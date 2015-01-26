@@ -271,11 +271,12 @@ void InitGL(int Width, int Height) {
 int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	SubscriberConfigRTP subConfig("kinect-pubsub", &testRecv);
+	SubscriberConfigRTP subConfig("kinect-pubsub");
 	//subConfig.setMulticastIP("224.1.2.3");
 	//subConfig.setMulticastPortbase(42142);
 	Subscriber subFoo(&subConfig);
-
+	subFoo.setReceiver(&testRecv);
+	
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);

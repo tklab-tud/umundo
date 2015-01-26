@@ -31,15 +31,14 @@ using namespace umundo;
 // see http://stackoverflow.com/questions/9695720/how-do-i-convert-a-64bit-integer-to-a-char-array-and-back
 uint64_t charTo64bitNum(const char* a) {
 	uint64_t n = 0;
-	n
-	    = (((int64_t)a[0] << 56) & 0xFF00000000000000U)
+	n     = (((int64_t)a[0] << 56) & 0xFF00000000000000U)
 	      | (((int64_t)a[1] << 48) & 0x00FF000000000000U)
 	      | (((int64_t)a[2] << 40) & 0x0000FF0000000000U)
 	      | (((int64_t)a[3] << 32) & 0x000000FF00000000U)
 	      | ((a[4] << 24) & 0x00000000FF000000U)
 	      | ((a[5] << 16) & 0x0000000000FF0000U)
 	      | ((a[6] <<  8) & 0x000000000000FF00U)
-	      | (a[7]        & 0x00000000000000FFU);
+	      | (a[7]         & 0x00000000000000FFU);
 	return n;
 }
 
@@ -72,7 +71,7 @@ PubType type = PUB_TCP;
 size_t bytesRcvd = 0;
 size_t pktsRecvd = 0;
 size_t lastSeqNr = 0;
-size_t lastTimeStamp = 0;
+uint64_t lastTimeStamp = 0;
 size_t pktsDropped = 0;
 Publisher reporter;
 
@@ -94,7 +93,7 @@ class ThroughputReceiver : public Receiver {
 		RScopeLock lock(mutex);
 		bytesRcvd += msg->size();
 		pktsRecvd++;
-
+		
 		currSeqNr = charTo64bitNum(msg->data());
 		uint64_t currTimeStamp = charTo64bitNum(msg->data() + 8);
 
@@ -292,15 +291,15 @@ int main(int argc, char** argv) {
 		case PUB_RTP: {
 			PublisherConfigRTP config("throughput.rtp");
 			config.setTimestampIncrement(166);
-			config.setGreeter(&tpGreeter);
 			pub = Publisher(&config);
+			pub.setGreeter(&tpGreeter);
 			break;
 		}
 		case PUB_MCAST: {
 			PublisherConfigMCast config("throughput.mcast");
 			config.setTimestampIncrement(166);
-			config.setGreeter(&tpGreeter);
 			pub = Publisher(&config);
+			pub.setGreeter(&tpGreeter);
 			break;
 		}
 		case PUB_TCP: {
@@ -310,7 +309,8 @@ int main(int argc, char** argv) {
 		}
 		}
 
-		Subscriber sub("reports", &reportRecv);
+		Subscriber sub("reports");
+		sub.setReceiver(&reportRecv);
 
 		node.addPublisher(pub);
 		node.addSubscriber(sub);
@@ -341,7 +341,8 @@ int main(int argc, char** argv) {
 			{
 				RScopeLock lock(mutex);
 				size_t packetsPerSecond = (std::max)(bytesPerSecond / dataSize, (size_t)1);
-				delay = (1000000000) / (packetsPerSecond);
+				delay = (std::max)((1000000) / (packetsPerSecond), (size_t)1);
+//				std::cout << packetsPerSecond << std::endl;
 			}
 
 			// every second we are writing reports
@@ -351,7 +352,7 @@ int main(int argc, char** argv) {
 //				std::cout << FORMAT_COL << bytesToDisplay(bytesPerSecond) + "/s";
 				std::cout << FORMAT_COL << "byte sent";
 				std::cout << FORMAT_COL << "pkts sent";
-//				std::cout << FORMAT_COL << "delay";
+				std::cout << FORMAT_COL << "delay";
 				std::cout << FORMAT_COL << "scale";
 				switch (type) {
 				case PUB_RTP: {
@@ -373,6 +374,7 @@ int main(int argc, char** argv) {
 				std::cout << FORMAT_COL << bytesToDisplay(bytesWritten) + "/s";
 				std::cout << FORMAT_COL << toStr(packetsWritten) + "pkt/s";
 //				std::cout << FORMAT_COL << timeToDisplay(delay);
+				std::cout << FORMAT_COL << delay;
 
 				if (reports.size() == 0) {
 					std::cout << FORMAT_COL << "---";
@@ -460,7 +462,8 @@ int main(int argc, char** argv) {
 
 				lastReportAt = Thread::getTimeStampMs();
 			}
-			Thread::sleepNs(delay);
+			// this is not working on windows with sub micro-second values!
+			Thread::sleepUs(delay);
 		}
 		delete(msg);
 
@@ -469,16 +472,19 @@ int main(int argc, char** argv) {
 
 		reporter = Publisher("reports");
 
-		Subscriber tcpSub("throughput.tcp", &tpRcvr);
+		Subscriber tcpSub("throughput.tcp");
+		tcpSub.setReceiver(&tpRcvr);
 
-		SubscriberConfigMCast mcastConfig("throughput.mcast", &tpRcvr);
+		SubscriberConfigMCast mcastConfig("throughput.mcast");
 		mcastConfig.setMulticastIP("224.1.2.3");
 		mcastConfig.setMulticastPortbase(42042);
 		Subscriber mcastSub(&mcastConfig);
+		mcastSub.setReceiver(&tpRcvr);
 
-		SubscriberConfigRTP rtpConfig("throughput.rtp", &tpRcvr);
+		SubscriberConfigRTP rtpConfig("throughput.rtp");
 		rtpConfig.setPortbase(40042);
 		Subscriber rtpSub(&rtpConfig);
+		rtpSub.setReceiver(&tpRcvr);
 
 		node.addSubscriber(tcpSub);
 		node.addSubscriber(mcastSub);

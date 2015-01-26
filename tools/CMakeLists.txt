@@ -175,14 +175,32 @@ INSTALL_EXECUTABLE(
 )
 
 if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC)
-	add_executable(umundo-echo-service umundo-echo-service.cpp)
-	target_link_libraries(umundo-echo-service umundocore umundoserial umundorpc)
-	set_target_properties(umundo-echo-service PROPERTIES FOLDER "Tools")
+	# process .proto files
+	if (PROTOBUF_PROTOC_EXECUTABLE)
+		# include_directories(${CMAKE_BINARY_DIR}/protobuf/generated)
 
-	INSTALL_EXECUTABLE(
-		TARGETS umundo-echo-service
-		COMPONENT tools 
-	)
+		file(GLOB_RECURSE PROTOBUF_INTERFACES ${PROJECT_SOURCE_DIR}/tests/rpc/services/protobuf/*.proto)
+		include_directories(${CMAKE_BINARY_DIR})
+		set(PROTO_SVC_FILES)
+
+		UMUNDO_PROTOBUF_GENERATE_CPP_S11N(PROTO_SRCS PROTO_HDRS ${PROTOBUF_INTERFACES})
+		# list(APPEND UMUNDORPC_HEADER_FILES ${PROTO_HDRS})
+		list(APPEND PROTO_SVC_FILES ${PROTO_SRCS})
+
+		UMUNDO_PROTOBUF_GENERATE_CPP_RPC(PROTO_SRCS PROTO_HDRS ${PROTOBUF_INTERFACES})
+		# list(APPEND UMUNDORPC_FILES ${PROTO_HDRS})
+		list(APPEND PROTO_SVC_FILES ${PROTO_SRCS})
+	
+		add_executable(umundo-echo-service umundo-echo-service.cpp ${PROTO_SVC_FILES})
+		target_link_libraries(umundo-echo-service umundocore umundoserial umundorpc)
+		set_target_properties(umundo-echo-service PROPERTIES FOLDER "Tools")
+		add_dependencies(umundo-echo-service protoc-umundo-cpp-rpc) 
+
+		INSTALL_EXECUTABLE(
+			TARGETS umundo-echo-service
+			COMPONENT tools 
+		)
+	endif()
 endif()
 
 if (WIN32)

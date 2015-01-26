@@ -68,8 +68,9 @@ int main(int argc, char** argv) {
 	Publisher pubFoo(&pubConfig);
 
 	TestReceiver testRecv;
-	SubscriberConfigRTP subConfig("phone", &testRecv);
+	SubscriberConfigRTP subConfig("phone");
 	Subscriber subFoo(&subConfig);
+	subFoo.setReceiver(&testRecv);
 
 	Discovery disc(Discovery::MDNS);
 	Node node;

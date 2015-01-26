@@ -15,7 +15,7 @@
 
 #include "umundo/config.h"
 #include "umundo/core.h"
-#include "umundo/thread/Thread.h"
+#include "umundo/core/thread/Thread.h"
 #include <string.h>
 #include <iostream>
 #include <fstream>
@@ -805,14 +805,15 @@ private:
 
 				// prepare subscriber configuration
 				if (msg->get<bool>("isMulticast")) {
-					subConfig = new SubscriberConfigMCast(msg->get("channelName"), receiver);
+					subConfig = new SubscriberConfigMCast(msg->get("channelName"));
 					subConfig->setMulticastIP(msg->get("ip"));
 					subConfig->setMulticastPortbase(msg->get<uint16_t>("port"));
 				} else {
-					subConfig = new SubscriberConfigRTP(msg->get("channelName"), receiver);
+					subConfig = new SubscriberConfigRTP(msg->get("channelName"));
 				}
 
 				sub = new Subscriber(subConfig);
+				sub->setReceiver(receiver);
 				delete subConfig;
 				
 				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {

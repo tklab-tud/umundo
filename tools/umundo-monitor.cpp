@@ -37,9 +37,9 @@
 #endif
 
 #ifdef NET_ZEROMQ
-#include "umundo/connection/zeromq/ZeroMQNode.h"
-#include "umundo/connection/zeromq/ZeroMQPublisher.h"
-#include "umundo/connection/zeromq/ZeroMQSubscriber.h"
+#include "umundo/core/connection/zeromq/ZeroMQNode.h"
+#include "umundo/core/connection/zeromq/ZeroMQPublisher.h"
+#include "umundo/core/connection/zeromq/ZeroMQSubscriber.h"
 #define NET_NODE_IMPL ZeroMQNode
 #define NET_PUB_IMPL ZeroMQPublisher
 #define NET_SUB_IMPL ZeroMQSubscriber

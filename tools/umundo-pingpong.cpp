@@ -63,8 +63,8 @@ int main(int argc, char** argv) {
 
 	TestReceiver* testRecv = new TestReceiver();
 	Publisher pubFoo("pingpong");
-	Subscriber subFoo("pingpong", testRecv);
-
+	Subscriber subFoo("pingpong");
+	subFoo.setReceiver(testRecv);
 	DiscoveryConfigMDNS mdnsOpts;
 	if (domain)
 		mdnsOpts.setDomain(domain);

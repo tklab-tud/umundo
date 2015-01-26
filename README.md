@@ -144,8 +144,31 @@ various stages of maturity:
 		</ul>
 	</dd>
 
-	<dt><b>Why does uMundo not use nested classes to improve its class structure?</b></dt>
-	<dd>Nested classes are not expressible in every language binding (e.g. python) via swig.</dd>
+	<dt><b>Why are some idioms with the uMundo codebase .. peculiar?</b></dt>
+	<dd>
+		There are a couple of issues with the codebase which I, personally, do not consider good style, but for 
+		some of them, there is actually a reason:
+		<ol>
+			<li><b>No nested classes:</b><br/>
+				We generate most language bindings of uMundo via SWIG. Some of the potential target languages do not
+				support the concept of nested classes, either by design or due to insufficient mappings in swig. To
+				keep all options open, we do not use nested classes.
+			</li>
+			<li><b>Pointers in constructors:</b><br/>
+				There are some instances where constructors take pointers to objects (e.g. the various <tt>Config</tt>
+				objects). But in the general case, if we need to retain the object pointed to throughout the lifetime
+				of the constructed object, we run into garbage collection issues with some language bindings (e.g. Java, 
+				C#). This is less of an issue when passing via member functions as SWIG will allow to assign the respective
+				object in the target language to a private field via function rename / hide / override, this is virtually
+				impossible to do with constructors.
+			</li>
+			<li><b>No exceptions:</b><br/>
+				Up until somewhen in 2012, the C++ compiler in the Android NDK did not support exceptions. Furthermore,
+				exceptions are problematic for some potential language bindings.
+			</li>
+		</ol>
+		
+	</dd>
 
 	<dt><b>How do I use the language bindings?</b></dt>
 	<dd>All language bindings constitute of two components: 

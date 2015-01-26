@@ -37,9 +37,11 @@ int main(int argc, char** argv) {
 
 	PublisherConfigRTP pubConfig("pingpong");
 	pubConfig.setTimestampIncrement(166); // PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
-	pubConfig.setGreeter(new GlobalGreeter()); // leaks a greeter instance
 	Publisher pubFoo(&pubConfig);
 
+	GlobalGreeter greeter;
+	pubFoo.setGreeter(&greeter);
+	
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);

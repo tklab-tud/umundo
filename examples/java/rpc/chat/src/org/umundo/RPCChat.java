@@ -11,13 +11,13 @@ import org.umundo.core.Discovery;
 import org.umundo.core.Discovery.DiscoveryType;
 import org.umundo.core.Node;
 import org.umundo.protobuf.ChatS11N.ChatMsg;
+import org.umundo.protobuf.ChatS11N.Void;
 import org.umundo.protobuf.ChatService;
 import org.umundo.protobuf.ChatServiceStub;
 import org.umundo.rpc.IServiceListener;
 import org.umundo.rpc.ServiceDescription;
 import org.umundo.rpc.ServiceFilter;
 import org.umundo.rpc.ServiceManager;
-import org.umundo.protobuf.ChatS11N.Void;
 
 /**
  * Make sure to set the correct path to umundo.jar in build.properties if you
@@ -113,7 +113,7 @@ public class RPCChat implements IServiceListener {
 	}
 
 	public static void main(String[] args) {
-		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+//		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
 		RPCChat chat = new RPCChat();
 		try {
 			chat.run();

@@ -14,6 +14,7 @@ import org.umundo.core.Publisher;
 import org.umundo.core.Receiver;
 import org.umundo.core.Subscriber;
 import org.umundo.core.SubscriberStub;
+import org.umundo.core.umundoNativeJavaConstants;
 
 /**
  * Make sure to set the correct path to umundo.jar in build.properties if you want to use ant!
@@ -39,7 +40,9 @@ public class CoreChat {
 		disc = new Discovery(DiscoveryType.MDNS);
 		
 		chatNode = new Node();
-		chatSub = new Subscriber("coreChat", new ChatReceiver());
+		chatSub = new Subscriber("coreChat");
+		chatSub.setReceiver(new ChatReceiver());
+		
 		chatPub = new Publisher("coreChat");
 		
 		disc.add(chatNode);
@@ -50,6 +53,7 @@ public class CoreChat {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.gc();
 		
 		chatPub.setGreeter(new ChatGreeter(userName));
 		chatNode.addPublisher(chatPub);
@@ -117,7 +121,7 @@ public class CoreChat {
 	}
 	
 	public static void main(String[] args) {
-		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+//		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
 		CoreChat chat = new CoreChat();
 		chat.run();
 	}

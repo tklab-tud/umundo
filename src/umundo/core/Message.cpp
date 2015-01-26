@@ -20,8 +20,10 @@
 #include "umundo/core/Message.h"
 #include "umundo/config.h"
 
+#if 0
 #include <boost/detail/endian.hpp>
 #include <boost/lexical_cast.hpp>
+#endif
 
 namespace umundo {
 char* Message::write(uint64_t value, char* to) {
@@ -68,10 +70,10 @@ char* Message::write(double value, char* to) {
 }
 
 const char* Message::read(uint64_t* value, const char* from) {
-	*value = (((uint64_t)from[0] << 56) & 0xFF00000000000000U)
-	       | (((uint64_t)from[1] << 48) & 0x00FF000000000000U)
-	       | (((uint64_t)from[2] << 40) & 0x0000FF0000000000U)
-	       | (((uint64_t)from[3] << 32) & 0x000000FF00000000U)
+	*value = (((uint64_t)from[0] << 56) & 0xFF00000000000000ULL)
+	       | (((uint64_t)from[1] << 48) & 0x00FF000000000000ULL)
+	       | (((uint64_t)from[2] << 40) & 0x0000FF0000000000ULL)
+	       | (((uint64_t)from[3] << 32) & 0x000000FF00000000ULL)
 	       | ((from[4] << 24) & 0x00000000FF000000U)
 	       | ((from[5] << 16) & 0x0000000000FF0000U)
 	       | ((from[6] <<  8) & 0x000000000000FF00U)
@@ -97,10 +99,10 @@ const char* Message::read(uint8_t* value, const char* from) {
 }
 
 const char* Message::read(int64_t* value, const char* from) {
-	*value = (((int64_t)from[0] << 56) & 0xFF00000000000000U)
-	       | (((int64_t)from[1] << 48) & 0x00FF000000000000U)
-	       | (((int64_t)from[2] << 40) & 0x0000FF0000000000U)
-	       | (((int64_t)from[3] << 32) & 0x000000FF00000000U)
+	*value = (((int64_t)from[0] << 56) & 0xFF00000000000000ULL)
+	       | (((int64_t)from[1] << 48) & 0x00FF000000000000ULL)
+	       | (((int64_t)from[2] << 40) & 0x0000FF0000000000ULL)
+	       | (((int64_t)from[3] << 32) & 0x000000FF00000000ULL)
 	       | ((from[4] << 24) & 0x00000000FF000000U)
 	       | ((from[5] << 16) & 0x0000000000FF0000U)
 	       | ((from[6] <<  8) & 0x000000000000FF00U)

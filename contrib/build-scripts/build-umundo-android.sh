@@ -64,8 +64,8 @@ cmake ${DIR}/../../ \
 -DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="armeabi" \
 -DCMAKE_BUILD_TYPE=Debug
-make -j2
-make -j2 java
+make
+make java
 
 rm -rf *
 cmake ${DIR}/../../ \
@@ -80,8 +80,8 @@ cmake ${DIR}/../../ \
 -DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="armeabi" \
 -DCMAKE_BUILD_TYPE=Release
-make -j2
-make -j2 java
+make
+make java
 
 rm -rf *
 cmake ${DIR}/../../ \
@@ -96,8 +96,8 @@ cmake ${DIR}/../../ \
 -DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="x86" \
 -DCMAKE_BUILD_TYPE=Debug
-make -j2
-make -j2 java
+make
+make java
 
 rm -rf *
 cmake ${DIR}/../../ \
@@ -112,17 +112,17 @@ cmake ${DIR}/../../ \
 -DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="x86" \
 -DCMAKE_BUILD_TYPE=Release
-make -j2
-make -j2 java
+make
+make java
 
 # copy into umundo-pingpong example
-cp ${DIR}/../../package/cross-compiled/android/umundo.jar \
-   ${DIR}/../../examples/android/umundo-pingpong/libs/
+# cp ${DIR}/../../package/cross-compiled/android/umundo.jar \
+#    ${DIR}/../../examples/android/umundo-pingpong/libs/
 # cp ${DIR}/../../package/cross-compiled/android/armv5te/lib/libumundoNativeJava_d.so \
 #    ${DIR}/../../examples/android/umundo-pingpong/libs/armeabi/
-cp ${DIR}/../../package/cross-compiled/android/armv5te/lib/libumundoNativeJava.so \
-   ${DIR}/../../examples/android/umundo-pingpong/libs/armeabi/
+# cp ${DIR}/../../package/cross-compiled/android/armv5te/lib/libumundoNativeJava.so \
+#    ${DIR}/../../examples/android/umundo-pingpong/libs/armeabi/
 # cp ${DIR}/../../package/cross-compiled/android/i686/lib/libumundoNativeJava_d.so \
 #    ${DIR}/../../examples/android/umundo-pingpong/libs/x86/
-cp ${DIR}/../../package/cross-compiled/android/i686/lib/libumundoNativeJava.so \
-   ${DIR}/../../examples/android/umundo-pingpong/libs/x86/
+# cp ${DIR}/../../package/cross-compiled/android/i686/lib/libumundoNativeJava.so \
+#    ${DIR}/../../examples/android/umundo-pingpong/libs/x86/

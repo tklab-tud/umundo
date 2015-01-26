@@ -47,7 +47,7 @@ cmake ${DIR}/../../ \
 -DBUILD_CONVENIENCE_LIB=ON
 make -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
-   ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-release
+   ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}
 
 # mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
 # cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
@@ -69,7 +69,7 @@ cmake ${DIR}/../../ \
 -DBUILD_CONVENIENCE_LIB=ON
 make -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
-   ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-release
+   ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}
 
 
 #

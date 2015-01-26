@@ -156,32 +156,6 @@ if (UMUNDONATIVEJAVA_LOCATION)
 		add_dependencies(java umundoNativeJava)
 		
 		set_target_properties(java PROPERTIES FOLDER "Bindings")
-		if (BUILD_TESTS)
-			add_dependencies(ALL_TESTS java)
-
-			file(GLOB_RECURSE JAVA_TESTS "${PROJECT_SOURCE_DIR}/tests/*Test*.java")
-			foreach(TEST ${JAVA_TESTS})
-				get_filename_component(TEST_NAME ${TEST} NAME_WE)
-				get_filename_component(TEST_DIR ${TEST} DIRECTORY)
-				# strip java package structure
-				STRING(REGEX REPLACE "org/umundo/.*" "" TEST_DIR ${TEST_DIR})
-				
-				add_test("java/${TEST_NAME}"
-					${ANT_EXECUTABLE}
-					-Dlib.dir=${JAR_JNI_ROOT_PATH}
-					-Dsrc.dir=${PROJECT_SOURCE_DIR}
-					-Dbuild.dir=${PROJECT_BINARY_DIR}
-					-Dbuild.type=${CMAKE_BUILD_TYPE}
-					-Dtest.class=${TEST_NAME}
-					-Dtest.dir=${TEST_DIR}
-					-f ${PROJECT_SOURCE_DIR}/contrib/java/build-java.xml
-					test)
-				set_property(TEST "java/${TEST_NAME}" PROPERTY LABELS "java/${TEST_NAME}")
-				set_property(TEST "java/${TEST_NAME}" PROPERTY REQUIRED_FILES "${PROJECT_BINARY_DIR}/lib/umundo.jar")
-					
-			endforeach()
-		endif()
-
 	else()
 		message(STATUS "Could not find ant binary - will not build jars")
 	endif()

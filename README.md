@@ -192,8 +192,7 @@ if (System.Environment.Is64BitProcess) {
     SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp64");
 } else {
     SetDllDirectory("C:\\Program Files (x86)\\uMundo\\share\\umundo\\bindings\\csharp");
-}
-		</pre></p>
+}</pre></p>
 	</dd>
 
 	<dt><b>The C# bindings are leaking memory!</b></dt>
@@ -202,6 +201,20 @@ if (System.Environment.Is64BitProcess) {
 		It seems like the managed part of the various objects (e.g. a Message) do not build up
 		enough pressure for the garbage collector to run. You will have to call their <tt>Dispose()</tt>
 		method manually or use the <tt>using</tt> statement.
+	</dd>
+
+	<dt><b>No Java binding as JNI cannot be found for Debian / Ubuntu on AMD64!</b></dt>
+	<dd>The FindJNI.cmake distributed e.g. with Debian Wheezy is buggy and will sometimes fail to pickup the 
+		java libraries required for the language bindings:
+		<pre>Could NOT find JNI (missing:  JAVA_AWT_LIBRARY JAVA_JVM_LIBRARY)</pre>
+		The solution is help CMake by passing the paths to <tt>libjvm.so</tt> and <tt>libawt.so</tt> when preparing
+		the build folder, e.g.:
+		<pre>
+cmake -DJAVA_AWT_LIBRARY=/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/libawt.so \
+      -DJAVA_JVM_LIBRARY=/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server/libjvm.so \
+      &lt;UMUNDO_SRC>
+		</pre>
+		
 	</dd>
 
 	<dt><b>When using uMundo from the installers on linux <tt>libpcre.so.3</tt> was not found, what gives?</b></dt>

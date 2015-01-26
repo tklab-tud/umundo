@@ -136,13 +136,14 @@
 	<javac destdir="${build.dir}/tests/java" srcdir="${test.dir}" includeantruntime="false">
     <classpath>
       <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
-      <pathelement location="${lib.dir}/umundo.jar"/>
+      <pathelement location="${build.dir}/lib/umundo.jar"/>
     </classpath>
 	</javac>
-	<java classpath="${lib.dir}/umundo.jar:${build.dir}/tests/java" classname="${test.class}">
+	<java classpath="${build.dir}/lib/umundo.jar:${build.dir}/tests/java" classname="${test.class}">
     <classpath>
       <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
-      <pathelement location="${lib.dir}/umundo.jar"/>
+      <pathelement location="${build.dir}/lib/umundo.jar"/>
+      <pathelement location="${build.dir}/tests/java"/>
     </classpath>
 	</java>
 </target>

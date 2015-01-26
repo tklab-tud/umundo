@@ -12,12 +12,17 @@
 %ignore getImpl();
 %ignore getImpl() const;
 
+
+
 //******************************
 // ignore class specific functions
 //******************************
 %ignore operator!=(NodeStub* n) const;
 %ignore operator<<(std::ostream&, const NodeStub*);
 %ignore operator<<(std::ostream&, const EndPoint&);
+
+%ignore umundo::Message::read;
+%ignore umundo::Message::write;
 
 //******************************
 // ignore operators

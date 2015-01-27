@@ -45,11 +45,11 @@ GLuint gl_depth_tex;
 class TestReceiver : public Receiver {
 public:
 	TestReceiver() : _mGamma(2048), _rtpTimestamp(0), _start(false), _timeOffset(0) {
-		_internalDepthBuffer=new uint8_t[640*480*3];
-		for(unsigned int i=0; i<480; i++)
-			_mask[i]=true;
+		_internalDepthBuffer = new uint8_t[640*480*3];
+		for (unsigned int i = 0; i<480; i++)
+			_mask[i] = true;
 		//gamma precalculations
-		for( unsigned int i = 0 ; i < 2048 ; i++) {
+		for ( unsigned int i = 0 ; i < 2048 ; i++) {
 			float v = i/2048.0;
 			v = std::pow(v, 3)* 6;
 			_mGamma[i] = v*6*256;
@@ -63,90 +63,90 @@ public:
 	void receive(Message* msg) {
 
 		//handle only RTP messages
-		if(msg->getMeta("um.type")=="RTP") {
+		if (msg->getMeta("um.type") == "RTP") {
 			RScopeLock lock(_internalDepthMutex);
-			bool marker=strTo<bool>(msg->getMeta("marker"));
-			struct RTPData *data=(struct RTPData*)msg->data();
+			bool marker = strTo<bool>(msg->getMeta("um.marker"));
+			struct RTPData* data = (struct RTPData*)msg->data();
 
-			/*
-			 std::cout << "RTP(" << msg->size() << ") sequenceNumber: " << msg->getMeta("sequenceNumber") << " extendedSequenceNumber: " << msg->getMeta("extendedSequenceNumber") << " rtpTimestamp: " << msg->getMeta("timestamp") << " marker: " << msg->getMeta("marker") << std::flush;
-			 if(marker)
+/*
+			 std::cout << "RTP(" << msg->size() << ") sequenceNumber: " << msg->getMeta("um.sequenceNumber") << " extendedSequenceNumber: " << msg->getMeta("um.extendedSequenceNumber") << " rtpTimestamp: " << msg->getMeta("um.timestamp") << " marker: " << msg->getMeta("um.marker") << std::flush;
+			 if (marker)
 			 std::cout << " [advertising new frame] " << std::flush;
 			 std::cout << " row: " << data->row << std::flush;
-			 if(strTo<uint32_t>(msg->getMeta("timestamp"))!=_rtpTimestamp)
-			 std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("timestamp"))-_rtpTimestamp << "} " << std::flush;
+			 if (strTo<uint32_t>(msg->getMeta("um.timestamp")) != _rtpTimestamp)
+			 std::cout << " {OUT OF ORDER TIMESTAMP " << strTo<uint32_t>(msg->getMeta("um.timestamp"))-_rtpTimestamp << "} " << std::flush;
 			 std::cout << std::endl << std::flush;
-			 */
-
+*/
+			
 			//calculate time offset to remote host
-			if(!_timeOffset)
-				_timeOffset=Thread::getTimeStampMs()-data->timestamp;
+			if (!_timeOffset)
+				_timeOffset = Thread::getTimeStampMs() - data->timestamp;
 
 			//marker is set --> new frame starts here
-			if(marker) {
-				if(_start) {
+			if (marker) {
+				if (_start) {
 					//output info for last complete frame
-#if 0
+#if 1
 					std::cout << std::endl << "rtp timestamp " << _rtpTimestamp
 					          << " (remote time offset: " << _timeOffset
 					          << "ms, transmission delay: " << (_lastLocalTimestamp-_lastRemoteTimestamp)
 					          << "ms, frames per second: " << (1000/((Thread::getTimeStampMs()-_timeOffset)-_lastRemoteTimestamp)) << ")";
 #endif
 					//calculate packet misses (and output statistics about them)
-					int start_miss=0;
-					int sum=0;
-					bool old=false;
+					int start_miss = 0;
+					int sum = 0;
+					bool old = false;
 					std::stringstream stream;
-					for(unsigned int i=0; i<480; i++) {
-						if(_mask[i]!=old) {
-							if(_mask[i]==true && i>0) {
-								if(start_miss==i-1)
+					for (unsigned int i = 0; i<480; i++) {
+						if (_mask[i] != old) {
+							if (_mask[i] == true && i>0) {
+								if (start_miss == i-1)
 									stream << " " << start_miss;
 								else
 									stream << " " << start_miss << "-" << i-1;
-								sum+=i-start_miss;
+								sum += i-start_miss;
 							}
-							if(_mask[i]==false)
-								start_miss=i;
+							if (_mask[i] == false)
+								start_miss = i;
 						}
-						old=_mask[i];
+						old = _mask[i];
 					}
-					if(old==false) {
-						if(start_miss==479)
+					if (old == false) {
+						if (start_miss == 479)
 							stream << " " << start_miss;
 						else
 							stream << " " << start_miss << "-479";
-						sum+=479-start_miss+1;
+						sum += 479-start_miss+1;
 					}
 #if 0
 					std::cout << " missed rows sum: " << sum << " ("<< ((double)sum/480.0)*100.0 << "%)";
-					if(sum)
+					if (sum)
 						std::cout << " missed rows detail: " << stream.str();
 					std::cout << std::endl << std::flush;
 #endif
 				}
 				//clear packetloss mask
-				for(unsigned int i=0; i<480; i++)
-					_mask[i]=false;
-				_rtpTimestamp=strTo<uint32_t>(msg->getMeta("um.timestamp"));
+				for (unsigned int i = 0; i<480; i++)
+					_mask[i] = false;
+				_rtpTimestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
 				//we received a mark, so old frame is complete --> signal this to opengl thread
-				if(_start) {
+				if (_start) {
 					_newCompleteFrame = true;
 					UMUNDO_SIGNAL(_newFrame);
 				}
-				_start=true;
+				_start = true;
 			}
 
 			//calculate aux data
-			_lastRemoteTimestamp=data->timestamp;
-			_lastLocalTimestamp=Thread::getTimeStampMs()-_timeOffset;
-			if(!_start)				//wait for first complete frame (and ignore data till then)
+			_lastRemoteTimestamp = data->timestamp;
+			_lastLocalTimestamp = Thread::getTimeStampMs()-_timeOffset;
+			if (!_start)				//wait for first complete frame (and ignore data till then)
 				return;
-			_mask[data->row]=true;		//mark this row as received
+			_mask[data->row] = true;		//mark this row as received
 
 			//process received data and calculate received depth picture row
-			for(unsigned int col = 0 ; col < 640 ; col++) {
-				unsigned int i=data->row*640 + col;
+			for (unsigned int col = 0 ; col < 640 ; col++) {
+				unsigned int i = data->row*640 + col;
 				uint16_t pval = _mGamma[data->data[col]];
 				uint8_t lb = pval & 0xff;
 				switch (pval>>8) {

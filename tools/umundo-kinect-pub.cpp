@@ -29,24 +29,25 @@ struct RTPData {
 using namespace umundo;
 
 /* thanks to Yoda---- from IRC */
-class MyFreenectDevice : public Freenect::FreenectDevice {
+class FreenectBridge : public Freenect::FreenectDevice {
 public:
-	MyFreenectDevice(freenect_context *ctx, int index)
+	FreenectBridge(freenect_context *ctx, int index)
 		: Freenect::FreenectDevice(ctx, index), _pub(NULL), _frameCount(0) {
 		this->setLed(LED_RED);
 	}
 	// Do not call directly even in child
-	void VideoCallback(void* _rgb, uint32_t timestamp) {
+	void VideoCallback(void* image, uint32_t frameTimestamp) {
 		return;
 	}
+	
 	// Do not call directly even in child
-	void DepthCallback(void* depthData, uint32_t frameTimestamp) {
-		uint16_t *depth = static_cast<uint16_t*>(depthData);
+	void DepthCallback(void* image, uint32_t frameTimestamp) {
+		uint16_t *depth = static_cast<uint16_t*>(image);
 		uint64_t timestamp = Thread::getTimeStampMs();
 
 		_frameCount++;
 		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
-		if(!(_frameCount%_modulo)) {
+		if (! (_frameCount%_modulo)) {
 			std::cout << ", sending data (" << (1000/(timestamp-_lastTimestamp)) << " frames per second)...";
 		}
 		std::cout << std::endl << std::flush;
@@ -64,10 +65,12 @@ public:
 				msg->putMeta("um.marker", toStr(false));
 			}
 			struct RTPData *data = new struct RTPData;
-			data->row=i;
-			data->timestamp=timestamp;
-			memcpy(data->data, depth+(640*i), sizeof(uint16_t)*640);		//copy one depth data row into rtp data
+			data->row = i;
+			data->timestamp = timestamp;
+			
+			memcpy(data->data, depth + (640 * i), sizeof(uint16_t) * 640);		//copy one depth data row into rtp data
 			msg->setData((char*)data, sizeof(struct RTPData));
+			
 			_pub->send(msg);
 			delete data;
 			delete msg;
@@ -90,7 +93,7 @@ private:
 };
 
 Freenect::Freenect freenect;
-MyFreenectDevice* device;
+FreenectBridge* device;
 freenect_video_format requested_format(FREENECT_VIDEO_RGB);
 
 int main(int argc, char** argv) {
@@ -99,9 +102,9 @@ int main(int argc, char** argv) {
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
 	if(argc>1) {
-		int m=strTo<uint16_t>(argv[1]);
-		if(m>0 && m<256)
-			modulo=m;
+		int m = strTo<uint16_t>(argv[1]);
+		if(m > 0 && m < 256)
+			modulo = m;
 	}
 
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
@@ -111,17 +114,66 @@ int main(int argc, char** argv) {
 	Publisher pubFoo(&pubConfig);
 
 	Discovery disc(Discovery::MDNS);
+	
 	Node node;
 	disc.add(node);
 	node.addPublisher(pubFoo);
 
-	device = &freenect.createDevice<MyFreenectDevice>(0);
-	device->setPub(&pubFoo);
-	device->setModulo(modulo);
-	device->startDepth();
+	int testFrame = 0;
+	
+	while(true) {
+		try {
+			device = &freenect.createDevice<FreenectBridge>(0);
+			device->setPub(&pubFoo);
+			device->setModulo(modulo);
+			device->startDepth();
+//			device->startVideo();
+			while(1)
+				Thread::sleepMs(4000);
+		} catch(std::runtime_error e) {
+			// send a few test images and retry
+			for (;;) {
+				testFrame++;
+				uint64_t timestamp = Thread::getTimeStampMs();
+				for (unsigned int i = 0; i < 480; i++ ) {
+					Message* msg = new Message();
+					if (i == 0) {
+						msg->putMeta("um.timestampIncrement", toStr(1));
+						msg->putMeta("um.marker", toStr(true));
+					} else {
+						msg->putMeta("um.timestampIncrement", toStr(0));
+						msg->putMeta("um.marker", toStr(false));
+					}
+					struct RTPData *data = new struct RTPData;
+					data->row = i;
+					data->timestamp = timestamp;
 
-	while(1)
-		Thread::sleepMs(4000);
+					for (unsigned int j = 0; j < 640; j++) {
+						uint16_t tf = (i + j + testFrame);
+						tf *= 12;           // frequency
+						if (tf > 1200) {   // length of black bar
+							tf %= 1200;
+						}
+						tf += 500;         // start color
+						data->data[j] = tf;
+					}
+					
+					msg->setData((char*)data, sizeof(struct RTPData));
+
+					pubFoo.send(msg);
+					delete data;
+					delete msg;
+				}
+				
+				if (testFrame % 50 == 0)
+					break;
+				if (testFrame % 640 == 0)
+					testFrame = 0;
+				Thread::sleepMs(5);
+			}
+		}
+	}
+	
 
 	return 0;
 }

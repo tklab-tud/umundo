@@ -28,31 +28,31 @@ struct RTPData {
 
 using namespace umundo;
 
-/* thanks to Yoda---- from IRC */
+Discovery disc;
+Node node;
+Publisher pubDepth;
+Publisher pubVideo;
+
 class FreenectBridge : public Freenect::FreenectDevice {
 public:
 	FreenectBridge(freenect_context *ctx, int index)
-		: Freenect::FreenectDevice(ctx, index), _pub(NULL), _frameCount(0) {
+		: Freenect::FreenectDevice(ctx, index), _frameCount(0) {
 		this->setLed(LED_RED);
 	}
-	// Do not call directly even in child
+
 	void VideoCallback(void* image, uint32_t frameTimestamp) {
 		return;
 	}
 	
-	// Do not call directly even in child
 	void DepthCallback(void* image, uint32_t frameTimestamp) {
 		uint16_t *depth = static_cast<uint16_t*>(image);
 		uint64_t timestamp = Thread::getTimeStampMs();
 
 		_frameCount++;
-		std::cout << "got new depth data (kinect timestamp: " << frameTimestamp << ", modulo: " << _frameCount%_modulo << ")";
-		if (! (_frameCount%_modulo)) {
-			std::cout << ", sending data (" << (1000/(timestamp-_lastTimestamp)) << " frames per second)...";
-		}
-		std::cout << std::endl << std::flush;
-		if(!_pub || _frameCount%_modulo)			//send every _frameCount modulo _modulo frame
+		if(!pubDepth || _frameCount % _modulo)			//send every _frameCount modulo _modulo frame
 			return;
+
+		std::cout << "Sending depth data (" << (1000/(timestamp-_lastTimestamp)) << " frames per second)..." << std::endl << std::flush;
 
 		for( unsigned int i = 0; i < 480; i++ ) {
 			Message* msg = new Message();
@@ -64,6 +64,7 @@ public:
 				msg->putMeta("um.timestampIncrement", toStr(0));
 				msg->putMeta("um.marker", toStr(false));
 			}
+			
 			struct RTPData *data = new struct RTPData;
 			data->row = i;
 			data->timestamp = timestamp;
@@ -71,22 +72,19 @@ public:
 			memcpy(data->data, depth + (640 * i), sizeof(uint16_t) * 640);		//copy one depth data row into rtp data
 			msg->setData((char*)data, sizeof(struct RTPData));
 			
-			_pub->send(msg);
+			pubDepth.send(msg);
 			delete data;
 			delete msg;
 		}
+		
 		_lastTimestamp=timestamp;
 	}
-	void setPub(Publisher *pub) {
-		_pub=pub;
-	};
 
 	void setModulo(uint16_t modulo) {
 		_modulo=modulo;
 	};
 
 private:
-	Publisher *_pub;
 	uint16_t _modulo;
 	uint8_t _frameCount;
 	uint64_t _lastTimestamp;
@@ -109,29 +107,40 @@ int main(int argc, char** argv) {
 
 	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
 
-	PublisherConfigRTP pubConfig("kinect-pubsub");
+	PublisherConfigRTP pubConfig("kinect.depth");
 	pubConfig.setTimestampIncrement(1);
-	Publisher pubFoo(&pubConfig);
+	pubDepth = Publisher(&pubConfig);
 
-	Discovery disc(Discovery::MDNS);
-	
-	Node node;
+	disc = Discovery(Discovery::MDNS);
 	disc.add(node);
-	node.addPublisher(pubFoo);
+
+	node.addPublisher(pubDepth);
 
 	int testFrame = 0;
 	
 	while(true) {
 		try {
 			device = &freenect.createDevice<FreenectBridge>(0);
-			device->setPub(&pubFoo);
 			device->setModulo(modulo);
 			device->startDepth();
+#if 0
+	FREENECT_VIDEO_RGB             = 0, /**< Decompressed RGB mode (demosaicing done by libfreenect) */
+	FREENECT_VIDEO_BAYER           = 1, /**< Bayer compressed mode (raw information from camera) */
+	FREENECT_VIDEO_IR_8BIT         = 2, /**< 8-bit IR mode  */
+	FREENECT_VIDEO_IR_10BIT        = 3, /**< 10-bit IR mode */
+	FREENECT_VIDEO_IR_10BIT_PACKED = 4, /**< 10-bit packed IR mode */
+	FREENECT_VIDEO_YUV_RGB         = 5, /**< YUV RGB mode */
+	FREENECT_VIDEO_YUV_RAW         = 6, /**< YUV Raw mode */
+	FREENECT_VIDEO_DUMMY           = 2147483647, /**< Dummy value to force enum to be 32 bits wide */
+#endif
+//			device->setVideoFormat(FREENECT_VIDEO_IR_8BIT);
 //			device->startVideo();
 			while(1)
 				Thread::sleepMs(4000);
+			
 		} catch(std::runtime_error e) {
 			// send a few test images and retry
+#if 1
 			for (;;) {
 				testFrame++;
 				uint64_t timestamp = Thread::getTimeStampMs();
@@ -160,7 +169,8 @@ int main(int argc, char** argv) {
 					
 					msg->setData((char*)data, sizeof(struct RTPData));
 
-					pubFoo.send(msg);
+					pubDepth.send(msg);
+
 					delete data;
 					delete msg;
 				}
@@ -169,8 +179,9 @@ int main(int argc, char** argv) {
 					break;
 				if (testFrame % 640 == 0)
 					testFrame = 0;
-				Thread::sleepMs(5);
+				Thread::sleepMs(20);
 			}
+#endif
 		}
 	}
 	

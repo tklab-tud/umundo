@@ -70,11 +70,15 @@
 
 %ignore Publisher(const SharedPtr<PublisherImpl>);
 %ignore Publisher(const Publisher&);
+%ignore Publisher();
+
 %ignore PublisherStub(const SharedPtr<PublisherStubImpl>);
 %ignore PublisherStub(const PublisherStub&);
 
 %ignore Subscriber(const SharedPtr<SubscriberImpl>);
 %ignore Subscriber(const Subscriber&);
+%ignore Subscriber();
+
 %ignore SubscriberStub(const SharedPtr<SubscriberStubImpl>);
 %ignore SubscriberStub(const SubscriberStub&);
 

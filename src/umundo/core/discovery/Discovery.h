@@ -78,7 +78,8 @@ public:
 	 * This will call the Factory to instantiate a new concrete implementor from its registered prototype.
 	 *
 	 */
-	Discovery(DiscoveryConfig* = NULL); ///< Get the discovery subsystem with given type
+	Discovery() : _impl() {}
+	Discovery(DiscoveryConfig* config); ///< Get the discovery subsystem with given type
 	Discovery(DiscoveryType type, const std::string domain = ""); ///< Convenience constructor to pass a domain
 
 	Discovery(SharedPtr<DiscoveryImpl> const impl) : _impl(impl) { }

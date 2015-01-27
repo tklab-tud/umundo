@@ -48,7 +48,7 @@ public:
 		_internalDepthBuffer = new uint8_t[640*480*3];
 		for (unsigned int i = 0; i<480; i++)
 			_mask[i] = true;
-		//gamma precalculations
+		// gamma precalculations
 		for ( unsigned int i = 0 ; i < 2048 ; i++) {
 			float v = i/2048.0;
 			v = std::pow(v, 3)* 6;
@@ -271,7 +271,7 @@ void InitGL(int Width, int Height) {
 int main(int argc, char** argv) {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	SubscriberConfigRTP subConfig("kinect-pubsub");
+	SubscriberConfigRTP subConfig("kinect.depth");
 	//subConfig.setMulticastIP("224.1.2.3");
 	//subConfig.setMulticastPortbase(42142);
 	Subscriber subFoo(&subConfig);

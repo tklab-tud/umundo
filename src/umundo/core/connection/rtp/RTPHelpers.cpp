@@ -25,8 +25,8 @@
 #include <winsock2.h>
 #endif // WIN32
 
-#include <boost/bind.hpp>
 #include "umundo/core/connection/rtp/RTPHelpers.h"
+#include <boost/bind.hpp>
 
 namespace umundo {
 

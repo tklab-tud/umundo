@@ -18,6 +18,10 @@
  *  @endcond
  */
 
+#ifndef __has_extension
+#define __has_extension __has_feature
+#endif
+
 #ifndef WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>

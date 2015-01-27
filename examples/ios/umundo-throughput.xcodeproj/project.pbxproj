@@ -236,14 +236,13 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../../contrib/prebuilt/ios/include,
+					"../../contrib/prebuilt/ios-universal/include",
 					../../contrib/prebuilt/include,
-					../../rpc/src,
-					../../s11n/src,
-					../../core/src,
-					../../core/bindings,
+					../../src,
+					../../src/bindings/core/objc,
+					../../src/bindings/s11n/objc,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -267,14 +266,13 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../../contrib/prebuilt/ios/include,
+					"../../contrib/prebuilt/ios-universal/include",
 					../../contrib/prebuilt/include,
-					../../rpc/src,
-					../../s11n/src,
-					../../core/src,
-					../../core/bindings,
+					../../src,
+					../../src/bindings/core/objc,
+					../../src/bindings/s11n/objc,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios";
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				SDKROOT = iphoneos;
@@ -292,6 +290,7 @@
 				GCC_PREFIX_HEADER = "umundo-throughput/umundo-throughput-Prefix.pch";
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-throughput/umundo-throughput-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
@@ -309,6 +308,7 @@
 				GCC_PREFIX_HEADER = "umundo-throughput/umundo-throughput-Prefix.pch";
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-throughput/umundo-throughput-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",

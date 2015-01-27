@@ -21,9 +21,10 @@
 #ifndef ZEROMQPUBLISHER_H_AX5HLY5Q
 #define ZEROMQPUBLISHER_H_AX5HLY5Q
 
-#include <boost/enable_shared_from_this.hpp>
 
 #include "umundo/core/Common.h"
+#include <boost/enable_shared_from_this.hpp>
+
 #include "umundo/core/connection/Publisher.h"
 #include "umundo/core/thread/Thread.h"
 

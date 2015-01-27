@@ -23,8 +23,12 @@
 
 #include "umundo/core/Common.h"
 
-#if defined(NO_STRNDUP) || defined(APPLE)
-char* strndup (const char *s, size_t n);
+#if defined(NO_STRNDUP)
+char* strndup (const char* s, size_t n);
+#endif
+
+#if defined(NO_STRNLEN)
+size_t strnlen(const char* s, size_t n);
 #endif
 
 #ifdef ANDROID

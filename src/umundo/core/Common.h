@@ -32,6 +32,11 @@
 // http://stackoverflow.com/questions/1881494/how-to-expose-stl-list-over-dll-boundary
 // http://stackoverflow.com/questions/5661738/common-practice-in-dealing-with-warning-c4251-class-needs-to-have-dll-inter/
 
+// old clang compilers
+#ifndef __has_extension
+#define __has_extension __has_feature
+#endif
+
 #if defined(_MSC_VER)
 // disable signed / unsigned comparison warnings
 #pragma warning (disable : 4018)

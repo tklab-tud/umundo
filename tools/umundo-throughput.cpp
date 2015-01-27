@@ -28,25 +28,6 @@
 
 using namespace umundo;
 
-// see http://stackoverflow.com/questions/9695720/how-do-i-convert-a-64bit-integer-to-a-char-array-and-back
-uint64_t charTo64bitNum(const char* a) {
-	uint64_t n = 0;
-	n     = (((int64_t)a[0] << 56) & 0xFF00000000000000U)
-	      | (((int64_t)a[1] << 48) & 0x00FF000000000000U)
-	      | (((int64_t)a[2] << 40) & 0x0000FF0000000000U)
-	      | (((int64_t)a[3] << 32) & 0x000000FF00000000U)
-	      | ((a[4] << 24) & 0x00000000FF000000U)
-	      | ((a[5] << 16) & 0x0000000000FF0000U)
-	      | ((a[6] <<  8) & 0x000000000000FF00U)
-	      | (a[7]         & 0x00000000000000FFU);
-	return n;
-}
-
-void uint64ToChar(char a[], uint64_t num) {
-	for(int i = 0; i < 8; i++) a[i] = num >> (8-1-i)*8;
-}
-
-
 enum PubType {
 	PUB_RTP,
 	PUB_TCP,
@@ -57,6 +38,7 @@ RMutex mutex;
 bool isClient = false;
 bool isServer = false;
 uint64_t currSeqNr = 0;
+uint32_t reportInterval = 1000;
 
 // server
 size_t bytesPerSecond = 1024 * 1024;
@@ -71,8 +53,8 @@ PubType type = PUB_TCP;
 size_t bytesRcvd = 0;
 size_t pktsRecvd = 0;
 size_t lastSeqNr = 0;
-uint64_t lastTimeStamp = 0;
 size_t pktsDropped = 0;
+uint64_t lastTimeStamp = 0;
 Publisher reporter;
 
 class Report {
@@ -83,7 +65,9 @@ public:
 	size_t pktsLate;
 	size_t latency;
 	double pcntLoss;
-	std::string name;
+	std::string pubId;
+	std::string hostId;
+	std::string hostName;
 };
 
 std::map<std::string, Report> reports;
@@ -94,8 +78,10 @@ class ThroughputReceiver : public Receiver {
 		bytesRcvd += msg->size();
 		pktsRecvd++;
 		
-		currSeqNr = charTo64bitNum(msg->data());
-		uint64_t currTimeStamp = charTo64bitNum(msg->data() + 8);
+		uint64_t currTimeStamp;
+		Message::read(&currSeqNr, msg->data());
+		Message::read(&currTimeStamp, msg->data() + 8);
+		Message::read(&reportInterval, msg->data() + 16);
 
 		if (currSeqNr < lastSeqNr)
 			lastSeqNr = 0;
@@ -107,7 +93,7 @@ class ThroughputReceiver : public Receiver {
 		lastSeqNr = currSeqNr;
 
 		// reply?
-		if (currTimeStamp - 1000 >= lastTimeStamp) {
+		if (currTimeStamp - reportInterval >= lastTimeStamp) {
 			RScopeLock lock(mutex);
 			Message* msg = new Message();
 			msg->putMeta("bytes.rcvd", toStr(bytesRcvd));
@@ -115,6 +101,7 @@ class ThroughputReceiver : public Receiver {
 			msg->putMeta("pkts.rcvd", toStr(pktsRecvd));
 			msg->putMeta("last.seq", toStr(lastSeqNr));
 			msg->putMeta("last.timestamp", toStr(currTimeStamp));
+			msg->putMeta("hostname", umundo::Host::getHostname());
 			reporter.send(msg);
 			delete msg;
 
@@ -140,10 +127,14 @@ public:
 		report.pktsDropped = strTo<size_t>(msg->getMeta("pkts.dropped"));
 		report.bytesRcvd   = strTo<size_t>(msg->getMeta("bytes.rcvd"));
 		report.latency     = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("last.timestamp"));
+		report.hostName    = msg->getMeta("hostname");
+		report.hostId      = msg->getMeta("um.host");
+		report.pubId       = msg->getMeta("um.pub");
 
 		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate = currSeqNr - lastSeqNr;
 
+		
 		if (report.pktsDropped > 0) {
 			double onePerc = (double)(report.pktsDropped + report.pktsRcvd) * 0.01;
 			onePerc = (std::max)(onePerc, 0.0001);
@@ -175,6 +166,7 @@ void printUsageAndExit() {
 	printf("\t-s                 : act as a server\n");
 	printf("\t-f BYTES/s         : try to maintain given throughput\n");
 	printf("\t-t [rtp|tcp|mcast] : type of publisher to measure throughput\n");
+	printf("\t-i                 : report interval in milli-seconds\n");
 	printf("\t-l                 : acceptable packet loss in percent\n");
 	printf("\t-m <number>        : MTU to use on server (defaults to 1280)\n");
 	printf("\t-w <number>        : wait for given number of subscribers before testing\n");
@@ -237,7 +229,7 @@ size_t displayToBytes(const std::string& value) {
 
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "csm:w:l:f:t:")) != -1) {
+	while ((option = getopt(argc, argv, "csm:w:l:f:t:i:")) != -1) {
 		switch(option) {
 		case 'c':
 			isClient = true;
@@ -265,6 +257,9 @@ int main(int argc, char** argv) {
 			break;
 		case 'w':
 			waitForSubs = atoi((const char*)optarg);
+			break;
+		case 'i':
+			reportInterval = atoi((const char*)optarg);
 			break;
 		default:
 			printUsageAndExit();
@@ -298,6 +293,7 @@ int main(int argc, char** argv) {
 		case PUB_MCAST: {
 			PublisherConfigMCast config("throughput.mcast");
 			config.setTimestampIncrement(166);
+//			config.setPortbase(42142);
 			pub = Publisher(&config);
 			pub.setGreeter(&tpGreeter);
 			break;
@@ -316,23 +312,25 @@ int main(int argc, char** argv) {
 		node.addSubscriber(sub);
 		pub.waitForSubscribers(waitForSubs);
 
-		// reserve 16 bytes for timestamp and sequence number
-		size_t dataSize = (std::max)(mtu, (size_t)16);
+		// reserve 20 bytes for timestamp, sequence number and report interval
+		size_t dataSize = (std::max)(mtu, (size_t)20);
 		char* data = (char*)malloc(dataSize);
 		Message* msg = new Message();
 
 		unsigned long bytesWritten = 0;
-
+		double intervalFactor = 1;
 		uint64_t lastReportAt = Thread::getTimeStampMs();
 		while(1) {
 			uint64_t now = Thread::getTimeStampMs();
 
 			// first 16 bytes are seqNr and timestamp
-			uint64ToChar(&data[0], ++currSeqNr);
-			uint64ToChar(&data[8], now);
+			Message::write(++currSeqNr, &data[0]);
+			Message::write(now, &data[8]);
+			Message::write(reportInterval, &data[16]);
 			msg->setData(data, dataSize);
 			pub.send(msg);
 
+			intervalFactor = 1000.0 / (double)reportInterval;
 			bytesWritten += dataSize;
 			packetsWritten++;
 
@@ -346,13 +344,13 @@ int main(int argc, char** argv) {
 			}
 
 			// every second we are writing reports
-			if (now - lastReportAt > 1000) {
+			if (now - lastReportAt > reportInterval) {
 				RScopeLock lock(mutex);
 
 //				std::cout << FORMAT_COL << bytesToDisplay(bytesPerSecond) + "/s";
 				std::cout << FORMAT_COL << "byte sent";
 				std::cout << FORMAT_COL << "pkts sent";
-				std::cout << FORMAT_COL << "delay";
+				std::cout << FORMAT_COL << "sleep";
 				std::cout << FORMAT_COL << "scale";
 				switch (type) {
 				case PUB_RTP: {
@@ -371,10 +369,10 @@ int main(int argc, char** argv) {
 				std::cout << FORMAT_COL << std::endl;
 
 
-				std::cout << FORMAT_COL << bytesToDisplay(bytesWritten) + "/s";
-				std::cout << FORMAT_COL << toStr(packetsWritten) + "pkt/s";
-//				std::cout << FORMAT_COL << timeToDisplay(delay);
-				std::cout << FORMAT_COL << delay;
+				std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)bytesWritten) + "/s";
+				std::cout << FORMAT_COL << toStr(intervalFactor * (double)packetsWritten) + "pkt/s";
+				std::cout << FORMAT_COL << timeToDisplay(delay * 1000);
+//				std::cout << FORMAT_COL << delay;
 
 				if (reports.size() == 0) {
 					std::cout << FORMAT_COL << "---";
@@ -416,9 +414,9 @@ int main(int argc, char** argv) {
 							std::cout << FORMAT_COL << "up 1.2";
 						}
 					} else {
-						if (bytesWritten < fixedBytesPerSecond) {
+						if (bytesWritten * intervalFactor < fixedBytesPerSecond) {
 							bytesPerSecond *= 1.05;
-						} else {
+						} else if (bytesWritten * intervalFactor > fixedBytesPerSecond)  {
 							bytesPerSecond *= 0.95;
 						}
 					}
@@ -437,17 +435,13 @@ int main(int argc, char** argv) {
 					repIter = reports.begin();
 					while(repIter != reports.end()) {
 						const Report& report = repIter->second;
-						std::cout << FORMAT_COL << bytesToDisplay(report.bytesRcvd) + "/s";
-						std::cout << FORMAT_COL << toStr(report.pktsRcvd) + "pkt/s";
-						std::cout << FORMAT_COL << toStr(report.pktsDropped) + "pkt/s";
+						std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)(report.bytesRcvd)) + "/s";
+						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
+						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
 						std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
 						std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
 						std::cout << FORMAT_COL << (report.latency > 100000 ? "N/A" : toStr(report.latency) + "ms");
-						if (repIter->first.size() >= 6) {
-							std::cout << FORMAT_COL << repIter->first.substr(0, 6);
-						} else {
-							std::cout << FORMAT_COL << repIter->first.substr(0, 6);
-						}
+						std::cout << FORMAT_COL << report.hostId.substr(0, 6) + " (" + report.hostName + ")";
 						std::cout << std::endl;
 
 						repIter++;
@@ -477,7 +471,7 @@ int main(int argc, char** argv) {
 
 		SubscriberConfigMCast mcastConfig("throughput.mcast");
 		mcastConfig.setMulticastIP("224.1.2.3");
-		mcastConfig.setMulticastPortbase(42042);
+		mcastConfig.setMulticastPortbase(42142);
 		Subscriber mcastSub(&mcastConfig);
 		mcastSub.setReceiver(&tpRcvr);
 

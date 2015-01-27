@@ -40,10 +40,10 @@ NSObject {
 }
 
 - (id) init;
-- (void)addPublisher:
-(UMPublisher*)pub;
-- (void)addSubscriber:
-(UMSubscriber*)sub;
+- (void)addPublisher:(UMPublisher*)pub;
+- (void)addSubscriber:(UMSubscriber*)sub;
+- (void)removePublisher:(UMPublisher*)pub;
+- (void)removeSubscriber:(UMSubscriber*)sub;
 
 @end
 

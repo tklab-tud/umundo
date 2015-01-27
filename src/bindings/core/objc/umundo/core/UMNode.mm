@@ -17,6 +17,10 @@
  *  @endcond
  */
 
+#ifndef __has_extension
+#define __has_extension __has_feature
+#endif
+
 #import "UMNode.h"
 
 @implementation UMNode
@@ -35,6 +39,14 @@
 
 - (void)addSubscriber:(UMSubscriber*)sub {
   _cppNode->addSubscriber(*(sub->_cppSub.get()));
+}
+
+- (void)removePublisher:(UMPublisher*)pub {
+	_cppNode->removePublisher(*(pub->_cppPub.get()));
+}
+
+- (void)removeSubscriber:(UMSubscriber*)sub {
+	_cppNode->removeSubscriber(*(sub->_cppSub.get()));
 }
 
 @end

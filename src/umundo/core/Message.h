@@ -96,41 +96,32 @@ public:
 	static const char* read(float* value, const char* from);
 	static const char* read(double* value, const char* from);
 
-	Message() : _data(NULL), _size(0), _isQueued(false) {}
-	Message(const char* data, size_t length, Flags flag = NONE) : _data(NULL), _size(length), _isQueued(false), _flags(flag) {
-		if (_size > 0) {
-			_data = (char*)malloc(_size);
-			memcpy(_data, data, _size);
-		}
+	Message() : _size(0), _isQueued(false) {}
+	Message(const char* data, size_t length, Flags flag = NONE) : _size(length), _isQueued(false), _flags(flag) {
+		_data = SharedPtr<char>((char*)malloc(_size));
+		memcpy(_data.get(), data, _size);
 	}
 
-	Message(const Message& other) : _data(NULL), _size(other.size()), _isQueued(other._isQueued) {
-		if (_size > 0) {
-			_data = (char*)malloc(_size);
-			memcpy(_data, other.data(), _size);
-		}
-		// STL containers will copy themselves
+	Message(const Message& other) : _size(other.size()), _isQueued(other._isQueued) {
+		_size = other._size;
+		_data = other._data;
 		_meta = other._meta;
 	}
 
 	virtual ~Message() {
-		if (_data)
-			free(_data);
 	}
 
 	virtual const char* data() const                                    {
-		return _data;
+		return _data.get();
 	}
 	virtual size_t size() const                                         {
 		return _size;
 	}
 
 	virtual void setData(const char* data, size_t length)               {
-		if (_data)
-			free(_data);
 		_size = length;
-		_data = (char*)malloc(_size);
-		memcpy(_data, data, _size);
+		_data = SharedPtr<char>((char*)malloc(_size));
+		memcpy(_data.get(), data, _size);
 	}
 	virtual const void putMeta(const std::string& key, const std::string& value)  {
 		_meta[key] = value;
@@ -163,7 +154,7 @@ public:
 
 
 protected:
-	char* _data;
+	SharedPtr<char> _data;
 	size_t _size;
 	bool _isQueued;
 	uint32_t _flags;

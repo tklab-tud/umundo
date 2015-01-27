@@ -1146,8 +1146,10 @@ const std::string BonjourDiscovery::errCodeToString(DNSServiceErrorType errType)
 		return "kDNSServiceErr_NoRouter (No router currently configured (probably no network connectivity))";
 	case kDNSServiceErr_PollingMode:
 		return "kDNSServiceErr_PollingMode";
+#ifdef BONJOUR_HAS_KDNSSERVICEERR_TIMEOUT
 	case kDNSServiceErr_Timeout:
 		return "kDNSServiceErr_Timeout";
+#endif
 	}
 	return "unknown error";
 }

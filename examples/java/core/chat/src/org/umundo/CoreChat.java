@@ -14,7 +14,6 @@ import org.umundo.core.Publisher;
 import org.umundo.core.Receiver;
 import org.umundo.core.Subscriber;
 import org.umundo.core.SubscriberStub;
-import org.umundo.core.umundoNativeJavaConstants;
 
 /**
  * Make sure to set the correct path to umundo.jar in build.properties if you want to use ant!

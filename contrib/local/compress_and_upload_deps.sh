@@ -93,3 +93,20 @@ for FILE in ${PLATFORMS}; do
 		;;
 	esac
 done
+
+# link darwin x86_64 to x_86, they are universal
+# ssh ${UMUNDO_PREBUILT_HOST} \
+# 	ln -s ${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86_64-clang-libstdc++.tgz \
+# 				${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86-clang-libstdc++.tgz
+#
+# ssh ${UMUNDO_PREBUILT_HOST} \
+# 	ln -s ${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86_64-clang-libc++.tgz \
+# 				${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86-clang-libc++.tgz
+#
+# ssh ${UMUNDO_PREBUILT_HOST} \
+# 	ln -s ${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86_64-gnu-libstdc++.tgz \
+# 				${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86-gnu-libstdc++.tgz
+#
+# ssh ${UMUNDO_PREBUILT_HOST} \
+# 	ln -s ${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86_64-gnu-libc++.tgz \
+# 				${UMUNDO_PREBUILT_PATH}/${VERSION}/umundo-prebuilt-darwin-x86-gnu-libc++.tgz

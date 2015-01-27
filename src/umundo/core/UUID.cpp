@@ -19,6 +19,8 @@
 
 #include "umundo/core/UUID.h"
 
+// silence the warning
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>

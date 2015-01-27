@@ -21,20 +21,27 @@
 #include "umundo/config.h"
 
 // there is no no strndup in Mac OSX 10.5
-#if defined(NO_STRNDUP) || defined(APPLE)
-char* strndup (const char *s, size_t n) {
-	char *result;
+#if defined(NO_STRNDUP)
+char* strndup (const char* s, size_t n) {
+	char* result;
 	size_t len = strlen (s);
 
 	if (n < len)
 		len = n;
 
-	result = (char *) malloc (len + 1);
+	result = (char*)malloc (len + 1);
 	if (!result)
 		return 0;
 
 	result[len] = '\0';
-	return (char *) memcpy (result, s, len);
+	return (char*)memcpy (result, s, len);
+}
+#endif
+
+#if defined(NO_STRNLEN)
+size_t strnlen(const char* s, size_t n) {
+	const char* end = (const char*)memchr(s, 0, n);
+	return end ? (size_t)(end - s) : n;
 }
 #endif
 

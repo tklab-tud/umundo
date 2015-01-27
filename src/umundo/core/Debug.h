@@ -35,7 +35,7 @@
 #ifdef ENABLE_TRACING
 #define UM_TRACE(fmt, ...) umundo::Trace trace##__LINE__(fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
 #else
-#define UM_TRACE(fmt, ...) 1
+#define UM_TRACE(fmt, ...) ((void)0)
 #endif
 
 // never strip logging

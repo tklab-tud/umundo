@@ -11,15 +11,17 @@ if (APPLE OR IOS)
 	file(GLOB_RECURSE UMUNDOCORE_OBJC_HEADER_FILES ${PROJECT_SOURCE_DIR}/src/bindings/core/objc/*.h)
 	list(APPEND UMUNDOCORE_HEADER_FILES ${UMUNDOCORE_OBJC_HEADER_FILES})
 	list(APPEND UMUNDOCORE_FILES ${UMUNDOCORE_OBJC_FILES})
-	if (IOSSIM)
-		foreach(UMUNDOCORE_OBJC_FILE ${UMUNDOCORE_OBJC_FILES})
+
+	foreach(UMUNDOCORE_OBJC_FILE ${UMUNDOCORE_OBJC_FILES})
+		set_source_files_properties(${UMUNDOCORE_OBJC_FILE} PROPERTIES COMPILE_FLAGS "-ObjC++")
+		if (IOSSIM)
 #
 # set_source_files_properties is local to the directory -> we cannot move this to bindings/:
 # http://www.cmake.org/pipermail/cmake/2010-March/036012.html
 #
 			set_source_files_properties(${UMUNDOCORE_OBJC_FILE} PROPERTIES COMPILE_FLAGS "-fobjc-abi-version=2 -fobjc-legacy-dispatch")
-		endforeach()
-	endif()
+		endif()
+	endforeach()
 	include_directories("${PROJECT_SOURCE_DIR}/src/bindings/core/objc")
 endif()
 
@@ -90,15 +92,34 @@ if (DISC_BONJOUR OR DISC_BONJOUR_EMBED)
 			LIST(APPEND UMUNDOCORE_LIBRARIES "Netapi32")
 		endif()
 
+		set(CMAKE_REQUIRED_INCLUDES ${BonjourEmbedded_INCLUDE_DIR})
+		CHECK_C_SOURCE_COMPILES("
+			#include <dns_sd.h>
+			int main(){
+				DNSServiceErrorType errType = kDNSServiceErr_Timeout;
+		  }
+		" BONJOUR_HAS_KDNSSERVICEERR_TIMEOUT)
+
 	else()
 		if (NOT APPLE AND NOT IOS)
 			# bonjour library is automatically available on mac
-
 			find_package(Bonjour REQUIRED)
 			include_directories(${Bonjour_INCLUDE_DIR})
 			LIST(APPEND UMUNDOCORE_LIBRARIES ${Bonjour_LIBRARY})
+		else()
+			set(CMAKE_REQUIRED_INCLUDES ${Bonjour_INCLUDE_DIR})
 		endif()
+
+		CHECK_C_SOURCE_COMPILES("
+			#include <dns_sd.h>
+			int main(){
+				DNSServiceErrorType errType = kDNSServiceErr_Timeout;
+		  }
+		" BONJOUR_HAS_KDNSSERVICEERR_TIMEOUT)
+
+
 	endif()
+		
 endif()
 
 ###########################################

@@ -300,12 +300,24 @@ endif()
 
 #message(FATAL_ERROR "UMUNDO_PLATFORM_ID: ${UMUNDO_PLATFORM_ID}")
 
+SET(UMUNDO_PLATFORM_ABI ${UMUNDO_PLATFORM_ID}) # accounted for ABI equality
+if (NOT CMAKE_CROSSCOMPILING)
+	if (APPLE AND NOT HOST_64BIT)
+		STRING(REGEX REPLACE "-x86" "-x86_64" UMUNDO_PLATFORM_ABI ${UMUNDO_PLATFORM_ABI}) # universal binaries
+	endif()
+	if (APPLE AND (${CMAKE_CXX_COMPILER_ID_LC} STREQUAL "gnu"))
+		STRING(REGEX REPLACE "-gnu" "-clang" UMUNDO_PLATFORM_ABI ${UMUNDO_PLATFORM_ABI}) # abi compatible
+	elseif(UNIX AND (${CMAKE_CXX_COMPILER_ID_LC} STREQUAL "clang"))
+		STRING(REGEX REPLACE "-clang" "-gnu" UMUNDO_PLATFORM_ABI ${UMUNDO_PLATFORM_ABI}) # abi compatible
+	endif()
+endif()
+
 SET(UMUNDO_PREBUILT_LIBRARY_PATH)
 SET(UMUNDO_PREBUILT_HEADER_PATH  "${PROJECT_SOURCE_DIR}/contrib/prebuilt")
 SET(UMUNDO_PREBUILT_LIBRARY_PATH "${PROJECT_SOURCE_DIR}/contrib/prebuilt/${UMUNDO_PLATFORM_ID}")
 
 SET(UMUNDO_LIBRARY_HOST_URL_PREFIX "http://umundo.tk.informatik.tu-darmstadt.de/prebuilt" CACHE STRING "The root path of an URL where to look for prebuilt libraries." FORCE)
-SET(UMUNDO_LIBRARY_ARCHIVE_NAME "umundo-prebuilt-${UMUNDO_PLATFORM_ID}.tgz")
+SET(UMUNDO_LIBRARY_ARCHIVE_NAME "umundo-prebuilt-${UMUNDO_PLATFORM_ABI}.tgz")
 
 #
 # Download platform independent headers
@@ -546,7 +558,10 @@ endif()
 # see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
 if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
-	set(CMAKE_OSX_ARCHITECTURES "x86_64")
+	if (HOST_64BIT)
+		# do not build universal binaries anymore ..
+		set(CMAKE_OSX_ARCHITECTURES "x86_64")
+	endif()
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
   	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
@@ -556,9 +571,12 @@ if (APPLE)
   	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
     set(LIBCPP libc++)
   endif()
-	foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
-			set(${FLAGS} "${${FLAGS}} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -stdlib=${LIBCPP}")
-  endforeach()
+  if (MACOSX_VERSION VERSION_GREATER 10.6.99) 
+		# unrecognized command line option in 10.6 
+		foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+				set(${FLAGS} "${${FLAGS}} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -stdlib=${LIBCPP}")
+	  endforeach()
+	endif()
 endif()
 
 if (IOS)

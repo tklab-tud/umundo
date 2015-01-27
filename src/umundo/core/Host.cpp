@@ -164,6 +164,15 @@ const std::vector<Interface> Host::getInterfaces() {
 			case AF_LINK:
 				struct sockaddr_dl* sdl = (struct sockaddr_dl *)ifa->ifa_addr;
 				if (sdl->sdl_alen == 6) {
+//					char macaddr[12];
+//					sprintf(macaddr, "%02X%02X%02X%02X%02X%02X",
+//									(unsigned char)(LLADDR(sdl))[0],
+//									(unsigned char)(LLADDR(sdl))[1],
+//									(unsigned char)(LLADDR(sdl))[2],
+//									(unsigned char)(LLADDR(sdl))[3],
+//									(unsigned char)(LLADDR(sdl))[4],
+//									(unsigned char)(LLADDR(sdl))[5]);
+//					currIfc.mac = std::string(macaddr, 12);
 					currIfc.mac = std::string(LLADDR(sdl), sdl->sdl_alen);
 				}
 				break;
@@ -189,8 +198,18 @@ const std::vector<Interface> Host::getInterfaces() {
 	do {
 		Interface currIfc;
 
-		if (pAdapterInfo->AddressLength == 6)
+		if (pAdapterInfo->AddressLength == 6) {
+//			char macaddr[12];
+//			sprintf(macaddr, "%02X%02X%02X%02X%02X%02X",
+//							(unsigned char)r->ifr_hwaddr.sa_data[0],
+//							(unsigned char)r->ifr_hwaddr.sa_data[1],
+//							(unsigned char)r->ifr_hwaddr.sa_data[2],
+//							(unsigned char)r->ifr_hwaddr.sa_data[3],
+//							(unsigned char)r->ifr_hwaddr.sa_data[4],
+//							(unsigned char)r->ifr_hwaddr.sa_data[5]);
+//			currIfc.mac = std::string(macaddr, 12);
 			currIfc.mac = std::string((const char*)pAdapterInfo->Address, 6);
+		}
 
 		currIfc.name = std::string(pAdapterInfo->AdapterName);
 		pAdapterInfo = pAdapterInfo->Next;
@@ -199,7 +218,90 @@ const std::vector<Interface> Host::getInterfaces() {
 #endif
 
 #ifdef ANDROID
-	// TODO: Update when there actually is a way to get the MAC
+// see https://groups.google.com/forum/#!topic/android-ndk/6Y-0Eid3mGw
+	struct ifreq *ifr;
+	struct ifconf ifc;
+	int s, i;
+	int numif;
+	
+	// find number of interfaces.
+	memset(&ifc, 0, sizeof(ifc));
+	ifc.ifc_ifcu.ifcu_req = NULL;
+	ifc.ifc_len = 0;
+	
+	if ((s = ::socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+		UM_LOG_ERR("Could not obtain socket!");
+		return ifcs;
+	}
+	
+	if (ioctl(s, SIOCGIFCONF, &ifc) < 0) {
+		UM_LOG_ERR("ioctl SIOCGIFCONF error!");
+		return ifcs;
+	}
+	
+	if ((ifr = (ifreq*)malloc(ifc.ifc_len)) == NULL) {
+		UM_LOG_ERR("Could not malloc ifreq!");
+		return ifcs;
+	}
+	
+	ifc.ifc_ifcu.ifcu_req = ifr;
+	
+	if (ioctl(s, SIOCGIFCONF, &ifc) < 0) {
+		UM_LOG_ERR("ioctl SIOCGIFCONF error!");
+		return ifcs;
+	}
+	
+	numif = ifc.ifc_len / sizeof(struct ifreq);
+	
+	for (i = 0; i < numif; i++) {
+		Interface currIfc;
+
+		struct ifreq *r = &ifr[i];
+		currIfc.name = r->ifr_name;
+		
+//		struct sockaddr_in *sin = (struct sockaddr_in *)&r->ifr_addr;
+		if (!strcmp(r->ifr_name, "lo"))
+			continue; // skip loopback interface
+		
+		switch (r->ifr_addr.sa_family) {
+			case AF_INET: {
+				char saddr4[INET_ADDRSTRLEN];
+				inet_ntop(r->ifr_addr.sa_family, &((struct sockaddr_in*)&r->ifr_addr)->sin_addr, saddr4, sizeof(saddr4));
+				currIfc.ipv4.push_back(saddr4);
+				break;
+			}
+			case AF_INET6: {
+				char saddr6[INET6_ADDRSTRLEN];
+				inet_ntop(r->ifr_addr.sa_family, &((struct sockaddr_in6*)&r->ifr_addr)->sin6_addr, saddr6, sizeof(saddr6));
+				currIfc.ipv4.push_back(saddr6);
+				break;
+			}
+			default:
+				break;
+		}
+		
+		// get MAC address
+		if(ioctl(s, SIOCGIFHWADDR, r) < 0) {
+			UM_LOG_ERR("ioctl(SIOCGIFHWADDR) error!");
+			continue;
+		}
+		
+		char macaddr[12];
+		sprintf(macaddr, "%02X%02X%02X%02X%02X%02X",
+						(unsigned char)r->ifr_hwaddr.sa_data[0],
+						(unsigned char)r->ifr_hwaddr.sa_data[1],
+						(unsigned char)r->ifr_hwaddr.sa_data[2],
+						(unsigned char)r->ifr_hwaddr.sa_data[3],
+						(unsigned char)r->ifr_hwaddr.sa_data[4],
+						(unsigned char)r->ifr_hwaddr.sa_data[5]);
+		currIfc.mac = std::string(macaddr, 12);
+		
+		ifcs.push_back(currIfc);
+	}
+	close(s);
+	
+	free(ifr);
+
 #endif
 
 	return ifcs;

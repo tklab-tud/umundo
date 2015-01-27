@@ -89,12 +89,6 @@ using namespace umundo;
 // Publisher and Subscriber below
 
 
-//***************
-// Always copy messages into the JVM
-
-// messages are destroyed upon return, always pass copies to Java
-%typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
-
 
 //******************************
 // Beautify Node class
@@ -282,6 +276,9 @@ import java.util.Vector;
 %rename(getMetaNative) umundo::Message::getMeta();
 %javamethodmodifiers umundo::Message::getMeta() "private";
 
+// messages are destroyed upon return, adopt data to Java
+%typemap(javadirectorin) umundo::Message* "(msg == 0) ? null : new Message(new Message(msg, false))"
+
 // import java.util.HashMap
 %typemap(javaimports) umundo::Message %{
 import java.util.HashMap;
@@ -313,6 +310,7 @@ public HashMap<String, String> getMeta() {
   return $jnicall;
 }
 
+// GetPrimitiveArrayCritical might get us around copying
 %typemap(out) char *data {
   $result = JCALL1(NewByteArray, jenv, ((umundo::Message const *)arg1)->size());
   JCALL4(SetByteArrayRegion, jenv, $result, 0, ((umundo::Message const *)arg1)->size(), (jbyte *)$1);

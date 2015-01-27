@@ -21,11 +21,12 @@
 #ifndef RTPHELPERS_H_XQPJWLQR
 #define RTPHELPERS_H_XQPJWLQR
 
+#include "umundo/core/Common.h"
+
 #include <cstring>
 #include <boost/function.hpp>
 
 #include "umundo/config.h"
-#include "umundo/core/Common.h"
 #include "umundo/core/thread/Thread.h"
 
 #include "umundo/core/connection/rtp/libre.h"

@@ -17,6 +17,10 @@
  *  @endcond
  */
 
+#ifndef __has_extension
+#define __has_extension __has_feature
+#endif
+
 #include "UMTypedSubscriber.h"
 #import "umundo/core.h"
 

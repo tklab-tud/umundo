@@ -21,11 +21,12 @@
 #ifndef RTPSUBSCRIBER_H_HQPJWLQR
 #define RTPSUBSCRIBER_H_HQPJWLQR
 
+#include "umundo/core/Common.h"
+
 #include <queue>
 #include <boost/shared_ptr.hpp>
 
 #include "umundo/config.h"
-#include "umundo/core/Common.h"
 #include "umundo/core/thread/Thread.h"
 #include "umundo/core/Message.h"
 #include "umundo/core/connection/Subscriber.h"

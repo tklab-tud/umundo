@@ -1,3 +1,4 @@
+#include "umundo/core/Common.h"
 #include <zmq.h>
 #include <inttypes.h>
 #include <string.h>

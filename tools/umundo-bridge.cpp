@@ -91,6 +91,7 @@ void printUsageAndExit() {
 	printf("\tumundo-bridge -t\n");
 	exit(1);
 }
+
 std::string ipToStr(uint32_t ip) {
 	uint8_t* ip_p = (uint8_t*)&ip;
 	std::string output = toStr((int)ip_p[0])+"."+toStr((int)ip_p[1])+"."+toStr((int)ip_p[2])+"."+toStr((int)ip_p[3]);
@@ -808,8 +809,10 @@ private:
 					subConfig = new SubscriberConfigMCast(msg->get("channelName"));
 					subConfig->setMulticastIP(msg->get("ip"));
 					subConfig->setMulticastPortbase(msg->get<uint16_t>("port"));
-				} else {
+				} else if (msg->get<bool>("isRTP")) {
 					subConfig = new SubscriberConfigRTP(msg->get("channelName"));
+				} else {
+					subConfig = new SubscriberConfigTCP(msg->get("channelName"));
 				}
 
 				sub = new Subscriber(subConfig);

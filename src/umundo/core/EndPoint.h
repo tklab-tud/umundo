@@ -238,7 +238,8 @@ public:
 		return _impl != other._impl;
 	}
 	bool operator<(const EndPoint& other) const {
-		return _impl < other._impl;
+		// use operator< from pointee
+		return *_impl.get() < *other._impl.get();
 	}
 
 	EndPoint& operator=(const EndPoint& other) {

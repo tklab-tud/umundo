@@ -35,20 +35,15 @@ class Message;
 
 class UMUNDO_API SubscriberStubImpl : public EndPointImpl {
 public:
-	SubscriberStubImpl() : _uuid(UUID::getUUID()), _multicast(false) {}
+	SubscriberStubImpl() : _multicast(false) {
+		_uuid = UUID::getUUID();
+	}
 	virtual ~SubscriberStubImpl() {}
 	virtual std::string getChannelName() const            {
 		return _channelName;
 	}
 	virtual void setChannelName(const std::string& channelName) {
 		_channelName = channelName;
-	}
-
-	virtual std::string getUUID() const            {
-		return _uuid;
-	}
-	virtual void setUUID(const std::string& uuid)  {
-		_uuid = uuid;
 	}
 
 	virtual bool isMulticast() const                 {
@@ -60,7 +55,6 @@ public:
 
 protected:
 	std::string _channelName;
-	std::string _uuid;
 	bool _multicast;
 };
 
@@ -101,9 +95,6 @@ public:
 
 	virtual const std::string getChannelName() const     {
 		return _impl->getChannelName();
-	}
-	virtual const std::string getUUID() const            {
-		return _impl->getUUID();
 	}
 	virtual const bool isRTP() const                     {
 		return _impl->implType == RTP;

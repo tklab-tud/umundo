@@ -31,8 +31,6 @@
 
 #include <boost/enable_shared_from_this.hpp>
 
-#define SHORT_UUID(uuid) uuid.substr(0, 8)
-
 namespace umundo {
 
 class Connectable;

@@ -352,7 +352,7 @@ public:
 		_instances.erase(desc);
 	}
 
-	virtual void changed(ServiceDescription desc) {}
+	virtual void changed(ServiceDescription desc, uint64_t what = 0) {}
 
 	std::set<ServiceDescription> _instances;
 };

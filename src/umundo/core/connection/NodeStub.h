@@ -30,8 +30,6 @@
 
 #include <boost/enable_shared_from_this.hpp>
 
-#define SHORT_UUID(uuid) uuid.substr(0, 8)
-
 namespace umundo {
 
 class Connectable;
@@ -39,16 +37,6 @@ class Discovery;
 
 class UMUNDO_API NodeStubBaseImpl : public EndPointImpl {
 public:
-	std::string getUUID() const {
-		return _uuid;
-	}
-	virtual void setUUID(const std::string& uuid) {
-		_uuid = uuid;
-	}
-
-protected:
-	std::string _uuid;
-
 };
 
 /**

@@ -36,7 +36,7 @@ public:
 
 	virtual void added(T) = 0;
 	virtual void removed(T) = 0;
-	virtual void changed(T) = 0;
+	virtual void changed(T, uint64_t what = 0) = 0;
 };
 }
 

@@ -438,11 +438,17 @@ void ZeroMQNode::added(EndPoint endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("added");
 
-	UM_LOG_INFO("%s: Adding endpoint at %s://%s:%d",
+	if (_endPoints.find(endPoint) != _endPoints.end()) {
+		UM_LOG_INFO("%s: Ignoring addition of endpoint at %s - already known",
+								SHORT_UUID(_uuid).c_str(),
+								endPoint.getAddress().c_str());
+		return;
+	}
+	_endPoints.insert(endPoint);
+
+	UM_LOG_INFO("%s: Adding endpoint at %s",
 	            SHORT_UUID(_uuid).c_str(),
-	            endPoint.getTransport().c_str(),
-	            endPoint.getIP().c_str(),
-	            endPoint.getPort());
+	            endPoint.getAddress().c_str());
 
 	COMMON_VARS;
 
@@ -465,11 +471,16 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("removed");
 
-	UM_LOG_INFO("%s: Removing endpoint at %s://%s:%d",
+	if (_endPoints.find(endPoint) == _endPoints.end()) {
+		UM_LOG_INFO("%s: Ignoring removal of endpoint at %s - not known",
+								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
+		return;
+	}
+	_endPoints.erase(endPoint);
+	
+	UM_LOG_INFO("%s: Removing endpoint at %s",
 	            SHORT_UUID(_uuid).c_str(),
-	            endPoint.getTransport().c_str(),
-	            endPoint.getIP().c_str(),
-	            endPoint.getPort());
+	            endPoint.getAddress().c_str());
 
 	COMMON_VARS;
 	std::stringstream otherAddress;
@@ -486,8 +497,10 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 
 }
 
-void ZeroMQNode::changed(EndPoint endPoint) {
-	UM_TRACE("changed");
+void ZeroMQNode::changed(EndPoint endPoint, uint64_t what) {
+	UM_LOG_INFO("%s changed -> removing and readding endpoint", SHORT_UUID(_uuid).c_str());
+	removed(endPoint);
+	added(endPoint);
 }
 
 /**

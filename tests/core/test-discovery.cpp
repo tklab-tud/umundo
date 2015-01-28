@@ -26,28 +26,28 @@ public:
 		assert(_endPoints.find(node) != _endPoints.end());
 		_endPoints.erase(node);
 	}
-	void changed(EndPoint node) {
+	void changed(EndPoint node, uint64_t what) {
 		assert(_endPoints.find(node) != _endPoints.end());
 	}
 
 	std::set<EndPoint> _endPoints;
 };
 
-class MDNSAdResultSet : public ResultSet<MDNSAd*> {
+class MDNSAdResultSet : public ResultSet<MDNSAdvertisement*> {
 public:
-	void added(MDNSAd* node) {
+	void added(MDNSAdvertisement* node) {
 		assert(_endPoints.find(node) == _endPoints.end());
 		_endPoints.insert(node);
 	}
-	void removed(MDNSAd* node) {
+	void removed(MDNSAdvertisement* node) {
 		assert(_endPoints.find(node) != _endPoints.end());
 		_endPoints.erase(node);
 	}
-	void changed(MDNSAd* node) {
+	void changed(MDNSAdvertisement* node, uint64_t what) {
 		assert(_endPoints.find(node) != _endPoints.end());
 	}
 
-	std::set<MDNSAd*> _endPoints;
+	std::set<MDNSAdvertisement*> _endPoints;
 };
 
 class DiscoveryObjectResultSet : public ResultSet<EndPoint> {
@@ -60,7 +60,7 @@ public:
 	void removed(EndPoint node) {
 		std::cout << "removed '" << _type << "': " << node << std::endl;
 	}
-	void changed(EndPoint node) {
+	void changed(EndPoint node, uint64_t what) {
 		std::cout << "changed '" << _type << "': " << node << std::endl;
 	}
 
@@ -134,13 +134,13 @@ bool testMulticastDNSDiscovery() {
 
 	mdnsImpl->browse(&query);
 
-	std::set<MDNSAd*> ads;
+	std::set<MDNSAdvertisement*> ads;
 	int retries;
 	int iterations = 3;
 	int nrAds = 4;
 	for (int i = 0; i < iterations; i++) {
 		for (int j = 0; j < nrAds; j++) {
-			MDNSAd* ad = new MDNSAd();
+			MDNSAdvertisement* ad = new MDNSAdvertisement();
 			ad->name = toStr(j);
 			ad->regType = "_umundo._tcp.";
 			ad->domain = "foo.local.";
@@ -157,7 +157,7 @@ bool testMulticastDNSDiscovery() {
 				assert(false);
 		}
 
-		std::set<MDNSAd*>::iterator adIter = ads.begin();
+		std::set<MDNSAdvertisement*>::iterator adIter = ads.begin();
 		while(adIter != ads.end()) {
 			mdnsImpl->unadvertise(*adIter);
 			delete *adIter;

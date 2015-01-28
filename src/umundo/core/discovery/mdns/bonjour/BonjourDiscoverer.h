@@ -18,8 +18,8 @@
  *  @endcond
  */
 
-#ifndef DISCOVERER_H_94LKA4M1
-#define DISCOVERER_H_94LKA4M1
+#ifndef BONJOURDISCOVERER_H_D5FC35F7
+#define BONJOURDISCOVERER_H_D5FC35F7
 
 extern "C" {
 #include "dns_sd.h"
@@ -51,19 +51,19 @@ class NodeQuery;
  *  http://developer.apple.com/library/mac/#documentation/networking/Conceptual/dns_discovery_api/Introduction.html<br />
  *  http://developer.apple.com/opensource/
  */
-class UMUNDO_API BonjourDiscovery : public MDNSDiscoveryImpl, public Thread {
+class UMUNDO_API BonjourDiscoverer : public MDNSDiscoveryImpl, public Thread {
 public:
-	BonjourDiscovery();
-	virtual ~BonjourDiscovery();
-	static SharedPtr<BonjourDiscovery> getInstance();  ///< Return the singleton instance.
+	BonjourDiscoverer();
+	virtual ~BonjourDiscoverer();
+	static SharedPtr<BonjourDiscoverer> getInstance();  ///< Return the singleton instance.
 
 	SharedPtr<Implementation> create();
 	void init(const Options*);
 	void suspend();
 	void resume();
 
-	void advertise(MDNSAd* node);
-	void unadvertise(MDNSAd* node);
+	void advertise(MDNSAdvertisement* node);
+	void unadvertise(MDNSAdvertisement* node);
 
 	void browse(MDNSQuery* query);
 	void unbrowse(MDNSQuery* query);
@@ -123,14 +123,31 @@ protected:
 	);
 	//@}
 
-	class BonjourQuery {
+	/** @name Representation of a native query on bonjour */
+	//@{
+
+	class NativeBonjourQuery {
 	public:
 		DNSServiceRef mdnsClient;
 		std::set<MDNSQuery*> queries;
-		std::map<std::string, MDNSAd*> remoteAds;
+		std::map<std::string, MDNSAdvertisement*> remoteAds; // relevant subset of remote ads from _remoteAds below
 	};
 
-	struct BonjourBrowseReply {
+	/// domain to type to client with set of queries
+	std::map<std::string, std::map<std::string, NativeBonjourQuery> > _queryClients;
+
+	bool hasNativeQueryInDomainForType(const std::string& domain, const std::string& type) {
+		if (_queryClients.find(domain) == _queryClients.end() ||
+				_queryClients[domain].find(type) == _queryClients[domain].end() ||
+				_queryClients[domain][type].queries.size() == 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	//@}
+
+	struct NativeBonjourBrowseReply {
 		uint32_t ifIndex;
 		DNSServiceFlags flags;
 		DNSServiceErrorType errorCode;
@@ -140,7 +157,7 @@ protected:
 		void *context;
 	};
 
-	struct BonjourAddrInfoReply {
+	struct NativeBonjourAddrInfoReply {
 		DNSServiceFlags flags;
 		uint32_t interfaceIndex;
 		DNSServiceErrorType errorCode;
@@ -152,26 +169,24 @@ protected:
 	};
 
 	/// All the mdns service refs for a mdns advertisement
-	class BonjourServiceRefs {
+	class NativeBonjourServiceRefs {
 	public:
-		BonjourServiceRefs() : serviceRegister(NULL) {}
+		NativeBonjourServiceRefs() : serviceRegister(NULL) {}
 		DNSServiceRef serviceRegister; ///< used to register a local node
 		std::map<uint32_t, DNSServiceRef> serviceResolver; ///< used to resolve a service found via browse per interface
 		std::map<uint32_t, DNSServiceRef> serviceGetAddrInfo; ///< used to get the address of a resolved service
 	};
 
 	void dumpQueries();
-
+	
 	DNSServiceRef _mainDNSHandle;
 	std::map<int, DNSServiceRef> _activeFDs;                       ///< Socket file descriptors to bonjour handle.
 
-	/// domain to type to client with set of queries
-	std::map<std::string, std::map<std::string, BonjourQuery> > _queryClients;
-	std::map<MDNSAd*, BonjourServiceRefs> _localAds;
-	std::map<MDNSAd*, BonjourServiceRefs> _remoteAds;
+	std::map<MDNSAdvertisement*, NativeBonjourServiceRefs> _localAds;
+	std::map<MDNSAdvertisement*, NativeBonjourServiceRefs> _remoteAds;
 
-	std::list<BonjourAddrInfoReply> _pendingAddrInfoReplies;
-	std::list<BonjourBrowseReply> _pendingBrowseReplies;
+	std::list<NativeBonjourAddrInfoReply> _pendingAddrInfoReplies;
+	std::list<NativeBonjourBrowseReply> _pendingBrowseReplies;
 
 	int _nodes;
 	int _ads;
@@ -179,7 +194,7 @@ protected:
 	RMutex _mutex;
 	Monitor _monitor;
 
-	static WeakPtr<BonjourDiscovery> _instance;  ///< The singleton instance.
+	static WeakPtr<BonjourDiscoverer> _instance;  ///< The singleton instance.
 
 	friend class BonjourNodeStub;
 	friend class Factory;
@@ -187,4 +202,4 @@ protected:
 
 }
 
-#endif /* end of include guard: DISCOVERER_H_94LKA4M1 */
+#endif /* end of include guard: BONJOURDISCOVERER_H_D5FC35F7 */

@@ -34,7 +34,9 @@ class SubscriberStub;
 
 class PublisherStubImpl : public EndPointImpl {
 public:
-	PublisherStubImpl() : _uuid(UUID::getUUID()) {}
+	PublisherStubImpl() {
+		_uuid = UUID::getUUID();
+	}
 	virtual std::string getChannelName() const            {
 		return _channelName;
 	}
@@ -42,16 +44,8 @@ public:
 		_channelName = channelName;
 	}
 
-	virtual std::string getUUID() const            {
-		return _uuid;
-	}
-	virtual void setUUID(const std::string& uuid) {
-		_uuid = uuid;
-	}
-
 protected:
 	std::string _channelName;
-	std::string _uuid;
 };
 
 /**
@@ -96,9 +90,6 @@ public:
 	//@{
 	virtual const std::string getChannelName() const      {
 		return _impl->getChannelName();
-	}
-	virtual const std::string getUUID() const             {
-		return _impl->getUUID();
 	}
 	virtual const bool isRTP() const                           {
 		return _impl->implType == RTP;

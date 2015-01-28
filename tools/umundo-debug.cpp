@@ -241,7 +241,7 @@ class DebugEndPointResultSet : public ResultSet<EndPoint> {
 	void removed(EndPoint ep) {
 	}
 
-	void changed(EndPoint ep) {
+	void changed(EndPoint ep, uint64_t what) {
 	}
 };
 

@@ -102,7 +102,7 @@ public:
 	//@{
 	void added(EndPoint);    ///< A node was added, connect to its router socket and list our publishers.
 	void removed(EndPoint);  ///< A node was removed, notify local subscribers and clean up.
-	void changed(EndPoint);  ///< Never happens.
+	void changed(EndPoint, uint64_t what = 0);  ///< Never happens.
 	//@}
 
 
@@ -236,6 +236,8 @@ protected:
 
 	void replyWithDebugInfo(const std::string uuid);
 	StatBucket<double> accumulateIntoBucket();
+	
+	std::set<EndPoint> _endPoints;
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 

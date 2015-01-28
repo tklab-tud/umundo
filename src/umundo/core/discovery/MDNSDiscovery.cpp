@@ -29,18 +29,26 @@ SharedPtr<Implementation> MDNSDiscovery::create() {
 }
 
 void MDNSDiscovery::init(const Options* config) {
-	if (config != NULL)
-		_config = config->getKVPs();
+	// defaults
+	_serviceType = "umundo";
+	_domain = "local.";
+	_protocol = "tcp";
 
-	// make sure these are set
-	if (_config["mdns.domain"].length() == 0)       _config["mdns.domain"] = "local.";
-	if (_config["mdns.protocol"].length() == 0)     _config["mdns.protocol"] = "tcp";
-	if (_config["mdns.serviceType"].length() == 0)  _config["mdns.serviceType"] = "umundo";
-
+	// override
+	if (config != NULL) {
+		std::map<std::string, std::string> options = config->getKVPs();
+		if (options["mdns.domain"].length() > 0)
+			_domain = options["mdns.domain"];
+		if (options["mdns.protocol"].length() > 0)
+			_protocol = options["mdns.protocol"];
+		if (options["mdns.serviceType"].length() > 0)
+			_serviceType = options["mdns.serviceType"];
+	}
+	
 	_mdnsImpl = StaticPtrCast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
 	_query = new MDNSQuery();
-	_query->domain = _config["mdns.domain"];
-	_query->regType = "_" + _config["mdns.serviceType"] + "._" + _config["mdns.protocol"] + ".";
+	_query->domain = _domain;
+	_query->regType = "_" + _serviceType + "._" + _protocol + ".";
 	_query->rs = this;
 	_mdnsImpl->browse(_query);
 }
@@ -50,7 +58,7 @@ MDNSDiscovery::MDNSDiscovery() : _query(NULL) {
 
 MDNSDiscovery::~MDNSDiscovery() {
 	// remove all our advertisements
-	for (std::map<EndPoint, MDNSAd*>::iterator adIter = _localAds.begin();
+	for (std::map<EndPoint, MDNSAdvertisement*>::iterator adIter = _localAds.begin();
 	        adIter != _localAds.end();
 	        adIter++) {
 		_mdnsImpl->unadvertise(adIter->second);
@@ -60,9 +68,11 @@ MDNSDiscovery::~MDNSDiscovery() {
 	}
 
 	// unreport all found nodes from all queries
-	for (std::map<MDNSAd*, EndPoint>::iterator adIter = _remoteAds.begin();
+	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
+		UM_LOG_INFO("MDNS is destroyed, removing %s in %s - notifying nodes", adIter->second.getAddress().c_str(), _domain.c_str());
+
 		for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
 		        queryIter != _queries.end();
 		        queryIter++) {
@@ -70,7 +80,7 @@ MDNSDiscovery::~MDNSDiscovery() {
 		}
 	}
 
-	for (std::map<EndPoint, MDNSAd*>::iterator adIter = _localAds.begin();
+	for (std::map<EndPoint, MDNSAdvertisement*>::iterator adIter = _localAds.begin();
 	        adIter != _localAds.end();
 	        adIter++) {
 		delete(adIter->second);
@@ -87,7 +97,7 @@ void MDNSDiscovery::resume() {
 
 void MDNSDiscovery::advertise(const EndPoint& node) {
 
-	MDNSAd* mdnsAd;
+	MDNSAdvertisement* mdnsAd;
 	{
 		RScopeLock lock(_mutex);
 		if (_localAds.find(node) != _localAds.end()) {
@@ -95,11 +105,11 @@ void MDNSDiscovery::advertise(const EndPoint& node) {
 			return; // we already advertise this one
 		}
 
-		mdnsAd = new MDNSAd();
+		mdnsAd = new MDNSAdvertisement();
 		mdnsAd->port = node.getPort();
-		mdnsAd->regType = "_" + _config["mdns.serviceType"] + "._" + node.getTransport() + ".";
-		mdnsAd->domain = _config["mdns.domain"];
-		mdnsAd->name = toStr(node.getImpl().get()); // abuse implementation address
+		mdnsAd->regType = "_" + _serviceType + "._" + node.getTransport() + ".";
+		mdnsAd->domain = _domain;
+		mdnsAd->name = toStr(node.getImpl().get()); // abuse implementation address as name
 		_localAds[node] = mdnsAd;
 	}
 	_mdnsImpl->advertise(mdnsAd);
@@ -107,7 +117,7 @@ void MDNSDiscovery::advertise(const EndPoint& node) {
 
 void MDNSDiscovery::add(Node& node) {
 
-	MDNSAd* mdnsAd;
+	MDNSAdvertisement* mdnsAd;
 	{
 		RScopeLock lock(_mutex);
 		if (_localAds.find(node) != _localAds.end()) {
@@ -118,10 +128,10 @@ void MDNSDiscovery::add(Node& node) {
 			return;
 		}
 
-		mdnsAd = new MDNSAd();
+		mdnsAd = new MDNSAdvertisement();
 		mdnsAd->port = node.getPort();
-		mdnsAd->regType = "_" + _config["mdns.serviceType"] + "._" + node.getTransport() + ".";
-		mdnsAd->domain = _config["mdns.domain"];
+		mdnsAd->regType = "_" + _serviceType + "._" + node.getTransport() + ".";
+		mdnsAd->domain = _domain;
 		mdnsAd->name = node.getUUID();
 		mdnsAd->isInProcess = true; // this allows for local nodes to use inproc sockets, not actually advertised
 
@@ -132,8 +142,9 @@ void MDNSDiscovery::add(Node& node) {
 }
 
 void MDNSDiscovery::unadvertise(const EndPoint& node) {
+	RScopeLock lock(_mutex);
 
-	MDNSAd* mdnsAd;
+	MDNSAdvertisement* mdnsAd;
 	{
 		RScopeLock lock(_mutex);
 		if (_localAds.find(node) == _localAds.end()) {
@@ -151,6 +162,8 @@ void MDNSDiscovery::unadvertise(const EndPoint& node) {
 }
 
 void MDNSDiscovery::remove(Node& node) {
+	RScopeLock lock(_mutex);
+	
 	unbrowse(node.getImpl().get());
 	unadvertise(node);
 }
@@ -159,14 +172,14 @@ void MDNSDiscovery::browse(ResultSet<EndPoint>* query) {
 	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) != _queries.end()) {
-		UM_LOG_WARN("Query %p already added for browsing", query);
+		UM_LOG_WARN("Query %p already added for browsing - ignored", query);
 		return;
 	}
 	UM_LOG_INFO("Adding %p query", query);
 	_queries.insert(query);
 
 	// report all existing remote endpoints
-	for (std::map<MDNSAd*, EndPoint>::iterator adIter = _remoteAds.begin();
+	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
 		query->added(adIter->second);
@@ -177,13 +190,13 @@ void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
 	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) == _queries.end()) {
-		UM_LOG_WARN("No such query %p to unbrowse", query);
+		UM_LOG_WARN("No such query %p to unbrowse - ignored", query);
 		return;
 	}
 
 	UM_LOG_INFO("Removing %p query", query);
 	// unreport all existing remote endpoints
-	for (std::map<MDNSAd*, EndPoint>::iterator adIter = _remoteAds.begin();
+	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
 		query->removed(adIter->second);
@@ -195,16 +208,16 @@ void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
 /**
  * Called by the actual MDNS implementation when a node is added.
  */
-void MDNSDiscovery::added(MDNSAd* remoteAd) {
+void MDNSDiscovery::added(MDNSAdvertisement* remoteAd) {
 	RScopeLock lock(_mutex);
 
 	if (remoteAd->ipv4.size() == 0) {
-		UM_LOG_INFO("MDNS reported new node without ipv4 address -> ignoring until we found one");
+		UM_LOG_WARN("MDNS reported new node without ipv4 address - ignoring until we found ipv4");
 		return;
 	}
 
 	if(_remoteAds.find(remoteAd) != _remoteAds.end()) {
-		UM_LOG_WARN("MDNS reported existing node %s in %s as new", _remoteAds[remoteAd].getAddress().c_str(), _config["mdns.domain"].c_str());
+		UM_LOG_WARN("MDNS reported existing node %s in %s as new - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str());
 
 		// we have already seen this one, report as changed
 		for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
@@ -229,7 +242,7 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 
 		endPoint.getImpl()->setTransport(remoteAd->getTransport());
 
-		UM_LOG_INFO("MDNS reported new node %s in %s", endPoint.getAddress().c_str(), _config["mdns.domain"].c_str());
+		UM_LOG_INFO("MDNS reported new node %s in %s - notifying nodes", endPoint.getAddress().c_str(), _domain.c_str());
 
 		_remoteAds[remoteAd] = endPoint;
 
@@ -241,15 +254,15 @@ void MDNSDiscovery::added(MDNSAd* remoteAd) {
 	}
 }
 
-void MDNSDiscovery::removed(MDNSAd* remoteAd) {
+void MDNSDiscovery::removed(MDNSAdvertisement* remoteAd) {
 	RScopeLock lock(_mutex);
 
 	if(_remoteAds.find(remoteAd) == _remoteAds.end()) {
-		UM_LOG_WARN("MDNS reported vanishing of unknown node %s in %s", remoteAd->host.c_str(), _config["mdns.domain"].c_str());
+		UM_LOG_WARN("MDNS reported vanishing of unknown node %s in %s, might be one missing ipv4 earlier - ignored", remoteAd->host.c_str(), _domain.c_str());
 		return;
 	}
 
-	UM_LOG_INFO("MDNS reported vanished node %s in %s", _remoteAds[remoteAd].getAddress().c_str(), _config["mdns.domain"].c_str());
+	UM_LOG_INFO("MDNS reported vanishing of node %s in %s - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str());
 
 	for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
 	        queryIter != _queries.end();
@@ -259,20 +272,30 @@ void MDNSDiscovery::removed(MDNSAd* remoteAd) {
 	_remoteAds.erase(remoteAd);
 }
 
-void MDNSDiscovery::changed(MDNSAd* remoteAd) {
+void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 	RScopeLock lock(_mutex);
 
 	if(_remoteAds.find(remoteAd) == _remoteAds.end()) {
 		added(remoteAd);
 		return;
 	}
-
-	UM_LOG_INFO("MDNS reported changed node %s in %s", _remoteAds[remoteAd].getAddress().c_str(), _config["mdns.domain"].c_str());
-
+	
+	std::string whatString;
+	std::string seperator;
+	if (what & MDNSAdvertisement::MDNS_IFACE_REMOVED) {
+		whatString = seperator +  "existing interface gone";
+		seperator = ", ";
+	}
+	if (what & MDNSAdvertisement::MDNS_IFACE_ADDED) {
+		whatString = seperator +  "available on new interface";
+		seperator = ", ";
+	}
+	
+	UM_LOG_INFO("MDNS reported changed node %s in %s as '%s' - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str(), whatString.c_str());
 	for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
 	        queryIter != _queries.end();
 	        queryIter++) {
-		(*queryIter)->changed(_remoteAds[remoteAd]);
+		(*queryIter)->changed(_remoteAds[remoteAd], what);
 	}
 }
 
@@ -280,7 +303,7 @@ std::vector<EndPoint> MDNSDiscovery::list() {
 	RScopeLock lock(_mutex);
 
 	std::vector<EndPoint> endpoints;
-	for (std::map<MDNSAd*, EndPoint>::iterator adIter = _remoteAds.begin();
+	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
 		endpoints.push_back(adIter->second);

@@ -25,6 +25,8 @@
 #include "Implementation.h"
 #include <boost/shared_ptr.hpp>
 
+#define SHORT_UUID(uuid) uuid.substr(0, 8)
+
 namespace umundo {
 
 class UMUNDO_API EndPointImpl {
@@ -37,8 +39,22 @@ public:
 
 	virtual ~EndPointImpl() {}
 
+	// STL container support and equality
+	bool operator< (const EndPointImpl& other) const {
+		if (this->_uuid.size() > 0 || other._uuid.size() > 0)
+			return this->_uuid < other._uuid;
+		return getAddress() < other.getAddress();
+	}
+	
+	bool operator==(const EndPointImpl& other) const {
+		return !(*this == other);
+	}
+	bool operator!=(const EndPointImpl& other) const {
+		return (*this < other) || (other < *this);
+	}
+	
 	virtual const std::string getAddress() const            {
-		return _transport + "://" + _ip + ":" + toStr(_port);
+		return _transport + "://" + _ip + ":" + toStr(_port) + (_uuid.size() > 0 ? " (" + SHORT_UUID(_uuid) + ")" : "");
 	}
 	virtual const std::string getIP() const            {
 		return _ip;
@@ -91,6 +107,12 @@ public:
 	virtual void updateLastSeen() {
 		_lastSeen = Thread::getTimeStampMs();
 	}
+	virtual std::string getUUID() const            {
+		return _uuid;
+	}
+	virtual void setUUID(const std::string& uuid) {
+		_uuid = uuid;
+	}
 
 	uint16_t implType; // this ought to be in the Implementation class. but class hierarchy won't fit
 
@@ -103,6 +125,7 @@ protected:
 	std::string _host;
 	std::string _domain;
 	unsigned long long _lastSeen;
+	std::string _uuid; // defaults to tmpy uuid
 
 };
 
@@ -169,7 +192,7 @@ class UMUNDO_API EndPoint {
 public:
 
 	/**
-	 * Convineince constructor for tcp://1.2.3.4:8080 style addresses
+	 * Convinience constructor for tcp://1.2.3.4:8080 style addresses
 	 */
 	EndPoint(const std::string& address) {
 		size_t colonPos = address.find_last_of(":");
@@ -218,7 +241,6 @@ public:
 		return _impl < other._impl;
 	}
 
-
 	EndPoint& operator=(const EndPoint& other) {
 		_impl = other._impl;
 		return *this;
@@ -251,6 +273,9 @@ public:
 	}
 	virtual const long getLastSeen() const {
 		return _impl->getLastSeen();
+	}
+	virtual const std::string getUUID() const {
+		return _impl->getUUID();
 	}
 	virtual void updateLastSeen() {
 		return _impl->updateLastSeen();

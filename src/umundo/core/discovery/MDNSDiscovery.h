@@ -25,9 +25,14 @@
 
 namespace umundo {
 
-class MDNSAd {
+class MDNSAdvertisement {
 public:
-	MDNSAd() : port(0), isInProcess(false), isRemote(true) {}
+	enum Changes {
+		MDNS_IFACE_ADDED = 0x01,
+		MDNS_IFACE_REMOVED = 0x02
+	};
+	
+	MDNSAdvertisement() : port(0), isInProcess(false), isRemote(true), lastChange(0) {}
 	std::string regType;
 	std::string domain;
 	std::string name;
@@ -36,10 +41,11 @@ public:
 	bool isInProcess;
 	bool isRemote;
 	std::set<std::string> txtRecord;
-	std::set<uint32_t> interfaces;
-	std::map<uint32_t, std::string> ipv4;
+	std::set<uint32_t> interfaces; // ifindex
+	std::map<uint32_t, std::string> ipv4; // ifindex to address
 	std::map<uint32_t, std::string> ipv6;
-
+	uint32_t lastChange;
+	
 	std::string getTransport() {
 		size_t firstDot = regType.find_first_of(".");
 		if (firstDot != std::string::npos && regType.length() >= firstDot + 5) {
@@ -59,9 +65,12 @@ public:
 
 class MDNSQuery {
 public:
+	MDNSQuery() : reportIPv4(true), reportIPv6(false) {}
 	std::string regType;
 	std::string domain;
-	ResultSet<MDNSAd*>* rs;
+	bool reportIPv4;
+	bool reportIPv6;
+	ResultSet<MDNSAdvertisement*>* rs;
 };
 
 /**
@@ -71,8 +80,8 @@ public:
  */
 class MDNSDiscoveryImpl : public Implementation {
 public:
-	virtual void advertise(MDNSAd* node) = 0;
-	virtual void unadvertise(MDNSAd* node) = 0;
+	virtual void advertise(MDNSAdvertisement* node) = 0;
+	virtual void unadvertise(MDNSAdvertisement* node) = 0;
 
 	virtual void browse(MDNSQuery* query) = 0;
 	virtual void unbrowse(MDNSQuery* query) = 0;
@@ -84,7 +93,7 @@ public:
  * Concrete implementors are registered at program initialization at the Factory and
  * instantiated for every Abstraction that needs an implementation.
  */
-class MDNSDiscovery : public DiscoveryImpl, public ResultSet<MDNSAd*> {
+class MDNSDiscovery : public DiscoveryImpl, public ResultSet<MDNSAdvertisement*> {
 public:
 	MDNSDiscovery();
 	SharedPtr<Implementation> create();
@@ -101,19 +110,22 @@ public:
 	void browse(ResultSet<EndPoint>* query);
 	void unbrowse(ResultSet<EndPoint>* query);
 
-	void added(MDNSAd*);
-	void removed(MDNSAd*);
-	void changed(MDNSAd*);
+	void added(MDNSAdvertisement*);
+	void removed(MDNSAdvertisement*);
+	void changed(MDNSAdvertisement*, uint64_t what = 0);
 
 	std::vector<EndPoint> list();
 
 protected:
 	void init(const Options*);
 
-	std::map<std::string, std::string> _config;
+	std::string _domain;
+	std::string _protocol;
+	std::string _serviceType;
+
 	MDNSQuery* _query;
-	std::map<EndPoint, MDNSAd*> _localAds;
-	std::map<MDNSAd*, EndPoint> _remoteAds;
+	std::map<EndPoint, MDNSAdvertisement*> _localAds;
+	std::map<MDNSAdvertisement*, EndPoint> _remoteAds;
 	std::set<ResultSet<EndPoint>*> _queries;
 
 	RMutex _mutex;

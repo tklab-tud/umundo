@@ -1055,7 +1055,7 @@ public:
 		_handler->send_pubRemoved(pubStub.getChannelName(), pubStub.isRTP());
 	}
 
-	void changed(PublisherStub pubStub) {
+	void changed(PublisherStub pubStub, uint64_t what = 0) {
 		//do nothing here
 	}
 };

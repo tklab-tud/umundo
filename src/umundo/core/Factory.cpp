@@ -27,7 +27,7 @@
 #include "umundo/config.h"
 
 #ifdef DISC_BONJOUR
-#include "umundo/core/discovery/mdns/bonjour/BonjourDiscovery.h"
+#include "umundo/core/discovery/mdns/bonjour/BonjourDiscoverer.h"
 #endif
 
 #ifdef DISC_AVAHI
@@ -89,7 +89,7 @@ Factory::Factory() {
 	_prototypes["discovery.mdns"] = new MDNSDiscovery();
 #endif
 #ifdef DISC_BONJOUR
-	_prototypes["discovery.mdns.impl"] = new BonjourDiscovery();
+	_prototypes["discovery.mdns.impl"] = new BonjourDiscoverer();
 #endif
 #ifdef DISC_AVAHI
 	_prototypes["discovery.mdns.impl"] = new AvahiNodeDiscovery();

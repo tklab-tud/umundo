@@ -239,6 +239,7 @@ void MDNSDiscovery::added(MDNSAdvertisement* remoteAd) {
 		endPoint.getImpl()->setLastSeen(Thread::getTimeStampMs());
 		endPoint.getImpl()->setPort(remoteAd->port);
 		endPoint.getImpl()->setRemote(remoteAd->isRemote); // figure out
+		endPoint.getImpl()->setUUID(remoteAd->name);
 
 		endPoint.getImpl()->setTransport(remoteAd->getTransport());
 

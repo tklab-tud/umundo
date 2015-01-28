@@ -48,6 +48,7 @@ double pcntLossOk = 0;
 size_t waitForSubs = 0;
 size_t packetsWritten = 0;
 PubType type = PUB_TCP;
+bool useZeroCopy = false;
 
 // client
 size_t bytesRcvd = 0;
@@ -166,6 +167,7 @@ void printUsageAndExit() {
 	printf("\t-s                 : act as a server\n");
 	printf("\t-f BYTES/s         : try to maintain given throughput\n");
 	printf("\t-t [rtp|tcp|mcast] : type of publisher to measure throughput\n");
+	printf("\t-z                 : employ zero-copy (experimental)\n");
 	printf("\t-i                 : report interval in milli-seconds\n");
 	printf("\t-l                 : acceptable packet loss in percent\n");
 	printf("\t-m <number>        : MTU to use on server (defaults to 1280)\n");
@@ -227,10 +229,16 @@ size_t displayToBytes(const std::string& value) {
 	return result;
 }
 
+void doneCallback(void* data, void* hint) {
+}
+
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "csm:w:l:f:t:i:")) != -1) {
+	while ((option = getopt(argc, argv, "zcsm:w:l:f:t:i:")) != -1) {
 		switch(option) {
+		case 'z':
+			useZeroCopy = true;
+			break;
 		case 'c':
 			isClient = true;
 			break;
@@ -315,7 +323,12 @@ int main(int argc, char** argv) {
 		// reserve 20 bytes for timestamp, sequence number and report interval
 		size_t dataSize = (std::max)(mtu, (size_t)20);
 		char* data = (char*)malloc(dataSize);
-		Message* msg = new Message();
+		Message* msg = NULL;
+		if (useZeroCopy) {
+			msg = new Message(data, dataSize, doneCallback, (void*)NULL);
+		} else {
+			msg = new Message();
+		}
 
 		unsigned long bytesWritten = 0;
 		double intervalFactor = 1;
@@ -327,7 +340,11 @@ int main(int argc, char** argv) {
 			Message::write(++currSeqNr, &data[0]);
 			Message::write(now, &data[8]);
 			Message::write(reportInterval, &data[16]);
-			msg->setData(data, dataSize);
+
+			if (!useZeroCopy) {
+				msg->setData(data, dataSize);
+			}
+			
 			pub.send(msg);
 
 			intervalFactor = 1000.0 / (double)reportInterval;

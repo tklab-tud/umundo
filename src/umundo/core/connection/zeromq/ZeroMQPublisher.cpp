@@ -188,6 +188,7 @@ void ZeroMQPublisher::send(Message* msg) {
 
 	// topic name or explicit subscriber id is first message in envelope
 	zmq_msg_t channelEnvlp;
+	
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
 		if (_domainSubs.count(msg->getMeta("um.sub")) == 0 && !msg->isQueued()) {
@@ -203,11 +204,12 @@ void ZeroMQPublisher::send(Message* msg) {
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
 	}
 
-	// mandatory meta fields
+	// default meta fields
 	msg->putMeta("um.pub", _uuid);
 	msg->putMeta("um.proc", procUUID);
 	msg->putMeta("um.host", hostUUID);
 
+	// user supplied mandatory meta fields
 	std::map<std::string, std::string>::const_iterator metaIter = _mandatoryMeta.begin();
 	while(metaIter != _mandatoryMeta.end()) {
 		if (metaIter->second.length() > 0)
@@ -220,9 +222,6 @@ void ZeroMQPublisher::send(Message* msg) {
 
 	// all our meta information
 	for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
-		// string key(metaIter->first);
-		// string value(metaIter->second);
-		// std::cout << key << ": " << value << std::endl;
 
 		// string length of key + value + two null bytes as string delimiters
 		size_t metaSize = (metaIter->first).length() + (metaIter->second).length() + 2;
@@ -230,8 +229,8 @@ void ZeroMQPublisher::send(Message* msg) {
 		ZMQ_PREPARE(metaMsg, metaSize);
 
 		char* writePtr = (char*)zmq_msg_data(&metaMsg);
-
 		memcpy(writePtr, (metaIter->first).data(), (metaIter->first).length());
+
 		// indexes start at zero, so length is the byte after the string
 		((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length()] = '\0';
 		assert(strlen((char*)zmq_msg_data(&metaMsg)) == (metaIter->first).length());
@@ -243,6 +242,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		memcpy(writePtr,
 		       (metaIter->second).data(),
 		       (metaIter->second).length());
+		
 		// first string + null byte + second string
 		((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length() + 1 + (metaIter->second).length()] = '\0';
 		assert(strlen(writePtr) == (metaIter->second).length());
@@ -252,10 +252,17 @@ void ZeroMQPublisher::send(Message* msg) {
 	}
 
 	// data as the second part of a multipart message
-	zmq_msg_t publication;
-	ZMQ_PREPARE_DATA(publication, msg->data(), msg->size());
-	zmq_sendmsg(_pubSocket, &publication, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
-	zmq_msg_close(&publication) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+	zmq_msg_t payload;
+	zmq_msg_init(&payload) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
+	zmq_msg_init_size (&payload, msg->size()) && UM_LOG_WARN("zmq_msg_init_size: %s", zmq_strerror(errno));
+	if (msg->_doneCallback) {
+		zmq_msg_init_data(&payload, (void*)msg->data(), msg->size(), msg->_doneCallback, msg->_hint);
+	} else {
+		memcpy(zmq_msg_data(&payload), msg->data(), msg->size());
+	}
+
+	zmq_sendmsg(_pubSocket, &payload, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
+	zmq_msg_close(&payload) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
 

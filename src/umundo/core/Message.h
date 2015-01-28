@@ -50,10 +50,10 @@ public:
 		UM_SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
-	enum Flags { // not used yet
-		NONE            = 0x0000,
-		ADOPT_DATA      = 0x0001,
-		ZERO_COPY       = 0x0002,
+	enum Flags {
+		NONE            = 0x0000, ///< Default is to copy data and deallocate
+		ADOPT_DATA      = 0x0001, ///< Do not copy into message but deallocate when done
+		WRAP_DATA       = 0x0002, ///< Just wrap data, do not copy, do not deallocate
 	};
 
 	static const char* typeToString(uint16_t type) {
@@ -95,17 +95,39 @@ public:
 	static const char* read(int8_t* value, const char* from);
 	static const char* read(float* value, const char* from);
 	static const char* read(double* value, const char* from);
+	
+protected:
+	class NilDeleter;
+	friend class NilDeleter;
+	friend class ZeroMQPublisher;
 
-	Message() : _size(0), _isQueued(false) {}
-	Message(const char* data, size_t length, Flags flag = NONE) : _size(length), _isQueued(false), _flags(flag) {
-		_data = SharedPtr<char>((char*)malloc(_size));
-		memcpy(_data.get(), data, _size);
+public:	
+	Message() : _size(0), _isQueued(false), _doneCallback(NULL) {}
+	Message(const char* data, size_t length, Flags flags = NONE) : _size(length), _isQueued(false), _flags(flags), _doneCallback(NULL) {
+		if (_flags & ADOPT_DATA) {
+			// take ownership of data and delete when done
+			_data = SharedPtr<char>(const_cast<char*>(data));
+		} else if (_flags & WRAP_DATA) {
+			// do not take ownership and do not delete when done
+			_data = SharedPtr<char>(const_cast<char*>(data), Message::NilDeleter());
+		} else {
+			// copy into message
+			_data = SharedPtr<char>((char*)malloc(_size));
+			memcpy(_data.get(), data, _size);
+		}
 	}
 
-	Message(const Message& other) : _size(other.size()), _isQueued(other._isQueued) {
-		_size = other._size;
+	Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint) : _size(length), _isQueued(false), _flags(WRAP_DATA) {
+		_doneCallback = doneCallback;
+		_hint = hint;
+		_data = SharedPtr<char>(const_cast<char*>(data), Message::NilDeleter());
+	}
+
+	Message(const Message& other) : _size(other.size()), _isQueued(other._isQueued), _flags(other._flags) {
 		_data = other._data;
 		_meta = other._meta;
+		_hint = other._hint;
+		_doneCallback = other._doneCallback;
 	}
 
 	virtual ~Message() {
@@ -116,6 +138,10 @@ public:
 	}
 	virtual size_t size() const                                         {
 		return _size;
+	}
+
+	virtual uint32_t getFlags() const                                   {
+		return _flags;
 	}
 
 	virtual void setData(const char* data, size_t length)               {
@@ -154,11 +180,18 @@ public:
 
 
 protected:
+	class NilDeleter {
+	public:
+		void operator()(char* p) {}
+	};
+	
 	SharedPtr<char> _data;
 	size_t _size;
 	bool _isQueued;
 	uint32_t _flags;
 	std::map<std::string, std::string> _meta;
+	void* _hint;
+	void (*_doneCallback) (void *data, void *hint);
 };
 }
 

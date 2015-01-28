@@ -802,7 +802,7 @@ void DNSSD_API BonjourDiscovery::serviceResolveReply(
 	int err = DNSServiceGetAddrInfo(&addrInfoRef,
 	                                kDNSServiceFlagsShareConnection,     // kDNSServiceFlagsForceMulticast, kDNSServiceFlagsLongLivedQuery, kDNSServiceFlagsReturnIntermediates
 	                                interfaceIndex,
-	                                0,                                       // kDNSServiceProtocol_IPv4, kDNSServiceProtocol_IPv6, 0
+	                                kDNSServiceProtocol_IPv4,                                       // kDNSServiceProtocol_IPv4, kDNSServiceProtocol_IPv6, 0
 	                                hosttarget,
 	                                addrInfoReply,
 	                                (void*)ad                           // address of node

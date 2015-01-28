@@ -797,7 +797,7 @@ private:
 			Subscriber* sub;
 			{
 				RScopeLock lock(_knownSubsMutex);
-				SubscriberConfigRTP* subConfig;
+				SubscriberConfig* subConfig;
 				GlobalReceiver* receiver = NULL;
 				
 				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first subscriber --> register actual receiver to receive the data
@@ -807,8 +807,8 @@ private:
 				// prepare subscriber configuration
 				if (msg->get<bool>("isMulticast")) {
 					subConfig = new SubscriberConfigMCast(msg->get("channelName"));
-					subConfig->setMulticastIP(msg->get("ip"));
-					subConfig->setMulticastPortbase(msg->get<uint16_t>("port"));
+					((SubscriberConfigMCast*)subConfig)->setMulticastIP(msg->get("ip"));
+					((SubscriberConfigMCast*)subConfig)->setMulticastPortbase(msg->get<uint16_t>("port"));
 				} else if (msg->get<bool>("isRTP")) {
 					subConfig = new SubscriberConfigRTP(msg->get("channelName"));
 				} else {

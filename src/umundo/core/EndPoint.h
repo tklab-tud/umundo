@@ -41,13 +41,14 @@ public:
 
 	// STL container support and equality
 	bool operator< (const EndPointImpl& other) const {
-		if (this->_uuid.size() > 0 || other._uuid.size() > 0)
+		if (this->_uuid.size() > 0 || other._uuid.size() > 0) {
 			return this->_uuid < other._uuid;
+		}
 		return getAddress() < other.getAddress();
 	}
 	
 	bool operator==(const EndPointImpl& other) const {
-		return !(*this == other);
+		return !(*this != other);
 	}
 	bool operator!=(const EndPointImpl& other) const {
 		return (*this < other) || (other < *this);
@@ -125,7 +126,7 @@ protected:
 	std::string _host;
 	std::string _domain;
 	unsigned long long _lastSeen;
-	std::string _uuid; // defaults to tmpy uuid
+	std::string _uuid; // defaults to empty uuid
 
 };
 
@@ -232,10 +233,10 @@ public:
 		return _impl.get();
 	}
 	bool operator==(const EndPoint& other) const {
-		return _impl == other._impl;
+		return *_impl.get() == *other._impl.get();
 	}
 	bool operator!=(const EndPoint& other) const {
-		return _impl != other._impl;
+		return *_impl.get() != *other._impl.get();
 	}
 	bool operator<(const EndPoint& other) const {
 		// use operator< from pointee

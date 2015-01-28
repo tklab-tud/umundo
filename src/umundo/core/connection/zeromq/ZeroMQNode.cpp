@@ -440,8 +440,7 @@ void ZeroMQNode::added(EndPoint endPoint) {
 
 	if (_endPoints.find(endPoint) != _endPoints.end()) {
 		UM_LOG_INFO("%s: Ignoring addition of endpoint at %s - already known",
-								SHORT_UUID(_uuid).c_str(),
-								endPoint.getAddress().c_str());
+								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 		return;
 	}
 	_endPoints.insert(endPoint);
@@ -479,8 +478,7 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 	_endPoints.erase(endPoint);
 	
 	UM_LOG_INFO("%s: Removing endpoint at %s",
-	            SHORT_UUID(_uuid).c_str(),
-	            endPoint.getAddress().c_str());
+	            SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 
 	COMMON_VARS;
 	std::stringstream otherAddress;

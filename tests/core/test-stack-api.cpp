@@ -69,6 +69,37 @@ bool testSTLContainers() {
 		assert(subSet.size() == 0);
 
 	}
+	
+	{
+		EndPoint ep1("tcp://127.0.0.1:8080");
+		EndPoint ep2("tcp://127.0.0.1:8080");
+		EndPoint ep3("tcp://127.0.0.1:8090");
+		EndPoint ep4("tcp://127.0.0.1:8080");
+		ep4.getImpl()->setUUID("asdfadsf");
+		
+		assert(ep1 == ep2);
+		assert(ep1 != ep3);
+		assert(ep1 != ep4);
+		
+		std::set<EndPoint> endPoints;
+		endPoints.insert(ep1);
+		assert(endPoints.size() == 1);
+
+		endPoints.insert(ep2);
+		assert(endPoints.size() == 1);
+		assert(endPoints.find(ep1) != endPoints.end());
+		assert(endPoints.find(ep2) != endPoints.end());
+
+		endPoints.insert(ep3);
+		assert(endPoints.size() == 2);
+		assert(endPoints.find(ep3) != endPoints.end());
+
+		assert(endPoints.find(ep4) == endPoints.end());
+		endPoints.insert(ep4);
+		assert(endPoints.size() == 3);
+		assert(endPoints.find(ep4) != endPoints.end());
+
+	}
 	return true;
 }
 

@@ -233,7 +233,40 @@ bool testCompression() {
 	msg.uncompress();
 	
 	assert(test1 == std::string(msg.data(), msg.size()));
+
+	// test a compressing publisher
+	Node pubNode;
+	PublisherConfigTCP pubConfig("bar");
+	pubConfig.enableCompression();
+	Publisher pub(&pubConfig);
+	pubNode.addPublisher(pub);
 	
+	TestReceiver* testRecv = new TestReceiver();
+	Node subNode;
+	Subscriber sub("bar");
+	sub.setReceiver(testRecv);
+	subNode.addSubscriber(sub);
+	
+	subNode.added(pubNode);
+	pubNode.added(subNode);
+
+	pub.waitForSubscribers(1);
+	assert(pub.waitForSubscribers(0) == 1);
+	
+	int iterations = 1000;
+	
+	for (int j = 0; j < iterations; j++) {
+		char* buffer = (char*)malloc(BUFFER_SIZE);
+		memset(buffer, j, BUFFER_SIZE);
+
+		Message* msg = new Message(buffer, BUFFER_SIZE, Message::ADOPT_DATA);
+		msg->putMeta("md5", md5(buffer, BUFFER_SIZE));
+		msg->putMeta("seq",toStr(j));
+		pub.send(msg);
+		delete msg;
+	}
+	Thread::sleepMs(500);
+
 	return true;
 }
 

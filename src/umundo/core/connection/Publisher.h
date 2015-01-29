@@ -62,6 +62,9 @@ public:
 	void putMeta(const std::string& key, const std::string& value) {
 		_mandatoryMeta[key] = value;
 	}
+	void clearMeta(const std::string& key) {
+		_mandatoryMeta.erase(key);
+	}
 
 	/** @name Optional subscriber awareness */
 	//@{
@@ -153,6 +156,9 @@ public:
 	}
 	void putMeta(const std::string& key, const std::string& value) {
 		return _impl->putMeta(key, value);
+	}
+	void clearMeta(const std::string& key) {
+		return _impl->clearMeta(key);
 	}
 	//@}
 

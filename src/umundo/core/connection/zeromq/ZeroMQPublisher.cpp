@@ -210,24 +210,21 @@ void ZeroMQPublisher::send(Message* msg) {
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
 	}
 
+	std::map<std::string, std::string> metaKeys = msg->getMeta();
+	
 	// default meta fields
-	msg->putMeta("um.pub", _uuid);
-	msg->putMeta("um.proc", procUUID);
-	msg->putMeta("um.host", hostUUID);
+	metaKeys["um.pub"] = _uuid;
+	metaKeys["um.proc"] = procUUID;
+	metaKeys["um.host"] = hostUUID;
 
 	// user supplied mandatory meta fields
-	std::map<std::string, std::string>::const_iterator metaIter = _mandatoryMeta.begin();
-	while(metaIter != _mandatoryMeta.end()) {
-		if (metaIter->second.length() > 0)
-			msg->putMeta(metaIter->first, metaIter->second);
-		metaIter++;
-	}
+	metaKeys.insert(_mandatoryMeta.begin(), _mandatoryMeta.end());
 
 	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	// all our meta information
-	for (metaIter = msg->getMeta().begin(); metaIter != msg->getMeta().end(); metaIter++) {
+	for (std::map<std::string, std::string>::iterator metaIter = metaKeys.begin(); metaIter != metaKeys.end(); metaIter++) {
 
 		// string length of key + value + two null bytes as string delimiters
 		size_t metaSize = (metaIter->first).length() + (metaIter->second).length() + 2;

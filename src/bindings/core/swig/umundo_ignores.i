@@ -23,7 +23,8 @@
 
 %ignore umundo::Message::read;
 %ignore umundo::Message::write;
-
+%ignore Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint);
+%ignore Message(const char* data, size_t length, Flags flags);
 //******************************
 // ignore operators
 //******************************
@@ -87,3 +88,9 @@
 %ignore Discovery();
 
 %ignore umundo::Options::getKVPs;
+
+%ignore umundo::Node::addPublisherMonitor;
+%ignore umundo::Node::clearPublisherMonitors;
+
+%ignore strtoimax;
+%ignore umundo::strtoimax;

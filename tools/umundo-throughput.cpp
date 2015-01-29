@@ -41,6 +41,7 @@ uint64_t currSeqNr = 0;
 uint32_t reportInterval = 1000;
 
 // server
+uint64_t startedAt = 0;
 size_t bytesPerSecond = 1024 * 1024;
 size_t fixedBytesPerSecond = 0;
 size_t mtu = 1280;
@@ -49,6 +50,7 @@ size_t waitForSubs = 0;
 size_t packetsWritten = 0;
 PubType type = PUB_TCP;
 bool useZeroCopy = false;
+uint64_t bytesTotal = 0;
 
 // client
 size_t bytesRcvd = 0;
@@ -56,6 +58,8 @@ size_t pktsRecvd = 0;
 size_t lastSeqNr = 0;
 size_t pktsDropped = 0;
 uint64_t lastTimeStamp = 0;
+uint64_t firstTimeStamp = 0;
+std::string serverUUID;
 Publisher reporter;
 
 class Report {
@@ -65,6 +69,7 @@ public:
 	size_t bytesRcvd;
 	size_t pktsLate;
 	size_t latency;
+	size_t discoveryTime;
 	double pcntLoss;
 	std::string pubId;
 	std::string hostId;
@@ -84,6 +89,14 @@ class ThroughputReceiver : public Receiver {
 		Message::read(&currTimeStamp, msg->data() + 8);
 		Message::read(&reportInterval, msg->data() + 16);
 
+		if (msg->getMeta("um.pub") != serverUUID) {
+			firstTimeStamp = 0;
+			serverUUID = msg->getMeta("um.pub");
+		}
+		
+		if (firstTimeStamp == 0)
+			firstTimeStamp = currTimeStamp;
+		
 		if (currSeqNr < lastSeqNr)
 			lastSeqNr = 0;
 
@@ -102,6 +115,7 @@ class ThroughputReceiver : public Receiver {
 			msg->putMeta("pkts.rcvd", toStr(pktsRecvd));
 			msg->putMeta("last.seq", toStr(lastSeqNr));
 			msg->putMeta("last.timestamp", toStr(currTimeStamp));
+			msg->putMeta("first.timestamp", toStr(firstTimeStamp));
 			msg->putMeta("hostname", umundo::Host::getHostname());
 			reporter.send(msg);
 			delete msg;
@@ -124,14 +138,15 @@ public:
 		std::string pubUUID = msg->getMeta("um.pub");
 		Report& report = reports[pubUUID];
 
-		report.pktsRcvd    = strTo<size_t>(msg->getMeta("pkts.rcvd"));
-		report.pktsDropped = strTo<size_t>(msg->getMeta("pkts.dropped"));
-		report.bytesRcvd   = strTo<size_t>(msg->getMeta("bytes.rcvd"));
-		report.latency     = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("last.timestamp"));
-		report.hostName    = msg->getMeta("hostname");
-		report.hostId      = msg->getMeta("um.host");
-		report.pubId       = msg->getMeta("um.pub");
-
+		report.pktsRcvd      = strTo<size_t>(msg->getMeta("pkts.rcvd"));
+		report.pktsDropped   = strTo<size_t>(msg->getMeta("pkts.dropped"));
+		report.bytesRcvd     = strTo<size_t>(msg->getMeta("bytes.rcvd"));
+		report.latency       = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("last.timestamp"));
+		report.hostName      = msg->getMeta("hostname");
+		report.hostId        = msg->getMeta("um.host");
+		report.pubId         = msg->getMeta("um.pub");
+		report.discoveryTime = strTo<size_t>(msg->getMeta("first.timestamp")) - startedAt;
+		
 		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate = currSeqNr - lastSeqNr;
 
@@ -175,7 +190,7 @@ void printUsageAndExit() {
 	exit(1);
 }
 
-std::string bytesToDisplay(size_t nrBytes) {
+std::string bytesToDisplay(uint64_t nrBytes) {
 	std::stringstream ss;
 	ss << std::setprecision(5);
 
@@ -191,7 +206,11 @@ std::string bytesToDisplay(size_t nrBytes) {
 		ss << ((double)nrBytes / (double)(1024 * 1024)) << "MB";
 		return ss.str();
 	}
-	ss << ((double)nrBytes / (double)(1024 * 1024 * 1024)) << "GB";
+	if (nrBytes < 1024L * 1024L * 1024L * 1024L) {
+		ss << ((double)nrBytes / (double)(1024 * 1024)) << "GB";
+		return ss.str();
+	}
+	ss << ((double)nrBytes / (double)(1024 * 1024 * 1024 * 1024)) << "TB";
 	return ss.str();
 }
 
@@ -288,7 +307,8 @@ int main(int argc, char** argv) {
 	if (isServer) {
 		ThroughputGreeter tpGreeter;
 		ReportReceiver reportRecv;
-
+		startedAt = Thread::getTimeStampMs();
+		
 		Publisher pub;
 		switch (type) {
 		case PUB_RTP: {
@@ -349,6 +369,7 @@ int main(int argc, char** argv) {
 
 			intervalFactor = 1000.0 / (double)reportInterval;
 			bytesWritten += dataSize;
+			bytesTotal += dataSize;
 			packetsWritten++;
 
 			size_t delay = 0;
@@ -383,6 +404,7 @@ int main(int argc, char** argv) {
 					break;
 				}
 				}
+				std::cout << FORMAT_COL << bytesToDisplay(bytesTotal);
 				std::cout << FORMAT_COL << std::endl;
 
 
@@ -445,7 +467,8 @@ int main(int argc, char** argv) {
 					std::cout << FORMAT_COL << "pkts loss";
 					std::cout << FORMAT_COL << "% loss";
 					std::cout << FORMAT_COL << "pkts late";
-					std::cout << FORMAT_COL << "latency";
+					std::cout << FORMAT_COL << "RTT";
+					std::cout << FORMAT_COL << "dscvd";
 					std::cout << FORMAT_COL << "name";
 					std::cout << std::endl;
 
@@ -458,6 +481,7 @@ int main(int argc, char** argv) {
 						std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
 						std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
 						std::cout << FORMAT_COL << (report.latency > 100000 ? "N/A" : toStr(report.latency) + "ms");
+						std::cout << FORMAT_COL << (report.discoveryTime > 100000 ? "N/A" : toStr(report.discoveryTime) + "ms");
 						std::cout << FORMAT_COL << report.hostId.substr(0, 6) + " (" + report.hostName + ")";
 						std::cout << std::endl;
 

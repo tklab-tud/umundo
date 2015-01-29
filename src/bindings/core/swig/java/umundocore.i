@@ -60,6 +60,9 @@ using namespace umundo;
 %include "autoloadJNI.i"
 #endif
 
+%include "../umundo_ignores.i"
+%include "../umundo_beautify.i"
+
 //*************************************************/
 
 // allow Java classes to act as callbacks from C++
@@ -67,8 +70,6 @@ using namespace umundo;
 %feature("director") umundo::Connectable;
 %feature("director") umundo::Greeter;
 
-%include "../umundo_ignores.i"
-%include "../umundo_beautify.i"
 
 // enable conversion from char*, int to jbytearray
 %apply (char *STRING, size_t LENGTH) { (const char* data, size_t length) };

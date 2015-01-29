@@ -103,7 +103,7 @@ protected:
 
 public:	
 	Message() : _size(0), _isQueued(false), _doneCallback(NULL) {}
-	Message(const char* data, size_t length, Flags flags = NONE) : _size(length), _isQueued(false), _flags(flags), _doneCallback(NULL) {
+	Message(const char* data, size_t length, Flags flags) : _size(length), _isQueued(false), _flags(flags), _doneCallback(NULL) {
 		if (_flags & ADOPT_DATA) {
 			// take ownership of data and delete when done
 			_data = SharedPtr<char>(const_cast<char*>(data));
@@ -117,6 +117,9 @@ public:
 		}
 	}
 
+	// need this one for SWIG to ignore the other one with flags
+	Message(const char* data, size_t length) : _size(length), _isQueued(false), _flags(NONE), _doneCallback(NULL) {
+	}
 	Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint) : _size(length), _isQueued(false), _flags(WRAP_DATA) {
 		_doneCallback = doneCallback;
 		_hint = hint;

@@ -586,7 +586,7 @@ namespace umundo {
 					assert(ad->interfaces.find(browseReply.ifIndex) == ad->interfaces.end());
 					ad->interfaces.insert(browseReply.ifIndex);
 					
-					UM_LOG_INFO("browseReply called for new node %p - resolving service", ad);
+					UM_LOG_DEBUG("browseReply called for new node %p - resolving service", ad);
 					
 					// Resolve service domain name, target hostname, port number and txt record
 					int err = DNSServiceResolve(&serviceResolveRef,
@@ -785,7 +785,7 @@ namespace umundo {
 		SharedPtr<BonjourDiscoverer> myself = getInstance();
 		RScopeLock lock(myself->_mutex);
 		
-		UM_LOG_INFO("serviceResolveReply: info on node %s at %p on %s:%d at if %d",
+		UM_LOG_DEBUG("serviceResolveReply: info on node %s at %p on %s:%d at if %d",
 								fullname,
 								context,
 								hosttarget,
@@ -900,7 +900,7 @@ namespace umundo {
 		SharedPtr<BonjourDiscoverer> myself = getInstance();
 		RScopeLock lock(myself->_mutex);
 		
-		UM_LOG_INFO("addrInfoReply: %s with ttl %d for %p", hostname_, ttl_, context_);
+		UM_LOG_DEBUG("addrInfoReply: %s with ttl %d for %p", hostname_, ttl_, context_);
 		
 		if (errorCode_ != 0) {
 			UM_LOG_ERR("addrInfoReply called with error: %s", errCodeToString(errorCode_).c_str());
@@ -998,7 +998,7 @@ namespace umundo {
 			myself->_pendingAddrInfoReplies.clear();
 			//myself->dumpQueries();
 			
-			UM_LOG_DEBUG("%d added, %d changed", added.size(), changed.size());
+			UM_LOG_INFO("addrInfoReply: %d added, %d changed", added.size(), changed.size());
 			
 			// notify listeners about changes
 			for(std::map<std::string, MDNSAdvertisement*>::iterator changeIter = changed.begin();
@@ -1009,7 +1009,7 @@ namespace umundo {
 				for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
-					UM_LOG_INFO("addrInfoReply:%s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
+					UM_LOG_DEBUG("addrInfoReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
 					(*listIter)->rs->changed(changeIter->second);
 				}
 			}
@@ -1023,7 +1023,7 @@ namespace umundo {
 				for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
-					UM_LOG_INFO("addrInfoReply:%s/%s of type %s was added at ", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
+					UM_LOG_DEBUG("addrInfoReply:%s/%s of type %s was added at ", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
 					(*listIter)->rs->added(addIter->second);
 				}
 			}

@@ -585,7 +585,8 @@ namespace umundo {
 					// remember that we have a new interface
 					assert(ad->interfaces.find(browseReply.ifIndex) == ad->interfaces.end());
 					ad->interfaces.insert(browseReply.ifIndex);
-					
+					ad->lastChange |= Discovery::IFACE_ADDED;
+
 					UM_LOG_DEBUG("browseReply called for new node %p - resolving service", ad);
 					
 					// Resolve service domain name, target hostname, port number and txt record
@@ -626,7 +627,7 @@ namespace umundo {
 						continue;
 					}
 					
-					ad->lastChange = Discovery::IFACE_REMOVED;
+					ad->lastChange |= Discovery::IFACE_REMOVED;
 					
 					myself->_nodes--;
 					
@@ -649,19 +650,23 @@ namespace umundo {
 			}
 			myself->_pendingBrowseReplies.clear();
 			
-			// notify listeners about changes
+			// notify listeners about changes -> serviceResolveRef, addrInfoReply will do so!
 			for(std::map<std::string, MDNSAdvertisement*>::iterator changeIter = changed.begin();
 					changeIter != changed.end();
 					changeIter++) {
-				assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
-				std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
-				UM_LOG_INFO("browseReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
-				
-				for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-						 listIter != queryIter->second.queries.end();
-						 listIter++) {
-					(*listIter)->rs->changed(changeIter->second);
+				if (changeIter->second->lastChange & Discovery::IFACE_REMOVED) {
+					// addrInfoReply will notify for added interfaces
+					assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
+					std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
+					UM_LOG_INFO("browseReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
+					
+					for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
+							 listIter != queryIter->second.queries.end();
+							 listIter++) {
+						(*listIter)->rs->changed(changeIter->second, changeIter->second->lastChange);
+					}
 				}
+				changeIter->second->lastChange = 0;
 			}
 			
 			// notify listeners about removals
@@ -985,6 +990,7 @@ namespace umundo {
 					added[ad->name] = ad;
 				} else if (added.find(ad->name) == added.end()) {
 					changed[ad->name] = ad;
+					ad->lastChange |= Discovery::IFACE_ADDED;
 				}
 				
 				// copy over ip addresses
@@ -1010,8 +1016,9 @@ namespace umundo {
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
 					UM_LOG_DEBUG("addrInfoReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
-					(*listIter)->rs->changed(changeIter->second);
+					(*listIter)->rs->changed(changeIter->second, changeIter->second->lastChange);
 				}
+				changeIter->second->lastChange = 0;
 			}
 			
 			// notify listeners about aditions

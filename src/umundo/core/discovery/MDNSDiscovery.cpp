@@ -277,6 +277,7 @@ void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 	RScopeLock lock(_mutex);
 
 	if(_remoteAds.find(remoteAd) == _remoteAds.end()) {
+		UM_LOG_WARN("MDNS reported unknown node %s in %s as changed - adding as new", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str());
 		added(remoteAd);
 		return;
 	}

@@ -497,8 +497,8 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 }
 
 void ZeroMQNode::changed(EndPoint endPoint, uint64_t what) {
-	UM_LOG_INFO("%s changed -> removing and readding endpoint", SHORT_UUID(_uuid).c_str());
 	if (what & Discovery::IFACE_REMOVED) {
+		UM_LOG_INFO("%s gone on some interface -> removing and readding endpoint (be more clever here)", SHORT_UUID(_uuid).c_str());
 		removed(endPoint);
 		added(endPoint);
 	}

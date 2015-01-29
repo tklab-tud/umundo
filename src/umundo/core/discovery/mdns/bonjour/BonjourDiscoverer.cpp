@@ -644,6 +644,7 @@ namespace umundo {
 						// move from changed to removed
 						changed.erase(ad->name);
 						removed[ad->name] = ad;
+						ad->lastChange = 0;
 					}
 				}
 				replyIter++;
@@ -1010,28 +1011,30 @@ namespace umundo {
 			for(std::map<std::string, MDNSAdvertisement*>::iterator changeIter = changed.begin();
 					changeIter != changed.end();
 					changeIter++) {
-				assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
-				std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
+				MDNSAdvertisement* changee = changeIter->second;
+				assert(myself->_queryClients.find(changee->domain) != myself->_queryClients.end());
+				std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changee->domain].find(changee->regType);
 				for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
-					UM_LOG_DEBUG("addrInfoReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
-					(*listIter)->rs->changed(changeIter->second, changeIter->second->lastChange);
+					UM_LOG_DEBUG("addrInfoReply: %s/%s of type %s was changed", changee->name.c_str(), changee->domain.c_str(), changee->regType.c_str());
+					(*listIter)->rs->changed(changee, changee->lastChange);
 				}
-				changeIter->second->lastChange = 0;
+				changee->lastChange = 0;
 			}
 			
 			// notify listeners about aditions
 			for(std::map<std::string, MDNSAdvertisement*>::iterator addIter = added.begin();
 					addIter != added.end();
 					addIter++) {
-				assert(myself->_queryClients.find(addIter->second->domain) != myself->_queryClients.end());
-				std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[addIter->second->domain].find(addIter->second->regType);
+				MDNSAdvertisement* addee = addIter->second;
+				assert(myself->_queryClients.find(addee->domain) != myself->_queryClients.end());
+				std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[addee->domain].find(addee->regType);
 				for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
-					UM_LOG_DEBUG("addrInfoReply:%s/%s of type %s was added at ", addIter->second->name.c_str(), addIter->second->domain.c_str(), addIter->second->regType.c_str());
-					(*listIter)->rs->added(addIter->second);
+					UM_LOG_DEBUG("addrInfoReply:%s/%s of type %s was added at ", addee->name.c_str(), addee->domain.c_str(), addee->regType.c_str());
+					(*listIter)->rs->added(addee);
 				}
 			}
 			

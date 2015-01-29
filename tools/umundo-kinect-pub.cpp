@@ -20,39 +20,125 @@
 
 #include <libfreenect.hpp>
 
-struct RTPData {
+#define MAX_PAYLOAD_PACKET 1400
+
+struct RTPDepthData {
 	uint16_t row;
 	uint64_t timestamp;
 	uint16_t data[640];
+};
+
+struct RTPVideoData {
+	uint16_t row;
+	uint64_t timestamp;
+	uint8_t segment;    // first four bit signify total segments, last four this segments index in big endian
+	uint8_t data[MAX_PAYLOAD_PACKET]; // largest data that will reasonable fit
 };
 
 using namespace umundo;
 
 Discovery disc;
 Node node;
-Publisher pubDepth;
-Publisher pubVideo;
+Publisher pubDepthTCP;
+Publisher pubDepthRTP;
+
+Publisher pubVideoTCP;
+Publisher pubVideoRTP;
 
 class FreenectBridge : public Freenect::FreenectDevice {
 public:
-	FreenectBridge(freenect_context *ctx, int index)
-		: Freenect::FreenectDevice(ctx, index), _frameCount(0) {
+	FreenectBridge(freenect_context *ctx, int index) : Freenect::FreenectDevice(ctx, index), _frameCountDepth(0), _frameCountVideo(0) {
 		this->setLed(LED_RED);
 	}
 
-	void VideoCallback(void* image, uint32_t frameTimestamp) {
-		return;
-	}
-	
-	void DepthCallback(void* image, uint32_t frameTimestamp) {
-		uint16_t *depth = static_cast<uint16_t*>(image);
+	void VideoCallback(void* frame, uint32_t frameTimestamp) {
+		uint8_t* rgb = static_cast<uint8_t*>(frame);
 		uint64_t timestamp = Thread::getTimeStampMs();
 
-		_frameCount++;
-		if(!pubDepth || _frameCount % _modulo)			//send every _frameCount modulo _modulo frame
-			return;
+		uint16_t rows = 0;
+		uint16_t cols = 0;
 
-		std::cout << "Sending depth data (" << (1000/(timestamp-_lastTimestamp)) << " frames per second)..." << std::endl << std::flush;
+		if (_frameCountVideo % 30 == 0)
+			std::cout << "Video data @" << (1000/(timestamp-_lastTimestampVideo)) << "fps" << std::endl << std::flush;
+
+		_frameCountVideo++;
+		if(_frameCountVideo % _modulo)			//send every _frameCountDepth modulo _modulo frame
+			return;
+		
+		switch (getVideoResolution()) {
+			case FREENECT_RESOLUTION_LOW:
+				cols = 320;
+				rows = 240;
+				break;
+			case FREENECT_RESOLUTION_MEDIUM:
+				cols = 640;
+				rows = 480;
+				break;
+			case FREENECT_RESOLUTION_HIGH:
+				cols = 1280;
+				rows = 1024;
+				break;
+			default:
+    break;
+		}
+
+		size_t frameSize = getVideoBufferSize();
+		size_t rowSize = (frameSize / rows);
+		size_t dataSize = rowSize;
+		size_t segments = 1;
+		
+		while(dataSize > MAX_PAYLOAD_PACKET) {
+			dataSize /= 2;
+			segments *= 2;
+		}
+		
+		for (size_t row = 0; row < rows; row++) {
+			for (size_t segment = 0; segment < segments; segment++) {
+				Message* tcpMsg = new Message();
+
+				if (row == 0 && segment == 0) {
+					tcpMsg->putMeta("um.timestampIncrement", toStr(1));
+					tcpMsg->putMeta("um.marker", toStr(true));
+				} else {
+					tcpMsg->putMeta("um.timestampIncrement", toStr(0));
+					tcpMsg->putMeta("um.marker", toStr(false));
+				}
+
+				struct RTPVideoData *data = new struct RTPVideoData;
+				data->row = row;
+				data->timestamp = timestamp;
+				data->segment = 0;
+				data->segment += segments << 4; // total segments
+				data->segment += segment;       // current segment
+				
+				// copy one segmented row into data
+				memcpy(data->data, rgb + (cols * row + dataSize), dataSize);		//copy one depth data row into rtp data
+				tcpMsg->setData((char*)data, sizeof(struct RTPVideoData) - (MAX_PAYLOAD_PACKET - dataSize));
+				
+				Message* rtpMsg = new Message(*tcpMsg); // we need to copy as the publisher will add meta fields! TODO: change this
+				
+				pubVideoTCP.send(tcpMsg);
+				pubVideoRTP.send(rtpMsg);
+
+				delete data;
+				delete tcpMsg;
+				delete rtpMsg;
+			}
+		}
+		_lastTimestampVideo = timestamp;
+	}
+	
+	
+	void DepthCallback(void* frame, uint32_t frameTimestamp) {
+		uint16_t *depth = static_cast<uint16_t*>(frame);
+		uint64_t timestamp = Thread::getTimeStampMs();
+
+		if (_frameCountDepth % 30 == 0)
+			std::cout << "Depth data @" << (1000/(timestamp-_lastTimestampDepth)) << "fps" << std::endl << std::flush;
+
+		_frameCountDepth++;
+		if(_frameCountDepth % _modulo)			//send every _frameCountDepth modulo _modulo frame
+			return;
 
 		for( unsigned int i = 0; i < 480; i++ ) {
 			Message* msg = new Message();
@@ -65,19 +151,20 @@ public:
 				msg->putMeta("um.marker", toStr(false));
 			}
 			
-			struct RTPData *data = new struct RTPData;
+			struct RTPDepthData *data = new struct RTPDepthData;
 			data->row = i;
 			data->timestamp = timestamp;
 			
 			memcpy(data->data, depth + (640 * i), sizeof(uint16_t) * 640);		//copy one depth data row into rtp data
-			msg->setData((char*)data, sizeof(struct RTPData));
+			msg->setData((char*)data, sizeof(struct RTPDepthData));
 			
-			pubDepth.send(msg);
+			pubDepthTCP.send(msg);
+			pubDepthRTP.send(msg);
+
 			delete data;
 			delete msg;
 		}
-		
-		_lastTimestamp=timestamp;
+		_lastTimestampDepth = timestamp;
 	}
 
 	void setModulo(uint16_t modulo) {
@@ -86,8 +173,10 @@ public:
 
 private:
 	uint16_t _modulo;
-	uint8_t _frameCount;
-	uint64_t _lastTimestamp;
+	uint16_t _frameCountDepth;
+	uint16_t _frameCountVideo;
+	uint64_t _lastTimestampDepth;
+	uint64_t _lastTimestampVideo;
 };
 
 Freenect::Freenect freenect;
@@ -105,24 +194,41 @@ int main(int argc, char** argv) {
 			modulo = m;
 	}
 
-	std::cout << "Sending every " << modulo << ". image..." << std::endl << std::flush;
+	std::cout << "Sending every " << modulo << ". frame..." << std::endl << std::flush;
 
-	PublisherConfigRTP pubConfig("kinect.depth");
-	pubConfig.setTimestampIncrement(1);
-	pubDepth = Publisher(&pubConfig);
+	{
+		PublisherConfigRTP pubConfigRTP("kinect.depth.rtp");
+		pubConfigRTP.setTimestampIncrement(1);
+		pubDepthRTP = Publisher(&pubConfigRTP);
 
+		PublisherConfigTCP pubConfigTCP("kinect.depth.tcp");
+		pubDepthTCP = Publisher(&pubConfigTCP);
+	}
+	
+	{
+		PublisherConfigRTP pubConfigRTP("kinect.video.rtp");
+		pubConfigRTP.setTimestampIncrement(1);
+		pubVideoRTP = Publisher(&pubConfigRTP);
+
+		PublisherConfigTCP pubConfigTCP("kinect.video.tcp");
+		pubVideoTCP = Publisher(&pubConfigTCP);
+	}
+	
 	disc = Discovery(Discovery::MDNS);
 	disc.add(node);
 
-	node.addPublisher(pubDepth);
+	node.addPublisher(pubDepthRTP);
+	node.addPublisher(pubDepthTCP);
+	node.addPublisher(pubVideoRTP);
+	node.addPublisher(pubVideoTCP);
 
-	int testFrame = 0;
-	
 	while(true) {
 		try {
 			device = &freenect.createDevice<FreenectBridge>(0);
 			device->setModulo(modulo);
 			device->startDepth();
+//			device->setVideoFormat(FREENECT_VIDEO_RGB, FREENECT_RESOLUTION_MEDIUM);
+			device->startVideo();
 #if 0
 	FREENECT_VIDEO_RGB             = 0, /**< Decompressed RGB mode (demosaicing done by libfreenect) */
 	FREENECT_VIDEO_BAYER           = 1, /**< Bayer compressed mode (raw information from camera) */
@@ -139,49 +245,9 @@ int main(int argc, char** argv) {
 				Thread::sleepMs(4000);
 			
 		} catch(std::runtime_error e) {
-			// send a few test images and retry
-#if 1
-			for (;;) {
-				testFrame++;
-				uint64_t timestamp = Thread::getTimeStampMs();
-				for (unsigned int i = 0; i < 480; i++ ) {
-					Message* msg = new Message();
-					if (i == 0) {
-						msg->putMeta("um.timestampIncrement", toStr(1));
-						msg->putMeta("um.marker", toStr(true));
-					} else {
-						msg->putMeta("um.timestampIncrement", toStr(0));
-						msg->putMeta("um.marker", toStr(false));
-					}
-					struct RTPData *data = new struct RTPData;
-					data->row = i;
-					data->timestamp = timestamp;
-
-					for (unsigned int j = 0; j < 640; j++) {
-						uint16_t tf = (i + j + testFrame);
-						tf *= 12;           // frequency
-						if (tf > 1200) {   // length of black bar
-							tf %= 1200;
-						}
-						tf += 500;         // start color
-						data->data[j] = tf;
-					}
-					
-					msg->setData((char*)data, sizeof(struct RTPData));
-
-					pubDepth.send(msg);
-
-					delete data;
-					delete msg;
-				}
-				
-				if (testFrame % 50 == 0)
-					break;
-				if (testFrame % 640 == 0)
-					testFrame = 0;
-				Thread::sleepMs(20);
-			}
-#endif
+			std::cout << e.what() << std::endl;
+			Thread::sleepMs(4000);
+			// send a few test frames and retry
 		}
 	}
 	

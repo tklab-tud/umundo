@@ -215,7 +215,31 @@ bool testByteWriting() {
 	return true;
 }
 
+bool testCompression() {
+	std::string test1;
+	for (int i = 0; i < 20; i++)
+		test1 += "This is some test right here!";
+	
+	Message msg(test1.data(), test1.size());
+	assert(test1 == std::string(msg.data(), msg.size()));
+
+	msg.uncompress();
+
+	msg.compress();
+	msg.compress();
+	msg.compress();
+	std::cout << test1.size() << " vs " << msg.size() << std::endl;
+	msg.uncompress();
+	msg.uncompress();
+	
+	assert(test1 == std::string(msg.data(), msg.size()));
+	
+	return true;
+}
+
 int main(int argc, char** argv, char** envp) {
+	if (!testCompression())
+		return EXIT_FAILURE;
 	if (!testByteWriting())
 		return EXIT_FAILURE;
 	if (!testMessageTransmission())

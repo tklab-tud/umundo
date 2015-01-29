@@ -19,6 +19,7 @@
 
 #include "umundo/core/Message.h"
 #include "umundo/config.h"
+#include "miniz.h"
 
 #if 0
 #include <boost/detail/endian.hpp>
@@ -138,6 +139,49 @@ const char* Message::read(double* value, const char* from) {
 	*value = *(double*)from;
 //	memcpy(value, from, sizeof(double));
 	return from + sizeof(double);
+}
+
+void Message::compress() {
+	if (isCompressed())
+		return;
+	
+	mz_ulong compressedSize = mz_compressBound(_size);
+	int cmp_status;
+	uint8_t *pCmp;
+
+	pCmp = (mz_uint8 *)malloc((size_t)compressedSize);
+
+//	mz_ulong tmpSize = _size;
+	cmp_status = mz_compress(pCmp, &compressedSize, (const unsigned char *)_data.get(), _size);
+	if (cmp_status != Z_OK) {
+		// error
+		free(pCmp);
+	}
+	
+	_data = SharedPtr<char>((char*)pCmp);
+	_meta["um.compressed"] = toStr(_size);
+	_size = compressedSize;
+}
+
+void Message::uncompress() {
+	if (!isCompressed())
+		return;
+	
+	int cmp_status;
+	mz_ulong actualSize = strTo<size_t>(_meta["um.compressed"]);
+	uint8_t *pUncmp;
+
+	pUncmp = (mz_uint8 *)malloc((size_t)actualSize);
+	cmp_status = mz_uncompress(pUncmp, &actualSize, (const unsigned char *)_data.get(), _size);
+
+	if (cmp_status != Z_OK) {
+		// error
+		free(pUncmp);
+	}
+
+	_size = actualSize;
+	_data = SharedPtr<char>((char*)pUncmp);
+	_meta.erase("um.compressed");
 }
 
 }

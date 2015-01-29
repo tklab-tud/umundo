@@ -32,6 +32,12 @@
 #include <GL/glu.h>
 #endif
 
+#ifdef WIN32
+#include "XGetopt.h"
+#endif
+
+#define MAX_PAYLOAD_PACKET 1400
+
 struct RTPDepthData {
 	uint16_t row;
 	uint64_t timestamp;
@@ -40,10 +46,16 @@ struct RTPDepthData {
 
 struct RTPVideoData {
 	uint16_t row;
-	uint16_t cols;
 	uint64_t timestamp;
-	uint8_t data[640]; // may not be completely used with other resolutions
+	uint8_t segment;    // first four bit signify total segments, last four this segments index in big endian
+	uint8_t data[MAX_PAYLOAD_PACKET]; // largest data that will reasonable fit
 };
+
+bool useDepth = false;
+bool useVideo = false;
+bool useRTP   = false;
+bool useMCast = false;
+bool useTCP   = false;
 
 using namespace umundo;
 
@@ -58,10 +70,6 @@ public:
 	}
 	
 	void receive(Message* msg) {
-		//handle only RTP messages
-		if (msg->getMeta("um.type") != "RTP")
-			return;
-		
 		RScopeLock lock(_internalVideoMutex);
 		bool marker = strTo<bool>(msg->getMeta("um.marker"));
 		struct RTPVideoData* data = (struct RTPVideoData*)msg->data();
@@ -69,7 +77,7 @@ public:
 		//calculate time offset to remote host
 		if (!_timeOffset)
 			_timeOffset = Thread::getTimeStampMs() - data->timestamp;
-
+		
 		if (marker) {
 			std::cout << std::endl << "####" << std::endl;
 			_rtpTimestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
@@ -85,39 +93,45 @@ public:
 		
 		if (!_start)				//wait for first complete frame (and ignore data till then)
 			return;
-
-		std::cout << data->row << ":" << msg->size() << ".";
-//		memcpy(&_videoBuffer[data->row * data->cols], data->data, sizeof(uint8_t) * data->cols);
-		memset(&_videoBuffer[data->row * data->cols * 4], 200, sizeof(uint8_t) * data->cols * 4);
+		
+		uint8_t currSegment  =  data->segment & 0x0F;
+		uint8_t totalSegment = (data->segment & 0xF0) >> 4;
+		uint32_t dataSize = msg->size() - 88;
+		
+//		std::cout << (uint16_t)currSegment << " / " << (uint16_t)totalSegment << std::endl;
+		std::cout << data->row << ":" << (uint16_t)currSegment << " / " << (uint16_t)totalSegment << "@" << dataSize << "B -> " << (data->row * msg->size() * totalSegment + (currSegment * dataSize)) << std::endl;
+		
+			memcpy(&_videoBuffer[data->row * msg->size() * totalSegment + (currSegment * dataSize)], data->data, dataSize);
+		//		memset(&_videoBuffer[data->row * data->cols * 4], 200, sizeof(uint8_t) * data->cols * 4);
 	}
 	
 	bool getRGB(std::vector<uint8_t> &buffer) {
 		RScopeLock lock(_internalVideoMutex);
 		_newFrame.wait(_internalVideoMutex, 100);
-
+		
 		if (!_newCompleteFrame)
 			return false;
 		
 		buffer.swap(_videoBuffer);
 		_newCompleteFrame = false;
-
+		
 		return true;
 	}
-
+	
 protected:
 	uint32_t _rtpTimestamp;
 	bool _newCompleteFrame;
 	bool _start;
 	uint64_t _lastRemoteTimestamp;
 	uint64_t _lastLocalTimestamp;
-
+	
 	int64_t _timeOffset;
-
+	
 	RMutex _internalVideoMutex;
 	Monitor _newFrame;
-
+	
 	std::vector<uint8_t> _videoBuffer;
-
+	
 };
 
 class DepthReceiver : public Receiver {
@@ -133,16 +147,11 @@ public:
 			_mGamma[i] = v*6*256;
 		}
 	};
-
+	
 	~DepthReceiver() {
 	};
-
+	
 	void receive(Message* msg) {
-
-		//handle only RTP messages
-		if (msg->getMeta("um.type") != "RTP")
-			return;
-		
 		RScopeLock lock(_internalDepthMutex);
 		bool marker = strTo<bool>(msg->getMeta("um.marker"));
 		struct RTPDepthData* data = (struct RTPDepthData*)msg->data();
@@ -150,10 +159,10 @@ public:
 		//calculate time offset to remote host
 		if (!_timeOffset)
 			_timeOffset = Thread::getTimeStampMs() - data->timestamp;
-
+		
 		//marker is set --> new frame starts here, process old frame
 		if (marker) {
-
+			
 #if 0
 			// copy unreceived rows form neighbors
 			for (unsigned int i = 0; i<480; i++) {
@@ -181,7 +190,7 @@ public:
 			// and clear packetloss mask
 			for (unsigned int i = 0; i<480; i++)
 				_rowMask[i] = false;
-
+			
 			
 			_rtpTimestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
 			//we received a mark, so old frame is complete --> signal this to opengl thread
@@ -191,7 +200,7 @@ public:
 			}
 			_start = true;
 		}
-
+		
 		//calculate aux data
 		_lastRemoteTimestamp = data->timestamp;
 		_lastLocalTimestamp = Thread::getTimeStampMs() - _timeOffset;
@@ -199,7 +208,7 @@ public:
 			return;
 		
 		_rowMask[data->row] = true;		//mark this row as received
-
+		
 		//process received data and calculate received depth picture row
 		for (unsigned int col = 0 ; col < 640 ; col++) {
 			unsigned int i = data->row * 640 + col;
@@ -208,56 +217,56 @@ public:
 			uint8_t lb = pval & 0xff;
 			
 			switch (pval>>8) {
-			case 0:
-				_depthBuffer[3*i+0] = 255;
-				_depthBuffer[3*i+1] = 255-lb;
-				_depthBuffer[3*i+2] = 255-lb;
-				break;
-			case 1:
-				_depthBuffer[3*i+0] = 255;
-				_depthBuffer[3*i+1] = lb;
-				_depthBuffer[3*i+2] = 0;
-				break;
-			case 2:
-				_depthBuffer[3*i+0] = 255-lb;
-				_depthBuffer[3*i+1] = 255;
-				_depthBuffer[3*i+2] = 0;
-				break;
-			case 3:
-				_depthBuffer[3*i+0] = 0;
-				_depthBuffer[3*i+1] = 255;
-				_depthBuffer[3*i+2] = lb;
-				break;
-			case 4:
-				_depthBuffer[3*i+0] = 0;
-				_depthBuffer[3*i+1] = 255-lb;
-				_depthBuffer[3*i+2] = 255;
-				break;
-			case 5:
-				_depthBuffer[3*i+0] = 0;
-				_depthBuffer[3*i+1] = 0;
-				_depthBuffer[3*i+2] = 255-lb;
-				break;
-			default:
-				_depthBuffer[3*i+0] = 0;
-				_depthBuffer[3*i+1] = 0;
-				_depthBuffer[3*i+2] = 0;
-				break;
+				case 0:
+					_depthBuffer[3*i+0] = 255;
+					_depthBuffer[3*i+1] = 255-lb;
+					_depthBuffer[3*i+2] = 255-lb;
+					break;
+				case 1:
+					_depthBuffer[3*i+0] = 255;
+					_depthBuffer[3*i+1] = lb;
+					_depthBuffer[3*i+2] = 0;
+					break;
+				case 2:
+					_depthBuffer[3*i+0] = 255-lb;
+					_depthBuffer[3*i+1] = 255;
+					_depthBuffer[3*i+2] = 0;
+					break;
+				case 3:
+					_depthBuffer[3*i+0] = 0;
+					_depthBuffer[3*i+1] = 255;
+					_depthBuffer[3*i+2] = lb;
+					break;
+				case 4:
+					_depthBuffer[3*i+0] = 0;
+					_depthBuffer[3*i+1] = 255-lb;
+					_depthBuffer[3*i+2] = 255;
+					break;
+				case 5:
+					_depthBuffer[3*i+0] = 0;
+					_depthBuffer[3*i+1] = 0;
+					_depthBuffer[3*i+2] = 255-lb;
+					break;
+				default:
+					_depthBuffer[3*i+0] = 0;
+					_depthBuffer[3*i+1] = 0;
+					_depthBuffer[3*i+2] = 0;
+					break;
 			}
 		}
 	};
-
+	
 	bool getDepth(std::vector<uint8_t> &buffer) {
 		RScopeLock lock(_internalDepthMutex);
 		_newFrame.wait(_internalDepthMutex, 100);
 		if (!_newCompleteFrame)
 			return false;
 		buffer.swap(_depthBuffer);
-
+		
 		_newCompleteFrame = false;
 		return true;
 	};
-
+	
 private:
 	std::vector<uint16_t> _mGamma;
 	bool _newCompleteFrame;
@@ -267,7 +276,7 @@ private:
 	uint64_t _lastLocalTimestamp;
 	int64_t _timeOffset;
 	bool _rowMask[480];
-
+	
 	std::vector<uint8_t> _depthBuffer;
 	
 	RMutex _internalDepthMutex;
@@ -279,18 +288,21 @@ VideoReceiver videoRecv;
 
 void DrawGLScene() {
 	static std::vector<uint8_t> frame(640*480*4);
-
-//	depthRecv.getDepth(frame);
-	videoRecv.getRGB(frame);
+	
+	if (useVideo) {
+		videoRecv.getRGB(frame);
+	} else {
+		depthRecv.getDepth(frame);
+	}
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-
+	
 	glEnable(GL_TEXTURE_2D);
-
+	
 	glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
-
+	
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4f(255.0f, 255.0f, 255.0f, 255.0f);
 	glTexCoord2f(0, 0);
@@ -302,7 +314,7 @@ void DrawGLScene() {
 	glTexCoord2f(0, 1);
 	glVertex3f(0,480,0);
 	glEnd();
-
+	
 	glutSwapBuffers();
 }
 
@@ -329,49 +341,95 @@ void InitGL(int Width, int Height) {
 	ReSizeGLScene(Width, Height);
 }
 
-int main(int argc, char** argv) {
+void printUsageAndExit() {
 	printf("umundo-kinect-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("Usage\n");
+	printf("\tumundo-kinect-sub -t[rtp|tcp|mcast] -c[depth|video]\n");
+	printf("\n");
+	printf("Options\n");
+	printf("\t-t [rtp|tcp|mcast] : type of publisher to connect to\n");
+	printf("\t-c [depth|video]   : camera to use\n");
+	exit(1);
+}
 
-	Subscriber subDepth;
-	Subscriber subVideo;
+int main(int argc, char** argv) {
 	
-	{
-		SubscriberConfigRTP subConfig("kinect.depth");
-		//subConfig.setMulticastIP("224.1.2.3");
-		subDepth = Subscriber(&subConfig);
-		subDepth.setReceiver(&depthRecv);
+	int option;
+	while ((option = getopt(argc, argv, "t:c:")) != -1) {
+		switch(option) {
+			case 't':
+				if (strncasecmp(optarg, "tcp", 3) == 0) {
+					useTCP = true;
+				} else if (strncasecmp(optarg, "mcast", 5) == 0) {
+					useMCast = true;
+				} else if (strncasecmp(optarg, "rtp", 3) == 0) {
+					useRTP = true;
+				} else {
+					printUsageAndExit();
+				}
+				break;
+			case 'c':
+				if (strncasecmp(optarg, "depth", 5) == 0) {
+					useDepth = true;
+				} else if (strncasecmp(optarg, "video", 5) == 0) {
+					useVideo = true;
+				} else {
+					printUsageAndExit();
+				}
+				break;
+			default:
+				printUsageAndExit();
+				break;
+		}
 	}
-
-	{
-		SubscriberConfigRTP subConfig("kinect.video");
-		//subConfig.setMulticastIP("224.1.2.3");
-		subVideo = Subscriber(&subConfig);
-		subVideo.setReceiver(&videoRecv);
+	
+	Subscriber sub;
+	Receiver* recv; // program termiantion will deallocate
+	std::string channelName;
+	
+	if (useVideo) {
+		channelName = "kinect.video";
+		recv = new VideoReceiver();
+	} else {
+		channelName = "kinect.depth";
+		recv = new DepthReceiver();
 	}
-
+	
+	if (useTCP) {
+		SubscriberConfigTCP subConfig(channelName + ".tcp");
+		sub = Subscriber(&subConfig);
+		sub.setReceiver(recv);
+	} else {
+		SubscriberConfigRTP subConfig(channelName + ".rtp");
+		if (useMCast)
+			subConfig.setMulticastIP("224.1.2.3");
+		
+		sub = Subscriber(&subConfig);
+		sub.setReceiver(recv);
+	}
+	
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
-	node.addSubscriber(subDepth);
-	node.addSubscriber(subVideo);
-
-
+	node.addSubscriber(sub);
+	
+	
 	//OpenGL Display Part
 	glutInit(&argc, argv);
-
+	
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH);
 	glutInitWindowSize(640, 480);
 	glutInitWindowPosition(0, 0);
-
+	
 	glutCreateWindow("UMundo Kinect Stream");
-
+	
 	glutDisplayFunc(&DrawGLScene);
 	glutIdleFunc(&DrawGLScene);
 	glutReshapeFunc(&ReSizeGLScene);
-
+	
 	InitGL(640, 480);
-
+	
 	glutMainLoop();
-
+	
 	return 0;
 }

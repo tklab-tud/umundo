@@ -40,6 +40,9 @@ list(APPEND UMUNDOCORE_FILES
 	${TREAD_FILES}
 )
 
+# miniz minimal compression library
+list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/miniz/miniz.c)
+
 if (ANDROID) # android gcc complains about boost 1.51
   SET_SOURCE_FILES_PROPERTIES(common/UUID.cpp PROPERTIES COMPILE_FLAGS -Wno-uninitialized)
 endif()

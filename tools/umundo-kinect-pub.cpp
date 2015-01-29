@@ -92,6 +92,9 @@ public:
 			segments *= 2;
 		}
 		
+		if (_frameCountVideo % (_modulo * 5) == 0)
+			std::cout << "Row: " << rowSize << "B" << " => Data: " << dataSize << "B in " << segments << " segments" << std::endl << std::flush;
+
 		for (size_t row = 0; row < rows; row++) {
 			for (size_t segment = 0; segment < segments; segment++) {
 				Message* tcpMsg = new Message();

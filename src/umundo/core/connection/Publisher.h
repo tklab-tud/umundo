@@ -200,14 +200,19 @@ public:
 	PublisherConfigTCP(const std::string& channel) : PublisherConfig(channel) {
 		_type = Publisher::ZEROMQ;
 	}
+	
+	void enableCompression() {
+		options["pub.tcp.compression"] = "1";
+	}
+
 protected:
 	friend class Publisher;
 };
 
 	
-class UMUNDO_API PublisherConfigRTP : public PublisherConfigTCP {
+class UMUNDO_API PublisherConfigRTP : public PublisherConfig {
 public:
-	PublisherConfigRTP(const std::string& channel) : PublisherConfigTCP(channel) {
+	PublisherConfigRTP(const std::string& channel) : PublisherConfig(channel) {
 		_type = Publisher::RTP;
 		setTimestampIncrement(150);
 	}

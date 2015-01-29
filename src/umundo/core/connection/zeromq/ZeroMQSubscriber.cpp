@@ -249,6 +249,8 @@ void ZeroMQSubscriber::run() {
 
 		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
 			Message* msg = getNextMsg();
+			if (msg->isCompressed())
+				msg->uncompress();
 			_receiver->receive(msg);
 			delete msg;
 		}

@@ -5,7 +5,7 @@
 
 if (BUILD_UMUNDO_S11N)
 	if (WIN32)
-		add_executable(umundo-monitor umundo-monitor.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+		add_executable(umundo-monitor umundo-monitor.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 	else()
 		add_executable(umundo-monitor umundo-monitor.cpp)
 	endif()
@@ -103,7 +103,7 @@ if (NET_RTP)
 endif()
 
 if (WIN32)
-	add_executable(umundo-pingpong umundo-pingpong.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-pingpong umundo-pingpong.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-pingpong umundo-pingpong.cpp)
 endif()
@@ -134,7 +134,7 @@ INSTALL_EXECUTABLE(
 )
 
 if (WIN32)
-	add_executable(umundo-debug umundo-debug.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-debug umundo-debug.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-debug umundo-debug.cpp)
 endif()
@@ -148,7 +148,7 @@ INSTALL_EXECUTABLE(
 
 
 if (WIN32)
-	add_executable(umundo-capture umundo-capture.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-capture umundo-capture.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-capture umundo-capture.cpp)
 endif()
@@ -162,7 +162,7 @@ INSTALL_EXECUTABLE(
 
 
 if (WIN32)
-	add_executable(umundo-replay umundo-replay.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-replay umundo-replay.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-replay umundo-replay.cpp)
 endif()
@@ -204,7 +204,7 @@ if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC)
 endif()
 
 if (WIN32)
-	add_executable(umundo-bridge umundo-bridge.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-bridge umundo-bridge.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-bridge umundo-bridge.cpp)
 endif()
@@ -217,7 +217,7 @@ INSTALL_EXECUTABLE(
 )
 
 if (WIN32)
-	add_executable(umundo-throughput umundo-throughput.cpp ${PROJECT_SOURCE_DIR}/contrib/snippets/XGetopt.cpp)
+	add_executable(umundo-throughput umundo-throughput.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
 else()
 	add_executable(umundo-throughput umundo-throughput.cpp)
 endif()

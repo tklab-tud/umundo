@@ -96,7 +96,7 @@ public:
 	static const char* read(float* value, const char* from);
 	static const char* read(double* value, const char* from);
 	
-protected:
+private:
 	class NilDeleter;
 	friend class NilDeleter;
 	friend class ZeroMQPublisher;
@@ -150,11 +150,18 @@ public:
 		return _flags;
 	}
 
+	void compress();
+	void uncompress();
+	bool isCompressed() {
+		return (_meta.find("um.compressed") != _meta.end());
+	}
+	
 	virtual void setData(const char* data, size_t length)               {
 		_size = length;
 		_data = SharedPtr<char>((char*)malloc(_size));
 		memcpy(_data.get(), data, _size);
 	}
+	
 	virtual const void putMeta(const std::string& key, const std::string& value)  {
 		_meta[key] = value;
 	}
@@ -166,7 +173,7 @@ public:
 			return _meta[key];
 		return "";
 	}
-
+	
 	void setQueued(bool isQueued) {
 		_isQueued = isQueued;
 	}
@@ -185,7 +192,7 @@ public:
 	}
 
 
-protected:
+private:
 	class NilDeleter {
 	public:
 		void operator()(char* p) {}
@@ -193,6 +200,7 @@ protected:
 	
 	SharedPtr<char> _data;
 	size_t _size;
+	
 	bool _isQueued;
 	uint32_t _flags;
 	std::map<std::string, std::string> _meta;

@@ -454,8 +454,9 @@ endif()
 message(STATUS "Searching for prebuilt libraries in: ${CMAKE_PREFIX_PATH}")
 
 if (WIN32)
-	include_directories(${PROJECT_SOURCE_DIR}/contrib/snippets)
+	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/xgetopt)
 endif()
+include_directories(${PROJECT_SOURCE_DIR}/contrib/src/miniz)
 
 ############################################################
 # General setup

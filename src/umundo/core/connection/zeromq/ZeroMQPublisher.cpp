@@ -38,7 +38,7 @@
 
 namespace umundo {
 
-ZeroMQPublisher::ZeroMQPublisher() {}
+ZeroMQPublisher::ZeroMQPublisher() : _compressMessages(false) {}
 
 void ZeroMQPublisher::init(const Options* config) {
 	RScopeLock lock(_mutex);
@@ -54,7 +54,10 @@ void ZeroMQPublisher::init(const Options* config) {
 	zmq_setsockopt(_pubSocket, ZMQ_SNDHWM, &hwm, sizeof(hwm)) && UM_LOG_WARN("zmq_setsockopt: %s",zmq_strerror(errno));
 	zmq_bind(_pubSocket, std::string("inproc://" + pubId).c_str());
 
-	UM_LOG_INFO("creating internal publisher for %s on %s", _channelName.c_str(), std::string("inproc://" + pubId).c_str());
+	std::map<std::string, std::string> options = config->getKVPs();
+	_compressMessages = options.find("pub.tcp.compression") != options.end();
+	
+	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressMessages ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
 }
 
@@ -186,6 +189,9 @@ void ZeroMQPublisher::send(Message* msg) {
 		return;
 	}
 
+	if (_compressMessages)
+		msg->compress();
+	
 	// topic name or explicit subscriber id is first message in envelope
 	zmq_msg_t channelEnvlp;
 	

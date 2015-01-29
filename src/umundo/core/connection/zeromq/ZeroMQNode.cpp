@@ -21,6 +21,7 @@
 #define UMUNDO_PERF_BUCKET_LENGTH_MS 200.0
 
 #include "umundo/core/connection/zeromq/ZeroMQNode.h"
+#include "umundo/core/discovery/Discovery.h"
 
 #include "umundo/config.h"
 
@@ -497,8 +498,10 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 
 void ZeroMQNode::changed(EndPoint endPoint, uint64_t what) {
 	UM_LOG_INFO("%s changed -> removing and readding endpoint", SHORT_UUID(_uuid).c_str());
-	removed(endPoint);
-	added(endPoint);
+	if (what & Discovery::IFACE_REMOVED) {
+		removed(endPoint);
+		added(endPoint);
+	}
 }
 
 /**

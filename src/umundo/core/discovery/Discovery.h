@@ -67,6 +67,11 @@ public:
 class UMUNDO_API Discovery {
 public:
 
+	enum Changes {
+		IFACE_ADDED = 0x01,
+		IFACE_REMOVED = 0x02
+	};
+
 	enum DiscoveryType {
 		MDNS,
 		BROADCAST

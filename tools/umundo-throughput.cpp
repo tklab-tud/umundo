@@ -198,16 +198,16 @@ std::string bytesToDisplay(uint64_t nrBytes) {
 		ss << nrBytes << "B";
 		return ss.str();
 	}
-	if (nrBytes < 1024 * 1024) {
+	if (nrBytes < 1024L * 1024L) {
 		ss << ((double)nrBytes / (double)1024) << "KB";
 		return ss.str();
 	}
-	if (nrBytes < 1024 * 1024 * 1024) {
+	if (nrBytes < 1024L * 1024L * 1024L) {
 		ss << ((double)nrBytes / (double)(1024 * 1024)) << "MB";
 		return ss.str();
 	}
 	if (nrBytes < 1024L * 1024L * 1024L * 1024L) {
-		ss << ((double)nrBytes / (double)(1024 * 1024)) << "GB";
+		ss << ((double)nrBytes / (double)(1024 * 1024 * 1024)) << "GB";
 		return ss.str();
 	}
 	ss << ((double)nrBytes / (double)(1024 * 1024 * 1024 * 1024)) << "TB";
@@ -512,12 +512,12 @@ int main(int argc, char** argv) {
 
 		SubscriberConfigMCast mcastConfig("throughput.mcast");
 		mcastConfig.setMulticastIP("224.1.2.3");
-		mcastConfig.setMulticastPortbase(42142);
+//		mcastConfig.setMulticastPortbase(42142);
 		Subscriber mcastSub(&mcastConfig);
 		mcastSub.setReceiver(&tpRcvr);
 
 		SubscriberConfigRTP rtpConfig("throughput.rtp");
-		rtpConfig.setPortbase(40042);
+//		rtpConfig.setPortbase(40042);
 		Subscriber rtpSub(&rtpConfig);
 		rtpSub.setReceiver(&tpRcvr);
 

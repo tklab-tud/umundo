@@ -27,10 +27,6 @@ namespace umundo {
 
 class MDNSAdvertisement {
 public:
-	enum Changes {
-		MDNS_IFACE_ADDED = 0x01,
-		MDNS_IFACE_REMOVED = 0x02
-	};
 	
 	MDNSAdvertisement() : port(0), isInProcess(false), isRemote(true), lastChange(0) {}
 	std::string regType;

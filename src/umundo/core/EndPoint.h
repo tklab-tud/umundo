@@ -25,7 +25,7 @@
 #include "Implementation.h"
 #include <boost/shared_ptr.hpp>
 
-#define SHORT_UUID(uuid) uuid.substr(0, 8)
+#define SHORT_UUID(uuid) (uuid.length() == 36 ? uuid.substr(0, 8) : uuid)
 
 namespace umundo {
 

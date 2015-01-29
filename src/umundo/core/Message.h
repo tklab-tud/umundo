@@ -119,7 +119,10 @@ public:
 
 	// need this one for SWIG to ignore the other one with flags
 	Message(const char* data, size_t length) : _size(length), _isQueued(false), _flags(NONE), _doneCallback(NULL) {
+		_data = SharedPtr<char>((char*)malloc(_size));
+		memcpy(_data.get(), data, _size);
 	}
+	
 	Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint) : _size(length), _isQueued(false), _flags(WRAP_DATA) {
 		_doneCallback = doneCallback;
 		_hint = hint;

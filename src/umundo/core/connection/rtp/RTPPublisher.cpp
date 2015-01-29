@@ -63,6 +63,7 @@ RTPPublisher::RTPPublisher() : _isSuspended(false), _initDone(false) {
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
 #endif // WIN32
+	
 }
 
 void RTPPublisher::init(const Options* config) {

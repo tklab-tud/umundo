@@ -283,11 +283,11 @@ void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 	
 	std::string whatString;
 	std::string seperator;
-	if (what & MDNSAdvertisement::MDNS_IFACE_REMOVED) {
+	if (what & Discovery::IFACE_REMOVED) {
 		whatString = seperator +  "existing interface gone";
 		seperator = ", ";
 	}
-	if (what & MDNSAdvertisement::MDNS_IFACE_ADDED) {
+	if (what & Discovery::IFACE_ADDED) {
 		whatString = seperator +  "available on new interface";
 		seperator = ", ";
 	}

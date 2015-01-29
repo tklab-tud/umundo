@@ -100,9 +100,8 @@ void RTPSubscriber::init(const Options* config) {
 				_multicast = true;
 			}
 		}
-
-		_initDone = true;
 	}
+	_initDone = true;
 }
 
 RTPSubscriber::~RTPSubscriber() {

@@ -626,7 +626,7 @@ namespace umundo {
 						continue;
 					}
 					
-					ad->lastChange = MDNSAdvertisement::MDNS_IFACE_REMOVED;
+					ad->lastChange = Discovery::IFACE_REMOVED;
 					
 					myself->_nodes--;
 					

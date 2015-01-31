@@ -36,7 +36,7 @@ public:
 	virtual ~ResultSet() {}
 
 	void add(T entity) {
-		add(entity);
+		add(entity, "manual");
 	}
 	
 	void add(T entity, const std::string& via) {
@@ -48,7 +48,7 @@ public:
 	}
 
 	void remove(T entity) {
-		remove(entity);
+		remove(entity, "manual");
 	}
 
 	void remove(T entity, const std::string& via) {
@@ -69,7 +69,7 @@ public:
 	}
 	
 	void change(T entity, uint64_t what = 0) {
-		changed(entity, what);
+		change(entity, "manual", what);
 	}
 
 	void change(T entity, const std::string& via, uint64_t what = 0) {

@@ -44,8 +44,8 @@ public:
 	virtual void unadvertise(const EndPoint& node) = 0;
 	virtual void remove(Node& node) = 0;
 
-	virtual void browse(ResultSet<EndPoint>* query) = 0;
-	virtual void unbrowse(ResultSet<EndPoint>* query) = 0;
+	virtual void browse(ResultSet<ENDPOINT_RS_TYPE>* query) = 0;
+	virtual void unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query) = 0;
 
 	virtual std::vector<EndPoint> list() = 0;
 };
@@ -139,12 +139,12 @@ public:
 	//@{
 
 	/// Add a listener for EndPoint%s
-	void browse(ResultSet<EndPoint>* query) {
+	void browse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 		return _impl->browse(query);
 	}
 
 	/// Remove a listener for EndPoint%s
-	void unbrowse(ResultSet<EndPoint>* query) {
+	void unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 		return _impl->unbrowse(query);
 	}
 

@@ -128,13 +128,13 @@ void BroadcastDiscovery::unadvertise(const EndPoint& node) {
 void BroadcastDiscovery::remove(Node& node) {
 }
 
-void BroadcastDiscovery::browse(ResultSet<EndPoint>* query) {
+void BroadcastDiscovery::browse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 	/**
 	 * Another node wants to browse for nodes
 	 */
 }
 
-void BroadcastDiscovery::unbrowse(ResultSet<EndPoint>* query) {
+void BroadcastDiscovery::unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 	/**
 	 * Another node no longer wants to browse for nodes
 	 */

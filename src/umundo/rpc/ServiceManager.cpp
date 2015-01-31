@@ -91,7 +91,7 @@ void ServiceManager::farewell(Publisher& pub, const SubscriberStub& subStub) {
 			std::map<std::string, ServiceDescription>::iterator remoteSvcIter = _remoteSvcDesc[subStub.getUUID()].begin();
 			while(remoteSvcIter != _remoteSvcDesc[subStub.getUUID()].end()) {
 				if (queryIter->first.matches(remoteSvcIter->second)) {
-					queryIter->second->removed(remoteSvcIter->second);
+					queryIter->second->remove(remoteSvcIter->second, toStr(this));
 				}
 				remoteSvcIter++;
 			}
@@ -302,9 +302,9 @@ void ServiceManager::receive(Message* msg) {
 			assert(_remoteSvcDesc.find(managerId) != _remoteSvcDesc.end());
 			assert(_remoteSvcDesc[managerId].find(svcChannel) != _remoteSvcDesc[managerId].end());
 			if (msg->getMeta("um.rpc.type").compare("discovered") == 0) {
-				listener->added(_remoteSvcDesc[managerId][svcChannel]);
+				listener->add(_remoteSvcDesc[managerId][svcChannel], toStr(this));
 			} else {
-				listener->removed(_remoteSvcDesc[managerId][svcChannel]);
+				listener->remove(_remoteSvcDesc[managerId][svcChannel], toStr(this));
 				_remoteSvcDesc[managerId].erase(svcChannel);
 			}
 		}

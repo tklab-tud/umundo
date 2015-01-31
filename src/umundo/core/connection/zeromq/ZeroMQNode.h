@@ -100,9 +100,9 @@ public:
 
 	/** @name Callbacks from Discovery */
 	//@{
-	void added(EndPoint);    ///< A node was added, connect to its router socket and list our publishers.
-	void removed(EndPoint);  ///< A node was removed, notify local subscribers and clean up.
-	void changed(EndPoint, uint64_t what = 0);  ///< Never happens.
+	void added(ENDPOINT_RS_TYPE);    ///< A node was added, connect to its router socket and list our publishers.
+	void removed(ENDPOINT_RS_TYPE);  ///< A node was removed, notify local subscribers and clean up.
+	void changed(ENDPOINT_RS_TYPE, uint64_t what = 0);  ///< Never happens.
 	//@}
 
 

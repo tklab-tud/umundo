@@ -103,17 +103,17 @@ public:
 	void unadvertise(const EndPoint& node);
 	void remove(Node& node);
 
-	void browse(ResultSet<EndPoint>* query);
-	void unbrowse(ResultSet<EndPoint>* query);
-
-	void added(MDNSAdvertisement*);
-	void removed(MDNSAdvertisement*);
-	void changed(MDNSAdvertisement*, uint64_t what = 0);
+	void browse(ResultSet<ENDPOINT_RS_TYPE>* query);
+	void unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query);
 
 	std::vector<EndPoint> list();
 
 protected:
 	void init(const Options*);
+
+	void added(MDNSAdvertisement* ad);
+	void removed(MDNSAdvertisement* ad);
+	void changed(MDNSAdvertisement* ad, uint64_t what = 0);
 
 	std::string _domain;
 	std::string _protocol;
@@ -122,7 +122,7 @@ protected:
 	MDNSQuery* _query;
 	std::map<EndPoint, MDNSAdvertisement*> _localAds;
 	std::map<MDNSAdvertisement*, EndPoint> _remoteAds;
-	std::set<ResultSet<EndPoint>*> _queries;
+	std::set<ResultSet<ENDPOINT_RS_TYPE>*> _queries;
 
 	RMutex _mutex;
 	SharedPtr<MDNSDiscoveryImpl> _mdnsImpl;

@@ -120,8 +120,7 @@ void RTPPublisher::init(const Options* config) {
 	_timestamp      = libre::rand_u32();
 	_sequenceNumber = _rtp_socket->enc.seq;
 
-	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket),
-	                       8192*1024);		//try to set something large
+	libre::udp_sockbuf_set((libre::udp_sock*)libre::rtp_sock(_rtp_socket), 8192*1024);		//try to set something large
 
 	_initDone = true;
 }

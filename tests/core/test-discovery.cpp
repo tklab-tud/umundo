@@ -16,17 +16,17 @@ static std::string hostId;
 static Monitor monitor;
 static RMutex mutex;
 
-class EndPointResultSet : public ResultSet<EndPoint> {
+class EndPointResultSet : public ResultSet<ENDPOINT_RS_TYPE> {
 public:
-	void added(EndPoint node) {
+	void added(ENDPOINT_RS_TYPE node) {
 		assert(_endPoints.find(node) == _endPoints.end());
 		_endPoints.insert(node);
 	}
-	void removed(EndPoint node) {
+	void removed(ENDPOINT_RS_TYPE node) {
 		assert(_endPoints.find(node) != _endPoints.end());
 		_endPoints.erase(node);
 	}
-	void changed(EndPoint node, uint64_t what) {
+	void changed(ENDPOINT_RS_TYPE node, uint64_t what) {
 		assert(_endPoints.find(node) != _endPoints.end());
 	}
 
@@ -50,17 +50,17 @@ public:
 	std::set<MDNSAdvertisement*> _endPoints;
 };
 
-class DiscoveryObjectResultSet : public ResultSet<EndPoint> {
+class DiscoveryObjectResultSet : public ResultSet<ENDPOINT_RS_TYPE> {
 public:
 	DiscoveryObjectResultSet(const std::string& type) : _type(type) {
 	}
-	void added(EndPoint node) {
+	void added(ENDPOINT_RS_TYPE node) {
 		std::cout << "added '" << _type << "': " << node << std::endl;
 	}
-	void removed(EndPoint node) {
+	void removed(ENDPOINT_RS_TYPE node) {
 		std::cout << "removed '" << _type << "': " << node << std::endl;
 	}
-	void changed(EndPoint node, uint64_t what) {
+	void changed(ENDPOINT_RS_TYPE node, uint64_t what) {
 		std::cout << "changed '" << _type << "': " << node << std::endl;
 	}
 
@@ -306,8 +306,8 @@ bool testPubSubConnections() {
 		Node node1;
 		Node node2;
 
-		node1.added(node2);
-		node2.added(node1);
+		node1.add(node2);
+		node2.add(node1);
 
 		Publisher pub("foo");
 		node1.addPublisher(pub);

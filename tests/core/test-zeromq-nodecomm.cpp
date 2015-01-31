@@ -19,8 +19,8 @@ bool testNodeConnections() {
 		Node* node2 = new Node();
 
 		// connect both nodes and make sure they know each other
-		node1->added(*node2);
-		node2->added(*node1);
+		node1->add(*node2);
+		node2->add(*node1);
 
 		usleep(100000);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
@@ -52,7 +52,7 @@ bool testNodeConnections() {
 		Node* node2 = new Node();
 
 		// connect both nodes and make sure they know each other
-		node1->added(*node2);
+		node1->add(*node2);
 
 		usleep(100000);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
@@ -69,7 +69,7 @@ bool testNodeConnections() {
 
 
 		// add other node just now
-		node2->added(*node1);
+		node2->add(*node1);
 		usleep(100000);
 
 		assert(peers1.size() == 1);
@@ -110,7 +110,7 @@ bool testGeneralStuff() {
 		Publisher pub = node2->getPublisher(pub1.getUUID());
 		assert(pub == pub1);
 
-		node1->added(*node2);
+		node1->add(*node2);
 		usleep(100000);
 
 		// get peers of node1 and assert that node2 is known qualified
@@ -174,7 +174,7 @@ bool testGeneralStuff() {
 		assert(pubs.begin()->second.getUUID() == pub2.getUUID());
 
 		// now connect the other way around
-		node2->added(*node1);
+		node2->add(*node1);
 		usleep(10000);
 
 		// both nodes know each other fully qualified now

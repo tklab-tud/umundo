@@ -81,8 +81,8 @@ public:
 	void unadvertise(const EndPoint& node);
 	void remove(Node& node);
 
-	void browse(ResultSet<EndPoint>* query);
-	void unbrowse(ResultSet<EndPoint>* query);
+	void browse(ResultSet<ENDPOINT_RS_TYPE>* query);
+	void unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query);
 
 	std::vector<EndPoint> list();
 

@@ -229,8 +229,8 @@ public:
 
 std::map<EndPoint, DebugInfoFetcher> endPoints;
 
-class DebugEndPointResultSet : public ResultSet<EndPoint> {
-	void added(EndPoint ep) {
+class DebugEndPointResultSet : public ResultSet<ENDPOINT_RS_TYPE> {
+	void added(ENDPOINT_RS_TYPE ep) {
 		// get address into zeromq endpoint address
 		std::stringstream address;
 		address << ep.getTransport() << "://" << ep.getIP() << ":" << ep.getPort();
@@ -238,10 +238,10 @@ class DebugEndPointResultSet : public ResultSet<EndPoint> {
 		endPoints[ep].start();
 	}
 
-	void removed(EndPoint ep) {
+	void removed(ENDPOINT_RS_TYPE ep) {
 	}
 
-	void changed(EndPoint ep, uint64_t what) {
+	void changed(ENDPOINT_RS_TYPE ep, uint64_t what) {
 	}
 };
 

@@ -11,8 +11,8 @@ bool testDiscoveryStress() {
 	for(int i = 40; i > 0; i--) {
 		Node n2;
 
-		n2.added(n);
-		n.added(n2);
+		n2.add(n);
+		n.add(n2);
 
 		for (int j = 0; j < i; j++) {
 			Subscriber s("foo");
@@ -31,8 +31,8 @@ bool testDiscoveryStress() {
 			subIter++;
 		}
 
-		n2.removed(n);
-		n.removed(n2);
+		n2.remove(n);
+		n.remove(n2);
 
 	}
 

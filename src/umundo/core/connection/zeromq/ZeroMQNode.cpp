@@ -435,7 +435,7 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 
 }
 
-void ZeroMQNode::added(EndPoint endPoint) {
+void ZeroMQNode::added(ENDPOINT_RS_TYPE endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("added");
 
@@ -467,7 +467,7 @@ void ZeroMQNode::added(EndPoint endPoint) {
 	zmq_msg_close(&addEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
-void ZeroMQNode::removed(EndPoint endPoint) {
+void ZeroMQNode::removed(ENDPOINT_RS_TYPE endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("removed");
 
@@ -496,7 +496,7 @@ void ZeroMQNode::removed(EndPoint endPoint) {
 
 }
 
-void ZeroMQNode::changed(EndPoint endPoint, uint64_t what) {
+void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
 	if (what & Discovery::IFACE_REMOVED) {
 		UM_LOG_INFO("%s gone on some interface -> removing and readding endpoint (be more clever here)", SHORT_UUID(_uuid).c_str());
 		removed(endPoint);
@@ -1172,8 +1172,8 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 
 		std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
 		while(monitorIter != _pubMonitors.end()) {
-			(*monitorIter)->removed(remotePubIter->second);
-			(*monitorIter)->changed(remotePubIter->second);
+			(*monitorIter)->remove(remotePubIter->second, toStr(this));
+			(*monitorIter)->change(remotePubIter->second, toStr(this));
 			monitorIter++;
 		}
 
@@ -1383,8 +1383,8 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 
 	std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
 	while(monitorIter != _pubMonitors.end()) {
-		(*monitorIter)->added(pubStub);
-		(*monitorIter)->changed(pubStub);
+		(*monitorIter)->add(pubStub, toStr(this));
+		(*monitorIter)->change(pubStub, toStr(this));
 		monitorIter++;
 	}
 
@@ -1414,8 +1414,8 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 
 	std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
 	while(monitorIter != _pubMonitors.end()) {
-		(*monitorIter)->removed(pubStub);
-		(*monitorIter)->changed(pubStub);
+		(*monitorIter)->remove(pubStub, toStr(this));
+		(*monitorIter)->change(pubStub, toStr(this));
 		monitorIter++;
 	}
 

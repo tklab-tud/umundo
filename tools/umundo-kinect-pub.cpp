@@ -149,45 +149,14 @@ public:
 				Message::write((uint16_t)index, buffer);
 				memcpy(&buffer[2], &scaled[index], index + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - index : MAX_PAYLOAD_PACKET);
 				rtpMsg.setData(buffer, MAX_PAYLOAD_PACKET + 2);
+				free(buffer);
+//				Thread::sleepUs(800);
+				pubVideoRTP.send(&rtpMsg);
 
 				index += MAX_PAYLOAD_PACKET;
 			}
 		}
 
-#if 0
-		for (size_t row = 0; row < rows; row++) {
-			for (size_t segment = 0; segment < segments; segment++) {
-				Message* tcpMsg = new Message();
-
-				if (row == 0 && segment == 0) {
-					tcpMsg->putMeta("um.timestampIncrement", toStr(1));
-					tcpMsg->putMeta("um.marker", toStr(true));
-				} else {
-					tcpMsg->putMeta("um.timestampIncrement", toStr(0));
-					tcpMsg->putMeta("um.marker", toStr(false));
-				}
-
-				struct RTPVideoData *data = new struct RTPVideoData;
-				data->row = row;
-				data->timestamp = timestamp;
-				data->segment = 0;
-				data->segment += segments << 4; // total segments
-				data->segment += segment;       // current segment
-				
-				// copy one segmented row into data
-				memcpy(data->data, rgb + (cols * row + dataSize), dataSize);		//copy one depth data row into rtp data
-				tcpMsg->setData((char*)data, sizeof(struct RTPVideoData) - (MAX_PAYLOAD_PACKET - dataSize));
-				
-				Message* rtpMsg = new Message(*tcpMsg); // we need to copy as the publisher will add meta fields! TODO: change this
-				
-				pubVideoRTP.send(rtpMsg);
-
-				delete data;
-				delete tcpMsg;
-				delete rtpMsg;
-			}
-		}
-#endif
 		_lastTimestampVideo = timestamp;
 	}
 	

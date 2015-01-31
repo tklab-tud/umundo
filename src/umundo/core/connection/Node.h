@@ -70,7 +70,7 @@ public:
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
-class UMUNDO_API NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<EndPoint> { //, public EnableSharedFromThis<NodeImpl> {
+class UMUNDO_API NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<ENDPOINT_RS_TYPE> { //, public EnableSharedFromThis<NodeImpl> {
 public:
 	NodeImpl();
 	virtual ~NodeImpl();
@@ -223,14 +223,14 @@ public:
 	/** @name Remote endpoint awareness */
 	//@{
 
-	virtual void added(EndPoint endPoint) {
-		return _impl->added(endPoint);
+	virtual void add(EndPoint endPoint, const std::string& via) {
+		return _impl->add(endPoint, via);
 	}
-	virtual void removed(EndPoint endPoint) {
-		return _impl->removed(endPoint);
+	virtual void remove(EndPoint endPoint, const std::string& via) {
+		return _impl->remove(endPoint, via);
 	}
-	virtual void changed(EndPoint endPoint) {
-		return _impl->removed(endPoint);
+	virtual void change(EndPoint endPoint, const std::string& via, uint64_t what) {
+		return _impl->change(endPoint, via, what);
 	}
 
 	//@}

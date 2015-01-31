@@ -370,7 +370,7 @@ namespace umundo {
 			for (std::map<std::string, MDNSAdvertisement*>::iterator adIter = nativeQuery.remoteAds.begin(); adIter != nativeQuery.remoteAds.end(); adIter++) {
 				if (adIter->second->ipv4.size() > 0 || adIter->second->ipv6.size() > 0) {
 					// other advertisements are not yet added in addrInfoReply
-					query->rs->added(adIter->second);
+					query->rs->add(adIter->second, toStr(this));
 				}
 			}
 			
@@ -664,7 +664,7 @@ namespace umundo {
 					for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
 							 listIter != queryIter->second.queries.end();
 							 listIter++) {
-						(*listIter)->rs->changed(changeIter->second, changeIter->second->lastChange);
+						(*listIter)->rs->change(changeIter->second, toStr(myself), changeIter->second->lastChange);
 					}
 				}
 				changeIter->second->lastChange = 0;
@@ -684,7 +684,7 @@ namespace umundo {
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
 					
-					(*listIter)->rs->removed(removedAd);
+					(*listIter)->rs->remove(removedAd, toStr(myself));
 					assert(queryIter->second.remoteAds.find(removedAd->name) != queryIter->second.remoteAds.end());
 				}
 				
@@ -1018,7 +1018,7 @@ namespace umundo {
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
 					UM_LOG_DEBUG("addrInfoReply: %s/%s of type %s was changed", changee->name.c_str(), changee->domain.c_str(), changee->regType.c_str());
-					(*listIter)->rs->changed(changee, changee->lastChange);
+					(*listIter)->rs->change(changee, toStr(myself), changee->lastChange);
 				}
 				changee->lastChange = 0;
 			}
@@ -1034,7 +1034,7 @@ namespace umundo {
 						 listIter != queryIter->second.queries.end();
 						 listIter++) {
 					UM_LOG_DEBUG("addrInfoReply:%s/%s of type %s was added at ", addee->name.c_str(), addee->domain.c_str(), addee->regType.c_str());
-					(*listIter)->rs->added(addee);
+					(*listIter)->rs->add(addee, toStr(myself));
 				}
 			}
 			

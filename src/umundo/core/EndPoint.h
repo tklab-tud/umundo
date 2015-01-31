@@ -27,6 +27,9 @@
 
 #define SHORT_UUID(uuid) (uuid.length() == 36 ? uuid.substr(0, 8) : uuid)
 
+// cannot use reference with MSVC
+#define ENDPOINT_RS_TYPE const EndPoint
+
 namespace umundo {
 
 class UMUNDO_API EndPointImpl {

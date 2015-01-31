@@ -37,6 +37,7 @@
 #endif
 
 #define MAX_PAYLOAD_PACKET 1400
+#define VIDEO_BUFFER_SIZE 640 * 480 * 3
 
 bool useDepth = false;
 bool useVideo = false;
@@ -52,7 +53,7 @@ void bayer_to_rgb(uint8_t *raw_buf, uint8_t *proc_buf, size_t width, size_t heig
 
 class VideoReceiver : public Receiver {
 public:
-	VideoReceiver() : _rtpTimestamp(0), _frameComplete(false), _start(false), _timeOffset(0), _videoBuffer(640*480*3) {
+	VideoReceiver() : _frameComplete(false), _start(false), _videoBuffer(VIDEO_BUFFER_SIZE), _rtpBuffer(VIDEO_BUFFER_SIZE) {
 	}
 	
 	~VideoReceiver() {
@@ -62,7 +63,6 @@ public:
 		RScopeLock lock(_internalVideoMutex);
 		if (msg->getMeta("um.type") != "RTP") {
 			// received via TCP
-//			memset(&_videoBuffer[0], 0, 640*480*3);
 			bayer_to_rgb((uint8_t*)msg->data(), (uint8_t*)&_videoBuffer[0], 320, 240);
 			_frameComplete = true;
 			UMUNDO_SIGNAL(_newFrame);
@@ -73,6 +73,8 @@ public:
 			
 			if (marker) {
 				if (_start) {
+					bayer_to_rgb((uint8_t*)&_rtpBuffer[0], (uint8_t*)&_videoBuffer[0], 320, 240);
+					memset(&_rtpBuffer[0], 255, _rtpBuffer.size());
 					_frameComplete = true;
 					UMUNDO_SIGNAL(_newFrame);
 				}
@@ -85,8 +87,7 @@ public:
 			if (!_start)				//wait for first complete frame (and ignore data till then)
 				return;
 			
-			memcpy(&_videoBuffer[index], msg->data() + 2, msg->size() - 2);
-			//		memset(&_videoBuffer[data->row * data->cols * 4], 200, sizeof(uint8_t) * data->cols * 4);
+			memcpy(&_rtpBuffer[index], msg->data() + 2, msg->size() - 2);
 		}
 	}
 	
@@ -104,18 +105,14 @@ public:
 	}
 	
 protected:
-	uint32_t _rtpTimestamp;
 	bool _frameComplete;
 	bool _start;
-	uint64_t _lastRemoteTimestamp;
-	uint64_t _lastLocalTimestamp;
-	
-	int64_t _timeOffset;
 	
 	RMutex _internalVideoMutex;
 	Monitor _newFrame;
 	
 	std::vector<uint8_t> _videoBuffer;
+	std::vector<uint8_t> _rtpBuffer;
 	
 };
 

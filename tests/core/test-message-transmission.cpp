@@ -47,8 +47,8 @@ bool testMessageTransmission() {
 		sub.setReceiver(testRecv);
 		subNode.addSubscriber(sub);
 
-		subNode.added(pubNode);
-		pubNode.added(subNode);
+		subNode.add(pubNode);
+		pubNode.add(subNode);
 
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
@@ -97,8 +97,8 @@ bool testDataTransmission() {
 		sub.setReceiver(testRecv);
 		subNode.addSubscriber(sub);
 
-		subNode.added(pubNode);
-		pubNode.added(subNode);
+		subNode.add(pubNode);
+		pubNode.add(subNode);
 
 		pub.waitForSubscribers(1);
 		assert(pub.waitForSubscribers(0) == 1);
@@ -247,8 +247,8 @@ bool testCompression() {
 	sub.setReceiver(testRecv);
 	subNode.addSubscriber(sub);
 	
-	subNode.added(pubNode);
-	pubNode.added(subNode);
+	subNode.add(pubNode);
+	pubNode.add(subNode);
 
 	pub.waitForSubscribers(1);
 	assert(pub.waitForSubscribers(0) == 1);

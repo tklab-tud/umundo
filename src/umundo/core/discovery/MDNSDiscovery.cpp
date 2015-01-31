@@ -73,10 +73,10 @@ MDNSDiscovery::~MDNSDiscovery() {
 	        adIter++) {
 		UM_LOG_INFO("MDNS is destroyed, removing %s in %s - notifying nodes", adIter->second.getAddress().c_str(), _domain.c_str());
 
-		for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
+		for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 		        queryIter != _queries.end();
 		        queryIter++) {
-			(*queryIter)->removed(adIter->second);
+			(*queryIter)->remove(adIter->second, toStr(this));
 		}
 	}
 
@@ -168,7 +168,7 @@ void MDNSDiscovery::remove(Node& node) {
 	unadvertise(node);
 }
 
-void MDNSDiscovery::browse(ResultSet<EndPoint>* query) {
+void MDNSDiscovery::browse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) != _queries.end()) {
@@ -182,11 +182,11 @@ void MDNSDiscovery::browse(ResultSet<EndPoint>* query) {
 	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
-		query->added(adIter->second);
+		query->add(adIter->second, toStr(this));
 	}
 }
 
-void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
+void MDNSDiscovery::unbrowse(ResultSet<ENDPOINT_RS_TYPE>* query) {
 	RScopeLock lock(_mutex);
 
 	if (_queries.find(query) == _queries.end()) {
@@ -199,7 +199,7 @@ void MDNSDiscovery::unbrowse(ResultSet<EndPoint>* query) {
 	for (std::map<MDNSAdvertisement*, EndPoint>::iterator adIter = _remoteAds.begin();
 	        adIter != _remoteAds.end();
 	        adIter++) {
-		query->removed(adIter->second);
+		query->remove(adIter->second, toStr(this));
 	}
 
 	_queries.erase(query);
@@ -220,10 +220,10 @@ void MDNSDiscovery::added(MDNSAdvertisement* remoteAd) {
 		UM_LOG_WARN("MDNS reported existing node %s in %s as new - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str());
 
 		// we have already seen this one, report as changed
-		for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
+		for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 		        queryIter != _queries.end();
 		        queryIter++) {
-			(*queryIter)->changed(_remoteAds[remoteAd]);
+			(*queryIter)->change(_remoteAds[remoteAd], toStr(this));
 		}
 	} else {
 		// a new one
@@ -247,10 +247,10 @@ void MDNSDiscovery::added(MDNSAdvertisement* remoteAd) {
 
 		_remoteAds[remoteAd] = endPoint;
 
-		for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
+		for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 		        queryIter != _queries.end();
 		        queryIter++) {
-			(*queryIter)->added(endPoint);
+			(*queryIter)->add(endPoint, toStr(this));
 		}
 	}
 }
@@ -265,10 +265,10 @@ void MDNSDiscovery::removed(MDNSAdvertisement* remoteAd) {
 
 	UM_LOG_INFO("MDNS reported vanishing of node %s in %s - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str());
 
-	for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
+	for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 	        queryIter != _queries.end();
 	        queryIter++) {
-		(*queryIter)->removed(_remoteAds[remoteAd]);
+		(*queryIter)->remove(_remoteAds[remoteAd], toStr(this));
 	}
 	_remoteAds.erase(remoteAd);
 }
@@ -294,10 +294,10 @@ void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 	}
 	
 	UM_LOG_INFO("MDNS reported changed node %s in %s as '%s' - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str(), whatString.c_str());
-	for (std::set<ResultSet<EndPoint>*>::iterator queryIter = _queries.begin();
+	for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 	        queryIter != _queries.end();
 	        queryIter++) {
-		(*queryIter)->changed(_remoteAds[remoteAd], what);
+		(*queryIter)->change(_remoteAds[remoteAd], toStr(this), what);
 	}
 }
 

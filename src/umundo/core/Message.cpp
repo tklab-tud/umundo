@@ -19,7 +19,12 @@
 
 #include "umundo/core/Message.h"
 #include "umundo/config.h"
+
+#ifdef BUILD_WITH_COMPRESSION_MINIZ
 #include "miniz.h"
+#elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
+#include "fastlz.h"
+#endif
 
 #if 0
 #include <boost/detail/endian.hpp>
@@ -144,6 +149,7 @@ const char* Message::read(double* value, const char* from) {
 void Message::compress() {
 	if (isCompressed())
 		return;
+#ifdef BUILD_WITH_COMPRESSION_MINIZ
 	
 	mz_ulong compressedSize = mz_compressBound(_size);
 	int cmp_status;
@@ -151,8 +157,8 @@ void Message::compress() {
 
 	pCmp = (mz_uint8 *)malloc((size_t)compressedSize);
 
-//	mz_ulong tmpSize = _size;
-	cmp_status = mz_compress(pCmp, &compressedSize, (const unsigned char *)_data.get(), _size);
+	// last argument is speed size tradeoff: BEST_SPEED [0-9] BEST_COMPRESSION
+	cmp_status = mz_compress2(pCmp, &compressedSize, (const unsigned char *)_data.get(), _size, 5);
 	if (cmp_status != Z_OK) {
 		// error
 		free(pCmp);
@@ -161,12 +167,42 @@ void Message::compress() {
 	_data = SharedPtr<char>((char*)pCmp);
 	_meta["um.compressed"] = toStr(_size);
 	_size = compressedSize;
+
+#elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
+	
+	// The minimum input buffer size is 16.
+	if (_size < 16)
+		return;
+	
+	// The output buffer must be at least 5% larger than the input buffer and can not be smaller than 66 bytes.
+	int compressedSize = _size + (double)_size * 0.06;
+	if (compressedSize < 66)
+		compressedSize = 66;
+	
+	char* compressedData = (char*)malloc(compressedSize);
+	compressedSize = fastlz_compress(_data.get(), _size, compressedData);
+	
+	// If the input is not compressible, the return value might be larger than length
+	if (compressedSize > _size) {
+		free(compressedData);
+		return;
+	}
+	
+//	std::cout << _size << " -> " << compressedSize << " = " << ((float)compressedSize / (float)_size) << std::endl;
+	
+	_data = SharedPtr<char>((char*)compressedData);
+	_meta["um.compressed"] = toStr(_size);
+	_size = compressedSize;
+
+#endif
+	
 }
 
 void Message::uncompress() {
 	if (!isCompressed())
 		return;
 	
+#ifdef BUILD_WITH_COMPRESSION_MINIZ
 	int cmp_status;
 	mz_ulong actualSize = strTo<size_t>(_meta["um.compressed"]);
 	uint8_t *pUncmp;
@@ -182,6 +218,26 @@ void Message::uncompress() {
 	_size = actualSize;
 	_data = SharedPtr<char>((char*)pUncmp);
 	_meta.erase("um.compressed");
+	
+#elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
+	
+	int actualSize = strTo<size_t>(_meta["um.compressed"]);
+	void* uncompressed = malloc((size_t)actualSize);
+
+	// returns the size of the decompressed block.
+	actualSize = fastlz_decompress(_data.get(), _size, uncompressed, actualSize);
+	
+	//If error occurs, e.g. the compressed data is corrupted or the output buffer is not large enough, then 0
+	if (actualSize == 0) {
+		free(uncompressed);
+	}
+	
+	_size = actualSize;
+	_data = SharedPtr<char>((char*)uncompressed);
+	_meta.erase("um.compressed");
+
+#endif
+
 }
 
 }

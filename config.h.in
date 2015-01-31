@@ -65,6 +65,9 @@
 #cmakedefine DIST_PREPARE
 #cmakedefine HAVE_STDBOOL_H @HAVE_STDBOOL_H@
 
+#cmakedefine BUILD_WITH_COMPRESSION_MINIZ
+#cmakedefine BUILD_WITH_COMPRESSION_FASTLZ
+
 /** Implementation specific */
 #cmakedefine NET_ZEROMQ_SND_HWM @NET_ZEROMQ_SND_HWM@
 #cmakedefine NET_ZEROMQ_RCV_HWM @NET_ZEROMQ_RCV_HWM@

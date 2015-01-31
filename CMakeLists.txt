@@ -456,7 +456,16 @@ message(STATUS "Searching for prebuilt libraries in: ${CMAKE_PREFIX_PATH}")
 if (WIN32)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/xgetopt)
 endif()
-include_directories(${PROJECT_SOURCE_DIR}/contrib/src/miniz)
+
+SET(BUILD_WITH_COMPRESSION "fastlz" CACHE STRING "Enable message compression [miniz|fastlz|none]")
+#OPTION(BUILD_WITH_COMPRESSION       "Enable message compression [miniz|fastlz]"  "fastlz")
+if (BUILD_WITH_COMPRESSION STREQUAL "miniz")
+	SET(BUILD_WITH_COMPRESSION_MINIZ ON)
+	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/miniz)
+elseif(BUILD_WITH_COMPRESSION STREQUAL "fastlz")
+	SET(BUILD_WITH_COMPRESSION_FASTLZ ON)
+	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/fastlz)
+endif()
 
 ############################################################
 # General setup

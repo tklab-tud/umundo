@@ -102,8 +102,8 @@ private:
 	friend class ZeroMQPublisher;
 
 public:	
-	Message() : _size(0), _isQueued(false), _doneCallback(NULL) {}
-	Message(const char* data, size_t length, Flags flags) : _size(length), _isQueued(false), _flags(flags), _doneCallback(NULL) {
+	Message() : _size(0), _isQueued(false), _flags(NONE), _hint(NULL), _doneCallback(NULL) {}
+	Message(const char* data, size_t length, Flags flags) : _size(length), _isQueued(false), _flags(flags), _hint(NULL), _doneCallback(NULL) {
 		if (_flags & ADOPT_DATA) {
 			// take ownership of data and delete when done
 			_data = SharedPtr<char>(const_cast<char*>(data));
@@ -118,7 +118,7 @@ public:
 	}
 
 	// need this one for SWIG to ignore the other one with flags
-	Message(const char* data, size_t length) : _size(length), _isQueued(false), _flags(NONE), _doneCallback(NULL) {
+	Message(const char* data, size_t length) : _size(length), _isQueued(false), _flags(NONE), _hint(NULL), _doneCallback(NULL) {
 		_data = SharedPtr<char>((char*)malloc(_size));
 		memcpy(_data.get(), data, _size);
 	}

@@ -41,7 +41,13 @@ list(APPEND UMUNDOCORE_FILES
 )
 
 # miniz minimal compression library
-list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/miniz/miniz.c)
+if (BUILD_WITH_COMPRESSION STREQUAL "miniz")
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/miniz/miniz.c)
+elseif(BUILD_WITH_COMPRESSION STREQUAL "fastlz")
+	# list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/6pack.c)
+	# list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/6unpack.c)
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/fastlz.c)
+endif()
 
 if (ANDROID) # android gcc complains about boost 1.51
   SET_SOURCE_FILES_PROPERTIES(common/UUID.cpp PROPERTIES COMPILE_FLAGS -Wno-uninitialized)

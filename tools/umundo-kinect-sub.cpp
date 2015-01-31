@@ -38,19 +38,6 @@
 
 #define MAX_PAYLOAD_PACKET 1400
 
-struct RTPDepthData {
-	uint16_t row;
-	uint64_t timestamp;
-	uint16_t data[640];
-};
-
-struct RTPVideoData {
-	uint16_t row;
-	uint64_t timestamp;
-	uint8_t segment;    // first four bit signify total segments, last four this segments index in big endian
-	uint8_t data[MAX_PAYLOAD_PACKET]; // largest data that will reasonable fit
-};
-
 bool useDepth = false;
 bool useVideo = false;
 bool useRTP   = false;
@@ -61,9 +48,11 @@ using namespace umundo;
 
 GLuint gl_depth_tex;
 
+void bayer_to_rgb(uint8_t *raw_buf, uint8_t *proc_buf, size_t width, size_t height);
+
 class VideoReceiver : public Receiver {
 public:
-	VideoReceiver() : _rtpTimestamp(0), _start(false), _timeOffset(0), _videoBuffer(640*480*4) {
+	VideoReceiver() : _rtpTimestamp(0), _frameComplete(false), _start(false), _timeOffset(0), _videoBuffer(640*480*3) {
 	}
 	
 	~VideoReceiver() {
@@ -71,56 +60,52 @@ public:
 	
 	void receive(Message* msg) {
 		RScopeLock lock(_internalVideoMutex);
-		bool marker = strTo<bool>(msg->getMeta("um.marker"));
-		struct RTPVideoData* data = (struct RTPVideoData*)msg->data();
-		
-		//calculate time offset to remote host
-		if (!_timeOffset)
-			_timeOffset = Thread::getTimeStampMs() - data->timestamp;
-		
-		if (marker) {
-			std::cout << std::endl << "####" << std::endl;
-			_rtpTimestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
-			if (_start) {
-				_newCompleteFrame = true;
-				UMUNDO_SIGNAL(_newFrame);
+		if (msg->getMeta("um.type") != "RTP") {
+			// received via TCP
+//			memset(&_videoBuffer[0], 0, 640*480*3);
+			bayer_to_rgb((uint8_t*)msg->data(), (uint8_t*)&_videoBuffer[0], 320, 240);
+			_frameComplete = true;
+			UMUNDO_SIGNAL(_newFrame);
+
+		} else {
+			// received via RTP
+			bool marker = strTo<bool>(msg->getMeta("um.marker"));
+			
+			if (marker) {
+				if (_start) {
+					_frameComplete = true;
+					UMUNDO_SIGNAL(_newFrame);
+				}
+				_start = true;
 			}
-			_start = true;
+			
+			uint16_t index;
+			Message::read(&index, msg->data());
+			
+			if (!_start)				//wait for first complete frame (and ignore data till then)
+				return;
+			
+			memcpy(&_videoBuffer[index], msg->data() + 2, msg->size() - 2);
+			//		memset(&_videoBuffer[data->row * data->cols * 4], 200, sizeof(uint8_t) * data->cols * 4);
 		}
-		
-		_lastRemoteTimestamp = data->timestamp;
-		_lastLocalTimestamp = Thread::getTimeStampMs() - _timeOffset;
-		
-		if (!_start)				//wait for first complete frame (and ignore data till then)
-			return;
-		
-		uint8_t currSegment  =  data->segment & 0x0F;
-		uint8_t totalSegment = (data->segment & 0xF0) >> 4;
-		uint32_t dataSize = msg->size() - 88;
-		
-//		std::cout << (uint16_t)currSegment << " / " << (uint16_t)totalSegment << std::endl;
-		std::cout << data->row << ":" << (uint16_t)currSegment << " / " << (uint16_t)totalSegment << "@" << dataSize << "B -> " << (data->row * msg->size() * totalSegment + (currSegment * dataSize)) << std::endl;
-		
-			memcpy(&_videoBuffer[data->row * msg->size() * totalSegment + (currSegment * dataSize)], data->data, dataSize);
-		//		memset(&_videoBuffer[data->row * data->cols * 4], 200, sizeof(uint8_t) * data->cols * 4);
 	}
 	
 	bool getRGB(std::vector<uint8_t> &buffer) {
 		RScopeLock lock(_internalVideoMutex);
 		_newFrame.wait(_internalVideoMutex, 100);
 		
-		if (!_newCompleteFrame)
+		if (!_frameComplete)
 			return false;
 		
 		buffer.swap(_videoBuffer);
-		_newCompleteFrame = false;
+		_frameComplete = false;
 		
 		return true;
 	}
 	
 protected:
 	uint32_t _rtpTimestamp;
-	bool _newCompleteFrame;
+	bool _frameComplete;
 	bool _start;
 	uint64_t _lastRemoteTimestamp;
 	uint64_t _lastLocalTimestamp;
@@ -137,9 +122,6 @@ protected:
 class DepthReceiver : public Receiver {
 public:
 	DepthReceiver() : _mGamma(2048), _rtpTimestamp(0), _start(false), _timeOffset(0), _depthBuffer(640*480*3) {
-		for (unsigned int i = 0; i<480; i++)
-			_rowMask[i] = true;
-		
 		// gamma precalculations
 		for ( unsigned int i = 0 ; i < 2048 ; i++) {
 			float v = i/2048.0;
@@ -154,46 +136,9 @@ public:
 	void receive(Message* msg) {
 		RScopeLock lock(_internalDepthMutex);
 		bool marker = strTo<bool>(msg->getMeta("um.marker"));
-		struct RTPDepthData* data = (struct RTPDepthData*)msg->data();
-		
-		//calculate time offset to remote host
-		if (!_timeOffset)
-			_timeOffset = Thread::getTimeStampMs() - data->timestamp;
 		
 		//marker is set --> new frame starts here, process old frame
 		if (marker) {
-			
-#if 0
-			// copy unreceived rows form neighbors
-			for (unsigned int i = 0; i<480; i++) {
-				if (!_rowMask[i]) {
-					// find nearest neighbor row with data
-					uint16_t above = i;
-					uint16_t below = i;
-					while(above > 0 && below < 480) {
-						if (above > 0)
-							above--;
-						if (below < 480)
-							below++;
-						if (_rowMask[above]) {
-							memcpy(<#void *#>, <#const void *#>, <#size_t#>)
-							break;
-						}
-						if (_rowMask[below]) {
-							break;
-						}
-					}
-				}
-			}
-#endif
-			
-			// and clear packetloss mask
-			for (unsigned int i = 0; i<480; i++)
-				_rowMask[i] = false;
-			
-			
-			_rtpTimestamp = strTo<uint32_t>(msg->getMeta("um.timestamp"));
-			//we received a mark, so old frame is complete --> signal this to opengl thread
 			if (_start) {
 				_newCompleteFrame = true;
 				UMUNDO_SIGNAL(_newFrame);
@@ -201,14 +146,13 @@ public:
 			_start = true;
 		}
 		
-		//calculate aux data
-		_lastRemoteTimestamp = data->timestamp;
-		_lastLocalTimestamp = Thread::getTimeStampMs() - _timeOffset;
 		if (!_start)				//wait for first complete frame (and ignore data till then)
 			return;
 		
-		_rowMask[data->row] = true;		//mark this row as received
-		
+		uint16_t index;
+		Message::read(&index, msg->data());
+
+#if 0
 		//process received data and calculate received depth picture row
 		for (unsigned int col = 0 ; col < 640 ; col++) {
 			unsigned int i = data->row * 640 + col;
@@ -254,6 +198,7 @@ public:
 					break;
 			}
 		}
+#endif
 	};
 	
 	bool getDepth(std::vector<uint8_t> &buffer) {
@@ -283,16 +228,16 @@ private:
 	Monitor _newFrame;
 };
 
-DepthReceiver depthRecv;
-VideoReceiver videoRecv;
+DepthReceiver* depthRecv;
+VideoReceiver* videoRecv;
 
 void DrawGLScene() {
-	static std::vector<uint8_t> frame(640*480*4);
+	static std::vector<uint8_t> frame(640*480*3);
 	
 	if (useVideo) {
-		videoRecv.getRGB(frame);
+		videoRecv->getRGB(frame);
 	} else {
-		depthRecv.getDepth(frame);
+		depthRecv->getDepth(frame);
 	}
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -301,7 +246,7 @@ void DrawGLScene() {
 	glEnable(GL_TEXTURE_2D);
 	
 	glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, 320, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, &frame[0]);
 	
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4f(255.0f, 255.0f, 255.0f, 255.0f);
@@ -384,15 +329,15 @@ int main(int argc, char** argv) {
 	}
 	
 	Subscriber sub;
-	Receiver* recv; // program termiantion will deallocate
 	std::string channelName;
+	Receiver* recv;
 	
 	if (useVideo) {
 		channelName = "kinect.video";
-		recv = new VideoReceiver();
+		recv = videoRecv = new VideoReceiver();
 	} else {
 		channelName = "kinect.depth";
-		recv = new DepthReceiver();
+		recv = depthRecv = new DepthReceiver();
 	}
 	
 	if (useTCP) {
@@ -432,4 +377,118 @@ int main(int argc, char** argv) {
 	glutMainLoop();
 	
 	return 0;
+}
+
+// from libfreenect cameras.c
+void bayer_to_rgb(uint8_t *raw_buf, uint8_t *proc_buf, size_t width, size_t height) {
+	int x,y;
+
+	uint8_t *dst = proc_buf; // pointer to destination
+	
+	uint8_t *prevLine;        // pointer to previous, current and next line
+	uint8_t *curLine;         // of the source bayer pattern
+	uint8_t *nextLine;
+	
+	// storing horizontal values in hVals:
+	// previous << 16, current << 8, next
+	uint32_t hVals;
+	// storing vertical averages in vSums:
+	// previous << 16, current << 8, next
+	uint32_t vSums;
+	
+	// init curLine and nextLine pointers
+	curLine  = raw_buf;
+	nextLine = curLine + width;
+	for (y = 0; y < height; ++y) {
+		
+		if ((y > 0) && (y < height-1))
+			prevLine = curLine - width; // normal case
+		else if (y == 0)
+			prevLine = nextLine;      // top boundary case
+		else
+			nextLine = prevLine;      // bottom boundary case
+		
+		// init horizontal shift-buffer with current value
+		hVals  = (*(curLine++) << 8);
+		// handle left column boundary case
+		hVals |= (*curLine << 16);
+		// init vertical average shift-buffer with current values average
+		vSums = ((*(prevLine++) + *(nextLine++)) << 7) & 0xFF00;
+		// handle left column boundary case
+		vSums |= ((*prevLine + *nextLine) << 15) & 0xFF0000;
+		
+		// store if line is odd or not
+		uint8_t yOdd = y & 1;
+		// the right column boundary case is not handled inside this loop
+		// thus the "639"
+		for (x = 0; x < width-1; ++x) {
+			// place next value in shift buffers
+			hVals |= *(curLine++);
+			vSums |= (*(prevLine++) + *(nextLine++)) >> 1;
+			
+			// calculate the horizontal sum as this sum is needed in
+			// any configuration
+			uint8_t hSum = ((uint8_t)(hVals >> 16) + (uint8_t)(hVals)) >> 1;
+			
+			if (yOdd == 0) {
+				if ((x & 1) == 0) {
+					// Configuration 1
+					*(dst++) = hSum;		// r
+					*(dst++) = hVals >> 8;	// g
+					*(dst++) = vSums >> 8;	// b
+				} else {
+					// Configuration 2
+					*(dst++) = hVals >> 8;
+					*(dst++) = (hSum + (uint8_t)(vSums >> 8)) >> 1;
+					*(dst++) = ((uint8_t)(vSums >> 16) + (uint8_t)(vSums)) >> 1;
+				}
+			} else {
+				if ((x & 1) == 0) {
+					// Configuration 3
+					*(dst++) = ((uint8_t)(vSums >> 16) + (uint8_t)(vSums)) >> 1;
+					*(dst++) = (hSum + (uint8_t)(vSums >> 8)) >> 1;
+					*(dst++) = hVals >> 8;
+				} else {
+					// Configuration 4
+					*(dst++) = vSums >> 8;
+					*(dst++) = hVals >> 8;
+					*(dst++) = hSum;
+				}
+			}
+			
+			// shift the shift-buffers
+			hVals <<= 8;
+			vSums <<= 8;
+		} // end of for x loop
+		// right column boundary case, mirroring second last column
+		hVals |= (uint8_t)(hVals >> 16);
+		vSums |= (uint8_t)(vSums >> 16);
+		
+		// the horizontal sum simplifies to the second last column value
+		uint8_t hSum = (uint8_t)(hVals);
+		
+		if (yOdd == 0) {
+			if ((x & 1) == 0) {
+				*(dst++) = hSum;
+				*(dst++) = hVals >> 8;
+				*(dst++) = vSums >> 8;
+			} else {
+				*(dst++) = hVals >> 8;
+				*(dst++) = (hSum + (uint8_t)(vSums >> 8)) >> 1;
+				*(dst++) = vSums;
+			}
+		} else {
+			if ((x & 1) == 0) {
+				*(dst++) = vSums;
+				*(dst++) = (hSum + (uint8_t)(vSums >> 8)) >> 1;
+				*(dst++) = hVals >> 8;
+			} else {
+				*(dst++) = vSums >> 8;
+				*(dst++) = hVals >> 8;
+				*(dst++) = hSum;
+			}
+		}
+		
+	} // end of for y loop
+
 }

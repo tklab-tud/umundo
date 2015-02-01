@@ -3,12 +3,13 @@
 # message("UMUNDOCORE_LIBRARIES: ${UMUNDOCORE_LIBRARIES}")
 # message("UMUNDOS11N_LIBRARIES: ${UMUNDOS11N_LIBRARIES}")
 
+set(GETOPT_WIN32)
+if (WIN32)
+	set(GETOPT_WIN32 ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)	
+endif()
+
 if (BUILD_UMUNDO_S11N)
-	if (WIN32)
-		add_executable(umundo-monitor umundo-monitor.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-	else()
-		add_executable(umundo-monitor umundo-monitor.cpp)
-	endif()
+	add_executable(umundo-monitor umundo-monitor.cpp ${GETOPT_WIN32})
 
 	target_link_libraries(umundo-monitor umundocore umundoserial)
 	set_target_properties(umundo-monitor PROPERTIES FOLDER "Tools")
@@ -76,7 +77,7 @@ if (NET_RTP)
 	if(FREENECT_FOUND)
 		include_directories(${FREENECT_INCLUDE_DIR})
 		
-		add_executable(umundo-kinect-pub umundo-kinect-pub.cpp)
+		add_executable(umundo-kinect-pub umundo-kinect-pub.cpp ${GETOPT_WIN32})
 		target_link_libraries(umundo-kinect-pub umundocore ${FREENECT_LIBRARY})
 		set_target_properties(umundo-kinect-pub PROPERTIES FOLDER "Tools")
 
@@ -90,7 +91,7 @@ if (NET_RTP)
 		include_directories(${OPENGL_INCLUDE_DIR})
 		include_directories(${GLUT_INCLUDE_DIR})
 		
-		add_executable(umundo-kinect-sub umundo-kinect-sub.cpp)
+		add_executable(umundo-kinect-sub umundo-kinect-sub.cpp ${GETOPT_WIN32})
 		target_link_libraries(umundo-kinect-sub umundocore ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 		set_target_properties(umundo-kinect-sub PROPERTIES FOLDER "Tools")
 
@@ -102,11 +103,7 @@ if (NET_RTP)
 
 endif()
 
-if (WIN32)
-	add_executable(umundo-pingpong umundo-pingpong.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-pingpong umundo-pingpong.cpp)
-endif()
+add_executable(umundo-pingpong umundo-pingpong.cpp  ${GETOPT_WIN32})
 target_link_libraries(umundo-pingpong umundocore)
 set_target_properties(umundo-pingpong PROPERTIES FOLDER "Tools")
 
@@ -133,11 +130,7 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
-if (WIN32)
-	add_executable(umundo-debug umundo-debug.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-debug umundo-debug.cpp)
-endif()
+add_executable(umundo-debug umundo-debug.cpp ${GETOPT_WIN32})
 target_link_libraries(umundo-debug umundocore)
 set_target_properties(umundo-debug PROPERTIES FOLDER "Tools")
 
@@ -147,11 +140,7 @@ INSTALL_EXECUTABLE(
 )
 
 
-if (WIN32)
-	add_executable(umundo-capture umundo-capture.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-capture umundo-capture.cpp)
-endif()
+add_executable(umundo-capture umundo-capture.cpp ${GETOPT_WIN32})
 target_link_libraries(umundo-capture umundocore)
 set_target_properties(umundo-capture PROPERTIES FOLDER "Tools")
 
@@ -161,11 +150,7 @@ INSTALL_EXECUTABLE(
 )
 
 
-if (WIN32)
-	add_executable(umundo-replay umundo-replay.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-replay umundo-replay.cpp)
-endif()
+add_executable(umundo-replay umundo-replay.cpp ${GETOPT_WIN32})
 target_link_libraries(umundo-replay umundocore)
 set_target_properties(umundo-replay PROPERTIES FOLDER "Tools")
 
@@ -203,11 +188,7 @@ if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC)
 	endif()
 endif()
 
-if (WIN32)
-	add_executable(umundo-bridge umundo-bridge.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-bridge umundo-bridge.cpp)
-endif()
+add_executable(umundo-bridge umundo-bridge.cpp ${GETOPT_WIN32})
 target_link_libraries(umundo-bridge umundocore)
 set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
 
@@ -216,11 +197,7 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
-if (WIN32)
-	add_executable(umundo-throughput umundo-throughput.cpp ${PROJECT_SOURCE_DIR}/contrib/src/xgetopt/XGetopt.cpp)
-else()
-	add_executable(umundo-throughput umundo-throughput.cpp)
-endif()
+add_executable(umundo-throughput umundo-throughput.cpp ${GETOPT_WIN32})
 target_link_libraries(umundo-throughput umundocore)
 set_target_properties(umundo-throughput PROPERTIES FOLDER "Tools")
 

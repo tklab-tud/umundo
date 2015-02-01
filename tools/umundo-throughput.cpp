@@ -194,23 +194,27 @@ std::string bytesToDisplay(uint64_t nrBytes) {
 	std::stringstream ss;
 	ss << std::setprecision(5);
 
+	uint64_t kMax = (uint64_t)1024 * (uint64_t)1024;
+	uint64_t mMax = kMax * (uint64_t)1024;
+	uint64_t gMax = mMax * (uint64_t)1024;
+	
 	if (nrBytes < 1024) {
 		ss << nrBytes << "B";
 		return ss.str();
 	}
-	if (nrBytes < 1024L * 1024L) {
+	if (nrBytes < kMax) {
 		ss << ((double)nrBytes / (double)1024) << "KB";
 		return ss.str();
 	}
-	if (nrBytes < 1024L * 1024L * 1024L) {
-		ss << ((double)nrBytes / (double)(1024 * 1024)) << "MB";
+	if (nrBytes < mMax) {
+		ss << ((double)nrBytes / (double)kMax) << "MB";
 		return ss.str();
 	}
-	if (nrBytes < 1024L * 1024L * 1024L * 1024L) {
-		ss << ((double)nrBytes / (double)(1024 * 1024 * 1024)) << "GB";
+	if (nrBytes < gMax) {
+		ss << ((double)nrBytes / (double)mMax) << "GB";
 		return ss.str();
 	}
-	ss << ((double)nrBytes / (double)(1024 * 1024 * 1024 * 1024)) << "TB";
+	ss << ((double)nrBytes / (double)gMax) << "TB";
 	return ss.str();
 }
 

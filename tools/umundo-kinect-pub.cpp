@@ -20,6 +20,10 @@
 
 #include <libfreenect.hpp>
 
+#ifdef WIN32
+#include "XGetopt.h"
+#endif
+
 #define MAX_PAYLOAD_PACKET 1400
 
 using namespace umundo;
@@ -31,6 +35,16 @@ Publisher pubDepthRTP;
 
 Publisher pubVideoTCP;
 Publisher pubVideoRTP;
+
+void printUsageAndExit() {
+	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("Usage\n");
+	printf("\tumundo-kinect-pub -mN\n");
+	printf("\n");
+	printf("Options\n");
+	printf("\t-m N  : Only send every N-th frame\n");
+	exit(1);
+}
 
 class FreenectBridge : public Freenect::FreenectDevice {
 public:
@@ -132,9 +146,43 @@ public:
 			pubVideoTCP.send(&tcpMsg);
 		}
 		
+
 		{
 			// chop into RTP packets
-			size_t index = 0;
+#if 1
+			size_t interleaves = 6;
+			size_t startSeg = _frameCountVideo % interleaves;
+//			std::cout << startSeg << ": ";
+
+			for (int i = 0; i < interleaves; i++) {
+				uint16_t index = (startSeg + i) % interleaves;
+				
+				while (index * MAX_PAYLOAD_PACKET < scaled.size()) {
+//					std::cout << index * MAX_PAYLOAD_PACKET << ", ";
+					Message rtpMsg;
+					if (index == startSeg) {
+//						std::cout << "!";
+						rtpMsg.putMeta("um.timestampIncrement", toStr(1));
+						rtpMsg.putMeta("um.marker", toStr(true));
+					} else {
+						rtpMsg.putMeta("um.timestampIncrement", toStr(0));
+						rtpMsg.putMeta("um.marker", toStr(false));
+					}
+					
+					char* buffer = (char*)malloc(MAX_PAYLOAD_PACKET + 2);
+					Message::write((uint16_t)index, buffer);
+					memcpy(&buffer[2], &scaled[index * MAX_PAYLOAD_PACKET], (index * MAX_PAYLOAD_PACKET) + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - (index * MAX_PAYLOAD_PACKET) : MAX_PAYLOAD_PACKET);
+					rtpMsg.setData(buffer, MAX_PAYLOAD_PACKET + 2);
+					free(buffer);
+					
+					pubVideoRTP.send(&rtpMsg);
+					
+					index += interleaves;
+				}
+			}
+#else
+			uint16_t index = 0;
+
 			while (index < scaled.size()) {
 				Message rtpMsg;
 				if (index == 0) {
@@ -150,11 +198,12 @@ public:
 				memcpy(&buffer[2], &scaled[index], index + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - index : MAX_PAYLOAD_PACKET);
 				rtpMsg.setData(buffer, MAX_PAYLOAD_PACKET + 2);
 				free(buffer);
-//				Thread::sleepUs(800);
+
 				pubVideoRTP.send(&rtpMsg);
 
 				index += MAX_PAYLOAD_PACKET;
 			}
+#endif
 		}
 
 		_lastTimestampVideo = timestamp;
@@ -218,15 +267,23 @@ Freenect::Freenect freenect;
 FreenectBridge* device;
 freenect_video_format requested_format(FREENECT_VIDEO_RGB);
 
+
+
 int main(int argc, char** argv) {
-	uint16_t modulo=1;
+	uint16_t modulo = 1;
 
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	if(argc>1) {
-		int m = strTo<uint16_t>(argv[1]);
-		if(m > 0 && m < 256)
-			modulo = m;
+	int option;
+	while ((option = getopt(argc, argv, "m:")) != -1) {
+		switch(option) {
+			case 'm':
+				modulo = atoi(optarg);
+				break;
+			default:
+				printUsageAndExit();
+				break;
+		}
 	}
 
 	std::cout << "Sending every " << modulo << ". frame..." << std::endl << std::flush;
@@ -267,7 +324,7 @@ int main(int argc, char** argv) {
 //			device->setVideoFormat(FREENECT_VIDEO_RGB,   FREENECT_RESOLUTION_HIGH);
 //			device->setDepthFormat(FREENECT_DEPTH_11BIT, FREENECT_RESOLUTION_HIGH);
 
-			device->startDepth();
+//			device->startDepth();
 			device->startVideo();
 #if 0
 	FREENECT_VIDEO_RGB             = 0, /**< Decompressed RGB mode (demosaicing done by libfreenect)  921600B/frame */

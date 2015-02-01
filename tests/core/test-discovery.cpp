@@ -367,15 +367,23 @@ bool testPubSubConnections() {
 	return true;
 }
 
-bool testBroadCast() {
-	Discovery disc(Discovery::BROADCAST);
-	return true;
-}
+//bool testBroadCast() {
+//	Discovery disc(Discovery::BROADCAST);
+//	return true;
+//}
+
+//bool testExplicitAdressed() {
+//	Node n1("tcp://127.0.0.1:7700");
+//	return true;
+//}
 
 int main(int argc, char** argv, char** envp) {
 	setenv("UMUNDO_LOGLEVEL", "4", 1);
-	if (!testBroadCast())
-		return EXIT_FAILURE;
+//	if (!testBroadCast())
+//		return EXIT_FAILURE;
+
+//	if (!testExplicitAdressed())
+//		return EXIT_FAILURE;
 
 //	if (!testMulticastDNSDiscovery())
 //		return EXIT_FAILURE;

@@ -74,7 +74,7 @@ public:
 			if (marker) {
 				if (_start) {
 					bayer_to_rgb((uint8_t*)&_rtpBuffer[0], (uint8_t*)&_videoBuffer[0], 320, 240);
-					memset(&_rtpBuffer[0], 255, _rtpBuffer.size());
+//					memset(&_rtpBuffer[0], 255, _rtpBuffer.size());
 					_frameComplete = true;
 					UMUNDO_SIGNAL(_newFrame);
 				}
@@ -87,7 +87,7 @@ public:
 			if (!_start)				//wait for first complete frame (and ignore data till then)
 				return;
 			
-			memcpy(&_rtpBuffer[index], msg->data() + 2, msg->size() - 2);
+			memcpy(&_rtpBuffer[index * MAX_PAYLOAD_PACKET], msg->data() + 2, msg->size() - 2);
 		}
 	}
 	
@@ -313,6 +313,8 @@ int main(int argc, char** argv) {
 			case 'c':
 				if (strncasecmp(optarg, "depth", 5) == 0) {
 					useDepth = true;
+					std::cerr << "Sorry, I broke depth reception for now" << std::endl;
+					printUsageAndExit();
 				} else if (strncasecmp(optarg, "video", 5) == 0) {
 					useVideo = true;
 				} else {

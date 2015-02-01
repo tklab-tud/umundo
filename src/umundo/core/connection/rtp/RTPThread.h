@@ -18,8 +18,8 @@
  *  @endcond
  */
 
-#ifndef RTPHELPERS_H_XQPJWLQR
-#define RTPHELPERS_H_XQPJWLQR
+#ifndef RTPThread_H_XQPJWLQR
+#define RTPThread_H_XQPJWLQR
 
 #include "umundo/core/Common.h"
 
@@ -33,31 +33,31 @@
 
 namespace umundo {
 
-class RTPHelpers : public Thread {
-protected:
-	RTPHelpers();
-	~RTPHelpers();
+class RTPThread : public Thread {
+public:
+	~RTPThread();
+	static SharedPtr<RTPThread> getInstance();
 
-	static uint32_t _libreUsage;
-	static bool _initDone;
+	int call(boost::function<int()>);
+
+protected:
+	
 	static struct libre::mqueue *_mq;
 	static RMutex _mutex;
-	static RMutex _usageCountMutex;
 	static Monitor _cond;
 	static boost::function<int()> _func;
 	static int _retval;
 	static uint64_t _id;
 
-	static int call(boost::function<int()>);
 	static void handler(int, void*, void*);
 
 private:
 	void run();
 
-	friend class RTPSubscriber;
-	friend class RTPPublisher;
+	RTPThread();
+	static WeakPtr<RTPThread> _instance;
 };
 
 }
 
-#endif /* end of include guard: RTPHELPERS_H_XQPJWLQR */
+#endif /* end of include guard: RTPThread_H_XQPJWLQR */

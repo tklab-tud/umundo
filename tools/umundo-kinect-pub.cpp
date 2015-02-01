@@ -28,14 +28,6 @@
 
 using namespace umundo;
 
-Discovery disc;
-Node node;
-Publisher pubDepthTCP;
-Publisher pubDepthRTP;
-
-Publisher pubVideoTCP;
-Publisher pubVideoRTP;
-
 void printUsageAndExit() {
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
@@ -138,11 +130,11 @@ public:
 //					msgData[i] &= 0xF0;
 			}
 #endif
-			
+#if 0			
 			std::cout << tcpMsg.size() << " -> ";
 			tcpMsg.compress();
 			std::cout << tcpMsg.size() << std::endl;
-			
+#endif		
 			pubVideoTCP.send(&tcpMsg);
 		}
 		
@@ -255,6 +247,11 @@ public:
 		_modulo=modulo;
 	};
 
+	Publisher pubDepthRTP;
+	Publisher pubDepthTCP;
+	Publisher pubVideoRTP;
+	Publisher pubVideoTCP;
+	
 private:
 	uint16_t _modulo;
 	uint16_t _frameCountDepth;
@@ -263,14 +260,19 @@ private:
 	uint64_t _lastTimestampVideo;
 };
 
-Freenect::Freenect freenect;
-FreenectBridge* device;
-freenect_video_format requested_format(FREENECT_VIDEO_RGB);
-
-
-
 int main(int argc, char** argv) {
 	uint16_t modulo = 1;
+
+	Freenect::Freenect freenect;
+	FreenectBridge* device;
+
+	Discovery disc;
+	Node node;
+	Publisher pubDepthTCP;
+	Publisher pubDepthRTP;
+	
+	Publisher pubVideoTCP;
+	Publisher pubVideoRTP;
 
 	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
@@ -316,38 +318,36 @@ int main(int argc, char** argv) {
 	node.addPublisher(pubVideoRTP);
 	node.addPublisher(pubVideoTCP);
 	
+	// try to instantiate freenect device
 	while(true) {
 		try {
+			// constructor is somewhat fragile
 			device = &freenect.createDevice<FreenectBridge>(0);
+			device->pubDepthRTP = pubDepthRTP;
+			device->pubDepthTCP = pubDepthTCP;
+			device->pubVideoRTP = pubVideoRTP;
+			device->pubVideoTCP = pubVideoTCP;
 			device->setModulo(modulo);
-			device->setVideoFormat(FREENECT_VIDEO_BAYER, FREENECT_RESOLUTION_MEDIUM);
-//			device->setVideoFormat(FREENECT_VIDEO_RGB,   FREENECT_RESOLUTION_HIGH);
-//			device->setDepthFormat(FREENECT_DEPTH_11BIT, FREENECT_RESOLUTION_HIGH);
 
-//			device->startDepth();
-			device->startVideo();
-#if 0
-	FREENECT_VIDEO_RGB             = 0, /**< Decompressed RGB mode (demosaicing done by libfreenect)  921600B/frame */
-	FREENECT_VIDEO_BAYER           = 1, /**< Bayer compressed mode (raw information from camera)      307200B/frame */
-	FREENECT_VIDEO_IR_8BIT         = 2, /**< 8-bit IR mode                                            312320B/frame */
-	FREENECT_VIDEO_IR_10BIT        = 3, /**< 10-bit IR mode                                           624640B/frame */
-	FREENECT_VIDEO_IR_10BIT_PACKED = 4, /**< 10-bit packed IR mode                                    390400B/frame */
-	FREENECT_VIDEO_YUV_RGB         = 5, /**< YUV RGB mode                                             921600B/frame */
-	FREENECT_VIDEO_YUV_RAW         = 6, /**< YUV Raw mode                                             614400B/frame */
-	FREENECT_VIDEO_DUMMY           = 2147483647, /**< Dummy value to force enum to be 32 bits wide */
-#endif
-//			device->setVideoFormat(FREENECT_VIDEO_IR_8BIT);
-//			device->startVideo();
-			while(1)
-				Thread::sleepMs(4000);
+			// this is actually the default
+			device->setVideoFormat(FREENECT_VIDEO_BAYER, FREENECT_RESOLUTION_MEDIUM);
+
+			while(true) {
+				try {
+					device->startVideo(); // not blocking on recent versions only?
+					while(true)
+						Thread::sleepMs(2000);
+				} catch(std::runtime_error e) {
+					std::cout << "An exception occured while trying to start video: " << e.what() << " - retrying after 5s" << std::endl;
+					Thread::sleepMs(5000);
+				}
+			}
 			
 		} catch(std::runtime_error e) {
-			std::cout << e.what() << std::endl;
-			Thread::sleepMs(4000);
-			// send a few test frames and retry
+			std::cout << "An exception occured: " << e.what() << " - retrying" << std::endl;
+			Thread::sleepMs(5000);
 		}
 	}
 	
-
 	return 0;
 }

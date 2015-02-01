@@ -1,4 +1,4 @@
-FIND_PATH(BonjourEmbedded_INCLUDE_DIR dns_sd.h
+FIND_PATH(BonjourEmbedded_INCLUDE_DIR mDNSEmbeddedAPI.h
   HINTS
   $ENV{BonjourEmbeddedDIR}
   PATH_SUFFIXES bonjour

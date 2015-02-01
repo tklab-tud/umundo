@@ -55,7 +55,7 @@ void RTPSubscriber::init(const Options* config) {
 		return;
 	}
 
-	_helper = new RTPHelpers(); //this starts the re_main() mainloop
+	_rtpThread = RTPThread::getInstance(); //this starts the re_main() mainloop
 	if (config->getKVPs().count("sub.rtp.portbase")) {
 		min = portbase;
 		max = portbase+1;
@@ -65,7 +65,7 @@ void RTPSubscriber::init(const Options* config) {
 	libre::sa_init(&ip, AF_INET);
 	libre::sa_set_in(&ip, INADDR_ANY, 0);
 
-	status = RTPHelpers::call(boost::bind(libre::rtp_listen, &_rtp_socket, static_cast<int>(IPPROTO_UDP),
+	status = _rtpThread->call(boost::bind(libre::rtp_listen, &_rtp_socket, static_cast<int>(IPPROTO_UDP),
 	                                      &ip,
 	                                      min,
 	                                      max,
@@ -77,7 +77,6 @@ void RTPSubscriber::init(const Options* config) {
 
 	if (status) {
 		UM_LOG_ERR("%s: error in libre::rtp_listen(): %s", SHORT_UUID(_uuid).c_str(), strerror(status));
-		delete _helper;
 		return;
 	}
 
@@ -109,7 +108,6 @@ RTPSubscriber::~RTPSubscriber() {
 	_cond.broadcast();		//wake up thread
 	join();
 	if (_initDone) {
-		delete _helper;
 		libre::mem_deref(_rtp_socket);
 	}
 #ifdef WIN32

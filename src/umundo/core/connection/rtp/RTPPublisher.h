@@ -27,7 +27,7 @@
 #include "umundo/core/Message.h"
 #include "umundo/core/connection/Publisher.h"
 #include "umundo/core/thread/Thread.h"
-#include "umundo/core/connection/rtp/RTPHelpers.h"
+#include "umundo/core/connection/rtp/RTPThread.h"
 
 #include "umundo/core/connection/rtp/libre.h"
 
@@ -72,7 +72,7 @@ private:
 	bool _isSuspended;
 	bool _initDone;
 
-	RTPHelpers *_helper;
+	SharedPtr<RTPThread> _rtpThread;
 	struct libre::rtp_sock *_rtp_socket;
 	static void rtp_recv(const struct libre::sa*, const struct libre::rtp_header*, struct libre::mbuf*, void*);
 

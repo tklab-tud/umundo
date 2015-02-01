@@ -92,14 +92,14 @@ void RTPPublisher::init(const Options* config) {
 		return;
 	}
 
-	_helper = new RTPHelpers();			// this starts the re_main() mainloop...
+	_rtpThread = RTPThread::getInstance();			// this starts the re_main() mainloop...
 
 
 	struct libre::sa ip;
 	libre::sa_init(&ip, AF_INET);
 	libre::sa_set_in(&ip, INADDR_ANY, 0);
 	//we always have to specify a rtp_recv() handler (so specify an empty function)
-	status = RTPHelpers::call(boost::bind(libre::rtp_listen,
+	status = _rtpThread->call(boost::bind(libre::rtp_listen,
 	                                      &_rtp_socket,
 	                                      static_cast<int>(IPPROTO_UDP),
 	                                      &ip,
@@ -112,7 +112,6 @@ void RTPPublisher::init(const Options* config) {
 	                                      this));
 	if (status) {
 		UM_LOG_ERR("%s: error %d in libre::rtp_listen(): %s", SHORT_UUID(_uuid).c_str(), status, strerror(status));
-		delete _helper;
 		return;
 	}
 
@@ -127,7 +126,6 @@ void RTPPublisher::init(const Options* config) {
 
 RTPPublisher::~RTPPublisher() {
 	if (_initDone) {
-		delete _helper;
 		libre::mem_deref(_rtp_socket);
 	}
 #ifdef WIN32

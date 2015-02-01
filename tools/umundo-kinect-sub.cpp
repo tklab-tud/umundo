@@ -331,6 +331,12 @@ int main(int argc, char** argv) {
 	std::string channelName;
 	Receiver* recv;
 	
+	if (!useDepth && !useVideo)
+		useVideo = true;
+
+	if (!useTCP && !useRTP)
+		useRTP = true;
+
 	if (useVideo) {
 		channelName = "kinect.video";
 		recv = videoRecv = new VideoReceiver();

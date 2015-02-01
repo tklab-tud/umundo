@@ -25,73 +25,65 @@
 #include <winsock2.h>
 #endif // WIN32
 
-#include "umundo/core/connection/rtp/RTPHelpers.h"
+#include "umundo/core/connection/rtp/RTPThread.h"
 #include <boost/bind.hpp>
 
 namespace umundo {
 
-uint32_t RTPHelpers::_libreUsage = 0;
-int      RTPHelpers::_retval = 0;
-uint64_t RTPHelpers::_id = 0;
-bool     RTPHelpers::_initDone   = false;
-struct   libre::mqueue *RTPHelpers::_mq = NULL;
+int      RTPThread::_retval = 0;
+uint64_t RTPThread::_id = 0;
+struct   libre::mqueue *RTPThread::_mq = NULL;
 
-boost::function<int()> RTPHelpers::_func = NULL;
+boost::function<int()> RTPThread::_func = NULL;
 
-RMutex RTPHelpers::_usageCountMutex;
-RMutex RTPHelpers::_mutex;
-Monitor RTPHelpers::_cond;
-
-RTPHelpers::RTPHelpers() {
-	RScopeLock lock(_usageCountMutex);
-	if (!_libreUsage) {
-		//init libre
-		int err;
-		libre::rand_init();
-		err = libre::libre_init();
-		if (err) {
-			UM_LOG_ERR("libre init failed with error code %d", err);
-			return;
-		}
-
-		//start libre mainloop and init our libre calling capabilities
-		{
-			RScopeLock lock(_mutex);
-			if (!_initDone) {
-				_initDone = true;
-				libre::mqueue_alloc(&_mq, handler, NULL);
-			}
-		}
-		start();
+RMutex RTPThread::_mutex;
+Monitor RTPThread::_cond;
+WeakPtr<RTPThread> RTPThread::_instance;
+	
+SharedPtr<RTPThread> RTPThread::getInstance() {
+	RScopeLock lock(_mutex);
+	SharedPtr<RTPThread> instance = _instance.lock();
+	
+	if (!instance) {
+		instance = SharedPtr<RTPThread>(new RTPThread());
+		_instance = instance;
+		return instance;
 	}
-	_libreUsage++;
+	return instance;
 }
 
-RTPHelpers::~RTPHelpers() {
-	RScopeLock lock(_usageCountMutex);
-	_libreUsage--;
-
-	if (!_libreUsage) {
-		//call() needs a function object returning an int
-		//--> cast void function to int function (and ignore fake "return value")
-		call(boost::bind((int(*)(void))libre::re_cancel));
-		join();
-		libre::libre_close();
+RTPThread::RTPThread() {
+	//init libre
+	int err;
+	libre::rand_init();
+	err = libre::libre_init();
+	if (err) {
+		UM_LOG_ERR("libre init failed with error code %d", err);
+		return;
 	}
+
+	//start libre mainloop and init our libre calling capabilities
+	libre::mqueue_alloc(&_mq, handler, NULL);
+	start();
+}
+
+RTPThread::~RTPThread() {
+	call(boost::bind((int(*)(void))libre::re_cancel));
+	join();
+	libre::libre_close();
 
 	//check for memory leaks
 	libre::tmr_debug();
 	libre::mem_debug();
 }
 
-void RTPHelpers::run() {
+void RTPThread::run() {
 	int err;
 	_id = Thread::getThreadId();
 	err = libre::re_main(NULL);
 	{
 		RScopeLock lock(_mutex);
 		libre::mem_deref(_mq);
-		_initDone = false;
 	}
 	UM_LOG_INFO("re_main() STOPPED...");
 	if (err) {
@@ -104,7 +96,7 @@ void RTPHelpers::run() {
  * and executes the given function object in the context of the main thread
  * Use this for all libre calls where new fds are created
 **/
-int RTPHelpers::call(boost::function<int()> f) {
+int RTPThread::call(boost::function<int()> f) {
 	if (_id == Thread::getThreadId()) {
 		//we're already running in the mainloop thread, call supplied function directly
 		return f();
@@ -119,7 +111,7 @@ int RTPHelpers::call(boost::function<int()> f) {
 	return 0;
 }
 
-void RTPHelpers::handler(int id, void *data, void *arg) {
+void RTPThread::handler(int id, void *data, void *arg) {
 	RScopeLock lock(_mutex);
 	_retval = _func();
 	_cond.broadcast();

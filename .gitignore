@@ -21,3 +21,5 @@ examples/csharp/umundo-pingpong/umundo-pingpong/obj*
 examples/python/s11n/chat/generated/
 
 /examples/ios/umundo-throughput.xcodeproj/project.xcworkspace/xcuserdata/sradomski.xcuserdatad/UserInterfaceState.xcuserstate
+
+/nbproject/

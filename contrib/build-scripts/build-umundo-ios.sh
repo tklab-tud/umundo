@@ -19,23 +19,24 @@ SDK_VER="7.1"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 
-rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR} &> /dev/null
+#rm -rf ${BUILD_DIR}
+mkdir -p ${BUILD_DIR} &> /dev/null
 
 #
 # Build device with older SDK for old architectures
 #
 export IOS_SDK_VERSION=${SDK_VER}
 
-# mkdir -p ${BUILD_DIR}/device-${SDK_VER}-debug &> /dev/null
-# cd ${BUILD_DIR}/device-${SDK_VER}-debug
-# cmake ${DIR}/../../ \
-# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
-# -DDIST_PREPARE=ON \
-# -DCMAKE_BUILD_TYPE=Debug \
-# -DBUILD_CONVENIENCE_LIB=ON
-# make -j2
-# mv ${DIR}/../../package/cross-compiled/ios/ \
-#    ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-debug
+mkdir -p ${BUILD_DIR}/device-${SDK_VER}-debug &> /dev/null
+cd ${BUILD_DIR}/device-${SDK_VER}-debug
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS.cmake \
+-DDIST_PREPARE=ON \
+-DCMAKE_BUILD_TYPE=Debug \
+-DBUILD_CONVENIENCE_LIB=ON
+make -j2
+mv ${DIR}/../../package/cross-compiled/ios/ \
+   ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-debug
 
 
 mkdir -p ${BUILD_DIR}/device-${SDK_VER}-release &> /dev/null
@@ -47,18 +48,18 @@ cmake ${DIR}/../../ \
 -DBUILD_CONVENIENCE_LIB=ON
 make -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
-   ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}
+   ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-release
 
-# mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
-# cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
-# cmake ${DIR}/../../ \
-# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
-# -DDIST_PREPARE=ON \
-# -DCMAKE_BUILD_TYPE=Debug \
-# -DBUILD_CONVENIENCE_LIB=ON
-# make -j2
-# mv ${DIR}/../../package/cross-compiled/ios/ \
-#    ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-debug
+mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug &> /dev/null
+cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-debug
+cmake ${DIR}/../../ \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-iOS-Sim.cmake \
+-DDIST_PREPARE=ON \
+-DCMAKE_BUILD_TYPE=Debug \
+-DBUILD_CONVENIENCE_LIB=ON
+make -j2
+mv ${DIR}/../../package/cross-compiled/ios/ \
+   ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-debug
 
 mkdir -p ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release &> /dev/null
 cd ${BUILD_DIR}/simulator-${IOS_SDK_VERSION}-release
@@ -69,7 +70,7 @@ cmake ${DIR}/../../ \
 -DBUILD_CONVENIENCE_LIB=ON
 make -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
-   ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}
+   ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-release
 
 
 #

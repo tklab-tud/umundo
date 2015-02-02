@@ -35,56 +35,8 @@ namespace umundo {
 class Connectable;
 class Discovery;
 
-class UMUNDO_API NodeStubBaseImpl : public EndPointImpl {
-public:
-};
 
-/**
- * Representation of a remote umundo Node.
- */
-class UMUNDO_API NodeStubBase : public EndPoint {
-public:
-	NodeStubBase() : _impl() { }
-	NodeStubBase(SharedPtr<NodeStubBaseImpl> const impl) : EndPoint(impl), _impl(impl) { }
-	NodeStubBase(const NodeStubBase& other) : EndPoint(other._impl), _impl(other._impl) { }
-	virtual ~NodeStubBase() { }
-
-	operator bool() const {
-		return _impl.get();
-	}
-	bool operator< (const NodeStubBase& other) const {
-		return _impl < other._impl;
-	}
-	bool operator==(const NodeStubBase& other) const {
-		return _impl == other._impl;
-	}
-	bool operator!=(const NodeStubBase& other) const {
-		return _impl != other._impl;
-	}
-
-	NodeStubBase& operator=(const NodeStubBase& other) {
-		_impl = other._impl;
-		EndPoint::_impl = _impl;
-		return *this;
-	} // operator=
-
-	/** @name Remote Node */
-	//@{
-	virtual const std::string getUUID() const {
-		return _impl->getUUID();
-	}
-
-	//@}
-
-	SharedPtr<NodeStubBaseImpl> getImpl() const {
-		return _impl;
-	}
-
-protected:
-	SharedPtr<NodeStubBaseImpl> _impl;
-};
-
-class UMUNDO_API NodeStubImpl : public NodeStubBaseImpl {
+class UMUNDO_API NodeStubImpl : public EndPointImpl {
 public:
 	virtual void addPublisher(const PublisherStub& pub) {
 		_pubs[pub.getUUID()] = pub;
@@ -131,11 +83,11 @@ private:
 
 };
 
-class UMUNDO_API NodeStub : public NodeStubBase {
+class UMUNDO_API NodeStub : public EndPoint {
 public:
 	NodeStub() : _impl() { }
-	NodeStub(SharedPtr<NodeStubImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
-	NodeStub(const NodeStub& other) : NodeStubBase(other._impl), _impl(other._impl) { }
+	NodeStub(SharedPtr<NodeStubImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	NodeStub(const NodeStub& other) : EndPoint(other._impl), _impl(other._impl) { }
 	virtual ~NodeStub() { }
 
 	operator bool() const {
@@ -154,7 +106,6 @@ public:
 	NodeStub& operator=(const NodeStub& other) {
 		_impl = other._impl;
 		EndPoint::_impl = _impl;
-		NodeStubBase::_impl = _impl;
 		return *this;
 	} // operator=
 

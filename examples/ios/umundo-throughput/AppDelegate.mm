@@ -11,7 +11,7 @@
 @implementation AppDelegate
 
 @synthesize window = _window;
-@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, bytesRcvd, pktsDropped, pktsRecvd, lastSeqNr, lastTimeStamp, currTimeStamp, reportInterval, lock;
+@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, bytesRcvd, pktsDropped, pktsRecvd, lastSeqNr, lastTimeStamp, startedTimeStamp, currTimeStamp, firstTimeStamp, reportInterval, lock;
 
 - (void)received:(NSData*)data withMeta:(NSDictionary*)meta {
 	[lock lock];
@@ -28,6 +28,8 @@
 	memcpy(&reportInterval, (char*)[data bytes] + 16, 4);
 	reportInterval = CFSwapInt32BigToHost(reportInterval);
 	
+	if (firstTimeStamp == 0 || currSeqNr < lastSeqNr)
+		firstTimeStamp = currTimeStamp;
 	
 	if (currSeqNr < lastSeqNr)
 		lastSeqNr = 0;
@@ -68,16 +70,23 @@
 	
 	std::ostringstream currTimeSS;
 	currTimeSS << currTimeStamp;
-	
+
+	std::ostringstream firstTimeSS;
+	firstTimeSS << firstTimeStamp;
+
+	std::ostringstream startTimeSS;
+	startTimeSS << startedTimeStamp;
+
 	umundo::Message* msg = new umundo::Message();
-	msg->putMeta("bytes.rcvd", bytesRcvdSS.str());
-	msg->putMeta("pkts.dropped", pktsDroppedSS.str());
 	msg->putMeta("pkts.rcvd", pktsRecvdSS.str());
-	msg->putMeta("last.seq", lastSeqNrSS.str());
+	msg->putMeta("pkts.dropped", pktsDroppedSS.str());
+	msg->putMeta("bytes.rcvd", bytesRcvdSS.str());
 	msg->putMeta("last.timestamp", currTimeSS.str());
-	
 	msg->putMeta("hostname", umundo::Host::getHostname());
-	msg->putMeta("hostId", umundo::Host::getHostId());
+	msg->putMeta("last.seq", lastSeqNrSS.str());
+	msg->putMeta("first.timestamp", firstTimeSS.str());
+	msg->putMeta("started.timestamp", startTimeSS.str());
+	
 	
 	[reporter sendMsg:msg];
 	delete msg;
@@ -123,9 +132,11 @@
 	[node addPublisher:reporter];
 
 	[disc add:node];
+	startedTimeStamp = umundo::Thread::getTimeStampMs();
 	
 	bytesRcvd = 0;
 	lastSeqNr = 0;
+	firstTimeStamp = 0;
 	//  timer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(accumulateStats) userInfo:nil repeats:YES];
 
   return YES;
@@ -143,6 +154,7 @@
 	[node removePublisher:reporter];
 	
 	[disc remove:node];
+	firstTimeStamp = 0;
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -166,6 +178,8 @@
    Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
    */
 	[disc add:node];
+	startedTimeStamp = umundo::Thread::getTimeStampMs();
+
 	[node addSubscriber:tcpSub];
 	[node addSubscriber:mcastSub];
 	[node addSubscriber:rtpSub];
@@ -193,6 +207,7 @@
 	[node removePublisher:reporter];
 
 	[disc remove:node];
+	firstTimeStamp = 0;
 }
 
 @end

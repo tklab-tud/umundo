@@ -444,6 +444,10 @@ void ZeroMQNode::added(ENDPOINT_RS_TYPE endPoint) {
 								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 		return;
 	}
+	
+	if (endPoint.getUUID() == _uuid) // that's us!
+		return;
+	
 	_endPoints.insert(endPoint);
 
 	UM_LOG_INFO("%s: Adding endpoint at %s",
@@ -501,6 +505,8 @@ void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
 		UM_LOG_INFO("%s gone on some interface -> removing and readding endpoint (be more clever here)", SHORT_UUID(_uuid).c_str());
 		removed(endPoint);
 		added(endPoint);
+	} else {
+		UM_LOG_INFO("%s added on new interface, ignoring", SHORT_UUID(_uuid).c_str());
 	}
 }
 
@@ -844,7 +850,7 @@ void ZeroMQNode::processOpComm() {
 
 	readPtr = readVersionAndType(recvBuffer, version, type);
 
-	UM_LOG_INFO("%s: internal op socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
+//	UM_LOG_INFO("%s: internal op socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
 	switch (type) {
 	case Message::UM_PUB_REMOVED:
 	case Message::UM_PUB_ADDED: {

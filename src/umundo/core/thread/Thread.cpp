@@ -126,11 +126,11 @@ uint64_t Thread::getTimeStampMs() {
 	GetSystemTimeAsFileTime(&tv);
 	time = (((uint64_t) tv.dwHighDateTime) << 32) + tv.dwLowDateTime;
 	time /= 10000;
-#endif
-#ifdef UNIX
+#else
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	time += tv.tv_sec * 1000;
+	time += tv.tv_sec;
+	time *= 1000LU;
 	time += tv.tv_usec / 1000;
 #endif
 	return time;

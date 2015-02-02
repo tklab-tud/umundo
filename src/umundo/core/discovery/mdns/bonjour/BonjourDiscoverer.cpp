@@ -1005,7 +1005,7 @@ namespace umundo {
 			myself->_pendingAddrInfoReplies.clear();
 			//myself->dumpQueries();
 			
-			UM_LOG_INFO("addrInfoReply: %d added, %d changed", added.size(), changed.size());
+//			UM_LOG_INFO("addrInfoReply: %d added, %d changed", added.size(), changed.size());
 			
 			// notify listeners about changes
 			for(std::map<std::string, MDNSAdvertisement*>::iterator changeIter = changed.begin();

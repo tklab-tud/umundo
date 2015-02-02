@@ -70,7 +70,7 @@ public:
 /**
  * The local umundo node implementor basis class (bridge pattern).
  */
-class UMUNDO_API NodeImpl : public NodeStubBaseImpl, public Implementation, public ResultSet<ENDPOINT_RS_TYPE> { //, public EnableSharedFromThis<NodeImpl> {
+class UMUNDO_API NodeImpl : public EndPointImpl, public Implementation, public ResultSet<ENDPOINT_RS_TYPE> { //, public EnableSharedFromThis<NodeImpl> {
 public:
 	NodeImpl();
 	virtual ~NodeImpl();
@@ -126,14 +126,14 @@ private:
 /**
  * The local umundo node abstraction (bridge pattern).
  */
-class UMUNDO_API Node : public NodeStubBase {
+class UMUNDO_API Node : public EndPoint {
 public:
 
 	Node();
 	Node(const NodeConfig*);
 	Node(uint16_t nodePort, uint16_t pubPort);
-	Node(SharedPtr<NodeImpl> const impl) : NodeStubBase(impl), _impl(impl) { }
-	Node(const Node& other) : NodeStubBase(other._impl), _impl(other._impl) { }
+	Node(SharedPtr<NodeImpl> const impl) : EndPoint(impl), _impl(impl) { }
+	Node(const Node& other) : EndPoint(other._impl), _impl(other._impl) { }
 	virtual ~Node();
 
 	operator bool() const {
@@ -152,7 +152,6 @@ public:
 	Node& operator=(const Node& other) {
 		_impl = other._impl;
 		EndPoint::_impl = _impl;
-		NodeStubBase::_impl = _impl;
 		return *this;
 	} // operator=
 

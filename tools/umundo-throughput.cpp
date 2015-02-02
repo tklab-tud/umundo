@@ -39,9 +39,9 @@ bool isClient = false;
 bool isServer = false;
 uint64_t currSeqNr = 0;
 uint32_t reportInterval = 1000;
+uint64_t startedAt = 0;
 
 // server
-uint64_t startedAt = 0;
 size_t bytesPerSecond = 1024 * 1024;
 size_t fixedBytesPerSecond = 0;
 size_t mtu = 1280;
@@ -116,6 +116,7 @@ class ThroughputReceiver : public Receiver {
 			msg->putMeta("last.seq", toStr(lastSeqNr));
 			msg->putMeta("last.timestamp", toStr(currTimeStamp));
 			msg->putMeta("first.timestamp", toStr(firstTimeStamp));
+			msg->putMeta("started.timestamp", toStr(startedAt));
 			msg->putMeta("hostname", umundo::Host::getHostname());
 			reporter.send(msg);
 			delete msg;
@@ -145,7 +146,9 @@ public:
 		report.hostName      = msg->getMeta("hostname");
 		report.hostId        = msg->getMeta("um.host");
 		report.pubId         = msg->getMeta("um.pub");
-		report.discoveryTime = strTo<size_t>(msg->getMeta("first.timestamp")) - startedAt;
+		
+		uint64_t otherStart    = strTo<uint64_t>(msg->getMeta("started.timestamp"));
+		report.discoveryTime = strTo<uint64_t>(msg->getMeta("first.timestamp")) - (startedAt > otherStart ? startedAt : otherStart);
 		
 		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate = currSeqNr - lastSeqNr;
@@ -307,11 +310,11 @@ int main(int argc, char** argv) {
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);
+	startedAt = Thread::getTimeStampMs();
 
 	if (isServer) {
 		ThroughputGreeter tpGreeter;
 		ReportReceiver reportRecv;
-		startedAt = Thread::getTimeStampMs();
 		
 		Publisher pub;
 		switch (type) {

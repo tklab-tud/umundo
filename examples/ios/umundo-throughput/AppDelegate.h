@@ -29,6 +29,8 @@
 @property (nonatomic) UInt64 lastSeqNr;
 @property (nonatomic) UInt64 lastTimeStamp;
 @property (nonatomic) UInt64 currTimeStamp;
+@property (nonatomic) UInt64 startedTimeStamp;
+@property (nonatomic) UInt64 firstTimeStamp;
 @property (nonatomic) UInt32 reportInterval;
 
 - (void)accumulateStats;

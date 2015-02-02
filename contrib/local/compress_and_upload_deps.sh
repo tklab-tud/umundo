@@ -37,7 +37,7 @@ for FILE in ${PLATFORMS}; do
 	echo $FILE
 	case "$PLATFORM" in
 	*linux-*-clang* | *darwin-*-gnu* )
-	# do nothing - we will symlink
+	# do nothing, ABI compatible - we will symlink below
 	;;
 	"include")
 		tar cvzf include.tgz --exclude='*/.DS_Store' --exclude='VERSION.txt' ${FILE}
@@ -46,8 +46,7 @@ for FILE in ${PLATFORMS}; do
 		;;
 	*darwin*)
 		cd $FILE
-		# do not upload v8 for mac and strip first dir
-		tar cvzf ../umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='VERSION.txt' *
+		tar cvzf ../umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='*/*_d.a' --exclude='VERSION.txt' *
 		cd ..
 		scp umundo-prebuilt-${PLATFORM}.tgz ${UMUNDO_PREBUILT_HOST}:${UMUNDO_PREBUILT_PATH}/${VERSION}
 		rm umundo-prebuilt-${PLATFORM}.tgz
@@ -55,7 +54,7 @@ for FILE in ${PLATFORMS}; do
 	*linux*)
 		cd $FILE
 		# no debug libs with linux and strip first dir
-		tar cvzf ../umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='VERSION.txt' *
+		tar cvzf ../umundo-prebuilt-${PLATFORM}.tgz --exclude='*/.DS_Store' --exclude='*/*_d.a' --exclude='VERSION.txt' *
 		cd ..
 		scp umundo-prebuilt-${PLATFORM}.tgz ${UMUNDO_PREBUILT_HOST}:${UMUNDO_PREBUILT_PATH}/${VERSION}
 		rm umundo-prebuilt-${PLATFORM}.tgz

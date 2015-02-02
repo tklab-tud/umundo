@@ -146,6 +146,26 @@ const char* Message::read(double* value, const char* from) {
 	return from + sizeof(double);
 }
 
+char* Message::write(const std::string& str, char* to, bool terminate) {
+	size_t writeSize = strnlen(str.c_str(), str.size()); // zero byte might occur before end
+	memcpy(to, str.data(), writeSize);
+	to += writeSize;
+	if (terminate) {
+		to[0] = '\0';
+		to += 1;
+	}
+	return to;
+}
+
+const char* Message::read(std::string& str, const char* from, size_t maxLength) {
+	size_t readSize = strnlen(from, maxLength);
+	str = std::string(from, readSize);
+	if (readSize == maxLength)
+		return from + readSize;
+	return from + readSize + 1; // we consumed \0
+}
+
+	
 void Message::compress() {
 	if (isCompressed())
 		return;
@@ -210,11 +230,6 @@ void Message::uncompress() {
 	pUncmp = (mz_uint8 *)malloc((size_t)actualSize);
 	cmp_status = mz_uncompress(pUncmp, &actualSize, (const unsigned char *)_data.get(), _size);
 
-	if (cmp_status != Z_OK) {
-		// error
-		free(pUncmp);
-	}
-
 	_size = actualSize;
 	_data = SharedPtr<char>((char*)pUncmp);
 	_meta.erase("um.compressed");
@@ -227,10 +242,7 @@ void Message::uncompress() {
 	// returns the size of the decompressed block.
 	actualSize = fastlz_decompress(_data.get(), _size, uncompressed, actualSize);
 	
-	//If error occurs, e.g. the compressed data is corrupted or the output buffer is not large enough, then 0
-	if (actualSize == 0) {
-		free(uncompressed);
-	}
+	// If error occurs, e.g. the compressed data is corrupted or the output buffer is not large enough, then 0
 	
 	_size = actualSize;
 	_data = SharedPtr<char>((char*)uncompressed);

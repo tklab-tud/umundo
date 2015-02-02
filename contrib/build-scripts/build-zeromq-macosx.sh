@@ -11,101 +11,97 @@ ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )" 
 MACOSX_VER=`/usr/bin/sw_vers -productVersion`
 MACOSX_COMP=(`echo $MACOSX_VER | tr '.' ' '`)
-DEST_DIR="${DIR}/../prebuilt/darwin-i386/${MACOSX_COMP[0]}.${MACOSX_COMP[1]}/gnu"
 BUILD_DIR="/tmp/zeromq"
-
 
 if [ ! -f src/zmq.cpp ]; then
 	echo
 	echo "Cannot find src/zmq.cpp"
 	echo "Run script from within zeroMQ directory:"
-	echo "zeromq-3.1.0$ ../../${ME}"
+	echo "zeromq-4.1.0$ ../../${ME}"
 	echo
 	exit
 fi
-mkdir -p ${DEST_DIR}/include &> /dev/null
-mkdir -p ${DEST_DIR}/lib &> /dev/null
-mkdir -p ${BUILD_DIR} &> /dev/null
-mkdir -p ${BUILD_DIR}/x86_64 &> /dev/null
-mkdir -p ${BUILD_DIR}/x86_64_d &> /dev/null
-mkdir -p ${BUILD_DIR}/i386 &> /dev/null
-mkdir -p ${BUILD_DIR}/i386_d &> /dev/null
-mkdir -p ${DEST_DIR}/include &> /dev/null
+
+if [ ${MACOSX_COMP[1]} -lt 9 ]; then
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.6"
+else
+  MACOSX_VERSION_MIN="-mmacosx-version-min=10.7"
+fi
 
 if [ -f Makefile ]; then
 	make clean
 fi
 
-# CFLAGS="-Os -mmacosx-version-min=10.6 -arch x86_64" \
-# CXXFLAGS="-Os -mmacosx-version-min=10.6 -arch x86_64" \
 
-if [ ${MACOSX_COMP[1]} -lt 9 ]; then
-  MACOSX_VERSION_MIN="-mmacosx-version-min=10.6 -stdlib=libstdc++"
-else
-  MACOSX_VERSION_MIN="-mmacosx-version-min=10.7 -stdlib=libc++"
-fi
+declare -a cpus=("i386" "x86_64")
+declare -a libcpps=("libstdc++" "libc++")
+declare -a debugs=("_d" "")
 
-# 64Bit release
-./configure \
-CFLAGS="-Os ${MACOSX_VERSION_MIN} -arch x86_64" \
-CXXFLAGS="-Os ${MACOSX_VERSION_MIN} -arch x86_64" \
-LDFLAGS="${MACOSX_VERSION_MIN} -arch x86_64" \
---enable-static \
---prefix=${BUILD_DIR}/x86_64
+# now loop through the above array
+for cpu in "${cpus[@]}"; do
+	for libcpp in "${libcpps[@]}"; do
+		for debug in "${debugs[@]}"; do
+			PLATFORM=darwin-${cpu}-clang-${libcpp}
 
-sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
+			mkdir -p ${BUILD_DIR}/${PLATFORM}${debug} &> /dev/null
 
-make -j2 install
-make clean
+			case "$debug" in
+				_d )
+					./configure \
+					CFLAGS="-g ${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					CXXFLAGS="-g ${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					LDFLAGS="${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					--enable-static \
+					--without-documentation \
+					--prefix=${BUILD_DIR}/${PLATFORM}_d
+				;;
+				* )
+					./configure \
+					CFLAGS="-Os ${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					CXXFLAGS="-Os ${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					LDFLAGS="${MACOSX_VERSION_MIN} -arch ${cpu} -stdlib=${libcpp}" \
+					--enable-static \
+					--without-documentation \
+					--prefix=${BUILD_DIR}/${PLATFORM}
+				;;
+			esac
+			
+			# link-time failures otherwise
+			sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
 
-cp ${BUILD_DIR}/x86_64/include/* ${DEST_DIR}/include
+			make -j2 install
+			make clean
 
-# 64Bit debug
-./configure \
-CFLAGS="-g ${MACOSX_VERSION_MIN} -arch x86_64" \
-CXXFLAGS="-g ${MACOSX_VERSION_MIN} -arch x86_64" \
-LDFLAGS="${MACOSX_VERSION_MIN} -arch x86_64" \
---enable-static \
---prefix=${BUILD_DIR}/x86_64_d
+		done
+	done
+done
 
-sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
+# copy headers
+for libcpp in "${libcpps[@]}"; do
+	for cpu in "${cpus[@]}"; do
+		TARGET_CPU=${cpu//i386/x86}
+		echo $TARGET_CPU
 
-make -j2 install
-make clean
+		cp -R ${BUILD_DIR}/darwin-${cpu}-clang-${libcpp}/include/* \
+			${DIR}/../prebuilt/darwin-${TARGET_CPU}-clang-${libcpp}/include
+		cp -R ${BUILD_DIR}/darwin-${cpu}-clang-${libcpp}/include/* \
+			${DIR}/../prebuilt/darwin-${TARGET_CPU}-gnu-${libcpp}/include
+	done
+done
 
-# 32Bit release
-./configure \
-CFLAGS="-Os ${MACOSX_VERSION_MIN} -arch i386" \
-CXXFLAGS="-Os ${MACOSX_VERSION_MIN} -arch i386" \
-LDFLAGS="${MACOSX_VERSION_MIN} -arch i386" \
---enable-static \
---prefix=${BUILD_DIR}/i386
-
-sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
-
-make -j2 install
-make clean
-
-# 32Bit debug
-./configure \
-CFLAGS="-g ${MACOSX_VERSION_MIN} -arch i386" \
-CXXFLAGS="-g ${MACOSX_VERSION_MIN} -arch i386" \
-LDFLAGS="${MACOSX_VERSION_MIN} -arch i386" \
---enable-static \
---prefix=${BUILD_DIR}/i386_d
-
-sed -i.orig -e 's/define HAVE_LIBGSSAPI_KRB5 1/undef HAVE_LIBGSSAPI_KRB5/' src/platform.hpp
-
-make -j2 install
-make clean
-
-#
-# create universal library
-#
-lipo -create ${BUILD_DIR}/x86_64/lib/libzmq.a ${BUILD_DIR}/i386/lib/libzmq.a -output ${DEST_DIR}/lib/libzmq.a
-echo "Built universal library in: ${DEST_DIR}/lib/libzmq.a"
-lipo -info ${DEST_DIR}/lib/libzmq.a
-
-lipo -create ${BUILD_DIR}/x86_64_d/lib/libzmq.a ${BUILD_DIR}/i386_d/lib/libzmq.a -output ${DEST_DIR}/lib/libzmq_d.a
-echo "Built universal library in: ${DEST_DIR}/lib/libzmq_d.a"
-lipo -info ${DEST_DIR}/lib/libzmq_d.a
+# create universal binaries
+for libcpp in "${libcpps[@]}"; do
+	for debug in "${debugs[@]}"; do
+		LIPO_INPUT=""
+		for cpu in "${cpus[@]}"; do
+			PLATFORM=darwin-${cpu}-clang-${libcpp}
+			LIPO_INPUT="${LIPO_INPUT} ${BUILD_DIR}/${PLATFORM}${debug}/lib/libzmq.a"
+		done
+		LIPO_OUTPUT=${DIR}/../prebuilt/darwin-x86_64-clang-${libcpp}/lib/libzmq${debug}.a
+		lipo -create ${LIPO_INPUT} -output ${LIPO_OUTPUT}
+		lipo -info ${LIPO_OUTPUT}
+		cp ${LIPO_OUTPUT} ${DIR}/../prebuilt/darwin-x86-clang-${libcpp}/lib/libzmq${debug}.a
+		cp ${LIPO_OUTPUT} ${DIR}/../prebuilt/darwin-x86_64-gnu-${libcpp}/lib/libzmq${debug}.a
+		cp ${LIPO_OUTPUT} ${DIR}/../prebuilt/darwin-x86-gnu-${libcpp}/lib/libzmq${debug}.a
+	done
+done

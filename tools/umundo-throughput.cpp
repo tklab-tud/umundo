@@ -535,7 +535,24 @@ int main(int argc, char** argv) {
 
 		// do nothing here, we reply only when we received a message
 		while(true) {
+#if 1
 			Thread::sleepMs(1000);
+#else
+			Thread::sleepMs(5000);
+			node.removeSubscriber(tcpSub);
+			node.removeSubscriber(mcastSub);
+			node.removeSubscriber(rtpSub);
+			node.removePublisher(reporter);
+			disc.remove(node);
+
+			Thread::sleepMs(5000);
+			disc.add(node);
+			node.addSubscriber(tcpSub);
+			node.addSubscriber(mcastSub);
+			node.addSubscriber(rtpSub);
+			node.addPublisher(reporter);
+
+#endif
 		}
 	}
 }

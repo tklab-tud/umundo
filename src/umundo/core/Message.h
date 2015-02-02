@@ -74,6 +74,7 @@ public:
 		return "UNKNOWN";
 	}
 
+	static char* write(const std::string&, char* to, bool terminate = true);
 	static char* write(uint64_t value, char* to);
 	static char* write(uint32_t value, char* to);
 	static char* write(uint16_t value, char* to);
@@ -85,6 +86,7 @@ public:
 	static char* write(float value, char* to);
 	static char* write(double value, char* to);
 	
+	static const char* read(std::string&, const char* from, size_t maxLength);
 	static const char* read(uint64_t* value, const char* from);
 	static const char* read(uint32_t* value, const char* from);
 	static const char* read(uint16_t* value, const char* from);

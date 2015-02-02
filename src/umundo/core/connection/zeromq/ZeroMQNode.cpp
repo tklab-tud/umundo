@@ -511,7 +511,7 @@ void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
 }
 
 /**
- * Process messages sent to our node socket.
+ * Process messages sent to our external _nodeSocket.
  */
 void ZeroMQNode::processNodeComm() {
 	UM_TRACE("processNodeComm");
@@ -536,153 +536,150 @@ void ZeroMQNode::processNodeComm() {
 	std::string from(recvBuffer, msgSize);
 	zmq_msg_close(&header) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 
-	if (from.length() == 36) {
+	if (from.length() != 36) {
+		UM_LOG_WARN("%s: Got unprefixed message on _nodeSocket - discarding", SHORT_UUID(_uuid).c_str());
+		return;
+	}
+	
+	RECV_MSG(_nodeSocket, content);
+
+	// remember node and update last seen
+	//touchNeighbor(from);
+
+	// dealer socket sends no delimiter, but req does
+	if (REMAINING_BYTES_TOREAD == 0) {
+		zmq_getsockopt(_nodeSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
+		if (!more) {
+			zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+			return;
+		}
 		RECV_MSG(_nodeSocket, content);
+	}
 
-		// remember node and update last seen
-		//touchNeighbor(from);
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgRcvd++;
+		_buckets.back().sizeMetaMsgRcvd += msgSize;
+	}
 
-		// dealer socket sends no delimiter, but req does
-		if (REMAINING_BYTES_TOREAD == 0) {
-			zmq_getsockopt(_nodeSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
-			if (!more) {
-				zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-				return;
-			}
-			RECV_MSG(_nodeSocket, content);
-		}
-
-		if (_buckets.size() > 0) {
-			_buckets.back().nrMetaMsgRcvd++;
-			_buckets.back().sizeMetaMsgRcvd += msgSize;
-		}
-
-		// assume the mesage has at least version and type
-		if (REMAINING_BYTES_TOREAD < 4) {
-			zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-			return;
-		}
-
-		Message::Type type;
-		uint16_t version;
-		readPtr = readVersionAndType(recvBuffer, version, type);
-
-		if (version != Message::UM_VERSION) {
-			UM_LOG_INFO("%s: node socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
-			zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-			return;
-		}
-
-		UM_LOG_INFO("%s: node socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
-		switch (type) {
-		case Message::UM_DEBUG: {
-			// someone wants debug info from us
-			replyWithDebugInfo(from);
-			break;
-		}
-		case Message::UM_CONNECT_REQ: {
-
-			// someone is about to connect to us
-			if (from != _uuid || _allowLocalConns)
-				processConnectedFrom(from);
-
-			// reply with our uuid and publishers
-			UM_LOG_INFO("%s: Replying with CONNECT_REP and %d pubs on _nodeSocket to %s", SHORT_UUID(_uuid).c_str(), _pubs.size(), SHORT_UUID(from).c_str());
-			zmq_send(_nodeSocket, from.c_str(), from.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // return to sender
-			if (_buckets.size() > 0) {
-				_buckets.back().nrMetaMsgSent++;
-				_buckets.back().sizeMetaMsgSent += from.length();
-			}
-
-			zmq_msg_t replyNodeInfoMsg;
-			writeNodeInfo(&replyNodeInfoMsg, Message::UM_CONNECT_REP);
-
-			zmq_sendmsg(_nodeSocket, &replyNodeInfoMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
-			if (_buckets.size() > 0) {
-				_buckets.back().nrMetaMsgSent++;
-				_buckets.back().sizeMetaMsgSent += zmq_msg_size(&replyNodeInfoMsg);
-			}
-			zmq_msg_close(&replyNodeInfoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-			break;
-		}
-		case Message::UM_SUBSCRIBE:
-		case Message::UM_UNSUBSCRIBE: {
-			// a remote node subscribed or unsubscribed to one of our publishers
-
-			PublisherStubImpl* pubImpl = new PublisherStubImpl();
-			SubscriberStubImpl* subImpl = new SubscriberStubImpl();
-
-			readPtr = readSubInfo(readPtr, REMAINING_BYTES_TOREAD, subImpl);
-			readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubImpl);
-
-			std::string pubUUID = pubImpl->getUUID();
-			std::string subUUID = subImpl->getUUID();
-			std::string address;
-
-			delete pubImpl;
-
-			assert(REMAINING_BYTES_TOREAD == 0);
-
-			{
-				int srcFd = zmq_msg_get(&content, ZMQ_SRCFD);
-
-				if (srcFd > 0) {
-					int rc;
-					(void)rc; // surpress unused warning without assert
-					struct sockaddr_storage ss;
-					socklen_t addrlen = sizeof ss;
-					rc = getpeername (srcFd, (struct sockaddr*) &ss, &addrlen);
-
-					char host [NI_MAXHOST];
-					rc = getnameinfo ((struct sockaddr*) &ss, addrlen, host, sizeof host, NULL, 0, NI_NUMERICHOST);
-					address = host;
-				}
-			}
-
-			if (_pubs.find(pubUUID) == _pubs.end())
-				break;
-
-			if (type == Message::UM_SUBSCRIBE) {
-				// confirm subscription
-				if (!_subscriptions[subUUID].subStub) {
-					_subscriptions[subUUID].subStub = SubscriberStub(SharedPtr<SubscriberStubImpl>(subImpl));
-				} else {
-					delete subImpl;
-				}
-				_subscriptions[subUUID].nodeUUID = from;
-				_subscriptions[subUUID].address = address;
-				_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
-
-				if (_subscriptions[subUUID].isZMQConfirmed || _subscriptions[subUUID].subStub.getImpl()->implType != Subscriber::ZEROMQ)
-					confirmSub(subUUID);
-			} else {
-				delete subImpl;
-				// remove a subscription
-				Subscription& confSub = _subscriptions[subUUID];
-				if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID]->node)
-					_connFrom[confSub.nodeUUID]->node.removeSubscriber(confSub.subStub);
-
-				// move all pending subscriptions to confirmed
-				std::map<std::string, Publisher>::iterator confPubIter = confSub.confirmed.begin();
-				while(confPubIter != confSub.confirmed.end()) {
-					confPubIter->second.removed(confSub.subStub, _connFrom[confSub.nodeUUID]->node);
-					confPubIter++;
-				}
-				confSub.confirmed.clear();
-
-			}
-			break;
-		}
-
-		default:
-			break;
-		}
+	// assume the mesage has at least version and type
+	if (REMAINING_BYTES_TOREAD < 4) {
 		zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 		return;
-
-	} else {
-		UM_LOG_WARN("%s: Got unprefixed message on _nodeSocket - discarding", SHORT_UUID(_uuid).c_str());
 	}
+
+	Message::Type type;
+	uint16_t version;
+	readPtr = readVersionAndType(recvBuffer, version, type);
+
+	if (version != Message::UM_VERSION) {
+		UM_LOG_INFO("%s: node socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
+		zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+		return;
+	}
+
+	UM_LOG_INFO("%s: node socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
+	switch (type) {
+	case Message::UM_DEBUG: {
+		// someone wants debug info from us
+		replyWithDebugInfo(from);
+		break;
+	}
+	case Message::UM_CONNECT_REQ: {
+
+		// someone is about to connect to us
+		if (from != _uuid || _allowLocalConns)
+			processConnectedFrom(from);
+
+		// reply with our uuid and publishers
+		UM_LOG_INFO("%s: Replying with CONNECT_REP and %d pubs on _nodeSocket to %s", SHORT_UUID(_uuid).c_str(), _pubs.size(), SHORT_UUID(from).c_str());
+		zmq_send(_nodeSocket, from.c_str(), from.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno)); // return to sender
+		if (_buckets.size() > 0) {
+			_buckets.back().nrMetaMsgSent++;
+			_buckets.back().sizeMetaMsgSent += from.length();
+		}
+
+		zmq_msg_t replyNodeInfoMsg;
+		writeNodeInfo(&replyNodeInfoMsg, Message::UM_CONNECT_REP);
+
+		zmq_sendmsg(_nodeSocket, &replyNodeInfoMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
+		if (_buckets.size() > 0) {
+			_buckets.back().nrMetaMsgSent++;
+			_buckets.back().sizeMetaMsgSent += zmq_msg_size(&replyNodeInfoMsg);
+		}
+		zmq_msg_close(&replyNodeInfoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+		break;
+	}
+	case Message::UM_SUBSCRIBE:
+	case Message::UM_UNSUBSCRIBE: {
+		// a remote node subscribed or unsubscribed to one of our publishers
+
+		SharedPtr<PublisherStubImpl> pubImpl = SharedPtr<PublisherStubImpl>(new PublisherStubImpl());
+		SharedPtr<SubscriberStubImpl> subImpl = SharedPtr<SubscriberStubImpl>(new SubscriberStubImpl());
+
+		readPtr = readSubInfo(readPtr, REMAINING_BYTES_TOREAD, subImpl.get());
+		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubImpl.get());
+
+		std::string pubUUID = pubImpl->getUUID();
+		std::string subUUID = subImpl->getUUID();
+		std::string address;
+
+		assert(REMAINING_BYTES_TOREAD == 0);
+
+		{
+			int srcFd = zmq_msg_get(&content, ZMQ_SRCFD);
+
+			if (srcFd > 0) {
+				int rc;
+				(void)rc; // surpress unused warning without assert
+				struct sockaddr_storage ss;
+				socklen_t addrlen = sizeof ss;
+				rc = getpeername (srcFd, (struct sockaddr*) &ss, &addrlen);
+
+				char host [NI_MAXHOST];
+				rc = getnameinfo ((struct sockaddr*) &ss, addrlen, host, sizeof host, NULL, 0, NI_NUMERICHOST);
+				address = host;
+			}
+		}
+
+		if (_pubs.find(pubUUID) == _pubs.end())
+			break;
+
+		if (type == Message::UM_SUBSCRIBE) {
+			// confirm subscription
+			if (!_subscriptions[subUUID].subStub) {
+				_subscriptions[subUUID].subStub = SubscriberStub(subImpl);
+			}
+			_subscriptions[subUUID].nodeUUID = from;
+			_subscriptions[subUUID].address = address;
+			_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
+
+			if (_subscriptions[subUUID].isZMQConfirmed || _subscriptions[subUUID].subStub.getImpl()->implType != Subscriber::ZEROMQ) {
+				confirmSub(subUUID);
+			}
+		} else {
+			// remove a subscription
+			Subscription& confSub = _subscriptions[subUUID];
+			if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID]->node)
+				_connFrom[confSub.nodeUUID]->node.removeSubscriber(confSub.subStub);
+
+			// move all pending subscriptions to confirmed
+			std::map<std::string, Publisher>::iterator confPubIter = confSub.confirmed.begin();
+			while(confPubIter != confSub.confirmed.end()) {
+				confPubIter->second.removed(confSub.subStub, _connFrom[confSub.nodeUUID]->node);
+				confPubIter++;
+			}
+			confSub.confirmed.clear();
+
+		}
+		break;
+	}
+
+	default:
+		break;
+	}
+	zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+	return;
+
 }
 
 void ZeroMQNode::processPubComm() {
@@ -976,7 +973,15 @@ void ZeroMQNode::updateSockets() {
 
 	size_t maxSockets = _connTo.size() + _nrStdSockets;
 	_sockets = (zmq_pollitem_t*)malloc(sizeof(zmq_pollitem_t) * maxSockets);
-	// prepopulate with standard sockets
+
+	/** 
+	 * prepopulate with standard sockets:
+	 *  _stdSockets[0].socket = _nodeSocket;
+	 *  _stdSockets[1].socket = _pubSocket;
+	 *  _stdSockets[2].socket = _readOpSocket;
+	 *  _stdSockets[3].socket = _subSocket;
+	 *
+	 */
 	memcpy(_sockets, _stdSockets, _nrStdSockets * sizeof(zmq_pollitem_t));
 
 	size_t index = _nrStdSockets;
@@ -1013,7 +1018,6 @@ void ZeroMQNode::run() {
 			_sockets[i].revents = 0;
 		}
 
-		//UM_LOG_DEBUG("%s: polling on %ld sockets", _uuid.c_str(), nrSockets);
 		zmq_poll(_sockets, _nrSockets, -1);
 		// We do have a message to read!
 

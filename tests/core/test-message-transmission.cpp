@@ -212,6 +212,60 @@ bool testByteWriting() {
 		assert(int8 = (int8_t)value);
 	}
 	
+	{
+		char* writePtr = NULL;
+		const char* readPtr = NULL;
+
+		std::string readFrom;
+		std::string writeTo;
+		
+		// standard case
+		writePtr = data;
+		readPtr = data;
+		readFrom = "This is foo";
+		writePtr = Message::write(readFrom, writePtr);
+		assert(writePtr == data + readFrom.size() + 1);
+
+		readPtr = Message::read(writeTo, readPtr, 100);
+		assert(readPtr == data + readFrom.size() + 1);
+		assert(readFrom == writeTo);
+
+		// no termination
+		writePtr = data;
+		readPtr = data;
+		readFrom = "This is foo";
+		writePtr = Message::write(readFrom, writePtr, false);
+		assert(writePtr == data + readFrom.size());
+		writePtr = Message::write(readFrom, writePtr, false);
+		assert(writePtr == data + 2 * readFrom.size());
+
+		readPtr = Message::read(writeTo, readPtr, 100);
+		assert(readPtr == data + 2 * readFrom.size() + 1);
+		assert(writeTo == "This is fooThis is foo");
+
+		// read only fragment back
+		writePtr = data;
+		readPtr = data;
+		readFrom = "This is foo";
+
+		writePtr = Message::write(readFrom, writePtr, true);
+		assert(writePtr == data + readFrom.size() + 1);
+
+		readPtr = Message::read(writeTo, readPtr, 6);
+		assert(readPtr == data + 6); // we did not consume any terminator
+		assert(writeTo == "This i");
+
+		readPtr = Message::read(writeTo, readPtr, 5);
+		assert(readPtr == data + 11); // we did not consume any terminator
+		assert(writeTo == "s foo");
+
+		// there is a single \0 byte remaining
+		readPtr = Message::read(writeTo, readPtr, 500);
+		assert(readPtr == data + 12); // we *did* not consume the terminator
+		assert(writeTo == "");
+
+	}
+	
 	return true;
 }
 
@@ -271,9 +325,9 @@ bool testCompression() {
 }
 
 int main(int argc, char** argv, char** envp) {
-	if (!testCompression())
-		return EXIT_FAILURE;
 	if (!testByteWriting())
+		return EXIT_FAILURE;
+	if (!testCompression())
 		return EXIT_FAILURE;
 	if (!testMessageTransmission())
 		return EXIT_FAILURE;

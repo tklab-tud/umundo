@@ -210,6 +210,16 @@ void ZeroMQSubscriber::run() {
 		if (!isStarted())
 			return;
 
+		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
+			Message* msg = getNextMsg();
+			if (msg) {
+				if (msg->isCompressed())
+					msg->uncompress();
+				_receiver->receive(msg);
+				delete msg;
+			}
+		}
+		
 		if (items[0].revents & ZMQ_POLLIN) {
 			/**
 			 * Node internal request from member methods for socket operations
@@ -218,49 +228,44 @@ void ZeroMQSubscriber::run() {
 			while (1) {
 				int more;
 				size_t more_size = sizeof (more);
-
+				
 				zmq_msg_t message;
 				zmq_msg_t endpointMsg;
-
+				
 				zmq_msg_init (&message);
 				zmq_msg_recv (&message, _readOpSocket, 0);
 				char* op = (char*)zmq_msg_data(&message);
-
+				
 				zmq_msg_init (&endpointMsg);
 				zmq_msg_recv (&endpointMsg, _readOpSocket, 0);
 				char* endpoint = (char*)zmq_msg_data(&endpointMsg);
-
+				
 				if (false) {
 				} else if (strcmp(op, "connectPub") == 0) {
 					zmq_connect(_subSocket, endpoint) && UM_LOG_ERR("zmq_connect %s: %s", endpoint, zmq_strerror(errno));
 				} else if (strcmp(op, "disconnectPub") == 0) {
 					zmq_disconnect(_subSocket, endpoint) && UM_LOG_ERR("zmq_disconnect %s: %s", endpoint, zmq_strerror(errno));
 				}
-
+				
 				zmq_getsockopt (_readOpSocket, ZMQ_RCVMORE, &more, &more_size);
 				zmq_msg_close (&message);
 				zmq_msg_close (&endpointMsg);
-
+				
 				assert(!more); // we read all messages
 				if (!more)
 					break;      //  Last message part
 			}
 		}
 
-		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
-			Message* msg = getNextMsg();
-			if (msg->isCompressed())
-				msg->uncompress();
-			_receiver->receive(msg);
-			delete msg;
-		}
 	}
 }
 
 Message* ZeroMQSubscriber::getNextMsg() {
 	int32_t more;
 	size_t more_size = sizeof(more);
-
+	bool enveloped = false;
+	bool readChannelName = false;
+	
 	Message* msg = new Message();
 	while (1) {
 		// read the whole message
@@ -268,7 +273,6 @@ Message* ZeroMQSubscriber::getNextMsg() {
 		zmq_msg_init(&message) && UM_LOG_WARN("zmq_msg_init: %s",zmq_strerror(errno));
 
 		int rc;
-//		rc = zmq_msg_recv(&message, _subSocket, ZMQ_DONTWAIT);
 		rc = zmq_recvmsg(_subSocket, &message, 0);
 		if (rc < 0) {
 			UM_LOG_WARN("zmq_recvmsg: %s",zmq_strerror(errno));
@@ -278,33 +282,87 @@ Message* ZeroMQSubscriber::getNextMsg() {
 		}
 
 		size_t msgSize = zmq_msg_size(&message);
+		char* msgData = (char*)zmq_msg_data(&message);
 		zmq_getsockopt(_subSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
 
-		if (more) {
-			char* key = (char*)zmq_msg_data(&message);
-			char* value = ((char*)zmq_msg_data(&message) + strlen(key) + 1);
-
-			// is this the first message with the channelname?
-			if (strlen(key) + 1 == msgSize &&
-			        msg->getMeta().find(key) == msg->getMeta().end()) {
-				msg->putMeta("um.channel", key);
+		// is this the first message with the channelname?
+		if (!readChannelName) {
+			if (memchr(msgData, 0, msgSize) == msgData + (msgSize - 1)) {
+				msg->putMeta("um.channel", std::string(msgData, msgSize - 1));
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				readChannelName = true;
+				continue;
 			} else {
-				if (strlen(key) + strlen(value) + 2 != msgSize) {
-					UM_LOG_ERR("Received malformed meta field %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
-					zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-					break;
+				UM_LOG_ERR("Subscriber on channel %s received gibberish", _channelName.c_str());
+				delete msg;
+				return NULL;
+			}
+		}
+		
+		// only check for first packet in envelope
+		if (!enveloped)
+			enveloped = (more > 0);
+		
+		if (enveloped) {
+			
+			// original enveloped format
+			if (more) {
+				char* key = (char*)zmq_msg_data(&message);
+				char* value = ((char*)zmq_msg_data(&message) + strlen(key) + 1);
+
+				// is this the first message with the channelname?
+				if (strlen(key) + 1 == msgSize &&
+								msg->getMeta().find(key) == msg->getMeta().end()) {
+					msg->putMeta("um.channel", key);
 				} else {
+					if (strlen(key) + strlen(value) + 2 != msgSize) {
+						UM_LOG_ERR("Received malformed meta field %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
+						zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+						break;
+					} else {
+						msg->putMeta(key, value);
+					}
+				}
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+			} else {
+				// last message contains actual data
+				msg->setData((char*)zmq_msg_data(&message), msgSize);
+				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+				break; // last message part
+			}
+		} else {
+			
+			// alternate, non-enveloped format
+			const char* readPtr = msgData;
+			size_t remainingSize = msgSize;
+			
+			while(true) {
+				if (remainingSize == 0) {
+					// no data
+					zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+					goto RETURN_MSG;
+				} else if (readPtr[0] == '\0') {
+					// data
+					readPtr++;
+					if (remainingSize > 1)
+						msg->setData(readPtr, remainingSize - 1);
+					remainingSize = 0;
+				} else {
+					// kvps
+					std::string key;
+					std::string value;
+					readPtr = Message::read(key, readPtr, remainingSize);
+					remainingSize = msgSize - (readPtr - msgData);
+					
+					readPtr = Message::read(value, readPtr, remainingSize);
+					remainingSize = msgSize - (readPtr - msgData);
+
 					msg->putMeta(key, value);
 				}
 			}
-			zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-		} else {
-			// last message contains actual data
-			msg->setData((char*)zmq_msg_data(&message), msgSize);
-			zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-			break; // last message part
 		}
 	}
+RETURN_MSG:
 	return msg;
 }
 

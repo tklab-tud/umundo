@@ -108,8 +108,43 @@
 	[super dealloc];
 }
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+/**
+ * ENTERING
+ * Lifecycle "fresh start"
+ * 1. willFinishLaunchingWithOptions
+ * 2. didFinishLaunchingWithOptions
+ * 3. applicationDidBecomeActive
+ *
+ * Lifecycle "Reselect Task" / "Restart Running (from HomeScreen)"
+ * 1. applicationWillEnterForeground
+ * 2. applicationDidBecomeActive
+ *
+ * Lifecycle "Enter from TaskMgr <- other task"
+ * 1. applicationWillEnterForeground
+ * 2. applicationDidBecomeActive
+ *
+ * LEAVING
+ * Lifecycle "Home Button"
+ * 1. applicationWillResignActive
+ * 2. applicationDidEnterBackground
+ *
+ * Lifecycle "Leave for TaskMgr -> other task"
+ * 1. applicationWillResignActive
+ * 2. applicationDidEnterBackground
+ *
+ * OTHER
+ * Lifecycle "Leave for TaskMgr -> same task"
+ * 1. applicationWillResignActive
+ * 2. applicationDidBecomeActive
+ *
+ */
+
+- (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+	return YES;
+}
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 	// Override point for customization after application launch.
 	disc = [[UMDiscovery alloc] init];
 	node = [[UMNode alloc] init];
@@ -125,13 +160,6 @@
 	rtpSub = [[UMSubscriber alloc] initRTP:@"throughput.rtp" receiver:self];
 	
 	reporter = [[UMPublisher alloc] initWithChannel:@"reports"];
-	
-	[node addSubscriber:tcpSub];
-	[node addSubscriber:mcastSub];
-	[node addSubscriber:rtpSub];
-	[node addPublisher:reporter];
-
-	[disc add:node];
 	startedTimeStamp = umundo::Thread::getTimeStampMs();
 	
 	bytesRcvd = 0;
@@ -141,13 +169,20 @@
 
   return YES;
 }
-							
+
+- (void)applicationDidBecomeActive:(UIApplication *)application {
+	[disc add:node];
+	startedTimeStamp = umundo::Thread::getTimeStampMs();
+	
+	[node addSubscriber:tcpSub];
+	[node addSubscriber:mcastSub];
+	[node addSubscriber:rtpSub];
+	[node addPublisher:reporter];
+	
+}
+
 - (void)applicationWillResignActive:(UIApplication *)application
 {
-  /*
-   Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-   Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
-   */
 	[node removeSubscriber:tcpSub];
 	[node removeSubscriber:mcastSub];
 	[node removeSubscriber:rtpSub];
@@ -159,55 +194,22 @@
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-  /*
-   Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-   If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-   */
-	
-//	[node removeSubscriber:tcpSub];
-//	[node removeSubscriber:mcastSub];
-//	[node removeSubscriber:rtpSub];
-//	[node removePublisher:reporter];
-//	
-//	[disc remove:node];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-  /*
-   Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-   */
-	[disc add:node];
-	startedTimeStamp = umundo::Thread::getTimeStampMs();
-
-	[node addSubscriber:tcpSub];
-	[node addSubscriber:mcastSub];
-	[node addSubscriber:rtpSub];
-	[node addPublisher:reporter];
-
 }
 
-- (void)applicationDidBecomeActive:(UIApplication *)application
-{
-  /*
-   Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-   */
-}
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-  /*
-   Called when the application is about to terminate.
-   Save data if appropriate.
-   See also applicationDidEnterBackground:.
-   */
-	[node removeSubscriber:tcpSub];
-	[node removeSubscriber:mcastSub];
-	[node removeSubscriber:rtpSub];
-	[node removePublisher:reporter];
-
-	[disc remove:node];
-	firstTimeStamp = 0;
+//	[node removeSubscriber:tcpSub];
+//	[node removeSubscriber:mcastSub];
+//	[node removeSubscriber:rtpSub];
+//	[node removePublisher:reporter];
+//
+//	[disc remove:node];
+//	firstTimeStamp = 0;
 }
 
 @end

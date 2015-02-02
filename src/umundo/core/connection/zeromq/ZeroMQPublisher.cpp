@@ -209,6 +209,8 @@ void ZeroMQPublisher::send(Message* msg) {
 		// everyone on channel
 		ZMQ_PREPARE_STRING(channelEnvlp, _channelName.c_str(), _channelName.size());
 	}
+	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
+	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	std::map<std::string, std::string> metaKeys = msg->getMeta();
 	
@@ -220,9 +222,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	// user supplied mandatory meta fields
 	metaKeys.insert(_mandatoryMeta.begin(), _mandatoryMeta.end());
 
-	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
-	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-
+#if 1
 	// all our meta information
 	for (std::map<std::string, std::string>::iterator metaIter = metaKeys.begin(); metaIter != metaKeys.end(); metaIter++) {
 
@@ -263,9 +263,58 @@ void ZeroMQPublisher::send(Message* msg) {
 	} else {
 		memcpy(zmq_msg_data(&payload), msg->data(), msg->size());
 	}
+	
+#else
+	/**
+	 * avoid message envelopes with pub/sub due to the
+	 * dreaded assertion failure: !more (fq.cpp:107) from 0mq
+	 */
+	
+	// how many bytes will we need for the buffer?
+	std::map<std::string, std::string>::iterator metaIter;
+	size_t bufferSize = msg->size();
+	for (metaIter = metaKeys.begin(); metaIter != metaKeys.end(); metaIter++) {
+		if (metaIter->first.size() == 0) // we do not accept empty keys!
+			continue;
+		bufferSize += metaIter->first.size() + 1;
+		bufferSize += metaIter->second.size() + 1;
+	}
+
+	/**
+	 * Message layout
+	 * key1  \0  value1  \0  key2  \0  value2\0  \0
+	 *                                 delimiter ^^
+	 * keys cannot be empty and there will always be meta data,
+	 * thus two zero bytes signify meta end
+	 */
+	bufferSize += 1; // delimiter
+	
+	zmq_msg_t payload;
+	zmq_msg_init(&payload) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
+	zmq_msg_init_size (&payload, bufferSize) && UM_LOG_WARN("zmq_msg_init_size: %s", zmq_strerror(errno));
+	char* dataStart = (char*)zmq_msg_data(&payload);
+	char* writePtr = dataStart;
+
+	// breaks zero copy :(
+	for (metaIter = metaKeys.begin(); metaIter != metaKeys.end(); metaIter++) {
+		if (metaIter->first.size() == 0) // we do not accept empty keys!
+			continue;
+		writePtr = Message::write(metaIter->first, writePtr);
+		writePtr = Message::write(metaIter->second, writePtr);
+	}
+	// terminate meta keys
+	writePtr[0] = '\0';
+	writePtr++;
+	
+	assert(bufferSize - (writePtr - dataStart) == msg->size());
+	
+	memcpy(writePtr, msg->data(), msg->size());
+
+#endif
 
 	zmq_sendmsg(_pubSocket, &payload, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&payload) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+
 }
 
 

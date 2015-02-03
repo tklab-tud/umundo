@@ -199,11 +199,7 @@ namespace umundo {
 			tv.tv_usec = BONJOUR_REPOLL_USEC;
 			embedded_mDNSmainLoop(tv);
 			UMUNDO_UNLOCK(_mutex);
-#ifdef WIN32
-			Thread::sleepMs(100);
-#else
-			Thread::yield();
-#endif
+			Thread::sleepMs(50);
 		}
 		
 #else

@@ -82,7 +82,7 @@ public:
 			}
 			
 			uint16_t index;
-			Message::read(&index, msg->data());
+			Message::read(msg->data(), &index);
 			
 			if (!_start)				//wait for first complete frame (and ignore data till then)
 				return;
@@ -147,7 +147,7 @@ public:
 			return;
 		
 		uint16_t index;
-		Message::read(&index, msg->data());
+		Message::read(msg->data(), &index);
 
 #if 0
 		//process received data and calculate received depth picture row

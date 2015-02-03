@@ -146,8 +146,8 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 	// Override point for customization after application launch.
-	disc = [[UMDiscovery alloc] init];
 	node = [[UMNode alloc] init];
+	disc = [[UMDiscovery alloc] init];
 
 	tcpSub = [[UMSubscriber alloc] initTCP:@"throughput.tcp"
 																receiver:self];
@@ -167,37 +167,48 @@
 	firstTimeStamp = 0;
 	//  timer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(accumulateStats) userInfo:nil repeats:YES];
 
-  return YES;
-}
-
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-	[disc add:node];
 	startedTimeStamp = umundo::Thread::getTimeStampMs();
 	
 	[node addSubscriber:tcpSub];
 	[node addSubscriber:mcastSub];
 	[node addSubscriber:rtpSub];
 	[node addPublisher:reporter];
-	
+	[disc add:node];
+
+  return YES;
+}
+
+- (void)applicationDidBecomeActive:(UIApplication *)application {
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+	[disc remove:node];
 	[node removeSubscriber:tcpSub];
 	[node removeSubscriber:mcastSub];
 	[node removeSubscriber:rtpSub];
 	[node removePublisher:reporter];
 	
-	[disc remove:node];
 	firstTimeStamp = 0;
-}
 
-- (void)applicationDidEnterBackground:(UIApplication *)application
-{
+	[disc dealloc]; // <- this is important to reclaim our sockets later!
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
+	disc = [[UMDiscovery alloc] init]; // <- we have to reinstantiate on every wakeup
+	startedTimeStamp = umundo::Thread::getTimeStampMs();
+	
+	[node addSubscriber:tcpSub];
+	[node addSubscriber:mcastSub];
+	[node addSubscriber:rtpSub];
+	[node addPublisher:reporter];
+	[disc add:node];
+
 }
 
 

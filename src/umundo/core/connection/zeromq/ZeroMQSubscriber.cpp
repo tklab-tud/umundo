@@ -351,10 +351,10 @@ Message* ZeroMQSubscriber::getNextMsg() {
 					// kvps
 					std::string key;
 					std::string value;
-					readPtr = Message::read(key, readPtr, remainingSize);
+					readPtr = Message::read(readPtr, key, remainingSize);
 					remainingSize = msgSize - (readPtr - msgData);
 					
-					readPtr = Message::read(value, readPtr, remainingSize);
+					readPtr = Message::read(readPtr, value, remainingSize);
 					remainingSize = msgSize - (readPtr - msgData);
 
 					msg->putMeta(key, value);

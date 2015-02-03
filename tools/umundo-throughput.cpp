@@ -85,9 +85,9 @@ class ThroughputReceiver : public Receiver {
 		pktsRecvd++;
 		
 		uint64_t currTimeStamp;
-		Message::read(&currSeqNr, msg->data());
-		Message::read(&currTimeStamp, msg->data() + 8);
-		Message::read(&reportInterval, msg->data() + 16);
+		Message::read(msg->data(), &currSeqNr);
+		Message::read(msg->data() + 8, &currTimeStamp);
+		Message::read(msg->data() + 16, &reportInterval);
 
 		if (msg->getMeta("um.pub") != serverUUID) {
 			firstTimeStamp = 0;
@@ -364,9 +364,9 @@ int main(int argc, char** argv) {
 			uint64_t now = Thread::getTimeStampMs();
 
 			// first 16 bytes are seqNr and timestamp
-			Message::write(++currSeqNr, &data[0]);
-			Message::write(now, &data[8]);
-			Message::write(reportInterval, &data[16]);
+			Message::write(&data[0], ++currSeqNr);
+			Message::write(&data[8], now);
+			Message::write(&data[16], reportInterval);
 
 			if (!useZeroCopy) {
 				msg->setData(data, dataSize);
@@ -535,17 +535,17 @@ int main(int argc, char** argv) {
 
 		// do nothing here, we reply only when we received a message
 		while(true) {
-#if 1
+#if 0
 			Thread::sleepMs(1000);
 #else
-			Thread::sleepMs(5000);
+			getchar();
 			node.removeSubscriber(tcpSub);
 			node.removeSubscriber(mcastSub);
 			node.removeSubscriber(rtpSub);
 			node.removePublisher(reporter);
 			disc.remove(node);
 
-			Thread::sleepMs(5000);
+			getchar();
 			disc.add(node);
 			node.addSubscriber(tcpSub);
 			node.addSubscriber(mcastSub);

@@ -162,7 +162,7 @@ public:
 					}
 					
 					char* buffer = (char*)malloc(MAX_PAYLOAD_PACKET + 2);
-					Message::write((uint16_t)index, buffer);
+					Message::write(buffer, (uint16_t)index);
 					memcpy(&buffer[2], &scaled[index * MAX_PAYLOAD_PACKET], (index * MAX_PAYLOAD_PACKET) + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - (index * MAX_PAYLOAD_PACKET) : MAX_PAYLOAD_PACKET);
 					rtpMsg.setData(buffer, MAX_PAYLOAD_PACKET + 2);
 					free(buffer);

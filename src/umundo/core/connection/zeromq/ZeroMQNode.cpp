@@ -68,7 +68,7 @@ int more; (void)more;\
 size_t more_size = sizeof(more); (void)more_size;\
 int msgSize; (void)msgSize;\
 char* recvBuffer; (void)recvBuffer;\
-char* readPtr; (void)readPtr;\
+const char* readPtr; (void)readPtr;\
 char* writeBuffer; (void)writeBuffer;\
 char* writePtr; (void)writePtr;
 
@@ -80,14 +80,21 @@ msgSize = zmq_msg_size(&msg); \
 recvBuffer = (char*)zmq_msg_data(&msg); \
 readPtr = recvBuffer;
 
-#define REMAINING_BYTES_TOREAD \
-(msgSize - (readPtr - recvBuffer))
+#define REMAINING_BYTES_TOREAD (msgSize - (readPtr - recvBuffer))
 
 #define PUB_INFO_SIZE(pub) \
-pub.getChannelName().length()+1 + pub.getUUID().length()+1 + sizeof(uint16_t) + sizeof(uint16_t)
+pub.getChannelName().length() + 1 + /* channelName and terminator */ \
+pub.getUUID().length() + 1 +        /* UUID and terminator */ \
+sizeof(uint16_t) +                  /* type: ZMQ, RTP */ \
+sizeof(uint16_t)                    /* port of publisher */
 
 #define SUB_INFO_SIZE(sub) \
-sub.getChannelName().length()+1 + sub.getUUID().length()+1 + sizeof(uint16_t) + sizeof(uint16_t) + sub.getIP().length()+1 + sizeof(uint16_t)
+sub.getChannelName().length() + 1 + /* channelName and terminator */ \
+sub.getUUID().length() + 1 +        /* channelNam and terminator */ \
+sizeof(uint16_t) +                  /* type: ZMQ, RTP */ \
+sizeof(uint16_t) +                  /* whether this is multicats */ \
+sub.getIP().length() + 1 +          /* IP address */ \
+sizeof(uint16_t)                    /* port of subscriber */
 
 #define PREPARE_MSG(msg, size) \
 zmq_msg_t msg; \
@@ -141,10 +148,8 @@ ZeroMQNode::~ZeroMQNode() {
 	RScopeLock lock(_mutex);
 
 	PREPARE_MSG(shutdownMsg, 4 + 37);
-	writePtr = writeVersionAndType(writePtr, Message::UM_SHUTDOWN);
-	assert(writePtr - writeBuffer == 4);
-	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
-	assert(writePtr - writeBuffer == zmq_msg_size(&shutdownMsg));
+	writePtr = writeVersionAndType(writePtr, Message::UM_SHUTDOWN); assert(writePtr - writeBuffer == 4);
+	writePtr = Message::write(writePtr, _uuid); assert(writePtr - writeBuffer == zmq_msg_size(&shutdownMsg));
 
 	NODE_BROADCAST_MSG(shutdownMsg);
 	zmq_msg_close(&shutdownMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
@@ -154,7 +159,7 @@ ZeroMQNode::~ZeroMQNode() {
 		NodeStub node = _connTo.begin()->second->node;
 		if(node) {
 			removed(node);
-			processOpComm();
+			processInternalOpComm();
 		} else {
 			_connTo.erase(_connTo.begin());
 		}
@@ -170,7 +175,7 @@ ZeroMQNode::~ZeroMQNode() {
 	// close sockets
 	zmq_close(_nodeSocket)    && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
 	zmq_close(_pubSocket)     && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
-	zmq_close(_subSocket)     && UM_LOG_ERR("zmq_close: %s",zmq_strerror(errno));
+	zmq_close(_subSocket)     && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
 	zmq_close(_readOpSocket)  && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
 	zmq_close(_writeOpSocket) && UM_LOG_ERR("zmq_close: %s", zmq_strerror(errno));
 	UM_LOG_INFO("%s: node gone", SHORT_UUID(_uuid).c_str());
@@ -201,7 +206,7 @@ void ZeroMQNode::init(const Options* options) {
 	(_readOpSocket  = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR)) || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 	(_writeOpSocket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_PAIR)) || UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
 
-	// connect read and write op sockets
+	// connect read and write internal op sockets
 	std::string readOpId("inproc://um.node.readop." + _uuid);
 	zmq_bind(_readOpSocket, readOpId.c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
 	zmq_connect(_writeOpSocket, readOpId.c_str()) && UM_LOG_ERR("zmq_connect %s: %s", readOpId.c_str(), zmq_strerror(errno));
@@ -217,6 +222,7 @@ void ZeroMQNode::init(const Options* options) {
 		UM_LOG_DEBUG("zmq_bind: Listening on %s://%s:%d", "tcp", _ip.c_str(), _port);
 
 	}
+	
 	std::string nodeId("um.node." + _uuid);
 	zmq_bind(_nodeSocket, std::string("inproc://" + nodeId).c_str()) && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
 	//  zmq_bind(_nodeSocket, std::string("ipc://" + nodeId).c_str())    && UM_LOG_WARN("zmq_bind: %s %s", std::string("ipc://" + nodeId).c_str(),  zmq_strerror(errno));
@@ -229,6 +235,7 @@ void ZeroMQNode::init(const Options* options) {
 	} else {
 		_pubPort = bindToFreePort(_pubSocket, "tcp", _ip);
 	}
+	
 	std::string pubId("um.pub." + _uuid);
 	zmq_bind(_pubSocket,  std::string("inproc://" + pubId).c_str())  && UM_LOG_ERR("zmq_bind: %s", zmq_strerror(errno));
 	//  zmq_bind(_pubSocket,  std::string("ipc://" + pubId).c_str())     && UM_LOG_WARN("zmq_bind: %s %s", std::string("ipc://" + pubId).c_str(), zmq_strerror(errno));
@@ -341,9 +348,11 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 
 			// iterate all remote publishers and add this sub
 			while (pubIter != pubs.end()) {
-				if(sub.matches(pubIter->second.getChannelName())) {
+				if (sub.matches(pubIter->second)) {
+					
 					sub.added(pubIter->second, nodeIter->second->node);
-					sendSubAdded(nodeIter->first.c_str(), sub, pubIter->second);
+					sendSubscribeToPublisher(nodeIter->first.c_str(), sub, pubIter->second);
+					
 				}
 				pubIter++;
 			}
@@ -369,9 +378,9 @@ void ZeroMQNode::removeSubscriber(Subscriber& sub) {
 
 			// iterate all remote publishers and remove this sub
 			while (pubIter != pubs.end()) {
-				if(sub.matches(pubIter->second.getChannelName())) {
+				if(sub.matches(pubIter->second)) {
 					sub.removed(pubIter->second, nodeIter->second->node);
-					sendSubRemoved(nodeIter->first.c_str(), sub, pubIter->second);
+					sendUnsubscribeFromPublisher(nodeIter->first.c_str(), sub, pubIter->second);
 				}
 				pubIter++;
 			}
@@ -395,8 +404,8 @@ void ZeroMQNode::addPublisher(Publisher& pub) {
 	UM_LOG_INFO("%s added publisher %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
 
 	writePtr = writeVersionAndType(writePtr, Message::UM_PUB_ADDED);
-	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
-	writePtr = writePubInfo(writePtr, pub);
+	writePtr = Message::write(writePtr, _uuid);
+	writePtr = write(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&pubAddedMsg, _writeOpSocket, 0) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
@@ -420,8 +429,8 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 	UM_LOG_INFO("%s removed publisher %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(pub.getUUID()).c_str(), pub.getChannelName().c_str());
 
 	writePtr = writeVersionAndType(writePtr, Message::UM_PUB_REMOVED);
-	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
-	writePtr = writePubInfo(writePtr, pub);
+	writePtr = Message::write(writePtr, _uuid);
+	writePtr = write(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&pubRemovedMsg, _writeOpSocket, 0) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
@@ -440,7 +449,7 @@ void ZeroMQNode::added(ENDPOINT_RS_TYPE endPoint) {
 	UM_TRACE("added");
 
 	if (_endPoints.find(endPoint) != _endPoints.end()) {
-		UM_LOG_INFO("%s: Ignoring addition of endpoint at %s - already known",
+		UM_LOG_WARN("%s: Ignoring addition of endpoint at %s - already known",
 								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 		return;
 	}
@@ -461,11 +470,8 @@ void ZeroMQNode::added(ENDPOINT_RS_TYPE endPoint) {
 
 	// write connection request to operation socket
 	PREPARE_MSG(addEndPointMsg, 4 + otherAddress.str().length() + 1);
-
-	writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);
-	assert(writePtr - writeBuffer == 4);
-	writePtr = writeString(writePtr, otherAddress.str().c_str(), otherAddress.str().length());
-	assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
+	writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ); assert(writePtr - writeBuffer == 4);
+	writePtr = Message::write(writePtr, otherAddress.str()); assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
 
 	zmq_sendmsg(_writeOpSocket, &addEndPointMsg, 0) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&addEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
@@ -490,10 +496,8 @@ void ZeroMQNode::removed(ENDPOINT_RS_TYPE endPoint) {
 	otherAddress << endPoint.getTransport() << "://" << endPoint.getIP() << ":" << endPoint.getPort();
 
 	PREPARE_MSG(removeEndPointMsg, 4 + otherAddress.str().length() + 1);
-	writePtr = writeVersionAndType(writePtr, Message::UM_DISCONNECT);
-	assert(writePtr - writeBuffer == 4);
-	writePtr = writeString(writePtr, otherAddress.str().c_str(), otherAddress.str().length());
-	assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
+	writePtr = writeVersionAndType(writePtr, Message::UM_DISCONNECT); assert(writePtr - writeBuffer == 4);
+	writePtr = Message::write(writePtr, otherAddress.str()); assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
 
 	zmq_sendmsg(_writeOpSocket, &removeEndPointMsg, 0) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&removeEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
@@ -511,7 +515,13 @@ void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
 }
 
 /**
- * Process messages sent to our external _nodeSocket.
+ * Process messages sent to our external _nodeSocket. Will handle:
+ *
+ * UM_DEBUG
+ * UM_CONNECT_REQ
+ * UM_SUBSCRIBE
+ * UM_UNSUBSCRIBE
+ *
  */
 void ZeroMQNode::processNodeComm() {
 	UM_TRACE("processNodeComm");
@@ -580,6 +590,7 @@ void ZeroMQNode::processNodeComm() {
 	UM_LOG_INFO("%s: node socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
 	switch (type) {
 	case Message::UM_DEBUG: {
+
 		// someone wants debug info from us
 		replyWithDebugInfo(from);
 		break;
@@ -616,8 +627,8 @@ void ZeroMQNode::processNodeComm() {
 		SharedPtr<PublisherStubImpl> pubImpl = SharedPtr<PublisherStubImpl>(new PublisherStubImpl());
 		SharedPtr<SubscriberStubImpl> subImpl = SharedPtr<SubscriberStubImpl>(new SubscriberStubImpl());
 
-		readPtr = readSubInfo(readPtr, REMAINING_BYTES_TOREAD, subImpl.get());
-		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubImpl.get());
+		readPtr = read(readPtr, subImpl.get(), REMAINING_BYTES_TOREAD);
+		readPtr = read(readPtr, pubImpl.get(), REMAINING_BYTES_TOREAD);
 
 		std::string pubUUID = pubImpl->getUUID();
 		std::string subUUID = subImpl->getUUID();
@@ -653,9 +664,8 @@ void ZeroMQNode::processNodeComm() {
 			_subscriptions[subUUID].address = address;
 			_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
-			if (_subscriptions[subUUID].isZMQConfirmed || _subscriptions[subUUID].subStub.getImpl()->implType != Subscriber::ZEROMQ) {
-				confirmSub(subUUID);
-			}
+			confirmSub(subUUID);
+			
 		} else {
 			// remove a subscription
 			Subscription& confSub = _subscriptions[subUUID];
@@ -736,6 +746,12 @@ void ZeroMQNode::processPubComm() {
 
 /**
  * Process messages sent to one of the client sockets from a remote node
+ *
+ * UM_PUB_REMOVED
+ * UM_PUB_ADDED
+ * UM_SHUTDOWN
+ * UM_CONNECT_REP
+ *
  */
 void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 	UM_TRACE("processClientComm");
@@ -769,11 +785,11 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 			break;
 		}
 
-		char* from;
-		readPtr = readString(readPtr, from, 37);
+		std::string from;
+		readPtr = Message::read(readPtr, from, 37);
 
 		PublisherStubImpl* pubStub = new PublisherStubImpl();
-		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
+		readPtr = read(readPtr, pubStub, REMAINING_BYTES_TOREAD);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		if (type == Message::UM_PUB_ADDED) {
@@ -789,8 +805,8 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 			break;
 		}
 
-		char* from;
-		readPtr = readString(readPtr, from, 37);
+		std::string from;
+		readPtr = Message::read(readPtr, from, 37);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		if (_connFrom.find(from) == _connFrom.end()) {
@@ -812,8 +828,8 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 			break;
 		}
 
-		char* fromUUID;
-		readPtr = readString(readPtr, fromUUID, 37);
+		std::string fromUUID;
+		readPtr = Message::read(readPtr, fromUUID, 37);
 
 		assert(client->address.length() > 0);
 
@@ -834,9 +850,15 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 
 /**
  * Process messages sent to the internal operation socket.
+ *
+ * UM_PUB_REMOVED
+ * UM_PUB_ADDED
+ * UM_DISCONNECT
+ * UM_CONNECT_REQ
+ * UM_SHUTDOWN
  */
-void ZeroMQNode::processOpComm() {
-	UM_TRACE("processOpComm");
+void ZeroMQNode::processInternalOpComm() {
+	UM_TRACE("processInternalOpComm");
 	COMMON_VARS;
 
 	// read first message
@@ -852,12 +874,12 @@ void ZeroMQNode::processOpComm() {
 	case Message::UM_PUB_REMOVED:
 	case Message::UM_PUB_ADDED: {
 		// removePublisher / addPublisher called us
-		char* uuid;
-
-		readPtr = readString(readPtr, uuid, 37);
+		
+		std::string uuid;
+		readPtr = Message::read(readPtr, uuid, 37);
 
 		PublisherStubImpl* pubStub = new PublisherStubImpl();
-		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
+		readPtr = read(readPtr, pubStub, REMAINING_BYTES_TOREAD);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		std::string internalPubId("inproc://um.pub.intern.");
@@ -878,8 +900,8 @@ void ZeroMQNode::processOpComm() {
 	}
 	case Message::UM_DISCONNECT: {
 		// endpoint was removed
-		char* address;
-		readPtr = readString(readPtr, address, msgSize - (readPtr - recvBuffer));
+		std::string address;
+		readPtr = Message::read(readPtr, address, msgSize - (readPtr - recvBuffer));
 
 		if (_connTo.find(address) == _connTo.end())
 			return;
@@ -918,8 +940,8 @@ void ZeroMQNode::processOpComm() {
 	}
 	case Message::UM_CONNECT_REQ: {
 		// added(EndPoint) called us - rest of message is endpoint address
-		char* address;
-		readPtr = readString(readPtr, address, msgSize - (readPtr - recvBuffer));
+		std::string address;
+		readPtr = Message::read(readPtr, address, msgSize - (readPtr - recvBuffer));
 
 		SharedPtr<NodeConnection> clientConn;
 		// we don't know this endpoint
@@ -936,7 +958,7 @@ void ZeroMQNode::processOpComm() {
 		}
 		_dirtySockets = true;
 
-		UM_LOG_INFO("%s: Sending CONNECT_REQ to %s", SHORT_UUID(_uuid).c_str(), address);
+		UM_LOG_INFO("%s: Sending CONNECT_REQ to %s", SHORT_UUID(_uuid).c_str(), address.c_str());
 
 		// send a CONNECT_REQ message
 		PREPARE_MSG(connReqMsg, 4);
@@ -1062,7 +1084,7 @@ void ZeroMQNode::run() {
 
 		if (_sockets[2].revents & ZMQ_POLLIN) {
 			RScopeLock lock(_mutex);
-			processOpComm();
+			processInternalOpComm();
 			DRAIN_SOCKET(_readOpSocket);
 		}
 
@@ -1143,7 +1165,7 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 			while(pubStubIter != pubStubs.end()) {
 				std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 				while(subIter != _subs.end()) {
-					if (subIter->second.matches(pubStubIter->second.getChannelName()))
+					if (subIter->second.matches(pubStubIter->second))
 						subIter->second.removed(pubStubIter->second, nodeStub);
 					subIter++;
 				}
@@ -1173,9 +1195,9 @@ void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
 	// iterate all remote publishers and remove from local subs
 	while (remotePubIter != remotePubs.end()) {
 		while (localSubIter != _subs.end()) {
-			if(localSubIter->second.matches(remotePubIter->second.getChannelName())) {
+			if(localSubIter->second.matches(remotePubIter->second)) {
 				localSubIter->second.removed(remotePubIter->second, nodeStub);
-				sendSubRemoved(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
+				sendUnsubscribeFromPublisher(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
 			}
 			localSubIter++;
 		}
@@ -1241,7 +1263,7 @@ void ZeroMQNode::processConnectedTo(const std::string& uuid, SharedPtr<NodeConne
 	std::string ip = client->address.substr(6, colonPos - 6);
 	std::string port = client->address.substr(colonPos + 1, client->address.length() - colonPos + 1);
 
-	// processOpComm must have added this one
+	// processInternalOpComm must have added this one
 	assert(_connTo.find(client->address) != _connTo.end());
 
 	NodeStub nodeStub;
@@ -1290,7 +1312,7 @@ void ZeroMQNode::confirmSub(const std::string& subUUID) {
 		return;
 
 	if (_subscriptions[subUUID].subStub.getImpl()->implType == Subscriber::ZEROMQ &&
-	        !_subscriptions[subUUID].isZMQConfirmed)
+			!_subscriptions[subUUID].isZMQConfirmed)
 		return;
 
 	Subscription& pendSub = _subscriptions[subUUID];
@@ -1334,12 +1356,12 @@ void ZeroMQNode::writeNodeInfo(zmq_msg_t* msg, Message::Type type) {
 	assert(writePtr - writeBuffer == 4);
 
 	// local uuid
-	writePtr = writeString(writePtr, _uuid.c_str(), _uuid.length());
+	writePtr = Message::write(writePtr, _uuid);
 	assert(writePtr - writeBuffer == 4 + _uuid.length() + 1);
 
 	pubIter =_pubs.begin();
 	while(pubIter != _pubs.end()) {
-		writePtr = writePubInfo(writePtr, pubIter->second);
+		writePtr = write(writePtr, pubIter->second);
 		pubIter++;
 	}
 
@@ -1349,15 +1371,15 @@ void ZeroMQNode::writeNodeInfo(zmq_msg_t* msg, Message::Type type) {
 void ZeroMQNode::processNodeInfo(char* recvBuffer, size_t msgSize) {
 	UM_TRACE("processNodeInfo");
 
-	char* readPtr = recvBuffer;
+	const char* readPtr = recvBuffer;
 	if(REMAINING_BYTES_TOREAD < 36)
 		return;
 
-	char* from;
-	readPtr = readString(readPtr, from, 37);
+	std::string from;
+	readPtr = Message::read(readPtr, from, 37);
 
 	if (_connTo.find(from) == _connTo.end()) {
-		UM_LOG_WARN("%s not caring for nodeinfo from %s - not connected", SHORT_UUID(_uuid).c_str(), from);
+		UM_LOG_WARN("%s not caring for nodeinfo from %s - not connected", SHORT_UUID(_uuid).c_str(), from.c_str());
 		return;
 	}
 
@@ -1365,12 +1387,12 @@ void ZeroMQNode::processNodeInfo(char* recvBuffer, size_t msgSize) {
 	while(REMAINING_BYTES_TOREAD > 37) {
 
 		PublisherStubImpl* pubStub = new PublisherStubImpl();
-		readPtr = readPubInfo(readPtr, REMAINING_BYTES_TOREAD, pubStub);
+		readPtr = read(readPtr, pubStub, REMAINING_BYTES_TOREAD);
 		processRemotePubAdded(from, pubStub);
 	}
 }
 
-void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
+void ZeroMQNode::processRemotePubAdded(const std::string& nodeUUID, PublisherStubImpl* pub) {
 	UM_TRACE("processRemotePubAdded");
 
 	if (_connTo.find(nodeUUID) == _connTo.end()) {
@@ -1400,15 +1422,15 @@ void ZeroMQNode::processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub) {
 
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
-		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
+		if (subIter->second.matches(pubStub)) {
 			subIter->second.added(pubStub, nodeStub);
-			sendSubAdded(nodeUUID, subIter->second, pubStub);
+			sendSubscribeToPublisher(nodeUUID, subIter->second, pubStub);
 		}
 		subIter++;
 	}
 }
 
-void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub) {
+void ZeroMQNode::processRemotePubRemoved(const std::string& nodeUUID, PublisherStubImpl* pub) {
 	UM_TRACE("processRemotePubRemoved");
 
 	if (_connTo.find(nodeUUID) == _connTo.end())
@@ -1431,9 +1453,9 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while(subIter != _subs.end()) {
-		if (subIter->second.getImpl()->implType == pubStub.getImpl()->implType && subIter->second.matches(pubStub.getChannelName())) {
+		if (subIter->second.matches(pubStub)) {
 			subIter->second.removed(pubStub, nodeStub);
-			sendSubRemoved(nodeUUID, subIter->second, pubStub);
+			sendUnsubscribeFromPublisher(nodeUUID, subIter->second, pubStub);
 		}
 		subIter++;
 	}
@@ -1441,8 +1463,8 @@ void ZeroMQNode::processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub)
 	delete pub;
 }
 
-void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
-	UM_TRACE("sendSubAdded");
+void ZeroMQNode::sendSubscribeToPublisher(const std::string& nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
+	UM_TRACE("sendSubscribeToPublisher");
 	COMMON_VARS;
 
 	if (_connTo.find(nodeUUID) == _connTo.end())
@@ -1459,8 +1481,8 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 	PREPARE_MSG(subAddedMsg, bufferSize);
 
 	writePtr = writeVersionAndType(writePtr, Message::UM_SUBSCRIBE);
-	writePtr = writeSubInfo(writePtr, sub);
-	writePtr = writePubInfo(writePtr, pub);
+	writePtr = write(writePtr, sub);
+	writePtr = write(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&subAddedMsg, clientSocket, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
@@ -1471,8 +1493,8 @@ void ZeroMQNode::sendSubAdded(const char* nodeUUID, const Subscriber& sub, const
 	zmq_msg_close(&subAddedMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
-void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
-	UM_TRACE("sendSubRemoved");
+void ZeroMQNode::sendUnsubscribeFromPublisher(const std::string& nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
+	UM_TRACE("sendUnsubscribeFromPublisher");
 	COMMON_VARS;
 
 	if (_connTo.find(nodeUUID) == _connTo.end())
@@ -1489,8 +1511,8 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 	PREPARE_MSG(subRemovedMsg, bufferSize);
 
 	writePtr = writeVersionAndType(writePtr, Message::UM_UNSUBSCRIBE);
-	writePtr = writeSubInfo(writePtr, sub);
-	writePtr = writePubInfo(writePtr, pub);
+	writePtr = write(writePtr, sub);
+	writePtr = write(writePtr, pub);
 	assert(writePtr - writeBuffer == bufferSize);
 
 	zmq_msg_send(&subRemovedMsg, clientSocket, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
@@ -1502,144 +1524,106 @@ void ZeroMQNode::sendSubRemoved(const char* nodeUUID, const Subscriber& sub, con
 
 }
 
-char* ZeroMQNode::writePubInfo(char* buffer, const PublisherStub& pub) {
-	std::string channel = pub.getChannelName();
-	std::string uuid = pub.getUUID(); // we share a publisher socket in the node, do not publish hidden pub uuid
-	uint16_t port = pub.getPort();
-	uint16_t type = pub.getImpl()->implType;
-	if(type == ZMQ_PUB)
-		port=_pubPort;
-
-	assert(uuid.length() == 36);
-
+char* ZeroMQNode::write(char* buffer, const PublisherStub& pub) {
 	char* start = buffer;
 	(void)start; // surpress unused warning wiithout assert
-
-	buffer = writeString(buffer, channel.c_str(), channel.length());
-	buffer = writeString(buffer, uuid.c_str(), uuid.length());
-	buffer = writeUInt16(buffer, type);
-	buffer = writeUInt16(buffer, port);
-
+	
+	buffer = Message::write(buffer, pub.getChannelName());
+	buffer = Message::write(buffer, pub.getUUID());
+	buffer = Message::write(buffer, pub.getImpl()->implType);
+	buffer = Message::write(buffer, (pub.getImpl()->implType == ZMQ_PUB ? _pubPort : pub.getPort()));
+	
 	assert(buffer - start == PUB_INFO_SIZE(pub));
 	return buffer;
 }
 
-char* ZeroMQNode::readPubInfo(char* buffer, size_t available, PublisherStubImpl* pubStub) {
-	char* start = buffer;
+const char* ZeroMQNode::read(const char* buffer, PublisherStubImpl* pubStub, size_t available) {
+	const char* start = buffer;
 	(void)start; // surpress unused warning without assert
 
-	char* channelName;
-	buffer = readString(buffer, channelName, available - (buffer - start));
+	std::string channelName;
+	buffer = Message::read(buffer, channelName, available - (buffer - start));
 	pubStub->setChannelName(channelName);
-
-	char* uuid;
-	buffer = readString(buffer, uuid, available - (buffer - start));
+	
+	std::string uuid;
+	buffer = Message::read(buffer, uuid, available - (buffer - start));
 	pubStub->setUUID(uuid);
-
+	
 	uint16_t type;
-	buffer = readUInt16(buffer, type);
+	buffer = Message::read(buffer, &type);
 	pubStub->implType = type;
-
+	
 	uint16_t port;
-	buffer = readUInt16(buffer, port);
+	buffer = Message::read(buffer, &port);
 	pubStub->setPort(port);
 
 	return buffer;
 }
 
-char* ZeroMQNode::writeSubInfo(char* buffer, const Subscriber& sub) {
+char* ZeroMQNode::write(char* buffer, const Subscriber& sub) {
 	assert(sub.getUUID().length() == 36);
 
 	char* start = buffer;
 	(void)start; // surpress unused warning without assert
-
-	buffer = writeString(buffer, sub.getChannelName().c_str(), sub.getChannelName().length());
-	buffer = writeString(buffer, sub.getUUID().c_str(), sub.getUUID().length());
-	buffer = writeUInt16(buffer, sub.getImpl()->implType);
-	buffer = writeUInt16(buffer, sub.isMulticast() ? 1 : 0);
-	buffer = writeString(buffer, sub.getIP().c_str(), sub.getIP().length());
-	buffer = writeUInt16(buffer, sub.getPort());
+	
+	buffer = Message::write(buffer, sub.getChannelName());
+	buffer = Message::write(buffer, sub.getUUID());
+	buffer = Message::write(buffer, (uint16_t)sub.getImpl()->implType);
+	buffer = Message::write(buffer, (uint16_t)(sub.isMulticast() ? 1 : 0));
+	buffer = Message::write(buffer, sub.getIP());
+	buffer = Message::write(buffer, sub.getPort());
 
 	assert(buffer - start == SUB_INFO_SIZE(sub));
 	return buffer;
 }
 
-char* ZeroMQNode::readSubInfo(char* buffer, size_t available, SubscriberStubImpl* subStub) {
-	char* start = buffer;
+const char* ZeroMQNode::read(const char* buffer, SubscriberStubImpl* subStub, size_t available) {
+	const char* start = buffer;
 	(void)start; // surpress unused warning without assert
-
-	char* channelName;
-	buffer = readString(buffer, channelName, available - (buffer - start));
+	
+	std::string channelName;
+	buffer = Message::read(buffer, channelName, available - (buffer - start));
 	subStub->setChannelName(channelName);
 
-	char* uuid;
-	buffer = readString(buffer, uuid, available - (buffer - start));
+	std::string uuid;
+	buffer = Message::read(buffer, uuid, available - (buffer - start));
 	subStub->setUUID(uuid);
 
 	uint16_t type;
-	buffer = readUInt16(buffer, type);
+	buffer = Message::read(buffer, &type);
 	subStub->implType = type;
 
 	uint16_t multicast;
-	buffer = readUInt16(buffer, multicast);
-	subStub->setMulticast(multicast==1 ? true : false);
+	buffer = Message::read(buffer, &multicast);
+	subStub->setMulticast(multicast == 1 ? true : false);
 
-	char* ip;
-	buffer = readString(buffer, ip, available - (buffer - start));
+	std::string ip;
+	buffer = Message::read(buffer, ip, available - (buffer - start));
 	subStub->setIP(ip);
 
 	uint16_t port;
-	buffer = readUInt16(buffer, port);
+	buffer = Message::read(buffer, &port);
 	subStub->setPort(port);
 
 	return buffer;
 }
 
 char* ZeroMQNode::writeVersionAndType(char* buffer, Message::Type type) {
-	buffer = writeUInt16(buffer, Message::UM_VERSION);
-	buffer = writeUInt16(buffer, type);
+	buffer = Message::write(buffer, (uint16_t)Message::UM_VERSION);
+	buffer = Message::write(buffer, (uint16_t)type);
 	return buffer;
 }
 
-char* ZeroMQNode::readVersionAndType(char* buffer, uint16_t& version, Message::Type& type) {
+const char* ZeroMQNode::readVersionAndType(const char* buffer, uint16_t& version, Message::Type& type) {
 	// clear out of type bytes
 	memset(&type, 0, sizeof(type));
 
-	buffer = readUInt16(buffer, version);
-	buffer = readUInt16(buffer, (uint16_t&)type);
+	buffer = Message::read(buffer, &version);
+	buffer = Message::read(buffer, &(uint16_t&)type);
 	return buffer;
 }
 
-char* ZeroMQNode::writeString(char* buffer, const char* content, size_t length) {
-	memcpy(buffer, content, length);
-	buffer += length;
-	buffer[0] = 0;
-	buffer += 1;
-	return buffer;
-}
-
-char* ZeroMQNode::readString(char* buffer, char*& content, size_t maxLength) {
-	if (strnlen(buffer, maxLength) < maxLength) {
-		content = buffer;
-		buffer += strlen(content) + 1;
-	} else {
-		content = NULL;
-	}
-	return buffer;
-}
-
-char* ZeroMQNode::writeUInt16(char* buffer, uint16_t value) {
-	*(uint16_t*)(buffer) = htons(value);
-	buffer += 2;
-	return buffer;
-}
-
-char* ZeroMQNode::readUInt16(char* buffer, uint16_t& value) {
-	value = ntohs(*(uint16_t*)(buffer));
-	buffer += 2;
-	return buffer;
-}
-
+	
 ZeroMQNode::StatBucket<double> ZeroMQNode::accumulateIntoBucket() {
 	StatBucket<double> statBucket;
 

@@ -76,9 +76,10 @@ public:
 	virtual Message* getNextMsg() = 0;
 	virtual bool hasNextMsg() = 0;
 
-	virtual bool matches(const std::string& channelName) {
-		// is our channel a prefix of the given channel?
-		return channelName.substr(0, _channelName.size()) == _channelName;
+	virtual bool matches(const PublisherStub& pub) {
+		// are our types equal and is our channel a prefix of the given channel?
+		return (pub.getImpl()->implType == implType &&
+						pub.getChannelName().substr(0, _channelName.size()) == _channelName);
 	}
 
 	static int instances;
@@ -148,10 +149,6 @@ public:
 		return _impl->hasNextMsg();
 	}
 
-	virtual bool matches(const std::string& channelName) {
-		return _impl->matches(channelName);
-	}
-
 	std::map<std::string, PublisherStub> getPublishers()             {
 		return _impl->getPublishers();
 	}
@@ -160,6 +157,10 @@ public:
 		return pubs.find(uuid) != pubs.end();
 	}
 
+	bool matches(const PublisherStub& pub) {
+		return _impl->matches(pub);
+	}
+	
 	void added(const PublisherStub& pub, const NodeStub& node) {
 		_impl->added(pub, node);
 	}

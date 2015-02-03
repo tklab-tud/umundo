@@ -32,50 +32,50 @@
 #endif
 
 namespace umundo {
-char* Message::write(uint64_t value, char* to) {
+char* Message::write(char* to, uint64_t value) {
 	for(int i = 0; i < 8; i++) to[i] = value >> (8-1-i)*8;
 	return to + 8;
 }
-char* Message::write(uint32_t value, char* to) {
+char* Message::write(char* to, uint32_t value) {
 	for(int i = 0; i < 4; i++) to[i] = value >> (4-1-i)*8;
 	return to + 4;
 }
-char* Message::write(uint16_t value, char* to) {
+char* Message::write(char* to, uint16_t value) {
 	for(int i = 0; i < 2; i++) to[i] = value >> (2-1-i)*8;
 	return to + 2;
 }
-char* Message::write(uint8_t value, char* to) {
+char* Message::write(char* to, uint8_t value) {
 	to[0] = value;
 	return to + 1;
 }
-char* Message::write(int64_t value, char* to) {
+char* Message::write(char* to, int64_t value) {
 	for(int i = 0; i < 8; i++) to[i] = value >> (8-1-i)*8;
 	return to + 8;
 }
-char* Message::write(int32_t value, char* to) {
+char* Message::write(char* to, int32_t value) {
 	for(int i = 0; i < 4; i++) to[i] = value >> (4-1-i)*8;
 	return to + 4;
 }
-char* Message::write(int16_t value, char* to) {
+char* Message::write(char* to, int16_t value) {
 	for(int i = 0; i < 2; i++) to[i] = value >> (2-1-i)*8;
 	return to + 2;
 }
-char* Message::write(int8_t value, char* to) {
+char* Message::write(char* to, int8_t value) {
 	to[0] = value;
 	return to + 1;
 }
-char* Message::write(float value, char* to) {
+char* Message::write(char* to, float value) {
 //	to = (char*)&value;
 	memcpy(to, &value, sizeof(float));
 	return to + sizeof(float);
 }
-char* Message::write(double value, char* to) {
+char* Message::write(char* to, double value) {
 //	to = (char*)&value;
 	memcpy(to, &value, sizeof(double));
 	return to + sizeof(double);
 }
 
-const char* Message::read(uint64_t* value, const char* from) {
+const char* Message::read(const char* from, uint64_t* value) {
 	*value = (((uint64_t)from[0] << 56) & 0xFF00000000000000ULL)
 	       | (((uint64_t)from[1] << 48) & 0x00FF000000000000ULL)
 	       | (((uint64_t)from[2] << 40) & 0x0000FF0000000000ULL)
@@ -86,7 +86,7 @@ const char* Message::read(uint64_t* value, const char* from) {
 	       |  (from[7]        & 0x00000000000000FFU);
 	return from + 8;
 }
-const char* Message::read(uint32_t* value, const char* from) {
+const char* Message::read(const char* from, uint32_t* value) {
 	*value = ((from[0] << 24) & 0xFF000000U)
 	       | ((from[1] << 16) & 0x00FF0000U)
 	       | ((from[2] <<  8) & 0x0000FF00U)
@@ -94,17 +94,17 @@ const char* Message::read(uint32_t* value, const char* from) {
 	return from + 4;
 }
 	
-const char* Message::read(uint16_t* value, const char* from) {
+const char* Message::read(const char* from, uint16_t* value) {
 	*value = ((from[0] <<  8) & 0xFF00U)
 	       |  (from[1]        & 0x00FFU);
 	return from + 2;
 }
-const char* Message::read(uint8_t* value, const char* from) {
+const char* Message::read(const char* from, uint8_t* value) {
 	*value	= from[0];
 	return from + 1;
 }
 
-const char* Message::read(int64_t* value, const char* from) {
+const char* Message::read(const char* from, int64_t* value) {
 	*value = (((int64_t)from[0] << 56) & 0xFF00000000000000ULL)
 	       | (((int64_t)from[1] << 48) & 0x00FF000000000000ULL)
 	       | (((int64_t)from[2] << 40) & 0x0000FF0000000000ULL)
@@ -116,7 +116,7 @@ const char* Message::read(int64_t* value, const char* from) {
 	return from + 8;
 }
 
-const char* Message::read(int32_t* value, const char* from) {
+const char* Message::read(const char* from, int32_t* value) {
 	*value = ((from[0] << 24) & 0xFF000000U)
 	       | ((from[1] << 16) & 0x00FF0000U)
 	       | ((from[2] <<  8) & 0x0000FF00U)
@@ -124,31 +124,31 @@ const char* Message::read(int32_t* value, const char* from) {
 	return from + 4;
 }
 
-const char* Message::read(int16_t* value, const char* from) {
+const char* Message::read(const char* from, int16_t* value) {
 	*value = ((from[0] <<  8) & 0xFF00U)
 	       |  (from[1]        & 0x00FFU);
 	return from + 2;
 }
 
-const char* Message::read(int8_t* value, const char* from) {
+const char* Message::read(const char* from, int8_t* value) {
 	*value	= from[0];
 	return from + 1;
 }
 
-const char* Message::read(float* value, const char* from) {
+const char* Message::read(const char* from, float* value) {
 	*value = *(float*)from;
 //	memcpy(value, from, sizeof(float));
 	return from + sizeof(float);
 }
-const char* Message::read(double* value, const char* from) {
+const char* Message::read(const char* from, double* value) {
 	*value = *(double*)from;
 //	memcpy(value, from, sizeof(double));
 	return from + sizeof(double);
 }
 
-char* Message::write(const std::string& str, char* to, bool terminate) {
-	size_t writeSize = strnlen(str.c_str(), str.size()); // zero byte might occur before end
-	memcpy(to, str.data(), writeSize);
+char* Message::write(char* to, const std::string& value, bool terminate) {
+	size_t writeSize = strnlen(value.c_str(), value.size()); // zero byte might occur before end
+	memcpy(to, value.data(), writeSize);
 	to += writeSize;
 	if (terminate) {
 		to[0] = '\0';
@@ -157,9 +157,9 @@ char* Message::write(const std::string& str, char* to, bool terminate) {
 	return to;
 }
 
-const char* Message::read(std::string& str, const char* from, size_t maxLength) {
+const char* Message::read(const char* from, std::string& value, size_t maxLength) {
 	size_t readSize = strnlen(from, maxLength);
-	str = std::string(from, readSize);
+	value = std::string(from, readSize);
 	if (readSize == maxLength)
 		return from + readSize;
 	return from + readSize + 1; // we consumed \0

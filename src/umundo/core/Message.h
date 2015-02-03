@@ -74,29 +74,29 @@ public:
 		return "UNKNOWN";
 	}
 
-	static char* write(const std::string&, char* to, bool terminate = true);
-	static char* write(uint64_t value, char* to);
-	static char* write(uint32_t value, char* to);
-	static char* write(uint16_t value, char* to);
-	static char* write(uint8_t value, char* to);
-	static char* write(int64_t value, char* to);
-	static char* write(int32_t value, char* to);
-	static char* write(int16_t value, char* to);
-	static char* write(int8_t value, char* to);
-	static char* write(float value, char* to);
-	static char* write(double value, char* to);
+	static char* write(char* to, const std::string& value, bool terminate = true);
+	static char* write(char* to, uint64_t value);
+	static char* write(char* to, uint32_t value);
+	static char* write(char* to, uint16_t value);
+	static char* write(char* to, uint8_t value);
+	static char* write(char* to, int64_t value);
+	static char* write(char* to, int32_t value);
+	static char* write(char* to, int16_t value);
+	static char* write(char* to, int8_t value);
+	static char* write(char* to, float value);
+	static char* write(char* to, double value);
 	
-	static const char* read(std::string&, const char* from, size_t maxLength);
-	static const char* read(uint64_t* value, const char* from);
-	static const char* read(uint32_t* value, const char* from);
-	static const char* read(uint16_t* value, const char* from);
-	static const char* read(uint8_t* value, const char* from);
-	static const char* read(int64_t* value, const char* from);
-	static const char* read(int32_t* value, const char* from);
-	static const char* read(int16_t* value, const char* from);
-	static const char* read(int8_t* value, const char* from);
-	static const char* read(float* value, const char* from);
-	static const char* read(double* value, const char* from);
+	static const char* read(const char* from, std::string& value, size_t maxLength);
+	static const char* read(const char* from, uint64_t* value);
+	static const char* read(const char* from, uint32_t* value);
+	static const char* read(const char* from, uint16_t* value);
+	static const char* read(const char* from, uint8_t* value);
+	static const char* read(const char* from, int64_t* value);
+	static const char* read(const char* from, int32_t* value);
+	static const char* read(const char* from, int16_t* value);
+	static const char* read(const char* from, int8_t* value);
+	static const char* read(const char* from, float* value);
+	static const char* read(const char* from, double* value);
 	
 private:
 	class NilDeleter;

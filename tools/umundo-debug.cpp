@@ -91,8 +91,12 @@ void printUsageAndExit() {
 	printf("\t-d <domain>        : join domain\n");
 	printf("\t-wN                : wait N milli-seconds for nodes (defaults to 3000)\n");
 	printf("\t-oFILE             : write umundo layout as a dot file\n");
+	printf("\n");
+	printf("Example (MacOSX):\n");
+	printf("\twhile(true) do umundo-debug -q -w1000 -oumundo.dot && dot -Tpdf -O umundo.dot && open -g umundo.dot.pdf; done\n");
 	exit(1);
 }
+
 
 class DebugPub;
 class DebugSub;
@@ -249,6 +253,9 @@ void processDebugNode(DebugNode* node) {
 	dotNodes[node->uuid].dotId = "\"" + node->uuid + "\"";
 	dotNodes[node->uuid].attr["fontsize"] = "8";
 	dotNodes[node->uuid].attr["shape"] = "box";
+//	dotNodes[node->uuid].attr["style"] = "filled";
+//	dotNodes[node->uuid].attr["fillcolor"] = "\"#CCCCCC\"";
+	dotNodes[node->uuid].attr["peripheries"] = "2";
 
 	if (node->isReal) {
 		dotNodes[node->uuid].attr["color"] = "black";
@@ -276,6 +283,7 @@ void processDebugNode(DebugNode* node) {
 		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + subIter->first + "\"";
 		dotEdges[edgeId].attr["arrowhead"] = "diamond";
 		dotEdges[edgeId].attr["color"] = "grey";
+		dotEdges[edgeId].attr["weight"] = "100";
 		subIter++;
 	}
 
@@ -285,6 +293,7 @@ void processDebugNode(DebugNode* node) {
 		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + pubIter->first + "\"";
 		dotEdges[edgeId].attr["arrowhead"] = "diamond";
 		dotEdges[edgeId].attr["color"] = "grey";
+		dotEdges[edgeId].attr["weight"] = "100";
 		pubIter++;
 	}
 }

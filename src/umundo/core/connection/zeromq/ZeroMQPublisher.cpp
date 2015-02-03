@@ -250,7 +250,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length() + 1 + (metaIter->second).length()] = '\0';
 		assert(strlen(writePtr) == (metaIter->second).length());
 
-		zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s",zmq_strerror(errno));
+		zmq_sendmsg(_pubSocket, &metaMsg, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
 		zmq_msg_close(&metaMsg) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 	}
 

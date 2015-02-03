@@ -158,35 +158,35 @@ bool testByteWriting() {
 		float fl = (float)value;
 		double dbl = (double)value;
 	
-		writePtr = Message::write(uint64, writePtr);
-		readPtr = Message::read(&uint64, readPtr);
+		writePtr = Message::write(writePtr, uint64);
+		readPtr = Message::read(readPtr, &uint64);
 
-		writePtr = Message::write(uint32, writePtr);
-		readPtr = Message::read(&uint32, readPtr);
+		writePtr = Message::write(writePtr, uint32);
+		readPtr = Message::read(readPtr, &uint32);
 
-		writePtr = Message::write(uint16, writePtr);
-		readPtr = Message::read(&uint16, readPtr);
+		writePtr = Message::write(writePtr, uint16);
+		readPtr = Message::read(readPtr, &uint16);
 
-		writePtr = Message::write(uint8, writePtr);
-		readPtr = Message::read(&uint8, readPtr);
+		writePtr = Message::write(writePtr, uint8);
+		readPtr = Message::read(readPtr, &uint8);
 
-		writePtr = Message::write(int64, writePtr);
-		readPtr = Message::read(&int64, readPtr);
+		writePtr = Message::write(writePtr, int64);
+		readPtr = Message::read(readPtr, &int64);
 
-		writePtr = Message::write(int32, writePtr);
-		readPtr = Message::read(&int32, readPtr);
+		writePtr = Message::write(writePtr, int32);
+		readPtr = Message::read(readPtr, &int32);
 
-		writePtr = Message::write(int16, writePtr);
-		readPtr = Message::read(&int16, readPtr);
+		writePtr = Message::write(writePtr, int16);
+		readPtr = Message::read(readPtr, &int16);
 
-		writePtr = Message::write(int8, writePtr);
-		readPtr = Message::read(&int8, readPtr);
+		writePtr = Message::write(writePtr, int8);
+		readPtr = Message::read(readPtr, &int8);
 
-		writePtr = Message::write(fl, writePtr);
-		readPtr = Message::read(&fl, readPtr);
+		writePtr = Message::write(writePtr, fl);
+		readPtr = Message::read(readPtr, &fl);
 
-		writePtr = Message::write(dbl, writePtr);
-		readPtr = Message::read(&dbl, readPtr);
+		writePtr = Message::write(writePtr, dbl);
+		readPtr = Message::read(readPtr, &dbl);
 		
 		assert(dbl = (double)value);
 		assert(uint64 = (uint64_t)value);
@@ -223,10 +223,10 @@ bool testByteWriting() {
 		writePtr = data;
 		readPtr = data;
 		readFrom = "This is foo";
-		writePtr = Message::write(readFrom, writePtr);
+		writePtr = Message::write(writePtr, readFrom);
 		assert(writePtr == data + readFrom.size() + 1);
 
-		readPtr = Message::read(writeTo, readPtr, 100);
+		readPtr = Message::read(readPtr, writeTo, 100);
 		assert(readPtr == data + readFrom.size() + 1);
 		assert(readFrom == writeTo);
 
@@ -234,12 +234,12 @@ bool testByteWriting() {
 		writePtr = data;
 		readPtr = data;
 		readFrom = "This is foo";
-		writePtr = Message::write(readFrom, writePtr, false);
+		writePtr = Message::write(writePtr, readFrom, false);
 		assert(writePtr == data + readFrom.size());
-		writePtr = Message::write(readFrom, writePtr, false);
+		writePtr = Message::write(writePtr, readFrom, false);
 		assert(writePtr == data + 2 * readFrom.size());
 
-		readPtr = Message::read(writeTo, readPtr, 100);
+		readPtr = Message::read(readPtr, writeTo, 100);
 		assert(readPtr == data + 2 * readFrom.size() + 1);
 		assert(writeTo == "This is fooThis is foo");
 
@@ -248,19 +248,19 @@ bool testByteWriting() {
 		readPtr = data;
 		readFrom = "This is foo";
 
-		writePtr = Message::write(readFrom, writePtr, true);
+		writePtr = Message::write(writePtr, readFrom, true);
 		assert(writePtr == data + readFrom.size() + 1);
 
-		readPtr = Message::read(writeTo, readPtr, 6);
+		readPtr = Message::read(readPtr, writeTo, 6);
 		assert(readPtr == data + 6); // we did not consume any terminator
 		assert(writeTo == "This i");
 
-		readPtr = Message::read(writeTo, readPtr, 5);
+		readPtr = Message::read(readPtr, writeTo, 5);
 		assert(readPtr == data + 11); // we did not consume any terminator
 		assert(writeTo == "s foo");
 
 		// there is a single \0 byte remaining
-		readPtr = Message::read(writeTo, readPtr, 500);
+		readPtr = Message::read(readPtr, writeTo, 500);
 		assert(readPtr == data + 12); // we *did* not consume the terminator
 		assert(writeTo == "");
 

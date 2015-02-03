@@ -23,6 +23,20 @@
 #include <WS2tcpip.h>
 #endif
 
+#if 0
+#	undef SHARE_SERVICE_REF
+# define SHARE_SERVICE_FLAG 0
+#else
+# define SHARE_SERVICE_REF 1
+# define SHARE_SERVICE_FLAG kDNSServiceFlagsShareConnection
+#endif
+
+// we do not have FDs with embedded bonjour at all,
+// with non-embedded, we might share them
+#if not defined(DISC_BONJOUR_EMBED) and not defined(SHARE_SERVICE_REF)
+#define NON_SHARED_FDS 1
+#endif
+
 #include "umundo/core/discovery/mdns/bonjour/BonjourDiscoverer.h"
 
 #include <errno.h>
@@ -70,6 +84,8 @@ namespace umundo {
 				instance->start();
 			}
 #else
+
+#ifdef SHARE_SERVICE_REF
 			DNSServiceErrorType error = DNSServiceCreateConnection(&instance->_mainDNSHandle);
 			if (error) {
 				UM_LOG_WARN("DNSServiceCreateConnection returned error: %s", errCodeToString(error).c_str());
@@ -77,6 +93,9 @@ namespace umundo {
 				instance->_activeFDs[DNSServiceRefSockFD(instance->_mainDNSHandle)] = instance->_mainDNSHandle;
 				instance->start();
 			}
+#endif
+			instance->start();
+			
 #endif
 			_instance = instance;
 		}
@@ -175,19 +194,11 @@ namespace umundo {
 		
 #ifdef DISC_BONJOUR_EMBED
 		while(isStarted()) {
-			//		std::cout << "Still started" << std::endl;
 			UMUNDO_LOCK(_mutex);
-			//		std::cout << "locked" << std::endl;
 			tv.tv_sec  = BONJOUR_REPOLL_SEC;
 			tv.tv_usec = BONJOUR_REPOLL_USEC;
 			embedded_mDNSmainLoop(tv);
-			//		_monitor.signal();
 			UMUNDO_UNLOCK(_mutex);
-			//		std::cout << "unlocked" << std::endl;
-			// give other threads a chance to react before locking again
-			//		std::cout << "yield" << std::endl;
-			//		Thread::yield();
-			//		std::cout << "back" << std::endl;
 #ifdef WIN32
 			Thread::sleepMs(100);
 #else
@@ -250,7 +261,6 @@ namespace umundo {
 					UM_LOG_WARN("select failed %s", strerror(errno));
 				if (nfds > FD_SETSIZE)
 					UM_LOG_WARN("number of file descriptors too large: %d of %d", nfds, FD_SETSIZE);
-				//			Thread::sleepMs(300);
 			}
 			
 		}
@@ -301,7 +311,7 @@ namespace umundo {
 		const char* txtRData = (txtSS.str().size() > 0 ? txtSS.str().data() : NULL);
 		
 		err = DNSServiceRegister(&registerClient,                 // uninitialized DNSServiceRef
-														 kDNSServiceFlagsShareConnection, // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
+														 SHARE_SERVICE_FLAG,              // renaming behavior on name conflict (kDNSServiceFlagsNoAutoRename)
 														 kDNSServiceInterfaceIndexAny,    // If non-zero, specifies the interface, defaults to all interfaces
 														 name,                            // If non-NULL, specifies the service name, defaults to computer name
 														 regType,                         // service type followed by the protocol
@@ -314,16 +324,16 @@ namespace umundo {
 														 (void*)NULL);                    // context pointer which is passed to the callback
 		
 		if(registerClient && err == 0) {
-			_localAds[node].serviceRegister = registerClient;
 			_ads++;
-#ifndef DISC_BONJOUR_EMBED
+			_localAds[node].serviceRegisterDNSClient = registerClient;
+			
+#ifdef NON_SHARED_FDS
 			_activeFDs[DNSServiceRefSockFD(registerClient)] = registerClient;
 #endif
 		}	else {
 			UM_LOG_ERR("Cannot advertise node: %s", errCodeToString(err).c_str());
 		}
 	}
-	
 	
 	void BonjourDiscoverer::unadvertise(MDNSAdvertisement* node) {
 		RScopeLock lock(_mutex);
@@ -333,9 +343,14 @@ namespace umundo {
 			return;
 		}
 		
-		_activeFDs.erase(DNSServiceRefSockFD(_localAds[node].serviceRegister)); // noop in embedded
-		assert(_localAds[node].serviceRegister != NULL);
-		DNSServiceRefDeallocate(_localAds[node].serviceRegister);
+		_activeFDs.erase(DNSServiceRefSockFD(_localAds[node].serviceRegisterDNSClient)); // noop in embedded
+		
+		// it will not have been added to _localAds if we did not get a MDNS handle
+		assert(_localAds[node].serviceRegisterDNSClient != NULL);
+#ifdef NON_SHARED_FDS
+		_activeFDs.erase(DNSServiceRefSockFD(_localAds[node].serviceRegisterDNSClient));
+#endif
+		DNSServiceRefDeallocate(_localAds[node].serviceRegisterDNSClient);
 		_localAds.erase(node);
 		// this is required for browsereply to report vanished nodes?
 		//	DNSServiceProcessResult(_mainDNSHandle);
@@ -384,7 +399,7 @@ namespace umundo {
 			const char* domain = (query->domain.size() > 0 ? query->domain.c_str() : NULL);
 			
 			err = DNSServiceBrowse(&queryClient,                    // uninitialized DNSServiceRef
-														 kDNSServiceFlagsShareConnection, // Currently ignored, reserved for future use
+														 SHARE_SERVICE_FLAG,              // Currently ignored, reserved for future use
 														 kDNSServiceInterfaceIndexAny,    // non-zero, specifies the interface
 														 regType,                         // service type being browsed
 														 domain,                          // non-NULL, specifies the domain
@@ -393,10 +408,10 @@ namespace umundo {
 			
 			// add in any case and remove via unbrowse if we failed
 			nativeQuery.queries.insert(query);
-			nativeQuery.mdnsClient = queryClient;
+			nativeQuery.serviceBrowseDNSClient = queryClient;
 			
 			if(queryClient && err == 0) {
-#ifndef DISC_BONJOUR_EMBED
+#ifdef NON_SHARED_FDS
 				_activeFDs[DNSServiceRefSockFD(queryClient)] = queryClient;
 #endif
 			} else {
@@ -429,9 +444,9 @@ namespace umundo {
 		
 		if (nativeQuery.queries.size() == 0) {
 			// last browser is gone, remove this native query
-			DNSServiceRef queryClient = nativeQuery.mdnsClient;
+			DNSServiceRef queryClient = nativeQuery.serviceBrowseDNSClient;
 			if (queryClient) {
-#ifndef DISC_BONJOUR_EMBED
+#ifdef NON_SHARED_FDS
 				_activeFDs.erase(DNSServiceRefSockFD(queryClient));
 #endif
 				DNSServiceRefDeallocate(queryClient);
@@ -450,15 +465,14 @@ namespace umundo {
 	 *
 	 * Gather all additions, changes and removals and start service resolving.
 	 */
-	void DNSSD_API BonjourDiscoverer::browseReply(
-																							 DNSServiceRef sdref_,
-																							 const DNSServiceFlags flags_,
-																							 uint32_t ifIndex_,
-																							 DNSServiceErrorType errorCode_,
-																							 const char *serviceName_,
-																							 const char *regtype_,
-																							 const char *domain_,
-																							 void *context_) {
+	void DNSSD_API BonjourDiscoverer::browseReply(DNSServiceRef sdref_,
+																								const DNSServiceFlags flags_,
+																								uint32_t ifIndex_,
+																								DNSServiceErrorType errorCode_,
+																								const char *serviceName_,
+																								const char *regtype_,
+																								const char *domain_,
+																								void *context_) {
 		
 		/* Browse for instances of a service.
 		 *
@@ -591,7 +605,7 @@ namespace umundo {
 					
 					// Resolve service domain name, target hostname, port number and txt record
 					int err = DNSServiceResolve(&serviceResolveRef,
-																			kDNSServiceFlagsShareConnection,
+																			SHARE_SERVICE_FLAG,
 																			browseReply.ifIndex,
 																			browseReply.serviceName.c_str(),
 																			browseReply.regtype.c_str(),
@@ -607,8 +621,12 @@ namespace umundo {
 					} else {
 						myself->_nodes++;
 						// remember service
-						assert(myself->_remoteAds[ad].serviceResolver.find(browseReply.ifIndex) == myself->_remoteAds[ad].serviceResolver.end());
-						myself->_remoteAds[ad].serviceResolver[browseReply.ifIndex] = serviceResolveRef;
+						assert(myself->_remoteAds[ad].serviceResolverOnIface.find(browseReply.ifIndex) == myself->_remoteAds[ad].serviceResolverOnIface.end());
+						myself->_remoteAds[ad].serviceResolverOnIface[browseReply.ifIndex] = serviceResolveRef;
+#ifdef NON_SHARED_FDS
+						myself->_activeFDs[DNSServiceRefSockFD(serviceResolveRef)] = serviceResolveRef;
+#endif
+
 					}
 					
 				} else {
@@ -655,19 +673,22 @@ namespace umundo {
 			for(std::map<std::string, MDNSAdvertisement*>::iterator changeIter = changed.begin();
 					changeIter != changed.end();
 					changeIter++) {
-				if (changeIter->second->lastChange & Discovery::IFACE_REMOVED) {
+				MDNSAdvertisement* changedAd = changeIter->second;
+				if (changedAd->lastChange & Discovery::IFACE_REMOVED) {
 					// addrInfoReply will notify for added interfaces
-					assert(myself->_queryClients.find(changeIter->second->domain) != myself->_queryClients.end());
-					std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changeIter->second->domain].find(changeIter->second->regType);
-					UM_LOG_INFO("browseReply: %s/%s of type %s was changed", changeIter->second->name.c_str(), changeIter->second->domain.c_str(), changeIter->second->regType.c_str());
+					assert(myself->_queryClients.find(changedAd->domain) != myself->_queryClients.end());
 					
-					for (std::set<MDNSQuery*>::iterator listIter = queryIter->second.queries.begin();
-							 listIter != queryIter->second.queries.end();
+					UM_LOG_INFO("browseReply: %s/%s of type %s was changed", changedAd->name.c_str(), changedAd->domain.c_str(), changedAd->regType.c_str());
+					
+					std::map<std::string, NativeBonjourQuery>::iterator queryIter = myself->_queryClients[changedAd->domain].find(changedAd->regType);
+					NativeBonjourQuery& nativeQuery = queryIter->second;
+					for (std::set<MDNSQuery*>::iterator listIter = nativeQuery.queries.begin();
+							 listIter != nativeQuery.queries.end();
 							 listIter++) {
-						(*listIter)->rs->change(changeIter->second, toStr(myself), changeIter->second->lastChange);
+						(*listIter)->rs->change(changedAd, toStr(myself), changedAd->lastChange);
 					}
 				}
-				changeIter->second->lastChange = 0;
+				changedAd->lastChange = 0;
 			}
 			
 			// notify listeners about removals
@@ -691,13 +712,20 @@ namespace umundo {
 				// stop resolving service
 				assert(myself->_remoteAds.find(removedAd) != myself->_remoteAds.end());
 				std::map<uint32_t, DNSServiceRef>::iterator svcRefIter;
-				svcRefIter = myself->_remoteAds[removedAd].serviceResolver.begin();
-				while(svcRefIter != myself->_remoteAds[removedAd].serviceResolver.end()) {
+				
+				svcRefIter = myself->_remoteAds[removedAd].serviceResolverOnIface.begin();
+				while(svcRefIter != myself->_remoteAds[removedAd].serviceResolverOnIface.end()) {
+#ifdef NON_SHARED_FDS
+					myself->_activeFDs.erase(DNSServiceRefSockFD(svcRefIter->second));
+#endif
 					DNSServiceRefDeallocate(svcRefIter->second);
 					svcRefIter++;
 				}
-				svcRefIter = myself->_remoteAds[removedAd].serviceGetAddrInfo.begin();
-				while(svcRefIter != myself->_remoteAds[removedAd].serviceGetAddrInfo.end()) {
+				svcRefIter = myself->_remoteAds[removedAd].serviceGetAddrInfoOnIface.begin();
+				while(svcRefIter != myself->_remoteAds[removedAd].serviceGetAddrInfoOnIface.end()) {
+#ifdef NON_SHARED_FDS
+					myself->_activeFDs.erase(DNSServiceRefSockFD(svcRefIter->second));
+#endif
 					DNSServiceRefDeallocate(svcRefIter->second);
 					svcRefIter++;
 				}
@@ -714,17 +742,16 @@ namespace umundo {
 	 * We found the host for one of the services we browsed for,
 	 * resolve the hostname to its ip address.
 	 */
-	void DNSSD_API BonjourDiscoverer::serviceResolveReply(
-																											 DNSServiceRef sdref,
-																											 const DNSServiceFlags flags,
-																											 uint32_t interfaceIndex,
-																											 DNSServiceErrorType errorCode,
-																											 const char *fullname,   // full service domain name: <servicename>.<protocol>.<domain>
-																											 const char *hosttarget, // target hostname of the machine providing the service
-																											 uint16_t opaqueport,    // port in network byte order
-																											 uint16_t txtLen,        // length of the txt record
-																											 const unsigned char *txtRecord, // primary txt record
-																											 void *context           // address of node
+	void DNSSD_API BonjourDiscoverer::serviceResolveReply(DNSServiceRef sdref,
+																												const DNSServiceFlags flags,
+																												uint32_t interfaceIndex,
+																												DNSServiceErrorType errorCode,
+																												const char *fullname,   // full service domain name: <servicename>.<protocol>.<domain>
+																												const char *hosttarget, // target hostname of the machine providing the service
+																												uint16_t opaqueport,    // port in network byte order
+																												uint16_t txtLen,        // length of the txt record
+																												const unsigned char *txtRecord, // primary txt record
+																												void *context           // address of node
 	) {
 		
 		/* DNSServiceResolve()
@@ -797,7 +824,19 @@ namespace umundo {
 								hosttarget,
 								ntohs(opaqueport),
 								interfaceIndex);
-		
+
+		MDNSAdvertisement* ad = (MDNSAdvertisement*)context;
+
+		// deallocate service resolver in any case
+		assert(myself->_remoteAds[ad].serviceResolverOnIface.find(interfaceIndex) != myself->_remoteAds[ad].serviceResolverOnIface.end());
+		assert(myself->_remoteAds[ad].serviceResolverOnIface[interfaceIndex] == sdref);
+#ifdef NON_SHARED_FDS
+		myself->_activeFDs.erase(DNSServiceRefSockFD(sdref));
+#endif
+		DNSServiceRefDeallocate(myself->_remoteAds[ad].serviceResolverOnIface[interfaceIndex]);
+
+		myself->_remoteAds[ad].serviceResolverOnIface.erase(interfaceIndex);
+
 		if (errorCode != 0) {
 			UM_LOG_ERR("serviceResolveReply called with error: %s", errCodeToString(errorCode).c_str());
 			return;
@@ -809,7 +848,6 @@ namespace umundo {
 			return;
 		}
 		
-		MDNSAdvertisement* ad = (MDNSAdvertisement*)context;
 		ad->port = ntohs(opaqueport);
 		ad->host = hosttarget;
 		
@@ -832,7 +870,7 @@ namespace umundo {
 		DNSServiceRef addrInfoRef = myself->_mainDNSHandle;
 		
 		int err = DNSServiceGetAddrInfo(&addrInfoRef,
-																		kDNSServiceFlagsShareConnection,    // kDNSServiceFlagsForceMulticast, kDNSServiceFlagsLongLivedQuery, kDNSServiceFlagsReturnIntermediates
+																		SHARE_SERVICE_FLAG,    // kDNSServiceFlagsForceMulticast, kDNSServiceFlagsLongLivedQuery, kDNSServiceFlagsReturnIntermediates
 																		interfaceIndex,
 																		kDNSServiceProtocol_IPv4,           // 0, kDNSServiceProtocol_IPv4, kDNSServiceProtocol_IPv6, 0
 																		hosttarget,
@@ -844,13 +882,12 @@ namespace umundo {
 			return;
 		} else {
 			// remember service ref of address resolver
-			assert(myself->_remoteAds[ad].serviceGetAddrInfo.find(interfaceIndex) == myself->_remoteAds[ad].serviceGetAddrInfo.end());
-			myself->_remoteAds[ad].serviceGetAddrInfo[interfaceIndex] = addrInfoRef;
-			
-			// deallocate service resolver
-			assert(myself->_remoteAds[ad].serviceResolver.find(interfaceIndex) != myself->_remoteAds[ad].serviceResolver.end());
-			DNSServiceRefDeallocate(myself->_remoteAds[ad].serviceResolver[interfaceIndex]);
-			myself->_remoteAds[ad].serviceResolver.erase(interfaceIndex);
+			assert(myself->_remoteAds[ad].serviceGetAddrInfoOnIface.find(interfaceIndex) == myself->_remoteAds[ad].serviceGetAddrInfoOnIface.end());
+			myself->_remoteAds[ad].serviceGetAddrInfoOnIface[interfaceIndex] = addrInfoRef;
+#ifdef NON_SHARED_FDS
+			myself->_activeFDs[DNSServiceRefSockFD(addrInfoRef)] = addrInfoRef;
+#endif
+
 		}
 	}
 	
@@ -906,7 +943,7 @@ namespace umundo {
 		SharedPtr<BonjourDiscoverer> myself = getInstance();
 		RScopeLock lock(myself->_mutex);
 		
-		UM_LOG_DEBUG("addrInfoReply: %s with ttl %d for %p", hostname_, ttl_, context_);
+		UM_LOG_DEBUG("addrInfoReply: %s with ttl %d for %p on %d", hostname_, ttl_, context_, interfaceIndex_);
 		
 		if (errorCode_ != 0) {
 			UM_LOG_ERR("addrInfoReply called with error: %s", errCodeToString(errorCode_).c_str());
@@ -965,14 +1002,19 @@ namespace umundo {
 			std::list<NativeBonjourAddrInfoReply>::iterator replyIter = myself->_pendingAddrInfoReplies.begin();
 			while(replyIter != myself->_pendingAddrInfoReplies.end()) {
 				
-				MDNSAdvertisement* ad = (MDNSAdvertisement*)replyIter->context;
+				NativeBonjourAddrInfoReply& reply = *replyIter;
+				MDNSAdvertisement* ad = (MDNSAdvertisement*)reply.context;
+				uint32_t iface = reply.interfaceIndex;
 				
 				// deallocate address resolver
-				if(myself->_remoteAds[ad].serviceGetAddrInfo.find(replyIter->interfaceIndex) != myself->_remoteAds[ad].serviceGetAddrInfo.end()) {
+				if (myself->_remoteAds[ad].serviceGetAddrInfoOnIface.find(iface) != myself->_remoteAds[ad].serviceGetAddrInfoOnIface.end()) {
 					// make sure ther is no service resolver around
-					assert(myself->_remoteAds[ad].serviceResolver.find(replyIter->interfaceIndex) == myself->_remoteAds[ad].serviceResolver.end());
-					DNSServiceRefDeallocate(myself->_remoteAds[ad].serviceGetAddrInfo[replyIter->interfaceIndex]);
-					myself->_remoteAds[ad].serviceGetAddrInfo.erase(replyIter->interfaceIndex);
+					assert(myself->_remoteAds[ad].serviceResolverOnIface.find(iface) == myself->_remoteAds[ad].serviceResolverOnIface.end());
+#ifdef NON_SHARED_FDS
+					myself->_activeFDs.erase(DNSServiceRefSockFD(myself->_remoteAds[ad].serviceGetAddrInfoOnIface[iface]));
+#endif
+					DNSServiceRefDeallocate(myself->_remoteAds[ad].serviceGetAddrInfoOnIface[iface]);
+					myself->_remoteAds[ad].serviceGetAddrInfoOnIface.erase(iface);
 				}
 				
 				if (myself->_queryClients.find(ad->domain) == myself->_queryClients.end()) {
@@ -995,14 +1037,15 @@ namespace umundo {
 				}
 				
 				// copy over ip addresses
-				if (replyIter->ipv4.size() > 0)
-					ad->ipv4[replyIter->interfaceIndex] = replyIter->ipv4;
-				if (replyIter->ipv6.size() > 0)
-					ad->ipv6[replyIter->interfaceIndex] = replyIter->ipv6;
+				if (reply.ipv4.size() > 0)
+					ad->ipv4[iface] = reply.ipv4;
+				if (reply.ipv6.size() > 0)
+					ad->ipv6[iface] = reply.ipv6;
 				
 				replyIter++;
 			}
 			myself->_pendingAddrInfoReplies.clear();
+			
 			//myself->dumpQueries();
 			
 //			UM_LOG_INFO("addrInfoReply: %d added, %d changed", added.size(), changed.size());

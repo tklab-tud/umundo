@@ -123,30 +123,6 @@ protected:
 	);
 	//@}
 
-	/** @name Representation of a native query on bonjour */
-	//@{
-
-	class NativeBonjourQuery {
-	public:
-		DNSServiceRef mdnsClient;
-		std::set<MDNSQuery*> queries;
-		std::map<std::string, MDNSAdvertisement*> remoteAds; // relevant subset of remote ads from _remoteAds below
-	};
-
-	/// domain to type to client with set of queries
-	std::map<std::string, std::map<std::string, NativeBonjourQuery> > _queryClients;
-
-	bool hasNativeQueryInDomainForType(const std::string& domain, const std::string& type) {
-		if (_queryClients.find(domain) == _queryClients.end() ||
-				_queryClients[domain].find(type) == _queryClients[domain].end() ||
-				_queryClients[domain][type].queries.size() == 0) {
-			return false;
-		}
-		return true;
-	}
-	
-	//@}
-
 	struct NativeBonjourBrowseReply {
 		uint32_t ifIndex;
 		DNSServiceFlags flags;
@@ -168,13 +144,38 @@ protected:
 		void *context;
 	};
 
+	/** @name Representation of a native query on bonjour */
+	//@{
+	
+	class NativeBonjourQuery {
+	public:
+		NativeBonjourQuery() : serviceBrowseDNSClient(NULL) {}
+		DNSServiceRef serviceBrowseDNSClient; ///< browser for a type in a domain
+		std::set<MDNSQuery*> queries;
+		std::map<std::string, MDNSAdvertisement*> remoteAds; // relevant subset of remote ads from _remoteAds below
+	};
+	
+	/// domain to type to client with set of queries
+	std::map<std::string, std::map<std::string, NativeBonjourQuery> > _queryClients;
+	
+	bool hasNativeQueryInDomainForType(const std::string& domain, const std::string& type) {
+		if (_queryClients.find(domain) == _queryClients.end() ||
+				_queryClients[domain].find(type) == _queryClients[domain].end() ||
+				_queryClients[domain][type].queries.size() == 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	//@}
+
 	/// All the mdns service refs for a mdns advertisement
 	class NativeBonjourServiceRefs {
 	public:
-		NativeBonjourServiceRefs() : serviceRegister(NULL) {}
-		DNSServiceRef serviceRegister; ///< used to register a local node
-		std::map<uint32_t, DNSServiceRef> serviceResolver; ///< used to resolve a service found via browse per interface
-		std::map<uint32_t, DNSServiceRef> serviceGetAddrInfo; ///< used to get the address of a resolved service
+		NativeBonjourServiceRefs() : serviceRegisterDNSClient(NULL) {}
+		DNSServiceRef serviceRegisterDNSClient; ///< used to register a local node for advertisement
+		std::map<uint32_t, DNSServiceRef> serviceResolverOnIface; ///< used to resolve a service found via browse per interface
+		std::map<uint32_t, DNSServiceRef> serviceGetAddrInfoOnIface; ///< used to get the address of a resolved service
 	};
 
 	void dumpQueries();

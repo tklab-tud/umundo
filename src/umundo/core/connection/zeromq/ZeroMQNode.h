@@ -168,8 +168,8 @@ protected:
 	std::map<std::string, std::string> _options;
 
 	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
-	std::map<std::string, SharedPtr<NodeConnection> > _connFrom; ///< other node uuids connected to us have seen
-	std::map<std::string, SharedPtr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes keys are address and uuid
+	std::map<std::string, SharedPtr<NodeConnection> > _connFrom; ///< other node uuids connected to us we have seen
+	std::map<std::string, SharedPtr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes, keys are both: address and uuid
 	std::map<std::string, SharedPtr<NodeConnection> > _connPending;
 
 	std::map<std::string, Subscription> _subscriptions;
@@ -199,32 +199,29 @@ protected:
 
 	/** @name Remote publisher / subscriber maintenance */
 	//@{
-	void sendSubRemoved(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
-	void sendSubAdded(const char* nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
+	void sendUnsubscribeFromPublisher(const std::string& nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
+	void sendSubscribeToPublisher(const std::string& nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void confirmSub(const std::string& subUUID);
-	void processRemotePubAdded(char* nodeUUID, PublisherStubImpl* pub);
-	void processRemotePubRemoved(char* nodeUUID, PublisherStubImpl* pub);
+	void processRemotePubAdded(const std::string& nodeUUID, PublisherStubImpl* pub);
+	void processRemotePubRemoved(const std::string& nodeUUID, PublisherStubImpl* pub);
 	//@}
 
 	/** @name Read / Write to raw byte arrays */
 	//@{
-	char* writePubInfo(char* buffer, const PublisherStub& pub);
-	char* readPubInfo(char* buffer, size_t available, PublisherStubImpl* pub);
-	char* writeSubInfo(char* buffer, const Subscriber& sub);
-	char* readSubInfo(char* buffer, size_t available, SubscriberStubImpl* sub);
+	char* write(char* buffer, const PublisherStub& pub);
+	char* write(char* buffer, const Subscriber& sub);
+	const char* read(const char* buffer, PublisherStubImpl* pub, size_t available);
+	const char* read(const char* buffer, SubscriberStubImpl* sub, size_t available);
 	char* writeVersionAndType(char* buffer, Message::Type type);
-	char* readVersionAndType(char* buffer, uint16_t& version, umundo::Message::Type& type);
-	char* writeString(char* buffer, const char* content, size_t length);
-	char* readString(char* buffer, char*& content, size_t maxLength);
-	char* writeUInt16(char* buffer, uint16_t value);
-	char* readUInt16(char* buffer, uint16_t& value);
+	const char* readVersionAndType(const char* buffer, uint16_t& version, umundo::Message::Type& type);
 	//@}
 
 	void disconnectRemoteNode(NodeStub& stub);
 	void processNodeComm();
 	void processPubComm();
-	void processOpComm();
+	void processInternalOpComm();
 	void processClientComm(SharedPtr<NodeConnection> client);
+	
 	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 

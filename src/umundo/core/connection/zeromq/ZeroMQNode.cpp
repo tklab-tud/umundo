@@ -46,6 +46,8 @@
 #include "umundo/core/connection/zeromq/ZeroMQPublisher.h"
 #include "umundo/core/connection/zeromq/ZeroMQSubscriber.h"
 
+#include <math.h>       /* round */
+
 /**
  * Drain any superfluous messages in an envelope
  */
@@ -1739,10 +1741,10 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	SEND_DEBUG_ENVELOPE(std::string("proc:" + procUUID));
 
 	// calculate performance
-	SEND_DEBUG_ENVELOPE(std::string("sent:msgs:" + toStr(statBucket.nrMetaMsgSent)));
-	SEND_DEBUG_ENVELOPE(std::string("sent:bytes:" + toStr(statBucket.sizeMetaMsgSent)));
-	SEND_DEBUG_ENVELOPE(std::string("rcvd:msgs:" + toStr(statBucket.nrMetaMsgRcvd)));
-	SEND_DEBUG_ENVELOPE(std::string("rcvd:bytes:" + toStr(statBucket.sizeMetaMsgRcvd)));
+	SEND_DEBUG_ENVELOPE(std::string("sent:msgs:" + toStr(ceil(statBucket.nrMetaMsgSent))));
+	SEND_DEBUG_ENVELOPE(std::string("sent:bytes:" + toStr(ceil(statBucket.sizeMetaMsgSent))));
+	SEND_DEBUG_ENVELOPE(std::string("rcvd:msgs:" + toStr(ceil(statBucket.nrMetaMsgRcvd))));
+	SEND_DEBUG_ENVELOPE(std::string("rcvd:bytes:" + toStr(ceil(statBucket.sizeMetaMsgRcvd))));
 
 	// send our publishers
 	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
@@ -1751,8 +1753,8 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 		SEND_DEBUG_ENVELOPE(std::string("pub:uuid:" + pubIter->first));
 		SEND_DEBUG_ENVELOPE(std::string("pub:channelName:" + pubIter->second.getChannelName()));
 		SEND_DEBUG_ENVELOPE(std::string("pub:type:" + toStr(pubIter->second.getImpl()->implType)));
-		SEND_DEBUG_ENVELOPE(std::string("pub:sent:msgs:" + toStr(statBucket.nrChannelMsg[pubIter->second.getChannelName()])));
-		SEND_DEBUG_ENVELOPE(std::string("pub:sent:bytes:" + toStr(statBucket.sizeChannelMsg[pubIter->second.getChannelName()])));
+		SEND_DEBUG_ENVELOPE(std::string("pub:sent:msgs:" + toStr(ceil(statBucket.nrChannelMsg[pubIter->second.getChannelName()]))));
+		SEND_DEBUG_ENVELOPE(std::string("pub:sent:bytes:" + toStr(ceil(statBucket.sizeChannelMsg[pubIter->second.getChannelName()]))));
 
 		std::map<std::string, SubscriberStub> subs = pubIter->second.getSubscribers();
 		std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();

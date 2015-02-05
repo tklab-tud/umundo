@@ -102,10 +102,10 @@ public:
 	virtual void setDomain(std::string domain)         {
 		_domain = domain;
 	}
-	virtual const long getLastSeen() const        {
+	virtual const uint64_t getLastSeen() const        {
 		return _lastSeen;
 	}
-	virtual void setLastSeen(long lastSeen)       {
+	virtual void setLastSeen(uint64_t lastSeen)       {
 		_lastSeen = lastSeen;
 	}
 	virtual void updateLastSeen() {
@@ -128,7 +128,7 @@ protected:
 	bool _isInProcess;
 	std::string _host;
 	std::string _domain;
-	unsigned long long _lastSeen;
+	uint64_t _lastSeen;
 	std::string _uuid; // defaults to empty uuid
 
 };
@@ -276,7 +276,7 @@ public:
 	virtual const std::string getDomain() const {
 		return _impl->getDomain();
 	}
-	virtual const long getLastSeen() const {
+	virtual const uint64_t getLastSeen() const {
 		return _impl->getLastSeen();
 	}
 	virtual const std::string getUUID() const {

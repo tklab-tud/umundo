@@ -298,16 +298,26 @@ void processDebugNode(DebugNode* node) {
 			}
 
 			DotNode& dotNode = eLabelIter->second;
+			std::stringstream timeInfoSS;
+			
 			if (dotNode.edgeLabel.find("startedAt") != dotNode.edgeLabel.end()) {
 				uint64_t msAgo = now - strTo<uint64_t>(dotNode.edgeLabel["startedAt"]);
-				dotNode.edgeLabel["startedAt"] = "dscv: " + timeToDisplay(msAgo) + " ago";
+				timeInfoSS << timeToDisplay(msAgo);
+				dotNode.edgeLabel.erase("startedAt");
 			}
+			if (timeInfoSS.str().length() > 0)
+				timeInfoSS << " / ";
 
 			if (dotNode.edgeLabel.find("lastSeen") != dotNode.edgeLabel.end()) {
 				uint64_t msAgo = now - strTo<uint64_t>(dotNode.edgeLabel["lastSeen"]);
-				dotNode.edgeLabel["lastSeen"] = "seen: " + timeToDisplay(msAgo) + " ago";
+				timeInfoSS << timeToDisplay(msAgo);
+				dotNode.edgeLabel.erase("lastSeen");
 			}
 
+			if (timeInfoSS.str().length() > 0) {
+				dotNode.edgeLabel["timeInfo"] = timeInfoSS.str();
+			}
+			
 			eLabelIter++;
 		}
 	}
@@ -344,6 +354,9 @@ void processDebugPub(DebugPub* pub) {
 		dotNodes[pub->uuid].attr["color"] = "red";
 	}
 
+	dotNodes[pub->uuid].attr["fillcolor"] = "\"#CCCCCC\"";
+	dotNodes[pub->uuid].attr["style"] = "filled";
+	
 	std::stringstream labelSS;
 	labelSS << "<";
 	labelSS << "<b>Pub[" << SHORT_UUID(pub->uuid) << "]</b><br />";
@@ -361,7 +374,7 @@ void processDebugPub(DebugPub* pub) {
 	labelSS << "@" << pub->channelName << "<br />";
 	labelSS << "#Subscribers: " << pub->connFromSubs.size() << "<br />";
 	if (pub->bytesPerSecSent.size() > 0) {
-		labelSS << "Sent: " << pub->bytesPerSecSent << "B in " << pub->msgsPerSecSent << "msg/s<br />";
+		labelSS << "Sent: " << bytesToDisplay(strTo<uint64_t>(pub->bytesPerSecSent)) << "B in " << pub->msgsPerSecSent << "msg/s<br />";
 	}
 
 	labelSS << ">";
@@ -417,6 +430,7 @@ void processDebugSub(DebugSub* sub) {
 			dotEdges[edgeId].dotId = "\"" + sub->uuid + "\" -> \"" + pubIter->first + "\"";
 			dotEdges[edgeId].attr["arrowhead"] = "normal";
 			dotEdges[edgeId].attr["color"] = "black";
+			dotEdges[edgeId].attr["constraint"] = "false";
 		}
 		pubIter++;
 	}
@@ -760,7 +774,7 @@ void populateEntities() {
 				continue;
 			}
 
-			key = "conn:from:1";
+			key = "conn:from:";
 			if (mIter->substr(0, key.length()) == key) {
 				currNode->connFrom[currRemoteNode->uuid] = currRemoteNode;
 				continue;
@@ -826,7 +840,7 @@ void populateEntities() {
 
 std::string bytesToDisplay(uint64_t nrBytes) {
 	std::stringstream ss;
-	ss << std::setprecision(5);
+	ss << std::setprecision(2);
 
 	uint64_t kMax = (uint64_t)1024 * (uint64_t)1024;
 	uint64_t mMax = kMax * (uint64_t)1024;
@@ -854,7 +868,7 @@ std::string bytesToDisplay(uint64_t nrBytes) {
 
 std::string timeToDisplay(uint64_t ms) {
 	std::stringstream ss;
-	ss << std::setprecision(4);
+	ss << std::setprecision(3);
 
 	if (ms < 1000) {
 		ss << ms << "ms";

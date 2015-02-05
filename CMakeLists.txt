@@ -550,11 +550,23 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	
-	# be very clear about linking debug / non-debug C++ runtimes
-	foreach(FLAGS CMAKE_EXE_LINKER_FLAGS_RELEASE CMAKE_SHARED_LINKER_FLAGS_RELEASE CMAKE_MODULE_LINKER_FLAGS_RELEASE)
+	# be very clear about linking debug / non-debug C++ runtimes for release builds!
+	foreach(FLAGS 
+					CMAKE_EXE_LINKER_FLAGS_RELEASE CMAKE_SHARED_LINKER_FLAGS_RELEASE 
+					CMAKE_MODULE_LINKER_FLAGS_RELEASE)
 		set(${FLAGS} "${${FLAGS}} ${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099 /LTCG /NODEFAULTLIB:MSVCRTD")
 	endforeach()
 
+	if (DIST_PREPARE)
+		# get rid of redistributable requirement with dist builds
+		foreach(FLAGS
+		        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+		        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+		   if(${FLAGS} MATCHES "/MD")
+		      string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		   endif()
+		endforeach()
+	endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	add_definitions("-fPIC")
 	

@@ -33,6 +33,4 @@
 @property (nonatomic) UInt64 firstTimeStamp;
 @property (nonatomic) UInt32 reportInterval;
 
-- (void)accumulateStats;
-
 @end

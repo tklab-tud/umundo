@@ -139,16 +139,27 @@
  *
  */
 
-- (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
-{
-	return YES;
+- (void)stopUmundo {
+	[node removeSubscriber:tcpSub];
+	[node removeSubscriber:mcastSub];
+	[node removeSubscriber:rtpSub];
+	[node removePublisher:reporter];
+	[disc remove:node];
+	
+	firstTimeStamp = 0;
+	
+	[disc dealloc]; // <- this is important to reclaim our sockets later!
+	[node dealloc];
+	[tcpSub dealloc];
+	[mcastSub dealloc];
+	[rtpSub dealloc];
+	[reporter dealloc];
 }
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-	// Override point for customization after application launch.
+- (void)startUmundo {
 	node = [[UMNode alloc] init];
 	disc = [[UMDiscovery alloc] init];
-
+	
 	tcpSub = [[UMSubscriber alloc] initTCP:@"throughput.tcp"
 																receiver:self];
 	
@@ -160,20 +171,31 @@
 	rtpSub = [[UMSubscriber alloc] initRTP:@"throughput.rtp" receiver:self];
 	
 	reporter = [[UMPublisher alloc] initWithChannel:@"reports"];
+
+	[node addSubscriber:tcpSub];
+	[node addSubscriber:mcastSub];
+	[node addSubscriber:rtpSub];
+	[node addPublisher:reporter];
+	[disc add:node];
+
 	startedTimeStamp = umundo::Thread::getTimeStampMs();
+
+}
+
+- (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+	return YES;
+}
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+	// Override point for customization after application launch.
 	
 	bytesRcvd = 0;
 	lastSeqNr = 0;
 	firstTimeStamp = 0;
 	//  timer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(accumulateStats) userInfo:nil repeats:YES];
 
-	startedTimeStamp = umundo::Thread::getTimeStampMs();
-	
-	[node addSubscriber:tcpSub];
-	[node addSubscriber:mcastSub];
-	[node addSubscriber:rtpSub];
-	[node addPublisher:reporter];
-	[disc add:node];
+	[self startUmundo];
 
   return YES;
 }
@@ -187,28 +209,12 @@
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-	[disc remove:node];
-	[node removeSubscriber:tcpSub];
-	[node removeSubscriber:mcastSub];
-	[node removeSubscriber:rtpSub];
-	[node removePublisher:reporter];
-	
-	firstTimeStamp = 0;
-
-	[disc dealloc]; // <- this is important to reclaim our sockets later!
+	[self stopUmundo];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-	disc = [[UMDiscovery alloc] init]; // <- we have to reinstantiate on every wakeup
-	startedTimeStamp = umundo::Thread::getTimeStampMs();
-	
-	[node addSubscriber:tcpSub];
-	[node addSubscriber:mcastSub];
-	[node addSubscriber:rtpSub];
-	[node addPublisher:reporter];
-	[disc add:node];
-
+	[self startUmundo];
 }
 
 

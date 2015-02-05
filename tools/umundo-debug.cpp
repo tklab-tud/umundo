@@ -296,7 +296,7 @@ void processDebugNode(DebugNode* node) {
 				edgeLabels[node->uuid].erase(eLabelIter++);
 				continue;
 			}
-			
+
 			DotNode& dotNode = eLabelIter->second;
 			if (dotNode.edgeLabel.find("startedAt") != dotNode.edgeLabel.end()) {
 				uint64_t msAgo = now - strTo<uint64_t>(dotNode.edgeLabel["startedAt"]);
@@ -307,11 +307,11 @@ void processDebugNode(DebugNode* node) {
 				uint64_t msAgo = now - strTo<uint64_t>(dotNode.edgeLabel["lastSeen"]);
 				dotNode.edgeLabel["lastSeen"] = "seen: " + timeToDisplay(msAgo) + " ago";
 			}
-			
+
 			eLabelIter++;
 		}
 	}
-	
+
 	std::map<std::string, DebugSub*>::iterator subIter = node->subs.begin();
 	while(subIter != node->subs.end()) {
 		std::string edgeId = node->uuid + " -> " + subIter->first;
@@ -425,14 +425,14 @@ void processDebugSub(DebugSub* sub) {
 
 void generateDotFile() {
 	populateEntities();
-	
+
 	// process into edges and nodes for dot
 	std::map<std::string, DebugNode*>::iterator nodeIter = debugNodes.begin();
 	while(nodeIter != debugNodes.end()) {
 		processDebugNode(nodeIter->second);
 		nodeIter++;
 	}
-	
+
 	std::map<std::string, DebugPub*>::iterator pubIter = debugPubs.begin();
 	while(pubIter != debugPubs.end()) {
 		processDebugPub(pubIter->second);
@@ -491,7 +491,7 @@ void generateDotFile() {
 		if (dEdgeIter->second.attr.find("fontsize") == dEdgeIter->second.attr.end()) {
 			dEdgeIter->second.attr["fontsize"] = "8";
 		}
-		
+
 		std::map<std::string, std::string>::iterator attrIter = dEdgeIter->second.attr.begin();
 		std::string seperator;
 		while (attrIter != dEdgeIter->second.attr.end()) {
@@ -554,7 +554,7 @@ int main(int argc, char** argv) {
 
 	Thread::sleepMs(waitFor);
 	now = Thread::getTimeStampMs();
-	
+
 	disc.unbrowse(&debugRS);
 
 	if (dotFile.size() > 0) {
@@ -572,15 +572,15 @@ int main(int argc, char** argv) {
 void populateEntities() {
 	// iterate all messages
 	std::list<std::string>::iterator mIter;
-	
+
 	DebugNode* currNode = NULL;
 	DebugPub* currPub = NULL;
 	DebugSub* currSub = NULL;
-	
+
 	DebugNode* currRemoteNode = NULL;
 	DebugPub* currRemotePub = NULL;
 	DebugSub* currRemoteSub = NULL;
-	
+
 	for(mIter = messages.begin(); mIter != messages.end(); mIter++) {
 		std::string key;
 		if (mIter->length() == 0) {
@@ -588,7 +588,7 @@ void populateEntities() {
 			currPub = NULL;
 			currSub = NULL;
 		}
-		
+
 		// assume that we have a uuid to read
 		key = "uuid:";
 		if (mIter->substr(0, key.length()) == key) {
@@ -599,16 +599,16 @@ void populateEntities() {
 			currNode->isReal = true;
 			continue;
 		}
-		
+
 		if (!currNode) // we cannot continue until we have a node - we rely on the order returned by nodes
 			continue;
-		
+
 		key = "done:";
 		if (mIter->substr(0, key.length()) == key) {
 			currNode = NULL;
 			continue;
 		}
-		
+
 		CHECK_AND_ASSIGN("host:", currNode->host);
 		CHECK_AND_ASSIGN("os:", currNode->os);
 		CHECK_AND_ASSIGN("proc:", currNode->proc);
@@ -616,11 +616,11 @@ void populateEntities() {
 		CHECK_AND_ASSIGN("sent:bytes:", currNode->bytesPerSecSent);
 		CHECK_AND_ASSIGN("rcvd:msgs:", currNode->msgsPerSecRcvd);
 		CHECK_AND_ASSIGN("rcvd:bytes:", currNode->bytesPerSecRcvd);
-		
+
 		// process publishers
 		key = "pub:";
 		if (mIter->substr(0, key.length()) == key) {
-			
+
 			key = "pub:uuid:";
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = VALUE_FOR_CURR_KEY;
@@ -632,19 +632,19 @@ void populateEntities() {
 				currNode->pubs[uuid] = currPub;
 				continue;
 			}
-			
+
 			if (!currPub)
 				continue;
-			
+
 			CHECK_AND_ASSIGN("pub:channelName:", currPub->channelName);
 			CHECK_AND_ASSIGN("pub:type:", currPub->type);
 			CHECK_AND_ASSIGN("pub:sent:msgs:", currPub->msgsPerSecSent);
 			CHECK_AND_ASSIGN("pub:sent:bytes:", currPub->bytesPerSecSent);
-			
+
 			// remote sub registered at the publisher
 			key = "pub:sub";
 			if (mIter->substr(0, key.length()) == key) {
-				
+
 				key = "pub:sub:uuid:";
 				if (mIter->substr(0,key.length()) == key) {
 					std::string uuid = VALUE_FOR_CURR_KEY;
@@ -655,21 +655,21 @@ void populateEntities() {
 					currPub->connFromSubs[uuid] = currRemoteSub;
 					continue;
 				}
-				
+
 				if (!currRemoteSub)
 					continue;
-				
+
 				CHECK_AND_ASSIGN("pub:sub:channelName:", currRemoteSub->channelName);
 				CHECK_AND_ASSIGN("pub:sub:type:", currRemoteSub->type);
-				
+
 			}
 		}
-		
-		
+
+
 		// process subscribers
 		key = "sub:";
 		if (mIter->substr(0, key.length()) == key) {
-			
+
 			key = "sub:uuid:";
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = VALUE_FOR_CURR_KEY;
@@ -681,17 +681,17 @@ void populateEntities() {
 				currNode->subs[uuid] = currSub;
 				continue;
 			}
-			
+
 			if (!currSub)
 				continue;
-			
+
 			CHECK_AND_ASSIGN("sub:channelName:", currSub->channelName);
 			CHECK_AND_ASSIGN("sub:type:", currSub->type);
-			
+
 			// remote pub registered at the subscriber
 			key = "sub:pub";
 			if (mIter->substr(0, key.length()) == key) {
-				
+
 				key = "sub:pub:uuid:";
 				if (mIter->substr(0,key.length()) == key) {
 					std::string uuid = VALUE_FOR_CURR_KEY;
@@ -702,20 +702,20 @@ void populateEntities() {
 					currSub->connToPubs[uuid] = currRemotePub;
 					continue;
 				}
-				
+
 				if (!currRemoteSub)
 					continue;
-				
+
 				CHECK_AND_ASSIGN("sub:pub:channelName:", currRemotePub->channelName);
 				CHECK_AND_ASSIGN("sub:pub:type:", currRemotePub->type);
-				
+
 			}
 		}
-		
+
 		// process connections
 		key = "conn:";
 		if (mIter->substr(0, key.length()) == key) {
-			
+
 			key = "conn:uuid:";
 			if (mIter->substr(0,key.length()) == key) {
 				std::string uuid = VALUE_FOR_CURR_KEY;
@@ -724,22 +724,22 @@ void populateEntities() {
 				currRemoteNode->uuid = uuid;
 				continue;
 			}
-			
+
 			if (!currRemoteNode)
 				continue;
-			
+
 			key = "conn:to:1";
 			if (mIter->substr(0, key.length()) == key) {
 				currNode->connTo[currRemoteNode->uuid].second = currRemoteNode;
 				continue;
 			}
-			
+
 			key = "conn:address:";
 			if (mIter->substr(0, key.length()) == key) {
 				edgeLabels[currNode->uuid][currRemoteNode->uuid].edgeLabel["address"] = VALUE_FOR_CURR_KEY;
 				continue;
 			}
-			
+
 			key = "conn:confirmed:";
 			if (mIter->substr(0, key.length()) == key) {
 				if (!strTo<bool>(VALUE_FOR_CURR_KEY)) {
@@ -747,29 +747,29 @@ void populateEntities() {
 				}
 				continue;
 			}
-			
+
 			key = "conn:startedAt:";
 			if (mIter->substr(0, key.length()) == key) {
 				edgeLabels[currNode->uuid][currRemoteNode->uuid].edgeLabel["startedAt"] = VALUE_FOR_CURR_KEY;
 				continue;
 			}
-			
+
 			key = "conn:lastSeen:";
 			if (mIter->substr(0, key.length()) == key) {
 				edgeLabels[currNode->uuid][currRemoteNode->uuid].edgeLabel["lastSeen"] = VALUE_FOR_CURR_KEY;
 				continue;
 			}
-			
+
 			key = "conn:from:1";
 			if (mIter->substr(0, key.length()) == key) {
 				currNode->connFrom[currRemoteNode->uuid] = currRemoteNode;
 				continue;
 			}
-			
+
 			// process remote publishers
 			key = "conn:pub:";
 			if (mIter->substr(0, key.length()) == key) {
-				
+
 				key = "conn:pub:uuid:";
 				if (mIter->substr(0, key.length()) == key) {
 					PUB_ENSURE(VALUE_FOR_CURR_KEY);
@@ -778,24 +778,24 @@ void populateEntities() {
 					edgeLabels[currNode->uuid][VALUE_FOR_CURR_KEY].edgeLabel["uuid"] = VALUE_FOR_CURR_KEY.substr(0,6);
 					continue;
 				}
-				
+
 				key = "conn:pub:channelName:";
 				if (mIter->substr(0, key.length()) == key) {
 					edgeLabels[currNode->uuid][currRemotePub->uuid].edgeLabel["channelName"] = VALUE_FOR_CURR_KEY;
 					continue;
 				}
-				
+
 				key = "conn:pub:type:";
 				if (mIter->substr(0, key.length()) == key) {
 					edgeLabels[currNode->uuid][currRemotePub->uuid].edgeLabel["type"] = VALUE_FOR_CURR_KEY;
 					continue;
 				}
 			}
-			
+
 			// process remote subscribers
 			key = "conn:sub:";
 			if (mIter->substr(0, key.length()) == key) {
-				
+
 				key = "conn:sub:uuid:";
 				if (mIter->substr(0, key.length()) == key) {
 					SUB_ENSURE(VALUE_FOR_CURR_KEY);
@@ -804,21 +804,21 @@ void populateEntities() {
 					edgeLabels[currNode->uuid][VALUE_FOR_CURR_KEY].edgeLabel["uuid"] = VALUE_FOR_CURR_KEY.substr(0,6);
 					continue;
 				}
-				
+
 				key = "conn:sub:channelName:";
 				if (mIter->substr(0, key.length()) == key) {
 					edgeLabels[currNode->uuid][currRemoteSub->uuid].edgeLabel["channelName"] = VALUE_FOR_CURR_KEY;
 					continue;
 				}
-				
+
 				key = "conn:sub:type:";
 				if (mIter->substr(0, key.length()) == key) {
 					edgeLabels[currNode->uuid][currRemoteSub->uuid].edgeLabel["type"] = VALUE_FOR_CURR_KEY;
 					continue;
 				}
-				
+
 			}
-			
+
 		}
 		std::cout << "Debug information '" << *mIter << "' unhandled" << std::endl;
 	}
@@ -827,11 +827,11 @@ void populateEntities() {
 std::string bytesToDisplay(uint64_t nrBytes) {
 	std::stringstream ss;
 	ss << std::setprecision(5);
-	
+
 	uint64_t kMax = (uint64_t)1024 * (uint64_t)1024;
 	uint64_t mMax = kMax * (uint64_t)1024;
 	uint64_t gMax = mMax * (uint64_t)1024;
-	
+
 	if (nrBytes < 1024) {
 		ss << nrBytes << "B";
 		return ss.str();
@@ -855,7 +855,7 @@ std::string bytesToDisplay(uint64_t nrBytes) {
 std::string timeToDisplay(uint64_t ms) {
 	std::stringstream ss;
 	ss << std::setprecision(4);
-	
+
 	if (ms < 1000) {
 		ss << ms << "ms";
 		return ss.str();

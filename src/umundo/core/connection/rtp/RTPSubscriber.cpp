@@ -238,25 +238,25 @@ void RTPSubscriber::rtp_recv(const struct libre::sa *src, const struct libre::rt
 
 #if 0
 	// From re_rtp.h
-	
+
 	struct rtp_header {
-	uint8_t  ver;       /**< RTP version number     */
-	bool     pad;       /**< Padding bit            */
-	bool     ext;       /**< Extension bit          */
-	uint8_t  cc;        /**< CSRC count             */
-	bool     m;         /**< Marker bit             */
-	uint8_t  pt;        /**< Payload type           */
-	uint16_t seq;       /**< Sequence number        */
-	uint32_t ts;        /**< Timestamp              */
-	uint32_t ssrc;      /**< Synchronization source */
-	uint32_t csrc[16];  /**< Contributing sources   */
-	struct {
-		uint16_t type;  /**< Defined by profile     */
-		uint16_t len;   /**< Number of 32-bit words */
-	} x;
-};
+		uint8_t  ver;       /**< RTP version number     */
+		bool     pad;       /**< Padding bit            */
+		bool     ext;       /**< Extension bit          */
+		uint8_t  cc;        /**< CSRC count             */
+		bool     m;         /**< Marker bit             */
+		uint8_t  pt;        /**< Payload type           */
+		uint16_t seq;       /**< Sequence number        */
+		uint32_t ts;        /**< Timestamp              */
+		uint32_t ssrc;      /**< Synchronization source */
+		uint32_t csrc[16];  /**< Contributing sources   */
+		struct {
+			uint16_t type;  /**< Defined by profile     */
+			uint16_t len;   /**< Number of 32-bit words */
+		} x;
+	};
 #endif
-	
+
 	Message* msg = new Message((char*)mbuf_buf(mb), mbuf_get_left(mb));
 	msg->putMeta("um.type", "RTP");
 	msg->putMeta("um.version", toStr((uint16_t)hdr->ver));

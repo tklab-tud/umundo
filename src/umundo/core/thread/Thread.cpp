@@ -107,10 +107,10 @@ void Thread::sleepMs(uint32_t ms) {
 void Thread::sleepUs(uint32_t us) {
 #ifdef WIN32
 	__int64 time1 = 0, time2 = 0, freq = 1000000;
-	
+
 	QueryPerformanceCounter((LARGE_INTEGER *) &time1);
 	QueryPerformanceFrequency((LARGE_INTEGER *) &freq);
-	
+
 	do {
 		QueryPerformanceCounter((LARGE_INTEGER *) &time2);
 	} while((time2-time1) < us * 10);

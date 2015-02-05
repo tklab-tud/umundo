@@ -798,7 +798,7 @@ private:
 			{
 				RScopeLock lock(_knownSubsMutex);
 				GlobalReceiver* receiver = NULL;
-				
+
 				if (_knownSubs[msg->get<bool>("isRTP")][msg->get("channelName")].first == NULL) {		//first subscriber --> register actual receiver to receive the data
 					receiver = new GlobalReceiver(msg->get("channelName"), msg->get<bool>("isRTP"), shared_from_this());
 				}

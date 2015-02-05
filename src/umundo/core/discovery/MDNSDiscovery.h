@@ -27,7 +27,7 @@ namespace umundo {
 
 class MDNSAdvertisement {
 public:
-	
+
 	MDNSAdvertisement() : port(0), isInProcess(false), isRemote(true), lastChange(0) {}
 	std::string regType;
 	std::string domain;
@@ -41,7 +41,7 @@ public:
 	std::map<uint32_t, std::string> ipv4; // ifindex to address
 	std::map<uint32_t, std::string> ipv6;
 	uint32_t lastChange;
-	
+
 	std::string getTransport() {
 		size_t firstDot = regType.find_first_of(".");
 		if (firstDot != std::string::npos && regType.length() >= firstDot + 5) {

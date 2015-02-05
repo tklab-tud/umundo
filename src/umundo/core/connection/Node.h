@@ -228,14 +228,14 @@ public:
 	virtual void add(EndPoint endPoint, const std::string& via) {
 		return _impl->add(endPoint, via);
 	}
-	
+
 	virtual void remove(EndPoint endPoint) {
 		return _impl->remove(endPoint);
 	}
 	virtual void remove(EndPoint endPoint, const std::string& via) {
 		return _impl->remove(endPoint, via);
 	}
-	
+
 	virtual void change(EndPoint endPoint, uint64_t what = 0) {
 		return _impl->change(endPoint, what);
 	}

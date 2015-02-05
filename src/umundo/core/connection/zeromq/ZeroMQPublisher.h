@@ -62,7 +62,7 @@ private:
 	void run();
 
 	bool _compressMessages;
-	
+
 	void* _pubSocket;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;

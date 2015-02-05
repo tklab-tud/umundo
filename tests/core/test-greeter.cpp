@@ -23,7 +23,7 @@ bool testGreeter() {
 	TestGreeter greeter;
 	Publisher pub1("foobar");
 	pub1.setGreeter(&greeter);
-	
+
 	node1.addPublisher(pub1);
 
 	node1.add(node2);

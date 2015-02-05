@@ -56,7 +56,7 @@ void ZeroMQPublisher::init(const Options* config) {
 
 	std::map<std::string, std::string> options = config->getKVPs();
 	_compressMessages = options.find("pub.tcp.compression") != options.end();
-	
+
 	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressMessages ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
 }
@@ -133,7 +133,8 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 
 	_domainSubs.insert(std::make_pair(sub.getUUID(), std::make_pair(node, sub)));
 
-	UM_LOG_INFO("Publisher %s received subscriber %s on node %s for channel %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str(), _channelName.c_str());
+	UM_LOG_INFO("Publisher %s on channel %s received subscriber %s at node %s",
+	            SHORT_UUID(_uuid).c_str(), _channelName.c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(node.getUUID()).c_str());
 
 	if (_greeter != NULL && _domainSubs.count(sub.getUUID()) == 1) {
 		// only perform greeting for first occurence of subscriber
@@ -191,10 +192,10 @@ void ZeroMQPublisher::send(Message* msg) {
 
 	if (_compressMessages)
 		msg->compress();
-	
+
 	// topic name or explicit subscriber id is first message in envelope
 	zmq_msg_t channelEnvlp;
-	
+
 	if (msg->getMeta().find("um.sub") != msg->getMeta().end()) {
 		// explicit destination
 		if (_domainSubs.count(msg->getMeta("um.sub")) == 0 && !msg->isQueued()) {
@@ -213,7 +214,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
 	std::map<std::string, std::string> metaKeys = msg->getMeta();
-	
+
 	// default meta fields
 	metaKeys["um.pub"] = _uuid;
 	metaKeys["um.proc"] = procUUID;
@@ -245,7 +246,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		memcpy(writePtr,
 		       (metaIter->second).data(),
 		       (metaIter->second).length());
-		
+
 		// first string + null byte + second string
 		((char*)zmq_msg_data(&metaMsg))[(metaIter->first).length() + 1 + (metaIter->second).length()] = '\0';
 		assert(strlen(writePtr) == (metaIter->second).length());
@@ -263,13 +264,13 @@ void ZeroMQPublisher::send(Message* msg) {
 	} else {
 		memcpy(zmq_msg_data(&payload), msg->data(), msg->size());
 	}
-	
+
 #else
 	/**
 	 * avoid message envelopes with pub/sub due to the
 	 * dreaded assertion failure: !more (fq.cpp:107) from 0mq
 	 */
-	
+
 	// how many bytes will we need for the buffer?
 	std::map<std::string, std::string>::iterator metaIter;
 	size_t bufferSize = msg->size();
@@ -288,7 +289,7 @@ void ZeroMQPublisher::send(Message* msg) {
 	 * thus two zero bytes signify meta end
 	 */
 	bufferSize += 1; // delimiter
-	
+
 	zmq_msg_t payload;
 	zmq_msg_init(&payload) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));
 	zmq_msg_init_size (&payload, bufferSize) && UM_LOG_WARN("zmq_msg_init_size: %s", zmq_strerror(errno));
@@ -305,9 +306,9 @@ void ZeroMQPublisher::send(Message* msg) {
 	// terminate meta keys
 	writePtr[0] = '\0';
 	writePtr++;
-	
+
 	assert(bufferSize - (writePtr - dataStart) == msg->size());
-	
+
 	memcpy(writePtr, msg->data(), msg->size());
 
 #endif

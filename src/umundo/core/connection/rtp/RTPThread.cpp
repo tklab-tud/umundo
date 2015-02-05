@@ -39,11 +39,11 @@ boost::function<int()> RTPThread::_func = NULL;
 RMutex RTPThread::_mutex;
 Monitor RTPThread::_cond;
 WeakPtr<RTPThread> RTPThread::_instance;
-	
+
 SharedPtr<RTPThread> RTPThread::getInstance() {
 	RScopeLock lock(_mutex);
 	SharedPtr<RTPThread> instance = _instance.lock();
-	
+
 	if (!instance) {
 		instance = SharedPtr<RTPThread>(new RTPThread());
 		_instance = instance;

@@ -41,7 +41,7 @@ public:
 	int call(boost::function<int()>);
 
 protected:
-	
+
 	static struct libre::mqueue *_mq;
 	static RMutex _mutex;
 	static Monitor _cond;

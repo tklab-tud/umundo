@@ -30,7 +30,7 @@ class NodeImpl;
 class NodeQuery;
 class Node;
 class DiscoveryConfig;
-	
+
 /**
  * Discovery implementor basis class (bridge pattern).
  * \see Discovery
@@ -171,8 +171,8 @@ protected:
 	Discovery::DiscoveryType _type;
 	friend class Discovery;
 };
-	
-	
+
+
 class UMUNDO_API DiscoveryConfigMDNS : public DiscoveryConfig {
 public:
 	enum Protocol {
@@ -185,20 +185,20 @@ public:
 		options["mdns.protocol"] = "tcp";
 		options["mdns.serviceType"] = "umundo";
 	}
-	
+
 	void setProtocol(Protocol protocol) {
 		switch (protocol) {
-			case UDP:
-				options["mdns.protocol"] = "udp";
-				break;
-			case TCP:
-				options["mdns.protocol"] = "tcp";
-				break;
-			default:
-				break;
+		case UDP:
+			options["mdns.protocol"] = "udp";
+			break;
+		case TCP:
+			options["mdns.protocol"] = "tcp";
+			break;
+		default:
+			break;
 		}
 	}
-	
+
 	void setServiceType(const std::string& serviceType) {
 		options["mdns.serviceType"] = serviceType;
 	}
@@ -212,11 +212,11 @@ public:
 	DiscoveryConfigBCast() : DiscoveryConfig() {
 		_type = Discovery::BROADCAST;
 	}
-	
+
 protected:
 	friend class Discovery;
 };
-	
+
 }
 
 #endif /* end of include guard: DISCOVERY_H_PWR3M1QA */

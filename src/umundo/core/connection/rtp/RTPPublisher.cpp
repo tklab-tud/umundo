@@ -63,7 +63,7 @@ RTPPublisher::RTPPublisher() : _isSuspended(false), _initDone(false) {
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2,2),&dat);
 #endif // WIN32
-	
+
 }
 
 void RTPPublisher::init(const Options* config) {
@@ -86,7 +86,7 @@ void RTPPublisher::init(const Options* config) {
 			UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid portbase (0 < portbase < 65535)", SHORT_UUID(_uuid).c_str());
 		}
 	}
-	
+
 	if (_timestampIncrement == 0) {
 		UM_LOG_ERR("%s: error RTPPublisher.init(): you need to specify a valid timestampIncrement (timestampIncrement > 0)", SHORT_UUID(_uuid).c_str());
 		return;
@@ -292,7 +292,7 @@ void RTPPublisher::send(Message* msg) {
 		if (sequenceNumber)
 			_rtp_socket->enc.seq = sequenceNumber;
 		if ((status = libre::rtp_send(_rtp_socket, &iterator->second, marker, payloadType, timestamp, mb)))
-			UM_LOG_WARN("%s: error %d in libre::rtp_send() for destination '%s': %s", SHORT_UUID(_uuid).c_str(), status, iterator->first.c_str(), strerror(status));
+			UM_LOG_INFO("%s: error in libre::rtp_send() for destination '%s': %s", SHORT_UUID(_uuid).c_str(), iterator->first.c_str(), strerror(status));
 	}
 	//cleanup
 	libre::mem_deref(mb);

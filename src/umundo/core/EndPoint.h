@@ -49,14 +49,14 @@ public:
 		}
 		return getAddress() < other.getAddress();
 	}
-	
+
 	bool operator==(const EndPointImpl& other) const {
 		return !(*this != other);
 	}
 	bool operator!=(const EndPointImpl& other) const {
 		return (*this < other) || (other < *this);
 	}
-	
+
 	virtual const std::string getAddress() const            {
 		return _transport + "://" + _ip + ":" + toStr(_port) + (_uuid.size() > 0 ? " (" + SHORT_UUID(_uuid) + ")" : "");
 	}

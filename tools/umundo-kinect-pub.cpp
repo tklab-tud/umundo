@@ -57,22 +57,22 @@ public:
 		_frameCountVideo++;
 		if(_frameCountVideo % _modulo)			//send every _frameCountDepth modulo _modulo frame
 			return;
-		
+
 		switch (getVideoResolution()) {
-			case FREENECT_RESOLUTION_LOW:
-				cols = 320;
-				rows = 240;
-				break;
-			case FREENECT_RESOLUTION_MEDIUM:
-				cols = 640;
-				rows = 480;
-				break;
-			case FREENECT_RESOLUTION_HIGH:
-				cols = 1280;
-				rows = 1024;
-				break;
-			default:
-    break;
+		case FREENECT_RESOLUTION_LOW:
+			cols = 320;
+			rows = 240;
+			break;
+		case FREENECT_RESOLUTION_MEDIUM:
+			cols = 640;
+			rows = 480;
+			break;
+		case FREENECT_RESOLUTION_HIGH:
+			cols = 1280;
+			rows = 1024;
+			break;
+		default:
+			break;
 		}
 
 		size_t frameSize = getVideoBufferSize();
@@ -89,7 +89,7 @@ public:
 		 * G R G R G R G R
 		 * B G B G B G B G
 		 */
-		
+
 		size_t blockRows = 240; // top to bottom 240 -> 120 blocks
 		size_t blockCols = 320; // left to right 320 -> 160 blocks
 		size_t hereRight = 1;
@@ -97,7 +97,7 @@ public:
 		size_t thereRight = 1;
 		size_t thereDown = 640;
 		size_t maxHere = 0;
-		
+
 		for (int y = 0; y < blockRows; y += 2) {
 			for (int x = 0; x < blockCols; x += 2) {
 				// we need to allocate a 2x2 block each
@@ -120,7 +120,7 @@ public:
 			tcpMsg.putMeta("um.marker", toStr(true));
 			tcpMsg.setData((const char*)&scaled[0], scaled.size());
 
-			
+
 #if 1
 			// shave off last few bits to help compression
 			char* msgData = const_cast<char*>(tcpMsg.data());
@@ -130,14 +130,14 @@ public:
 //					msgData[i] &= 0xF0;
 			}
 #endif
-#if 0			
+#if 0
 			std::cout << tcpMsg.size() << " -> ";
 			tcpMsg.compress();
 			std::cout << tcpMsg.size() << std::endl;
-#endif		
+#endif
 			pubVideoTCP.send(&tcpMsg);
 		}
-		
+
 
 		{
 			// chop into RTP packets
@@ -148,7 +148,7 @@ public:
 
 			for (int i = 0; i < interleaves; i++) {
 				uint16_t index = (startSeg + i) % interleaves;
-				
+
 				while (index * MAX_PAYLOAD_PACKET < scaled.size()) {
 //					std::cout << index * MAX_PAYLOAD_PACKET << ", ";
 					Message rtpMsg;
@@ -160,15 +160,15 @@ public:
 						rtpMsg.putMeta("um.timestampIncrement", toStr(0));
 						rtpMsg.putMeta("um.marker", toStr(false));
 					}
-					
+
 					char* buffer = (char*)malloc(MAX_PAYLOAD_PACKET + 2);
 					Message::write(buffer, (uint16_t)index);
 					memcpy(&buffer[2], &scaled[index * MAX_PAYLOAD_PACKET], (index * MAX_PAYLOAD_PACKET) + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - (index * MAX_PAYLOAD_PACKET) : MAX_PAYLOAD_PACKET);
 					rtpMsg.setData(buffer, MAX_PAYLOAD_PACKET + 2);
 					free(buffer);
-					
+
 					pubVideoRTP.send(&rtpMsg);
-					
+
 					index += interleaves;
 				}
 			}
@@ -184,7 +184,7 @@ public:
 					rtpMsg.putMeta("um.timestampIncrement", toStr(0));
 					rtpMsg.putMeta("um.marker", toStr(false));
 				}
-				
+
 				char* buffer = (char*)malloc(MAX_PAYLOAD_PACKET + 2);
 				Message::write((uint16_t)index, buffer);
 				memcpy(&buffer[2], &scaled[index], index + MAX_PAYLOAD_PACKET > scaled.size() ? scaled.size() - index : MAX_PAYLOAD_PACKET);
@@ -200,8 +200,8 @@ public:
 
 		_lastTimestampVideo = timestamp;
 	}
-	
-	
+
+
 	void DepthCallback(void* frame, uint32_t frameTimestamp) {
 		return;
 #if 0
@@ -225,14 +225,14 @@ public:
 				msg->putMeta("um.timestampIncrement", toStr(0));
 				msg->putMeta("um.marker", toStr(false));
 			}
-			
+
 			struct RTPDepthData *data = new struct RTPDepthData;
 			data->row = i;
 			data->timestamp = timestamp;
-			
+
 			memcpy(data->data, depth + (640 * i), sizeof(uint16_t) * 640);		//copy one depth data row into rtp data
 			msg->setData((char*)data, sizeof(struct RTPDepthData));
-			
+
 //			pubDepthTCP.send(msg);
 			pubDepthRTP.send(msg);
 
@@ -251,7 +251,7 @@ public:
 	Publisher pubDepthTCP;
 	Publisher pubVideoRTP;
 	Publisher pubVideoTCP;
-	
+
 private:
 	uint16_t _modulo;
 	uint16_t _frameCountDepth;
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
 	Node node;
 	Publisher pubDepthTCP;
 	Publisher pubDepthRTP;
-	
+
 	Publisher pubVideoTCP;
 	Publisher pubVideoRTP;
 
@@ -279,12 +279,12 @@ int main(int argc, char** argv) {
 	int option;
 	while ((option = getopt(argc, argv, "m:")) != -1) {
 		switch(option) {
-			case 'm':
-				modulo = atoi(optarg);
-				break;
-			default:
-				printUsageAndExit();
-				break;
+		case 'm':
+			modulo = atoi(optarg);
+			break;
+		default:
+			printUsageAndExit();
+			break;
 		}
 	}
 
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
 		pubConfigTCP.enableCompression();
 		pubDepthTCP = Publisher(&pubConfigTCP);
 	}
-	
+
 	{
 		PublisherConfigRTP pubConfigRTP("kinect.video.rtp");
 		pubConfigRTP.setTimestampIncrement(1);
@@ -309,7 +309,7 @@ int main(int argc, char** argv) {
 		pubConfigTCP.enableCompression();
 		pubVideoTCP = Publisher(&pubConfigTCP);
 	}
-	
+
 	disc = Discovery(Discovery::MDNS);
 	disc.add(node);
 
@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
 	node.addPublisher(pubDepthTCP);
 	node.addPublisher(pubVideoRTP);
 	node.addPublisher(pubVideoTCP);
-	
+
 	// try to instantiate freenect device
 	while(true) {
 		try {
@@ -342,12 +342,12 @@ int main(int argc, char** argv) {
 					Thread::sleepMs(5000);
 				}
 			}
-			
+
 		} catch(std::runtime_error e) {
 			std::cout << "An exception occured: " << e.what() << " - retrying" << std::endl;
 			Thread::sleepMs(5000);
 		}
 	}
-	
+
 	return 0;
 }

@@ -77,26 +77,26 @@ char* Message::write(char* to, double value) {
 
 const char* Message::read(const char* from, uint64_t* value) {
 	*value = (((uint64_t)from[0] << 56) & 0xFF00000000000000ULL)
-	       | (((uint64_t)from[1] << 48) & 0x00FF000000000000ULL)
-	       | (((uint64_t)from[2] << 40) & 0x0000FF0000000000ULL)
-	       | (((uint64_t)from[3] << 32) & 0x000000FF00000000ULL)
-	       | ((from[4] << 24) & 0x00000000FF000000U)
-	       | ((from[5] << 16) & 0x0000000000FF0000U)
-	       | ((from[6] <<  8) & 0x000000000000FF00U)
-	       |  (from[7]        & 0x00000000000000FFU);
+	         | (((uint64_t)from[1] << 48) & 0x00FF000000000000ULL)
+	         | (((uint64_t)from[2] << 40) & 0x0000FF0000000000ULL)
+	         | (((uint64_t)from[3] << 32) & 0x000000FF00000000ULL)
+	         | ((from[4] << 24) & 0x00000000FF000000U)
+	         | ((from[5] << 16) & 0x0000000000FF0000U)
+	         | ((from[6] <<  8) & 0x000000000000FF00U)
+	         |  (from[7]        & 0x00000000000000FFU);
 	return from + 8;
 }
 const char* Message::read(const char* from, uint32_t* value) {
 	*value = ((from[0] << 24) & 0xFF000000U)
-	       | ((from[1] << 16) & 0x00FF0000U)
-	       | ((from[2] <<  8) & 0x0000FF00U)
-	       |  (from[3]        & 0x000000FFU);
+	         | ((from[1] << 16) & 0x00FF0000U)
+	         | ((from[2] <<  8) & 0x0000FF00U)
+	         |  (from[3]        & 0x000000FFU);
 	return from + 4;
 }
-	
+
 const char* Message::read(const char* from, uint16_t* value) {
 	*value = ((from[0] <<  8) & 0xFF00U)
-	       |  (from[1]        & 0x00FFU);
+	         |  (from[1]        & 0x00FFU);
 	return from + 2;
 }
 const char* Message::read(const char* from, uint8_t* value) {
@@ -106,27 +106,27 @@ const char* Message::read(const char* from, uint8_t* value) {
 
 const char* Message::read(const char* from, int64_t* value) {
 	*value = (((int64_t)from[0] << 56) & 0xFF00000000000000ULL)
-	       | (((int64_t)from[1] << 48) & 0x00FF000000000000ULL)
-	       | (((int64_t)from[2] << 40) & 0x0000FF0000000000ULL)
-	       | (((int64_t)from[3] << 32) & 0x000000FF00000000ULL)
-	       | ((from[4] << 24) & 0x00000000FF000000U)
-	       | ((from[5] << 16) & 0x0000000000FF0000U)
-	       | ((from[6] <<  8) & 0x000000000000FF00U)
-	       |  (from[7]        & 0x00000000000000FFU);
+	         | (((int64_t)from[1] << 48) & 0x00FF000000000000ULL)
+	         | (((int64_t)from[2] << 40) & 0x0000FF0000000000ULL)
+	         | (((int64_t)from[3] << 32) & 0x000000FF00000000ULL)
+	         | ((from[4] << 24) & 0x00000000FF000000U)
+	         | ((from[5] << 16) & 0x0000000000FF0000U)
+	         | ((from[6] <<  8) & 0x000000000000FF00U)
+	         |  (from[7]        & 0x00000000000000FFU);
 	return from + 8;
 }
 
 const char* Message::read(const char* from, int32_t* value) {
 	*value = ((from[0] << 24) & 0xFF000000U)
-	       | ((from[1] << 16) & 0x00FF0000U)
-	       | ((from[2] <<  8) & 0x0000FF00U)
-	       |  (from[3]        & 0x000000FFU);
+	         | ((from[1] << 16) & 0x00FF0000U)
+	         | ((from[2] <<  8) & 0x0000FF00U)
+	         |  (from[3]        & 0x000000FFU);
 	return from + 4;
 }
 
 const char* Message::read(const char* from, int16_t* value) {
 	*value = ((from[0] <<  8) & 0xFF00U)
-	       |  (from[1]        & 0x00FFU);
+	         |  (from[1]        & 0x00FFU);
 	return from + 2;
 }
 
@@ -165,12 +165,12 @@ const char* Message::read(const char* from, std::string& value, size_t maxLength
 	return from + readSize + 1; // we consumed \0
 }
 
-	
+
 void Message::compress() {
 	if (isCompressed())
 		return;
 #ifdef BUILD_WITH_COMPRESSION_MINIZ
-	
+
 	mz_ulong compressedSize = mz_compressBound(_size);
 	int cmp_status;
 	uint8_t *pCmp;
@@ -183,45 +183,45 @@ void Message::compress() {
 		// error
 		free(pCmp);
 	}
-	
+
 	_data = SharedPtr<char>((char*)pCmp);
 	_meta["um.compressed"] = toStr(_size);
 	_size = compressedSize;
 
 #elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
-	
+
 	// The minimum input buffer size is 16.
 	if (_size < 16)
 		return;
-	
+
 	// The output buffer must be at least 5% larger than the input buffer and can not be smaller than 66 bytes.
 	int compressedSize = _size + (double)_size * 0.06;
 	if (compressedSize < 66)
 		compressedSize = 66;
-	
+
 	char* compressedData = (char*)malloc(compressedSize);
 	compressedSize = fastlz_compress(_data.get(), _size, compressedData);
-	
+
 	// If the input is not compressible, the return value might be larger than length
 	if (compressedSize > _size) {
 		free(compressedData);
 		return;
 	}
-	
+
 //	std::cout << _size << " -> " << compressedSize << " = " << ((float)compressedSize / (float)_size) << std::endl;
-	
+
 	_data = SharedPtr<char>((char*)compressedData);
 	_meta["um.compressed"] = toStr(_size);
 	_size = compressedSize;
 
 #endif
-	
+
 }
 
 void Message::uncompress() {
 	if (!isCompressed())
 		return;
-	
+
 #ifdef BUILD_WITH_COMPRESSION_MINIZ
 	int cmp_status;
 	mz_ulong actualSize = strTo<size_t>(_meta["um.compressed"]);
@@ -233,17 +233,17 @@ void Message::uncompress() {
 	_size = actualSize;
 	_data = SharedPtr<char>((char*)pUncmp);
 	_meta.erase("um.compressed");
-	
+
 #elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
-	
+
 	int actualSize = strTo<size_t>(_meta["um.compressed"]);
 	void* uncompressed = malloc((size_t)actualSize);
 
 	// returns the size of the decompressed block.
 	actualSize = fastlz_decompress(_data.get(), _size, uncompressed, actualSize);
-	
+
 	// If error occurs, e.g. the compressed data is corrupted or the output buffer is not large enough, then 0
-	
+
 	_size = actualSize;
 	_data = SharedPtr<char>((char*)uncompressed);
 	_meta.erase("um.compressed");

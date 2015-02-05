@@ -48,7 +48,7 @@ public:
 	friend class Subscriber;
 };
 
-	
+
 /**
  * Subscriber implementor basis class (bridge pattern).
  */
@@ -79,7 +79,7 @@ public:
 	virtual bool matches(const PublisherStub& pub) {
 		// are our types equal and is our channel a prefix of the given channel?
 		return (pub.getImpl()->implType == implType &&
-						pub.getChannelName().substr(0, _channelName.size()) == _channelName);
+		        pub.getChannelName().substr(0, _channelName.size()) == _channelName);
 	}
 
 	static int instances;
@@ -160,7 +160,7 @@ public:
 	bool matches(const PublisherStub& pub) {
 		return _impl->matches(pub);
 	}
-	
+
 	void added(const PublisherStub& pub, const NodeStub& node) {
 		_impl->added(pub, node);
 	}
@@ -187,7 +187,7 @@ protected:
 	friend class Node;
 };
 
-	
+
 class UMUNDO_API SubscriberConfig : public Options {
 protected:
 	SubscriberConfig(const std::string& channel) : _channelName(channel) {
@@ -196,7 +196,7 @@ protected:
 
 	std::string _channelName;
 	SubscriberStub::SubscriberType _type;
-	
+
 	friend class Subscriber;
 };
 
@@ -217,11 +217,11 @@ public:
 	SubscriberConfigRTP(const std::string& channel) : SubscriberConfigTCP(channel) {
 		_type = Subscriber::RTP;
 	}
-	
+
 	void setPortbase(uint16_t port) {
 		options["sub.rtp.portbase"] = toStr(port);
 	}
-	
+
 	void setMulticastIP(std::string ip) {
 		options["sub.rtp.multicast"] = ip;
 	}

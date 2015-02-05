@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 
 	GlobalGreeter greeter;
 	pubFoo.setGreeter(&greeter);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);

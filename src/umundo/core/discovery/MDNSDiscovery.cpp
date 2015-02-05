@@ -44,7 +44,7 @@ void MDNSDiscovery::init(const Options* config) {
 		if (options["mdns.serviceType"].length() > 0)
 			_serviceType = options["mdns.serviceType"];
 	}
-	
+
 	_mdnsImpl = StaticPtrCast<MDNSDiscoveryImpl>(Factory::create("discovery.mdns.impl"));
 	_query = new MDNSQuery();
 	_query->domain = _domain;
@@ -163,7 +163,7 @@ void MDNSDiscovery::unadvertise(const EndPoint& node) {
 
 void MDNSDiscovery::remove(Node& node) {
 	RScopeLock lock(_mutex);
-	
+
 	unbrowse(node.getImpl().get());
 	unadvertise(node);
 }
@@ -281,7 +281,7 @@ void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 		added(remoteAd);
 		return;
 	}
-	
+
 	std::string whatString;
 	std::string seperator;
 	if (what & Discovery::IFACE_REMOVED) {
@@ -292,7 +292,7 @@ void MDNSDiscovery::changed(MDNSAdvertisement* remoteAd, uint64_t what) {
 		whatString = seperator +  "available on new interface";
 		seperator = ", ";
 	}
-	
+
 	UM_LOG_INFO("MDNS reported changed node %s in %s as '%s' - notifying nodes", _remoteAds[remoteAd].getAddress().c_str(), _domain.c_str(), whatString.c_str());
 	for (std::set<ResultSet<ENDPOINT_RS_TYPE>*>::iterator queryIter = _queries.begin();
 	        queryIter != _queries.end();

@@ -43,7 +43,7 @@ Discovery::Discovery(DiscoveryType type, const std::string domain) {
 	} else {
 		config->setDomain("local.");
 	}
-	
+
 	init(config);
 	delete config;
 
@@ -58,14 +58,14 @@ Discovery::~Discovery() {
 
 void Discovery::init(DiscoveryConfig* config) {
 	switch (config->_type) {
-		case MDNS:
-			_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
-			break;
-		case BROADCAST:
-			_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
-			break;
-		default:
-			break;
+	case MDNS:
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.mdns"));
+		break;
+	case BROADCAST:
+		_impl = StaticPtrCast<DiscoveryImpl>(Factory::create("discovery.broadcast"));
+		break;
+	default:
+		break;
 	}
 	if (_impl)
 		_impl->init(config);

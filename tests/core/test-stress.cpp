@@ -93,7 +93,7 @@ void testContinuousStress() {
 		Publisher pub1("stress");
 		Subscriber sub1("stress");
 		sub1.setReceiver(&rcv);
-		
+
 		node1.addPublisher(pub1);
 		node1.addSubscriber(sub1);
 

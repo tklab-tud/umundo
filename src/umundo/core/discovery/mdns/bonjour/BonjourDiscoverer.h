@@ -146,7 +146,7 @@ protected:
 
 	/** @name Representation of a native query on bonjour */
 	//@{
-	
+
 	class NativeBonjourQuery {
 	public:
 		NativeBonjourQuery() : serviceBrowseDNSClient(NULL) {}
@@ -154,19 +154,19 @@ protected:
 		std::set<MDNSQuery*> queries;
 		std::map<std::string, MDNSAdvertisement*> remoteAds; // relevant subset of remote ads from _remoteAds below
 	};
-	
+
 	/// domain to type to client with set of queries
 	std::map<std::string, std::map<std::string, NativeBonjourQuery> > _queryClients;
-	
+
 	bool hasNativeQueryInDomainForType(const std::string& domain, const std::string& type) {
 		if (_queryClients.find(domain) == _queryClients.end() ||
-				_queryClients[domain].find(type) == _queryClients[domain].end() ||
-				_queryClients[domain][type].queries.size() == 0) {
+		        _queryClients[domain].find(type) == _queryClients[domain].end() ||
+		        _queryClients[domain][type].queries.size() == 0) {
 			return false;
 		}
 		return true;
 	}
-	
+
 	//@}
 
 	/// All the mdns service refs for a mdns advertisement
@@ -179,7 +179,7 @@ protected:
 	};
 
 	void dumpQueries();
-	
+
 	DNSServiceRef _mainDNSHandle;
 	std::map<int, DNSServiceRef> _activeFDs;                       ///< Socket file descriptors to bonjour handle.
 

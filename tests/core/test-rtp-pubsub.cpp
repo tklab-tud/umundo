@@ -17,7 +17,7 @@ bool testInstantiation() {
 	PublisherConfigRTP pubConfig("foo");
 	pubConfig.setTimestampIncrement(166);
 	Publisher rtpPub(&pubConfig);
-	
+
 	SubscriberConfigRTP subConfig("foo");
 	Subscriber rtpSub(&subConfig);
 

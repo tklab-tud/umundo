@@ -80,7 +80,7 @@ public:
 	static char* write(char* to, int8_t value);
 	static char* write(char* to, float value);
 	static char* write(char* to, double value);
-	
+
 	static const char* read(const char* from, std::string& value, size_t maxLength);
 	static const char* read(const char* from, uint64_t* value);
 	static const char* read(const char* from, uint32_t* value);
@@ -92,13 +92,13 @@ public:
 	static const char* read(const char* from, int8_t* value);
 	static const char* read(const char* from, float* value);
 	static const char* read(const char* from, double* value);
-	
+
 private:
 	class NilDeleter;
 	friend class NilDeleter;
 	friend class ZeroMQPublisher;
 
-public:	
+public:
 	Message() : _size(0), _isQueued(false), _flags(NONE), _hint(NULL), _doneCallback(NULL) {}
 	Message(const char* data, size_t length, Flags flags) : _size(length), _isQueued(false), _flags(flags), _hint(NULL), _doneCallback(NULL) {
 		if (_flags & ADOPT_DATA) {
@@ -119,7 +119,7 @@ public:
 		_data = SharedPtr<char>((char*)malloc(_size));
 		memcpy(_data.get(), data, _size);
 	}
-	
+
 	Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint) : _size(length), _isQueued(false), _flags(WRAP_DATA) {
 		_doneCallback = doneCallback;
 		_hint = hint;
@@ -152,13 +152,13 @@ public:
 	bool isCompressed() {
 		return (_meta.find("um.compressed") != _meta.end());
 	}
-	
+
 	virtual void setData(const char* data, size_t length)               {
 		_size = length;
 		_data = SharedPtr<char>((char*)malloc(_size));
 		memcpy(_data.get(), data, _size);
 	}
-	
+
 	virtual const void putMeta(const std::string& key, const std::string& value)  {
 		_meta[key] = value;
 	}
@@ -170,7 +170,7 @@ public:
 			return _meta[key];
 		return "";
 	}
-	
+
 	void setQueued(bool isQueued) {
 		_isQueued = isQueued;
 	}
@@ -194,10 +194,10 @@ private:
 	public:
 		void operator()(char* p) {}
 	};
-	
+
 	SharedPtr<char> _data;
 	size_t _size;
-	
+
 	bool _isQueued;
 	uint32_t _flags;
 	std::map<std::string, std::string> _meta;

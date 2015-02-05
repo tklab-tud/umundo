@@ -57,7 +57,7 @@ public:
 	virtual ~PublisherImpl();
 
 	virtual void send(Message* msg) = 0;
-	
+
 	/** Meta fields to be set on every message published */
 	void putMeta(const std::string& key, const std::string& value) {
 		_mandatoryMeta[key] = value;
@@ -110,7 +110,7 @@ protected:
  */
 class UMUNDO_API Publisher : public PublisherStub {
 public:
-	
+
 	Publisher() : _impl() {}
 	Publisher(const std::string& channelName); //< Default publisher via TCP
 	Publisher(PublisherConfig* config); //< Pass any subtype of PublisherConfig
@@ -191,7 +191,7 @@ protected:
 	friend class Node;
 };
 
-	
+
 class UMUNDO_API PublisherConfig : public Options {
 protected:
 	PublisherConfig(const std::string& channel) : _channelName(channel) {}
@@ -200,13 +200,13 @@ protected:
 	friend class Publisher;
 };
 
-	
+
 class UMUNDO_API PublisherConfigTCP : public PublisherConfig {
 public:
 	PublisherConfigTCP(const std::string& channel) : PublisherConfig(channel) {
 		_type = Publisher::ZEROMQ;
 	}
-	
+
 	void enableCompression() {
 		options["pub.tcp.compression"] = "1";
 	}
@@ -215,7 +215,7 @@ protected:
 	friend class Publisher;
 };
 
-	
+
 class UMUNDO_API PublisherConfigRTP : public PublisherConfig {
 public:
 	PublisherConfigRTP(const std::string& channel) : PublisherConfig(channel) {
@@ -226,11 +226,11 @@ public:
 	void setTimestampIncrement(uint32_t increment) {
 		options["pub.rtp.timestampIncrement"] = toStr(increment);
 	}
-	
+
 	void setPortbase(uint16_t port) {
 		options["pub.rtp.portbase"] = toStr(port);
 	}
-	
+
 	void setPayloadType(uint8_t type) {
 		if(type>0 && type<128) {		//libre limit
 			options["pub.rtp.payloadType"] = toStr(type);
@@ -240,12 +240,12 @@ public:
 	}
 };
 
-	
+
 class UMUNDO_API PublisherConfigMCast : public PublisherConfigRTP {
 public:
 	PublisherConfigMCast(const std::string& channel) : PublisherConfigRTP(channel) {}
 };
-	
+
 }
 
 

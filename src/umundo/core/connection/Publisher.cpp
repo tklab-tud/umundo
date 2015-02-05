@@ -46,7 +46,7 @@ Publisher::Publisher(PublisherConfig* config) {
 }
 
 void Publisher::init(PublisherConfig* config) {
-switch (config->_type) {
+	switch (config->_type) {
 	case ZEROMQ:
 		_impl = StaticPtrCast<PublisherImpl>(Factory::create("pub.zmq"));
 		_impl->implType = ZEROMQ;
@@ -62,7 +62,7 @@ switch (config->_type) {
 
 	EndPoint::_impl = _impl;
 	PublisherStub::_impl = _impl;
-	
+
 	_impl->setChannelName(config->_channelName);
 	_impl->init(config);
 }

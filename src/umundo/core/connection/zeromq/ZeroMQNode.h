@@ -110,7 +110,7 @@ public:
 	static void* getZeroMQContext();
 
 protected:
-	
+
 	/**
 	 * Message types for internal op socket
 	 */
@@ -130,7 +130,7 @@ protected:
 		uint64_t startedAt; ///< when connect to, a timestamp when we initially tried to connect
 		NodeStub node; /// a representation about the remote node
 		bool isConfirmed; ///< Whether we connected our subscribers to the remote nodes publishers
-		
+
 		int connect();
 		int disconnect();
 	};
@@ -227,11 +227,11 @@ protected:
 	void receivedFromPubSocket();
 	void receivedInternalOp();
 	void receivedFromClientNode(SharedPtr<NodeConnection> client);
-	
+
 	void remoteNodeConnect(const std::string& address);
 	void remoteNodeDisconnect(const std::string& address);
 	void remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnection> client, const std::list<SharedPtr<PublisherStubImpl> >& publishers);
-	
+
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 
 //	void broadCastNodeInfo(uint64_t now);
@@ -239,7 +239,7 @@ protected:
 
 	void replyWithDebugInfo(const std::string uuid);
 	StatBucket<double> accumulateIntoBucket();
-	
+
 	std::map<std::string, std::set<EndPoint> > _endPoints; ///< 0mq addresses to endpoints added
 private:
 	static void* _zmqContext; ///< global 0MQ context.

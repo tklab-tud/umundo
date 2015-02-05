@@ -69,18 +69,18 @@ bool testSTLContainers() {
 		assert(subSet.size() == 0);
 
 	}
-	
+
 	{
 		EndPoint ep1("tcp://127.0.0.1:8080");
 		EndPoint ep2("tcp://127.0.0.1:8080");
 		EndPoint ep3("tcp://127.0.0.1:8090");
 		EndPoint ep4("tcp://127.0.0.1:8080");
 		ep4.getImpl()->setUUID("asdfadsf");
-		
+
 		assert(ep1 == ep2);
 		assert(ep1 != ep3);
 		assert(ep1 != ep4);
-		
+
 		std::set<EndPoint> endPoints;
 		endPoints.insert(ep1);
 		assert(endPoints.size() == 1);

@@ -138,7 +138,7 @@ bool testDataTransmission() {
 
 bool testByteWriting() {
 	char* data = (char*)malloc(1000);
-	
+
 	uint64_t value = 1;
 
 	for (int shift = 0; shift < 64; shift++, value <<= 1) {
@@ -149,15 +149,15 @@ bool testByteWriting() {
 		uint32_t uint32 = value;
 		uint16_t uint16 = value;
 		uint8_t uint8 = value;
-		
+
 		int64_t int64 = value;
 		int32_t int32 = value;
 		int16_t int16 = value;
 		int8_t int8 = value;
-		
+
 		float fl = (float)value;
 		double dbl = (double)value;
-	
+
 		writePtr = Message::write(writePtr, uint64);
 		readPtr = Message::read(readPtr, &uint64);
 
@@ -187,14 +187,14 @@ bool testByteWriting() {
 
 		writePtr = Message::write(writePtr, dbl);
 		readPtr = Message::read(readPtr, &dbl);
-		
+
 		assert(dbl = (double)value);
 		assert(uint64 = (uint64_t)value);
 		assert(int64 = (int64_t)value);
 
 		if (shift >= 32)
 			continue;
-		
+
 		assert(fl = (float)value);
 		assert(uint32 = (uint32_t)value);
 		assert(int32 = (int32_t)value);
@@ -211,14 +211,14 @@ bool testByteWriting() {
 		assert(uint8 = (uint8_t)value);
 		assert(int8 = (int8_t)value);
 	}
-	
+
 	{
 		char* writePtr = NULL;
 		const char* readPtr = NULL;
 
 		std::string readFrom;
 		std::string writeTo;
-		
+
 		// standard case
 		writePtr = data;
 		readPtr = data;
@@ -265,7 +265,7 @@ bool testByteWriting() {
 		assert(writeTo == "");
 
 	}
-	
+
 	return true;
 }
 
@@ -273,7 +273,7 @@ bool testCompression() {
 	std::string test1;
 	for (int i = 0; i < 20; i++)
 		test1 += "This is some test right here!";
-	
+
 	Message msg(test1.data(), test1.size());
 	assert(test1 == std::string(msg.data(), msg.size()));
 
@@ -285,7 +285,7 @@ bool testCompression() {
 	std::cout << test1.size() << " vs " << msg.size() << std::endl;
 	msg.uncompress();
 	msg.uncompress();
-	
+
 	assert(test1 == std::string(msg.data(), msg.size()));
 
 	// test a compressing publisher
@@ -294,21 +294,21 @@ bool testCompression() {
 	pubConfig.enableCompression();
 	Publisher pub(&pubConfig);
 	pubNode.addPublisher(pub);
-	
+
 	TestReceiver* testRecv = new TestReceiver();
 	Node subNode;
 	Subscriber sub("bar");
 	sub.setReceiver(testRecv);
 	subNode.addSubscriber(sub);
-	
+
 	subNode.add(pubNode);
 	pubNode.add(subNode);
 
 	pub.waitForSubscribers(1);
 	assert(pub.waitForSubscribers(0) == 1);
-	
+
 	int iterations = 1000;
-	
+
 	for (int j = 0; j < iterations; j++) {
 		char* buffer = (char*)malloc(BUFFER_SIZE);
 		memset(buffer, j, BUFFER_SIZE);

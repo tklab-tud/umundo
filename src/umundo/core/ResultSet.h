@@ -38,7 +38,7 @@ public:
 	void add(T entity) {
 		add(entity, "manual");
 	}
-	
+
 	void add(T entity, const std::string& via) {
 		if (_results.count(entity) == 0) {
 			// we did not know about this entity!
@@ -65,18 +65,18 @@ public:
 				break;
 			}
 		}
-		
+
 		if (!wasFound) {
 			UM_LOG_WARN("Not removing unknown entity from resultset");
 			return;
 		}
-		
+
 		if (_results.count(entity) == 0) {
 			// last reports of this entity are gone
 			removed(entity);
 		}
 	}
-	
+
 	void change(T entity, uint64_t what = 0) {
 		change(entity, "manual", what);
 	}
@@ -88,10 +88,10 @@ public:
 		}
 		changed(entity, what);
 	}
-	
+
 protected:
 	std::multimap<T, std::string> _results;
-	
+
 	virtual void added(T) = 0;
 	virtual void removed(T) = 0;
 	virtual void changed(T, uint64_t what = 0) = 0;

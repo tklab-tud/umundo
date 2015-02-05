@@ -219,7 +219,7 @@ void ZeroMQSubscriber::run() {
 				delete msg;
 			}
 		}
-		
+
 		if (items[0].revents & ZMQ_POLLIN) {
 			/**
 			 * Node internal request from member methods for socket operations
@@ -228,29 +228,29 @@ void ZeroMQSubscriber::run() {
 			while (1) {
 				int more;
 				size_t more_size = sizeof (more);
-				
+
 				zmq_msg_t message;
 				zmq_msg_t endpointMsg;
-				
+
 				zmq_msg_init (&message);
 				zmq_msg_recv (&message, _readOpSocket, 0);
 				char* op = (char*)zmq_msg_data(&message);
-				
+
 				zmq_msg_init (&endpointMsg);
 				zmq_msg_recv (&endpointMsg, _readOpSocket, 0);
 				char* endpoint = (char*)zmq_msg_data(&endpointMsg);
-				
+
 				if (false) {
 				} else if (strcmp(op, "connectPub") == 0) {
 					zmq_connect(_subSocket, endpoint) && UM_LOG_ERR("zmq_connect %s: %s", endpoint, zmq_strerror(errno));
 				} else if (strcmp(op, "disconnectPub") == 0) {
 					zmq_disconnect(_subSocket, endpoint) && UM_LOG_ERR("zmq_disconnect %s: %s", endpoint, zmq_strerror(errno));
 				}
-				
+
 				zmq_getsockopt (_readOpSocket, ZMQ_RCVMORE, &more, &more_size);
 				zmq_msg_close (&message);
 				zmq_msg_close (&endpointMsg);
-				
+
 				assert(!more); // we read all messages
 				if (!more)
 					break;      //  Last message part
@@ -265,7 +265,7 @@ Message* ZeroMQSubscriber::getNextMsg() {
 	size_t more_size = sizeof(more);
 	bool enveloped = false;
 	bool readChannelName = false;
-	
+
 	Message* msg = new Message();
 	while (1) {
 		// read the whole message
@@ -298,13 +298,13 @@ Message* ZeroMQSubscriber::getNextMsg() {
 				return NULL;
 			}
 		}
-		
+
 		// only check for first packet in envelope
 		if (!enveloped)
 			enveloped = (more > 0);
-		
+
 		if (enveloped) {
-			
+
 			// original enveloped format
 			if (more) {
 				char* key = (char*)zmq_msg_data(&message);
@@ -312,7 +312,7 @@ Message* ZeroMQSubscriber::getNextMsg() {
 
 				// is this the first message with the channelname?
 				if (strlen(key) + 1 == msgSize &&
-								msg->getMeta().find(key) == msg->getMeta().end()) {
+				        msg->getMeta().find(key) == msg->getMeta().end()) {
 					msg->putMeta("um.channel", key);
 				} else {
 					if (strlen(key) + strlen(value) + 2 != msgSize) {
@@ -331,11 +331,11 @@ Message* ZeroMQSubscriber::getNextMsg() {
 				break; // last message part
 			}
 		} else {
-			
+
 			// alternate, non-enveloped format
 			const char* readPtr = msgData;
 			size_t remainingSize = msgSize;
-			
+
 			while(true) {
 				if (remainingSize == 0) {
 					// no data
@@ -353,7 +353,7 @@ Message* ZeroMQSubscriber::getNextMsg() {
 					std::string value;
 					readPtr = Message::read(readPtr, key, remainingSize);
 					remainingSize = msgSize - (readPtr - msgData);
-					
+
 					readPtr = Message::read(readPtr, value, remainingSize);
 					remainingSize = msgSize - (readPtr - msgData);
 

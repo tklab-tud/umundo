@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 	//subConfig.setMulticastIP("239.1.2.3");		//not needed (default multicast group: 239.8.4.8
 	Subscriber subFoo(&subConfig);
 	subFoo.setReceiver(&testRecv);
-	
+
 	Discovery disc(Discovery::MDNS);
 	Node node;
 	disc.add(node);

@@ -60,7 +60,9 @@ private:
 class UMUNDO_API Options {
 public:
 	virtual ~Options() {}
-	virtual std::string getType() { return ""; }; // TODO: do we actually use this?!
+	virtual std::string getType() {
+		return "";
+	}; // TODO: do we actually use this?!
 
 	std::map<std::string, std::string> getKVPs() const {
 		return options;

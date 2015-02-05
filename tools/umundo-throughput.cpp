@@ -83,7 +83,7 @@ class ThroughputReceiver : public Receiver {
 		RScopeLock lock(mutex);
 		bytesRcvd += msg->size();
 		pktsRecvd++;
-		
+
 		uint64_t currTimeStamp;
 		Message::read(msg->data(), &currSeqNr);
 		Message::read(msg->data() + 8, &currTimeStamp);
@@ -93,10 +93,10 @@ class ThroughputReceiver : public Receiver {
 			firstTimeStamp = 0;
 			serverUUID = msg->getMeta("um.pub");
 		}
-		
+
 		if (firstTimeStamp == 0)
 			firstTimeStamp = currTimeStamp;
-		
+
 		if (currSeqNr < lastSeqNr)
 			lastSeqNr = 0;
 
@@ -146,14 +146,14 @@ public:
 		report.hostName      = msg->getMeta("hostname");
 		report.hostId        = msg->getMeta("um.host");
 		report.pubId         = msg->getMeta("um.pub");
-		
+
 		uint64_t otherStart    = strTo<uint64_t>(msg->getMeta("started.timestamp"));
 		report.discoveryTime = strTo<uint64_t>(msg->getMeta("first.timestamp")) - (startedAt > otherStart ? startedAt : otherStart);
-		
+
 		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate = currSeqNr - lastSeqNr;
 
-		
+
 		if (report.pktsDropped > 0) {
 			double onePerc = (double)(report.pktsDropped + report.pktsRcvd) * 0.01;
 			onePerc = (std::max)(onePerc, 0.0001);
@@ -169,9 +169,9 @@ class ThroughputGreeter : public Greeter {
 	}
 
 	void farewell(Publisher& pub, const SubscriberStub& subStub) {
-		RScopeLock lock(mutex);
-		if (reports.find(subStub.getUUID()) != reports.end())
-			reports.erase(subStub.getUUID());
+//		RScopeLock lock(mutex);
+//		if (reports.find(subStub.getUUID()) != reports.end())
+//			reports.erase(subStub.getUUID());
 	}
 };
 
@@ -200,7 +200,7 @@ std::string bytesToDisplay(uint64_t nrBytes) {
 	uint64_t kMax = (uint64_t)1024 * (uint64_t)1024;
 	uint64_t mMax = kMax * (uint64_t)1024;
 	uint64_t gMax = mMax * (uint64_t)1024;
-	
+
 	if (nrBytes < 1024) {
 		ss << nrBytes << "B";
 		return ss.str();
@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
 	if (isServer) {
 		ThroughputGreeter tpGreeter;
 		ReportReceiver reportRecv;
-		
+
 		Publisher pub;
 		switch (type) {
 		case PUB_RTP: {
@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
 			if (!useZeroCopy) {
 				msg->setData(data, dataSize);
 			}
-			
+
 			pub.send(msg);
 
 			intervalFactor = 1000.0 / (double)reportInterval;
@@ -481,7 +481,7 @@ int main(int argc, char** argv) {
 
 					repIter = reports.begin();
 					while(repIter != reports.end()) {
-						const Report& report = repIter->second;
+						Report& report = repIter->second;
 						std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)(report.bytesRcvd)) + "/s";
 						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
 						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
@@ -489,9 +489,13 @@ int main(int argc, char** argv) {
 						std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
 						std::cout << FORMAT_COL << (report.latency > 100000 ? "N/A" : toStr(report.latency) + "ms");
 						std::cout << FORMAT_COL << (report.discoveryTime > 100000 ? "N/A" : toStr(report.discoveryTime) + "ms");
-						std::cout << FORMAT_COL << report.hostId.substr(0, 6) + " (" + report.hostName + ")";
+						std::cout << FORMAT_COL << report.pubId.substr(0, 6) + " (" + report.hostName + ")";
 						std::cout << std::endl;
 
+						report.pktsRcvd = 0;
+						report.bytesRcvd = 0;
+						report.pktsLate = 0;
+						report.latency = 10000000;
 						repIter++;
 					}
 
@@ -500,7 +504,7 @@ int main(int argc, char** argv) {
 
 				bytesWritten = 0;
 				packetsWritten = 0;
-				reports.clear();
+//				reports.clear();
 
 				lastReportAt = Thread::getTimeStampMs();
 			}

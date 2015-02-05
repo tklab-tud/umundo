@@ -92,7 +92,7 @@ void testDomainReception() {
 
 	TestReceiver testRcv("test1");
 	sub.setReceiver(&testRcv);
-	
+
 	fooNode1.addPublisher(pub);
 	fooNode2.addPublisher(pub);
 	barNode.addPublisher(pub);

@@ -232,14 +232,10 @@ protected:
 	void remoteNodeDisconnect(const std::string& address);
 	void remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnection> client, const std::list<SharedPtr<PublisherStubImpl> >& publishers);
 	
-//	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 
-	void processConnectedFrom(const std::string& uuid);
-	void processConnectedTo(const std::string& uuid, SharedPtr<NodeConnection> client);
-
-	void broadCastNodeInfo(uint64_t now);
-	void removeStaleNodes(uint64_t now);
+//	void broadCastNodeInfo(uint64_t now);
+//	void removeStaleNodes(uint64_t now);
 
 	void replyWithDebugInfo(const std::string uuid);
 	StatBucket<double> accumulateIntoBucket();

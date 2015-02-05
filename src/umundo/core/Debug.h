@@ -49,13 +49,6 @@
 #define UM_TRACE(fmt, ...) ((void)0)
 #endif
 
-#ifdef NO_DEBUG_MSGS
-#define UM_LOG_ERR(fmt, ...) 1
-#define UM_LOG_WARN(fmt, ...) 1
-#define UM_LOG_INFO(fmt, ...) 1
-#define UM_LOG_DEBUG(fmt, ...) 1
-#endif
-
 #ifdef __GNUC__
 #ifndef ANDROID
 #define HAVE_EXECINFO

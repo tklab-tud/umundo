@@ -640,8 +640,17 @@ void ZeroMQNode::receivedFromNodeSocket() {
 	case Message::UM_CONNECT_REQ: {
 
 		// someone is about to connect to us
-		if (from != _uuid || _allowLocalConns)
-			processConnectedFrom(from);
+		if (from != _uuid || _allowLocalConns) {
+			if (_connTo.find(from) != _connTo.end()) {
+				_connFrom[from] = _connTo[from]->node;
+			} else {
+				_connFrom[from] = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
+				_connFrom[from].getImpl()->setUUID(from);
+			}
+			
+			// in any case, mark as connected from and update last seen
+			_connFrom[from].updateLastSeen();
+		}
 
 		// reply with our uuid and publishers
 		UM_LOG_INFO("%s: Replying with CONNECT_REP and %d pubs on _nodeSocket to %s", SHORT_UUID(_uuid).c_str(), _pubs.size(), SHORT_UUID(from).c_str());
@@ -756,7 +765,7 @@ void ZeroMQNode::receivedFromPubSocket() {
 		}
 
 		if (subscription) {
-			UM_LOG_INFO("%s: Got 0MQ subscription on %s", _uuid.c_str(), subChannel.c_str());
+			UM_LOG_INFO("%s: Got 0MQ subscription on %s", SHORT_UUID(_uuid).c_str(), subChannel.c_str());
 			if (subUUID.length() > 0) {
 				// every subscriber subscribes to its uuid prefixed with a "~" for late alphabetical order
 				_subscriptions[subUUID].isZMQConfirmed = true;
@@ -764,7 +773,7 @@ void ZeroMQNode::receivedFromPubSocket() {
 					confirmSubscription(subUUID);
 			}
 		} else {
-			UM_LOG_INFO("%s: Got 0MQ unsubscription on %s", _uuid.c_str(), subChannel.c_str());
+			UM_LOG_INFO("%s: Got 0MQ unsubscription on %s", SHORT_UUID(_uuid).c_str(), subChannel.c_str());
 			if (subUUID.size() && _subscriptions[subUUID].isZMQConfirmed) {
 				std::map<std::string, Publisher>::iterator pubIter = _subscriptions[subUUID].confirmed.begin();
 				while(pubIter != _subscriptions[subUUID].confirmed.end()) {
@@ -1067,9 +1076,6 @@ void ZeroMQNode::remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnec
 	}
 	
 	otherNode->isConfirmed = true;
-
-//	processConnectedTo(uuid, client);
-//	processNodeInfo(recvBuffer + 4, msgSize - 4);
 }
 
 void ZeroMQNode::remoteNodeDisconnect(const std::string& address) {
@@ -1261,6 +1267,7 @@ void ZeroMQNode::run() {
 	}
 }
 
+#if 0
 void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 	UM_TRACE("broadCastNodeInfo");
 	zmq_msg_t infoMsg;
@@ -1269,7 +1276,6 @@ void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 	zmq_msg_close(&infoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
-#if 0
 void ZeroMQNode::removeStaleNodes(uint64_t now) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("removeStaleNodes");
@@ -1369,23 +1375,6 @@ void ZeroMQNode::unsubscribeFromRemoteNode(SharedPtr<NodeConnection> connection)
 		}
 	}
 }
-
-void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
-	UM_TRACE("processConnectedFrom");
-	// we received a connection from the given uuid
-
-	// let's see whether we already are connected *to* this one
-	if (_connTo.find(uuid) != _connTo.end()) {
-		_connFrom[uuid] = _connTo[uuid]->node;
-	} else {
-		_connFrom[uuid] = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
-		_connFrom[uuid].getImpl()->setUUID(uuid);
-	}
-
-	// in any case, mark as connected from and update last seen
-	_connFrom[uuid].updateLastSeen();
-}
-
 
 void ZeroMQNode::confirmSubscription(const std::string& subUUID) {
 	UM_TRACE("confirmSubscription");

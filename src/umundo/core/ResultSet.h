@@ -43,6 +43,8 @@ public:
 		if (_results.count(entity) == 0) {
 			// we did not know about this entity!
 			added(entity);
+		} else {
+			UM_LOG_WARN("Not adding entity into resultset - already known");
 		}
 		_results.insert(std::pair<T, std::string>(entity, via));
 	}
@@ -52,14 +54,21 @@ public:
 	}
 
 	void remove(T entity, const std::string& via) {
+		bool wasFound = false;
 		typedef typename std::multimap<T, std::string>::iterator iterator;
 		std::pair<iterator, iterator> iterpair = _results.equal_range(entity);
 		iterator it = iterpair.first;
 		for (; it != iterpair.second; ++it) {
 			if (it->second == via) {
 				_results.erase(it);
+				wasFound = true;
 				break;
 			}
+		}
+		
+		if (!wasFound) {
+			UM_LOG_WARN("Not removing unknown entity from resultset");
+			return;
 		}
 		
 		if (_results.count(entity) == 0) {
@@ -73,6 +82,10 @@ public:
 	}
 
 	void change(T entity, const std::string& via, uint64_t what = 0) {
+		if (_results.count(entity) == 0) {
+			UM_LOG_WARN("Not forwarding changes from unknown entity");
+			return;
+		}
 		changed(entity, what);
 	}
 	

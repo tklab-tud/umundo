@@ -46,32 +46,43 @@
 #include "umundo/core/connection/zeromq/ZeroMQPublisher.h"
 #include "umundo/core/connection/zeromq/ZeroMQSubscriber.h"
 
+/**
+ * Drain any superfluous messages in an envelope
+ */
 #define DRAIN_SOCKET(socket) \
 for(;;) { \
-zmq_getsockopt(socket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno)); \
-if (!more) \
-break; \
-UM_LOG_INFO("Superfluous message on " #socket ""); \
-zmq_recv(socket, NULL, 0, 0) && UM_LOG_ERR("zmq_recv: %s", zmq_strerror(errno)); \
+	zmq_getsockopt(socket, ZMQ_RCVMORE, &more, &moreSize) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno)); \
+	if (!more) \
+		break; \
+	UM_LOG_INFO("Superfluous message on " #socket ""); \
+	zmq_recv(socket, NULL, 0, 0) && UM_LOG_ERR("zmq_recv: %s", zmq_strerror(errno)); \
 }
 
-#define MORE_OR_RETURN(socket, msg) \
-zmq_getsockopt(socket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));\
-if (!more) { \
-if (strlen(msg) > 0)\
-UM_LOG_WARN(#msg " on " #socket ""); \
-return; \
-}
-
+/**
+ * Some default declarations to work with messages
+ */
 #define COMMON_VARS \
 int more; (void)more;\
-size_t more_size = sizeof(more); (void)more_size;\
+size_t moreSize = sizeof(more); (void)moreSize;\
 int msgSize; (void)msgSize;\
 char* recvBuffer; (void)recvBuffer;\
 const char* readPtr; (void)readPtr;\
 char* writeBuffer; (void)writeBuffer;\
 char* writePtr; (void)writePtr;
 
+/**
+ * Allocate new ZMQ message with given size and set writeBuffer and writePtr
+ */
+#define PREPARE_MSG(msg, size) \
+zmq_msg_t msg; \
+zmq_msg_init(&msg) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno)); \
+zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));\
+writeBuffer = (char*)zmq_msg_data(&msg);\
+writePtr = writeBuffer;\
+
+/**
+ * Receive a message from given socket and set readBuffer and readPtr
+ */
 #define RECV_MSG(socket, msg) \
 zmq_msg_t msg; \
 zmq_msg_init(&msg) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno)); \
@@ -79,6 +90,9 @@ zmq_recvmsg(socket, &msg, 0) == -1 && UM_LOG_ERR("zmq_recvmsg: %s", zmq_strerror
 msgSize = zmq_msg_size(&msg); \
 recvBuffer = (char*)zmq_msg_data(&msg); \
 readPtr = recvBuffer;
+
+#define ZMQ_ADDRESS(ep) \
+ep.getTransport() + "://" + ((ep.getIP().size() == 0 || ep.getIP() == "*") ? "localhost" : ep.getIP()) + ":" + toStr(ep.getPort())
 
 #define REMAINING_BYTES_TOREAD (msgSize - (readPtr - recvBuffer))
 
@@ -96,29 +110,24 @@ sizeof(uint16_t) +                  /* whether this is multicats */ \
 sub.getIP().length() + 1 +          /* IP address */ \
 sizeof(uint16_t)                    /* port of subscriber */
 
-#define PREPARE_MSG(msg, size) \
-zmq_msg_t msg; \
-zmq_msg_init(&msg) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno)); \
-zmq_msg_init_size (&msg, size) && UM_LOG_WARN("zmq_msg_init_size: %s",zmq_strerror(errno));\
-writeBuffer = (char*)zmq_msg_data(&msg);\
-writePtr = writeBuffer;\
- 
 #define NODE_BROADCAST_MSG(msg) \
-std::map<std::string, SharedPtr<NodeConnection> >::iterator nodeIter_ = _connFrom.begin();\
+std::map<std::string, NodeStub>::iterator nodeIter_ = _connFrom.begin();\
 while (nodeIter_ != _connFrom.end()) {\
-	if (UUID::isUUID(nodeIter_->first)) {\
-		zmq_msg_t broadCastMsgCopy_;\
-		zmq_msg_init(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno));\
-		zmq_msg_copy(&broadCastMsgCopy_, &msg) && UM_LOG_ERR("zmq_msg_copy: %s", zmq_strerror(errno));\
-		UM_LOG_DEBUG("%s: Broadcasting to %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(nodeIter_->first).c_str()); \
-		zmq_send(_nodeSocket, nodeIter_->first.c_str(), nodeIter_->first.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT); \
-		zmq_msg_send(&broadCastMsgCopy_, _nodeSocket, ZMQ_DONTWAIT); \
-		zmq_msg_close(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));\
-	}\
+	zmq_msg_t broadCastMsgCopy_;\
+	zmq_msg_init(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_init: %s", zmq_strerror(errno));\
+	zmq_msg_copy(&broadCastMsgCopy_, &msg) && UM_LOG_ERR("zmq_msg_copy: %s", zmq_strerror(errno));\
+	UM_LOG_DEBUG("%s: Broadcasting to %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(nodeIter_->first).c_str()); \
+	zmq_send(_nodeSocket, nodeIter_->first.c_str(), nodeIter_->first.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT); \
+	zmq_msg_send(&broadCastMsgCopy_, _nodeSocket, ZMQ_DONTWAIT); \
+	zmq_msg_close(&broadCastMsgCopy_) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));\
 	nodeIter_++;\
 }
 
-#define RESETSS(ss) ss.clear(); ss.str(std::string(""));
+#define ASSERT_BYTES_WRITTEN(BYTES) assert(writePtr - writeBuffer == BYTES)
+
+#define SEND_DEBUG_ENVELOPE(msg)\
+zmq_send(_nodeSocket, msg.c_str(), msg.length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+
 
 namespace umundo {
 
@@ -159,7 +168,7 @@ ZeroMQNode::~ZeroMQNode() {
 		NodeStub node = _connTo.begin()->second->node;
 		if(node) {
 			removed(node);
-			processInternalOpComm();
+			receivedInternalOp();
 		} else {
 			_connTo.erase(_connTo.begin());
 		}
@@ -303,15 +312,7 @@ uint16_t ZeroMQNode::bindToFreePort(void* socket, const std::string& transport, 
 std::map<std::string, NodeStub> ZeroMQNode::connectedFrom() {
 	RScopeLock lock(_mutex);
 	UM_TRACE("connectedFrom");
-
-	std::map<std::string, NodeStub> from;
-	std::map<std::string, SharedPtr<NodeConnection> >::iterator nodeIter = _connFrom.begin();
-	while (nodeIter != _connFrom.end()) {
-		// this will report ourself as well
-		from[nodeIter->first] = nodeIter->second->node;
-		nodeIter++;
-	}
-	return from;
+	return _connFrom;
 }
 
 std::map<std::string, NodeStub> ZeroMQNode::connectedTo() {
@@ -342,6 +343,11 @@ void ZeroMQNode::addSubscriber(Subscriber& sub) {
 
 	std::map<std::string, SharedPtr<NodeConnection> >::const_iterator nodeIter = _connTo.begin();
 	while (nodeIter != _connTo.end()) {
+		if (!UUID::isUUID(nodeIter->first)) {
+			// nodes are contained twice in _connTo, per address and per uuid
+			nodeIter++;
+			continue;
+		}
 		if (nodeIter->second && nodeIter->second->node) {
 			std::map<std::string, PublisherStub> pubs = nodeIter->second->node.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
@@ -444,73 +450,117 @@ void ZeroMQNode::removePublisher(Publisher& pub) {
 
 }
 
+/**
+ *
+ * Information about other nodes receives via two different interfaces:
+ * 1. Someone in our runtime calls node.add(endpoint), which ends up here
+ * 2. A remote node sends a UM_CONNECT_REQ
+ *
+ * Usually both happen in short succession, but that must not necessarily be the 
+ * case. Variant 1. is usually performed by an application developer or the
+ * discovery layer. Variant 2. originates from remote nodes for which 1. happened.
+ *
+ * If 1. is performed, but 2. never happens, we are half-subscribed, that is, our
+ * subscribers will connect to the other nodes publishers, but not vice versa. 
+ * These two modes are reflected as entries in _connTo and _connFrom respectively.
+ *
+ */
+	
 void ZeroMQNode::added(ENDPOINT_RS_TYPE endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("added");
 
-	if (_endPoints.find(endPoint) != _endPoints.end()) {
-		UM_LOG_WARN("%s: Ignoring addition of endpoint at %s - already known",
-								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
-		return;
-	}
-	
 	if (endPoint.getUUID() == _uuid) // that's us!
 		return;
 	
-	_endPoints.insert(endPoint);
+	std::string zmqAdress = ZMQ_ADDRESS(endPoint);
 
-	UM_LOG_INFO("%s: Adding endpoint at %s",
-	            SHORT_UUID(_uuid).c_str(),
-	            endPoint.getAddress().c_str());
+	if (_endPoints.find(zmqAdress) != _endPoints.end()) {
 
-	COMMON_VARS;
+		UM_LOG_INFO("%s: Already aware of endpoint at %s - increasing reference count to %d",
+								SHORT_UUID(_uuid).c_str(),
+								zmqAdress.c_str(),
+								_endPoints[zmqAdress].size() + 1);
 
-	std::stringstream otherAddress;
-	otherAddress << endPoint.getTransport() << "://" << ((endPoint.getIP().size() == 0 || endPoint.getIP() == "*") ? "localhost" : endPoint.getIP()) << ":" << endPoint.getPort();
+	} else {
 
-	// write connection request to operation socket
-	PREPARE_MSG(addEndPointMsg, 4 + otherAddress.str().length() + 1);
-	writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ); assert(writePtr - writeBuffer == 4);
-	writePtr = Message::write(writePtr, otherAddress.str()); assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
+		UM_LOG_INFO("%s: Adding endpoint at %s",
+								SHORT_UUID(_uuid).c_str(),
+								zmqAdress.c_str());
 
-	zmq_sendmsg(_writeOpSocket, &addEndPointMsg, 0) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
-	zmq_msg_close(&addEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+		COMMON_VARS;
+		std::string otherAddress = ZMQ_ADDRESS(endPoint);
+		// TODO: assert valid syntax!
+		
+		// write connection request to operation socket
+		msgSize = 4 + zmqAdress.length() + 1;
+		PREPARE_MSG(addEndPointMsg, msgSize);
+		
+		writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);  ASSERT_BYTES_WRITTEN(4);
+		writePtr = Message::write(writePtr, zmqAdress);                     ASSERT_BYTES_WRITTEN(msgSize);
+
+		zmq_sendmsg(_writeOpSocket, &addEndPointMsg, 0) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
+		zmq_msg_close(&addEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+	}
+	
+	// remember to handle disconnects later
+	_endPoints[zmqAdress].insert(endPoint);
+	
 }
 
 void ZeroMQNode::removed(ENDPOINT_RS_TYPE endPoint) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("removed");
 
-	if (_endPoints.find(endPoint) == _endPoints.end()) {
-		UM_LOG_INFO("%s: Ignoring removal of endpoint at %s - not known",
+	if (endPoint.getUUID() == _uuid) // that's us!
+		return;
+
+	std::string zmqAdress = ZMQ_ADDRESS(endPoint);
+
+	if (_endPoints.find(zmqAdress) == _endPoints.end()) {
+		UM_LOG_INFO("%s: Not removing endpoint at %s - none known at address",
+								SHORT_UUID(_uuid).c_str(), zmqAdress.c_str());
+		return;
+	}
+
+	if (_endPoints[zmqAdress].find(endPoint) == _endPoints[zmqAdress].end()) {
+		UM_LOG_INFO("%s: Not removing endpoint %s - not known",
 								SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 		return;
 	}
-	_endPoints.erase(endPoint);
+
+	_endPoints[zmqAdress].erase(endPoint);
+	UM_LOG_INFO("%s: Removing endpoint at %s - decreasing reference count to %d",
+							SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str(), _endPoints[zmqAdress].size());
+
+	if (_endPoints[zmqAdress].size() > 0)
+		return;
 	
-	UM_LOG_INFO("%s: Removing endpoint at %s",
-	            SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
+	UM_LOG_INFO("%s: No more endpoints at %s - disconnecting",
+							SHORT_UUID(_uuid).c_str(), zmqAdress.c_str());
+
+	// get rid of key!
+	_endPoints.erase(zmqAdress);
 
 	COMMON_VARS;
-	std::stringstream otherAddress;
-	otherAddress << endPoint.getTransport() << "://" << endPoint.getIP() << ":" << endPoint.getPort();
 
-	PREPARE_MSG(removeEndPointMsg, 4 + otherAddress.str().length() + 1);
-	writePtr = writeVersionAndType(writePtr, Message::UM_DISCONNECT); assert(writePtr - writeBuffer == 4);
-	writePtr = Message::write(writePtr, otherAddress.str()); assert(writePtr - writeBuffer == 4 + otherAddress.str().length() + 1);
+	msgSize = 4 + zmqAdress.length() + 1;
+	PREPARE_MSG(removeEndPointMsg, msgSize);
+	
+	writePtr = writeVersionAndType(writePtr, ZeroMQNode::UM_DISCONNECT);  ASSERT_BYTES_WRITTEN(4);
+	writePtr = Message::write(writePtr, zmqAdress);                       ASSERT_BYTES_WRITTEN(msgSize);
 
 	zmq_sendmsg(_writeOpSocket, &removeEndPointMsg, 0) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&removeEndPointMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-
 }
 
 void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
 	if (what & Discovery::IFACE_REMOVED) {
-		UM_LOG_INFO("%s gone on some interface -> removing and readding endpoint (be more clever here)", SHORT_UUID(_uuid).c_str());
+		UM_LOG_INFO("%s: gone on some interface -> removing and readding endpoint (be more clever here)", SHORT_UUID(_uuid).c_str());
 		removed(endPoint);
 		added(endPoint);
 	} else {
-		UM_LOG_INFO("%s added on new interface, ignoring", SHORT_UUID(_uuid).c_str());
+		UM_LOG_INFO("%s: found %s on new interface, ignoring", SHORT_UUID(_uuid).c_str(), endPoint.getAddress().c_str());
 	}
 }
 
@@ -523,18 +573,9 @@ void ZeroMQNode::changed(ENDPOINT_RS_TYPE endPoint, uint64_t what) {
  * UM_UNSUBSCRIBE
  *
  */
-void ZeroMQNode::processNodeComm() {
-	UM_TRACE("processNodeComm");
+void ZeroMQNode::receivedFromNodeSocket() {
+	UM_TRACE("receivedFromNodeSocket");
 	COMMON_VARS;
-
-#if 0
-	for(;;) {
-		RECV_MSG(_nodeSocket, msg);
-		printf("%s: node socket received %d bytes from %s\n", _uuid.c_str(), msgSize, readPtr);
-		zmq_msg_close(&msg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-		MORE_OR_RETURN(_nodeSocket, "");
-	}
-#endif
 
 	// read first message
 	RECV_MSG(_nodeSocket, header);
@@ -558,7 +599,7 @@ void ZeroMQNode::processNodeComm() {
 
 	// dealer socket sends no delimiter, but req does
 	if (REMAINING_BYTES_TOREAD == 0) {
-		zmq_getsockopt(_nodeSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
+		zmq_getsockopt(_nodeSocket, ZMQ_RCVMORE, &more, &moreSize) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
 		if (!more) {
 			zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 			return;
@@ -573,16 +614,17 @@ void ZeroMQNode::processNodeComm() {
 
 	// assume the mesage has at least version and type
 	if (REMAINING_BYTES_TOREAD < 4) {
+		UM_LOG_WARN("%s: node socket received gibberish without version or type", SHORT_UUID(_uuid).c_str());
 		zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 		return;
 	}
 
-	Message::Type type;
+	uint16_t type;
 	uint16_t version;
 	readPtr = readVersionAndType(recvBuffer, version, type);
 
 	if (version != Message::UM_VERSION) {
-		UM_LOG_INFO("%s: node socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
+		UM_LOG_WARN("%s: node socket received unversioned or different message format version - discarding", SHORT_UUID(_uuid).c_str());
 		zmq_msg_close(&content) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 		return;
 	}
@@ -664,18 +706,18 @@ void ZeroMQNode::processNodeComm() {
 			_subscriptions[subUUID].address = address;
 			_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
-			confirmSub(subUUID);
+			confirmSubscription(subUUID);
 			
 		} else {
 			// remove a subscription
 			Subscription& confSub = _subscriptions[subUUID];
-			if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID]->node)
-				_connFrom[confSub.nodeUUID]->node.removeSubscriber(confSub.subStub);
+			if (_connFrom.find(confSub.nodeUUID) != _connFrom.end() && _connFrom[confSub.nodeUUID])
+				_connFrom[confSub.nodeUUID].removeSubscriber(confSub.subStub);
 
 			// move all pending subscriptions to confirmed
 			std::map<std::string, Publisher>::iterator confPubIter = confSub.confirmed.begin();
 			while(confPubIter != confSub.confirmed.end()) {
-				confPubIter->second.removed(confSub.subStub, _connFrom[confSub.nodeUUID]->node);
+				confPubIter->second.removed(confSub.subStub, _connFrom[confSub.nodeUUID]);
 				confPubIter++;
 			}
 			confSub.confirmed.clear();
@@ -692,8 +734,8 @@ void ZeroMQNode::processNodeComm() {
 
 }
 
-void ZeroMQNode::processPubComm() {
-	UM_TRACE("processPubComm");
+void ZeroMQNode::receivedFromPubSocket() {
+	UM_TRACE("receivedFromPubSocket");
 	COMMON_VARS;
 	/**
 	 * someone subscribed, process here to avoid
@@ -719,7 +761,7 @@ void ZeroMQNode::processPubComm() {
 				// every subscriber subscribes to its uuid prefixed with a "~" for late alphabetical order
 				_subscriptions[subUUID].isZMQConfirmed = true;
 				if (_subscriptions[subUUID].subStub)
-					confirmSub(subUUID);
+					confirmSubscription(subUUID);
 			}
 		} else {
 			UM_LOG_INFO("%s: Got 0MQ unsubscription on %s", _uuid.c_str(), subChannel.c_str());
@@ -727,7 +769,7 @@ void ZeroMQNode::processPubComm() {
 				std::map<std::string, Publisher>::iterator pubIter = _subscriptions[subUUID].confirmed.begin();
 				while(pubIter != _subscriptions[subUUID].confirmed.end()) {
 					if(_connFrom.find(_subscriptions[subUUID].nodeUUID)!=_connFrom.end())
-						pubIter->second.removed(_subscriptions[subUUID].subStub, _connFrom[_subscriptions[subUUID].nodeUUID]->node);
+						pubIter->second.removed(_subscriptions[subUUID].subStub, _connFrom[_subscriptions[subUUID].nodeUUID]);
 					else if(_connTo.find(_subscriptions[subUUID].nodeUUID)!=_connTo.end())
 						pubIter->second.removed(_subscriptions[subUUID].subStub, _connTo[_subscriptions[subUUID].nodeUUID]->node);
 					pubIter++;
@@ -735,7 +777,7 @@ void ZeroMQNode::processPubComm() {
 			}
 		}
 
-		zmq_getsockopt (_pubSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
+		zmq_getsockopt (_pubSocket, ZMQ_RCVMORE, &more, &moreSize) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
 		zmq_msg_close (&message) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 		assert(!more); // subscriptions are not multipart
 		if (!more)
@@ -753,8 +795,8 @@ void ZeroMQNode::processPubComm() {
  * UM_CONNECT_REP
  *
  */
-void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
-	UM_TRACE("processClientComm");
+void ZeroMQNode::receivedFromClientNode(SharedPtr<NodeConnection> client) {
+	UM_TRACE("receivedFromClientNode");
 	COMMON_VARS;
 
 	// we have a reply from the server
@@ -765,7 +807,7 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 		return;
 	}
 
-	Message::Type type;
+	uint16_t type;
 	uint16_t version;
 	readPtr = readVersionAndType(recvBuffer, version, type);
 
@@ -788,14 +830,19 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 		std::string from;
 		readPtr = Message::read(readPtr, from, 37);
 
-		PublisherStubImpl* pubStub = new PublisherStubImpl();
-		readPtr = read(readPtr, pubStub, REMAINING_BYTES_TOREAD);
+		if (_connTo.find(from) == _connTo.end()) {
+			UM_LOG_WARN("%s: received publisher added/removed from %s, but we are not connected", SHORT_UUID(_uuid).c_str(), SHORT_UUID(from).c_str());
+			break;
+		}
+		
+		SharedPtr<PublisherStubImpl> pubStub = SharedPtr<PublisherStubImpl>(new PublisherStubImpl());
+		readPtr = read(readPtr, pubStub.get(), REMAINING_BYTES_TOREAD);
 		assert(REMAINING_BYTES_TOREAD == 0);
 
 		if (type == Message::UM_PUB_ADDED) {
-			processRemotePubAdded(from, pubStub);
+			receivedRemotePubAdded(_connTo[from], pubStub);
 		} else {
-			processRemotePubRemoved(from, pubStub);
+			receivedRemotePubRemoved(_connTo[from], pubStub);
 		}
 
 	}
@@ -828,17 +875,17 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 			break;
 		}
 
-		std::string fromUUID;
-		readPtr = Message::read(readPtr, fromUUID, 37);
+		std::string uuid;
+		readPtr = Message::read(readPtr, uuid, 37);
 
-		assert(client->address.length() > 0);
+		std::list<SharedPtr<PublisherStubImpl> > publishers;
+		while(REMAINING_BYTES_TOREAD > 37) {
+			SharedPtr<PublisherStubImpl> pubStub = SharedPtr<PublisherStubImpl>(new PublisherStubImpl());
+			readPtr = read(readPtr, pubStub.get(), REMAINING_BYTES_TOREAD);
+			publishers.push_back(pubStub);
+		}
 
-		if (fromUUID == _uuid && !_allowLocalConns) // do not connect to ourself
-			break;
-
-		processConnectedTo(fromUUID, client);
-		processNodeInfo(recvBuffer + 4, msgSize - 4);
-
+		remoteNodeConfirm(uuid, client, publishers);
 		break;
 	}
 	default:
@@ -851,29 +898,30 @@ void ZeroMQNode::processClientComm(SharedPtr<NodeConnection> client) {
 /**
  * Process messages sent to the internal operation socket.
  *
+ * We need to dispatch / serialize all operations on the sockets into the zmq thread.
+ *
  * UM_PUB_REMOVED
  * UM_PUB_ADDED
  * UM_DISCONNECT
  * UM_CONNECT_REQ
  * UM_SHUTDOWN
  */
-void ZeroMQNode::processInternalOpComm() {
-	UM_TRACE("processInternalOpComm");
+void ZeroMQNode::receivedInternalOp() {
+	UM_TRACE("receivedInternalOp");
 	COMMON_VARS;
 
 	// read first message
 	RECV_MSG(_readOpSocket, opMsg)
 
-	Message::Type type;
+	uint16_t type;
 	uint16_t version;
-
 	readPtr = readVersionAndType(recvBuffer, version, type);
 
 //	UM_LOG_INFO("%s: internal op socket received %s", SHORT_UUID(_uuid).c_str(), Message::typeToString(type));
 	switch (type) {
 	case Message::UM_PUB_REMOVED:
 	case Message::UM_PUB_ADDED: {
-		// removePublisher / addPublisher called us
+		// removePublisher / addPublisher called us with serialized publisher info
 		
 		std::string uuid;
 		readPtr = Message::read(readPtr, uuid, 37);
@@ -892,86 +940,26 @@ void ZeroMQNode::processInternalOpComm() {
 		} else {
 			zmq_disconnect(_subSocket, internalPubId.c_str()) && UM_LOG_ERR("zmq_disconnect %s: %s", internalPubId.c_str(), zmq_strerror(errno));
 		}
-
-		// tell every other node that we changed publishers
+		// tell every other node connected to us that we changed publishers
 		NODE_BROADCAST_MSG(opMsg);
-
+		
 		break;
 	}
-	case Message::UM_DISCONNECT: {
+
+	case ZeroMQNode::UM_DISCONNECT: {
 		// endpoint was removed
 		std::string address;
-		readPtr = Message::read(readPtr, address, msgSize - (readPtr - recvBuffer));
+		readPtr = Message::read(readPtr, address, REMAINING_BYTES_TOREAD);
 
-		if (_connTo.find(address) == _connTo.end())
-			return;
-
-		_connTo[address]->refCount--;
-
-		if (_connTo[address]->refCount <= 0 && _connTo[address]->node) {
-			NodeStub& nodeStub = _connTo[address]->node;
-			std::string nodeUUID = nodeStub.getUUID();
-			disconnectRemoteNode(nodeStub);
-
-			// disconnect socket and remove as a neighbors
-			zmq_close(_connTo[address]->socket);
-			_connTo[address]->socket = NULL;
-
-			// delete NodeConnection object if not contained in _connFrom as well
-			if (!_connTo[address]->connectedFrom) {
-				//delete _connTo[address];
-			} else {
-				assert(nodeUUID.size() > 0);
-				assert(_connFrom.find(nodeUUID) != _connFrom.end());
-
-				//delete _connFrom[nodeUUID];
-				_connFrom.erase(nodeUUID);
-
-			}
-			_connTo.erase(address);
-
-			if (nodeUUID.length() > 0)
-				_connTo.erase(nodeUUID);
-
-			_dirtySockets = true;
-		}
-
+		remoteNodeDisconnect(address);
 		break;
 	}
 	case Message::UM_CONNECT_REQ: {
-		// added(EndPoint) called us - rest of message is endpoint address
+		// added(EndPoint) called us - rest of message is endpoint address and optional uuid
 		std::string address;
-		readPtr = Message::read(readPtr, address, msgSize - (readPtr - recvBuffer));
+		readPtr = Message::read(readPtr, address, REMAINING_BYTES_TOREAD);
 
-		SharedPtr<NodeConnection> clientConn;
-		// we don't know this endpoint
-		if (_connTo.find(address) == _connTo.end()) {
-			// open a new client connection
-			clientConn = SharedPtr<NodeConnection>(new NodeConnection(address, _uuid));
-			if (!clientConn->socket) {
-//				delete clientConn;
-				break;
-			}
-			_connTo[address] = clientConn;
-		} else {
-			clientConn = _connTo[address];
-		}
-		_dirtySockets = true;
-
-		UM_LOG_INFO("%s: Sending CONNECT_REQ to %s", SHORT_UUID(_uuid).c_str(), address.c_str());
-
-		// send a CONNECT_REQ message
-		PREPARE_MSG(connReqMsg, 4);
-		writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);
-		assert(writePtr - writeBuffer == zmq_msg_size(&connReqMsg));
-
-		zmq_sendmsg(clientConn->socket, &connReqMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
-		if (_buckets.size() > 0) {
-			_buckets.back().nrMetaMsgSent++;
-			_buckets.back().sizeMetaMsgSent += 4;
-		}
-		zmq_msg_close(&connReqMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
-
+		remoteNodeConnect(address);
 		break;
 	}
 	case Message::UM_SHUTDOWN: {
@@ -983,6 +971,154 @@ void ZeroMQNode::processInternalOpComm() {
 		break;
 	}
 	zmq_msg_close(&opMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+}
+
+/**
+ * Prepare connection request to remote node
+ */
+void ZeroMQNode::remoteNodeConnect(const std::string& address) {
+	COMMON_VARS
+	
+	assert(_connTo.find(address) == _connTo.end());
+	SharedPtr<NodeConnection> clientConn = SharedPtr<NodeConnection>(new NodeConnection(address, _uuid));
+
+	clientConn->address = address;
+	int err = clientConn->connect();
+	if (err)
+		return;
+
+	_connTo[address] = clientConn;
+	_dirtySockets = true;
+
+	UM_LOG_INFO("%s: Sending CONNECT_REQ to %s", SHORT_UUID(_uuid).c_str(), address.c_str());
+	
+	// send a CONNECT_REQ message
+	PREPARE_MSG(connReqMsg, 4);
+	writePtr = writeVersionAndType(writePtr, Message::UM_CONNECT_REQ);  ASSERT_BYTES_WRITTEN(4);
+	
+	zmq_sendmsg(clientConn->socket, &connReqMsg, ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_sendmsg: %s", zmq_strerror(errno));
+	zmq_msg_close(&connReqMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
+	
+	if (_buckets.size() > 0) {
+		_buckets.back().nrMetaMsgSent++;
+		_buckets.back().sizeMetaMsgSent += 4;
+	}
+}
+
+/**
+ * Process connection reply message
+ */
+void ZeroMQNode::remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnection> otherNode, const std::list<SharedPtr<PublisherStubImpl> >& publishers) {
+	assert(otherNode->address.length() > 0);
+
+	/**
+	 * The socket of the other node replied with its uuid and publishers. We have
+	 * to check whether our information is still current
+	 */
+	
+	if (otherNode->node && otherNode->node.getUUID() != uuid) {
+		UM_LOG_WARN("%s: Expecting connection reply from %s, but was answered by %s - detaching and reconnecting",
+								SHORT_UUID(_uuid).c_str(),
+								SHORT_UUID(otherNode->node.getUUID()).c_str(),
+								SHORT_UUID(uuid).c_str());
+
+		// UUIDs were changed, this node is new or replaced an old one
+		if (otherNode->isConfirmed) {
+			// unsubscribe form old nodes publishers
+			unsubscribeFromRemoteNode(otherNode);
+		}
+		
+		if (otherNode->node.getUUID().length() > 0) {
+			// delete records of old node
+			_connTo.erase(otherNode->node.getUUID());
+			_connFrom.erase(otherNode->node.getUUID());
+		}
+		
+		// unset nodestub information
+		otherNode->node = NodeStub();
+	}
+	
+	if (!otherNode->node) {
+		// needs a new or updated node
+
+		size_t colonPos = otherNode->address.find_last_of(":");
+		std::string transport = otherNode->address.substr(0,3);
+		std::string ip = otherNode->address.substr(6, colonPos - 6);
+		uint16_t port = strTo<uint16_t>(otherNode->address.substr(colonPos + 1, otherNode->address.length() - colonPos + 1));
+		
+		if (_connFrom.find(uuid) != _connFrom.end()) {
+			otherNode->node = _connFrom[uuid];
+		} else {
+			otherNode->node = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
+		}
+		otherNode->node.getImpl()->setUUID(uuid);
+		otherNode->node.getImpl()->setTransport(transport);
+		otherNode->node.getImpl()->setIP(ip);
+		otherNode->node.getImpl()->setPort(port);
+		otherNode->node.getImpl()->updateLastSeen();
+
+		_connTo[uuid] = otherNode;
+
+		std::list<SharedPtr<PublisherStubImpl> >::const_iterator pubIter = publishers.begin();
+		while(pubIter != publishers.end()) {
+			receivedRemotePubAdded(otherNode, *pubIter);
+			pubIter++;
+		}
+	}
+	
+	otherNode->isConfirmed = true;
+
+//	processConnectedTo(uuid, client);
+//	processNodeInfo(recvBuffer + 4, msgSize - 4);
+}
+
+void ZeroMQNode::remoteNodeDisconnect(const std::string& address) {
+	if (_connTo.find(address) == _connTo.end()) {
+		UM_LOG_ERR("Received internal disconnect request for %s, but adress is no known", address.c_str());
+		return;
+	}
+
+	SharedPtr<NodeConnection> otherNode = _connTo[address];
+	if (otherNode->isConfirmed) {
+		unsubscribeFromRemoteNode(otherNode);
+		_connTo.erase(otherNode->node.getUUID());
+		_connFrom.erase(otherNode->node.getUUID());
+	}
+	
+	otherNode->disconnect();
+	_connTo.erase(address);
+
+	_dirtySockets = true;
+	
+#if 0
+	if (_connTo[address]->node) {
+		NodeStub& nodeStub = _connTo[address]->node;
+		std::string nodeUUID = nodeStub.getUUID();
+		unsubscribeFromRemoteNode(_connTo[address]);
+		
+		// disconnect socket and remove as a neighbors
+		zmq_close(_connTo[address]->socket);
+		_connTo[address]->socket = NULL;
+		
+		// delete NodeConnection object if not contained in _connFrom as well
+		if (!_connTo[address]->connectedFrom) {
+			//delete _connTo[address];
+		} else {
+			assert(nodeUUID.size() > 0);
+			assert(_connFrom.find(nodeUUID) != _connFrom.end());
+			
+			//delete _connFrom[nodeUUID];
+			_connFrom.erase(nodeUUID);
+			
+		}
+		_connTo.erase(address);
+		
+		if (nodeUUID.length() > 0)
+			_connTo.erase(nodeUUID);
+		
+		_dirtySockets = true;
+	}
+#endif
 }
 
 void ZeroMQNode::updateSockets() {
@@ -1026,7 +1162,7 @@ void ZeroMQNode::updateSockets() {
 void ZeroMQNode::run() {
 	UM_TRACE("run");
 	int more;
-	size_t more_size = sizeof(more);
+	size_t moreSize = sizeof(more);
 
 	while(isStarted()) {
 		// make sure we have a bucket for performance measuring
@@ -1060,7 +1196,7 @@ void ZeroMQNode::run() {
 			if (_sockets[nodeSockIter->first].revents & ZMQ_POLLIN) {
 				RScopeLock lock(_mutex);
 				if (_connTo.find(nodeSockIter->second) != _connTo.end()) {
-					processClientComm(_connTo[nodeSockIter->second]);
+					receivedFromClientNode(_connTo[nodeSockIter->second]);
 				} else {
 					UM_LOG_WARN("%s: message from vanished node %s", _uuid.c_str(), nodeSockIter->second.c_str());
 				}
@@ -1072,23 +1208,23 @@ void ZeroMQNode::run() {
 
 		if (_sockets[0].revents & ZMQ_POLLIN) {
 			RScopeLock lock(_mutex);
-			processNodeComm();
+			receivedFromNodeSocket();
 			DRAIN_SOCKET(_nodeSocket);
 		}
 
 		if (_sockets[1].revents & ZMQ_POLLIN) {
 			RScopeLock lock(_mutex);
-			processPubComm();
+			receivedFromPubSocket();
 			DRAIN_SOCKET(_pubSocket);
 		}
 
 		if (_sockets[2].revents & ZMQ_POLLIN) {
 			RScopeLock lock(_mutex);
-			processInternalOpComm();
+			receivedInternalOp();
 			DRAIN_SOCKET(_readOpSocket);
 		}
 
-		// someone is publishing - this is last to
+		// someone is publishing via our external publisher, just pass through
 		if (_sockets[3].revents & ZMQ_POLLIN) {
 			size_t msgSize = 0;
 			zmq_msg_t message;
@@ -1106,7 +1242,7 @@ void ZeroMQNode::run() {
 					_buckets.back().nrChannelMsg[channelName]++;
 					_buckets.back().sizeChannelMsg[channelName] += msgSize;
 				}
-				zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
+				zmq_getsockopt (_subSocket, ZMQ_RCVMORE, &more, &moreSize) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
 				zmq_msg_send(&message, _pubSocket, more ? ZMQ_SNDMORE: 0) == -1 && UM_LOG_ERR("zmq_msg_send: %s", zmq_strerror(errno));
 				zmq_msg_close (&message) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 				if (!more)
@@ -1133,6 +1269,7 @@ void ZeroMQNode::broadCastNodeInfo(uint64_t now) {
 	zmq_msg_close(&infoMsg) && UM_LOG_ERR("zmq_msg_close: %s", zmq_strerror(errno));
 }
 
+#if 0
 void ZeroMQNode::removeStaleNodes(uint64_t now) {
 	RScopeLock lock(_mutex);
 	UM_TRACE("removeStaleNodes");
@@ -1149,16 +1286,16 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 		}
 	}
 
-	std::map<std::string, SharedPtr<NodeConnection> >::iterator connIter = _connFrom.begin();
+	std::map<std::string, NodeStub>::iterator connIter = _connFrom.begin();
 	while(connIter != _connFrom.end()) {
 		if (!UUID::isUUID(connIter->first)) {
 			connIter++;
 			continue;
 		}
-		if (now - connIter->second->node.getLastSeen() > 30000) {
+		if (now - connIter->second.getLastSeen() > 30000) {
 			// we have been very patient remove pending node
-			UM_LOG_ERR("%s timeout for %s - removing", SHORT_UUID(_uuid).c_str(), SHORT_UUID(connIter->second->node.getUUID()).c_str());
-			NodeStub nodeStub = connIter->second->node;
+			UM_LOG_ERR("%s timeout for %s - removing", SHORT_UUID(_uuid).c_str(), SHORT_UUID(connIter->second.getUUID()).c_str());
+			NodeStub nodeStub = connIter->second;
 			// Disconnect subscribers
 			std::map<std::string, PublisherStub> pubStubs = nodeStub.getPublishers();
 			std::map<std::string, PublisherStub>::iterator pubStubIter = pubStubs.begin();
@@ -1181,52 +1318,55 @@ void ZeroMQNode::removeStaleNodes(uint64_t now) {
 		}
 	}
 }
+#endif
+	
+/**
+ * Disconnect local publishers and subscribers and send unsubscribe messages
+ */
+void ZeroMQNode::unsubscribeFromRemoteNode(SharedPtr<NodeConnection> connection) {
+	UM_TRACE("unsubscribeFromRemoteNode");
+	if (connection->node) {
+		std::string nodeUUID = connection->node.getUUID();
+		std::map<std::string, PublisherStub> remotePubs = connection->node.getPublishers();
+		std::map<std::string, PublisherStub>::iterator remotePubIter = remotePubs.begin();
+		std::map<std::string, Subscriber>::iterator localSubIter = _subs.begin();
 
-void ZeroMQNode::disconnectRemoteNode(NodeStub& nodeStub) {
-	UM_TRACE("disconnectRemoteNode");
-	if (!nodeStub)
-		return;
-
-	std::string nodeUUID = nodeStub.getUUID();
-	std::map<std::string, PublisherStub> remotePubs = nodeStub.getPublishers();
-	std::map<std::string, PublisherStub>::iterator remotePubIter = remotePubs.begin();
-	std::map<std::string, Subscriber>::iterator localSubIter = _subs.begin();
-
-	// iterate all remote publishers and remove from local subs
-	while (remotePubIter != remotePubs.end()) {
-		while (localSubIter != _subs.end()) {
-			if(localSubIter->second.matches(remotePubIter->second)) {
-				localSubIter->second.removed(remotePubIter->second, nodeStub);
-				sendUnsubscribeFromPublisher(nodeStub.getUUID().c_str(), localSubIter->second, remotePubIter->second);
+		// iterate all remote publishers and remove from local subs
+		while (remotePubIter != remotePubs.end()) {
+			while (localSubIter != _subs.end()) {
+				if(localSubIter->second.matches(remotePubIter->second)) {
+					localSubIter->second.removed(remotePubIter->second, connection->node);
+					sendUnsubscribeFromPublisher(connection->node.getUUID().c_str(), localSubIter->second, remotePubIter->second);
+				}
+				localSubIter++;
 			}
-			localSubIter++;
-		}
 
-		std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
-		while(monitorIter != _pubMonitors.end()) {
-			(*monitorIter)->remove(remotePubIter->second, toStr(this));
-			(*monitorIter)->change(remotePubIter->second, toStr(this));
-			monitorIter++;
-		}
-
-		remotePubIter++;
-	}
-
-	std::map<std::string, SubscriberStub> remoteSubs = nodeStub.getSubscribers();
-	std::map<std::string, SubscriberStub>::iterator remoteSubIter = remoteSubs.begin();
-	while(remoteSubIter != remoteSubs.end()) {
-		if (_subscriptions.find(remoteSubIter->first) != _subscriptions.end()) {
-			Subscription& subscription = _subscriptions[remoteSubIter->first];
-			std::map<std::string, Publisher>::iterator confirmedIter = subscription.confirmed.begin();
-			while(confirmedIter != subscription.confirmed.end()) {
-				confirmedIter->second.removed(subscription.subStub, nodeStub);
-				confirmedIter++;
+			std::list<ResultSet<PublisherStub>* >::iterator monitorIter = _pubMonitors.begin();
+			while(monitorIter != _pubMonitors.end()) {
+				(*monitorIter)->remove(remotePubIter->second, toStr(this));
+				(*monitorIter)->change(remotePubIter->second, toStr(this));
+				monitorIter++;
 			}
-			_subscriptions.erase(remoteSubIter->first);
-		} else {
-			// could not find any subscriptions
+
+			remotePubIter++;
 		}
-		remoteSubIter++;
+
+		std::map<std::string, SubscriberStub> remoteSubs = connection->node.getSubscribers();
+		std::map<std::string, SubscriberStub>::iterator remoteSubIter = remoteSubs.begin();
+		while(remoteSubIter != remoteSubs.end()) {
+			if (_subscriptions.find(remoteSubIter->first) != _subscriptions.end()) {
+				Subscription& subscription = _subscriptions[remoteSubIter->first];
+				std::map<std::string, Publisher>::iterator confirmedIter = subscription.confirmed.begin();
+				while(confirmedIter != subscription.confirmed.end()) {
+					confirmedIter->second.removed(subscription.subStub, connection->node);
+					confirmedIter++;
+				}
+				_subscriptions.erase(remoteSubIter->first);
+			} else {
+				// could not find any subscriptions
+			}
+			remoteSubIter++;
+		}
 	}
 }
 
@@ -1236,75 +1376,19 @@ void ZeroMQNode::processConnectedFrom(const std::string& uuid) {
 
 	// let's see whether we already are connected *to* this one
 	if (_connTo.find(uuid) != _connTo.end()) {
-		_connFrom[uuid] = _connTo[uuid];
+		_connFrom[uuid] = _connTo[uuid]->node;
 	} else {
-		SharedPtr<NodeConnection> conn = SharedPtr<NodeConnection>(new NodeConnection());
-		conn->node = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
-		conn->node.getImpl()->setUUID(uuid);
-		_connFrom[uuid] = conn;
+		_connFrom[uuid] = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
+		_connFrom[uuid].getImpl()->setUUID(uuid);
 	}
 
 	// in any case, mark as connected from and update last seen
-	_connFrom[uuid]->connectedFrom = true;
-	_connFrom[uuid]->node.updateLastSeen();
+	_connFrom[uuid].updateLastSeen();
 }
 
-void ZeroMQNode::processConnectedTo(const std::string& uuid, SharedPtr<NodeConnection> client) {
-	UM_TRACE("processConnectedTo");
-	assert(client->address.length() > 0);
 
-	// parse client's address back into its constituting parts
-	size_t colonPos = client->address.find_last_of(":");
-	if(colonPos == std::string::npos || client->address.length() < 6 + 8 + 1 + 1) {
-		return;
-	}
-
-	std::string transport = client->address.substr(0,3);
-	std::string ip = client->address.substr(6, colonPos - 6);
-	std::string port = client->address.substr(colonPos + 1, client->address.length() - colonPos + 1);
-
-	// processInternalOpComm must have added this one
-	assert(_connTo.find(client->address) != _connTo.end());
-
-	NodeStub nodeStub;
-
-	if (client->node && uuid != client->node.getUUID()) {
-		// previous and this uuid of remote node differ - assume that it was replaced
-		disconnectRemoteNode(client->node);
-		_connTo.erase(client->node.getUUID());
-		_connFrom.erase(client->node.getUUID());
-		nodeStub = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
-		client->refCount = 0;
-	}
-
-	// are we already connected *from* this one?
-	if (_connFrom.find(uuid) != _connFrom.end()) {
-		nodeStub = _connFrom[uuid]->node; // maybe we remembered something about the stub, keep entry
-		_connFrom[uuid] = client;   // overwrite with this one
-		client->connectedFrom = true; // and remember that we are already connected from
-	} else {
-		// we know nothing about the remote node yet
-		nodeStub = NodeStub(SharedPtr<NodeStubImpl>(new NodeStubImpl()));
-	}
-
-	assert(_connTo.find(client->address) != _connTo.end());
-
-	// remember remote node
-	client->refCount++;
-	client->connectedTo = true;
-	client->node = nodeStub;
-	client->node.getImpl()->setUUID(uuid);
-	client->node.getImpl()->setTransport(transport);
-	client->node.getImpl()->setIP(ip);
-	client->node.getImpl()->setPort(strTo<uint16_t>(port));
-	client->node.updateLastSeen();
-	_connTo[uuid] = client;
-	_dirtySockets = true;
-
-}
-
-void ZeroMQNode::confirmSub(const std::string& subUUID) {
-	UM_TRACE("confirmSub");
+void ZeroMQNode::confirmSubscription(const std::string& subUUID) {
+	UM_TRACE("confirmSubscription");
 	if (_subscriptions.find(subUUID) == _subscriptions.end())
 		return;
 
@@ -1318,17 +1402,17 @@ void ZeroMQNode::confirmSub(const std::string& subUUID) {
 	Subscription& pendSub = _subscriptions[subUUID];
 
 	if (_connFrom.find(pendSub.nodeUUID) != _connFrom.end()) {
-		_connFrom[pendSub.nodeUUID]->node.addSubscriber(pendSub.subStub);
+		_connFrom[pendSub.nodeUUID].addSubscriber(pendSub.subStub);
 	}
 
 	// copy over address from getpeer*
-	if (_connFrom[pendSub.nodeUUID]->node.getIP().length() == 0 && pendSub.address.length() > 0)
-		_connFrom[pendSub.nodeUUID]->node.getImpl()->setIP(pendSub.address);
+	if (_connFrom[pendSub.nodeUUID].getIP().length() == 0 && pendSub.address.length() > 0)
+		_connFrom[pendSub.nodeUUID].getImpl()->setIP(pendSub.address);
 
 	// move all pending subscriptions to confirmed
 	std::map<std::string, Publisher>::iterator pendPubIter = pendSub.pending.begin();
 	while(pendPubIter != pendSub.pending.end()) {
-		pendPubIter->second.added(pendSub.subStub, _connFrom[pendSub.nodeUUID]->node);
+		pendPubIter->second.added(pendSub.subStub, _connFrom[pendSub.nodeUUID]);
 		pendSub.confirmed[pendPubIter->first] = pendPubIter->second;
 		pendPubIter++;
 	}
@@ -1367,44 +1451,15 @@ void ZeroMQNode::writeNodeInfo(zmq_msg_t* msg, Message::Type type) {
 
 	assert(writePtr - writeBuffer == zmq_msg_size(msg));
 }
+	
+void ZeroMQNode::receivedRemotePubAdded(SharedPtr<NodeConnection> client, SharedPtr<PublisherStubImpl> pub) {
+	UM_TRACE("receivedRemotePubAdded");
 
-void ZeroMQNode::processNodeInfo(char* recvBuffer, size_t msgSize) {
-	UM_TRACE("processNodeInfo");
-
-	const char* readPtr = recvBuffer;
-	if(REMAINING_BYTES_TOREAD < 36)
-		return;
-
-	std::string from;
-	readPtr = Message::read(readPtr, from, 37);
-
-	if (_connTo.find(from) == _connTo.end()) {
-		UM_LOG_WARN("%s not caring for nodeinfo from %s - not connected", SHORT_UUID(_uuid).c_str(), from.c_str());
-		return;
-	}
-
-	std::set<std::string> pubUUIDs;
-	while(REMAINING_BYTES_TOREAD > 37) {
-
-		PublisherStubImpl* pubStub = new PublisherStubImpl();
-		readPtr = read(readPtr, pubStub, REMAINING_BYTES_TOREAD);
-		processRemotePubAdded(from, pubStub);
-	}
-}
-
-void ZeroMQNode::processRemotePubAdded(const std::string& nodeUUID, PublisherStubImpl* pub) {
-	UM_TRACE("processRemotePubAdded");
-
-	if (_connTo.find(nodeUUID) == _connTo.end()) {
-		delete pub;
-		return;
-	}
-
-	NodeStub nodeStub = _connTo[nodeUUID]->node;
+	NodeStub nodeStub = client->node;
 	nodeStub.updateLastSeen();
 
-	PublisherStub pubStub((SharedPtr<PublisherStubImpl>(pub)));
-	pubStub.getImpl()->setDomain(nodeUUID);
+	PublisherStub pubStub(pub);
+	pubStub.getImpl()->setDomain(nodeStub.getUUID());
 
 	pubStub.getImpl()->setInProcess(nodeStub.isInProcess());
 	pubStub.getImpl()->setRemote(nodeStub.isRemote());
@@ -1424,23 +1479,19 @@ void ZeroMQNode::processRemotePubAdded(const std::string& nodeUUID, PublisherStu
 	while(subIter != _subs.end()) {
 		if (subIter->second.matches(pubStub)) {
 			subIter->second.added(pubStub, nodeStub);
-			sendSubscribeToPublisher(nodeUUID, subIter->second, pubStub);
+			sendSubscribeToPublisher(nodeStub.getUUID(), subIter->second, pubStub);
 		}
 		subIter++;
 	}
 }
 
-void ZeroMQNode::processRemotePubRemoved(const std::string& nodeUUID, PublisherStubImpl* pub) {
-	UM_TRACE("processRemotePubRemoved");
+void ZeroMQNode::receivedRemotePubRemoved(SharedPtr<NodeConnection> client, SharedPtr<PublisherStubImpl> pub) {
+	UM_TRACE("receivedRemotePubRemoved");
 
-	if (_connTo.find(nodeUUID) == _connTo.end())
-		return;
-
-	NodeStub nodeStub = _connTo[nodeUUID]->node;
+	NodeStub nodeStub = client->node;
 	PublisherStub pubStub = nodeStub.getPublisher(pub->getUUID());
 
 	if (!pubStub) {
-		delete pub;
 		return;
 	}
 
@@ -1455,24 +1506,29 @@ void ZeroMQNode::processRemotePubRemoved(const std::string& nodeUUID, PublisherS
 	while(subIter != _subs.end()) {
 		if (subIter->second.matches(pubStub)) {
 			subIter->second.removed(pubStub, nodeStub);
-			sendUnsubscribeFromPublisher(nodeUUID, subIter->second, pubStub);
+			sendUnsubscribeFromPublisher(nodeStub.getUUID(), subIter->second, pubStub);
 		}
 		subIter++;
 	}
 	nodeStub.removePublisher(pubStub);
-	delete pub;
 }
 
 void ZeroMQNode::sendSubscribeToPublisher(const std::string& nodeUUID, const Subscriber& sub, const PublisherStub& pub) {
 	UM_TRACE("sendSubscribeToPublisher");
 	COMMON_VARS;
 
-	if (_connTo.find(nodeUUID) == _connTo.end())
+	if (_connTo.find(nodeUUID) == _connTo.end()) {
+		UM_LOG_WARN("Not sending sub added for %s on %s to publisher %s - node unknown",
+								sub.getChannelName().c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(pub.getUUID()).c_str());
 		return;
+	}
 
 	void* clientSocket = _connTo[nodeUUID]->socket;
-	if (!clientSocket)
+	if (!clientSocket) {
+		UM_LOG_WARN("Not sending sub added for %s on %s to publisher %s - node socket not connected",
+								sub.getChannelName().c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(pub.getUUID()).c_str());
 		return;
+	}
 
 	UM_LOG_INFO("Sending sub added for %s on %s to publisher %s",
 	            sub.getChannelName().c_str(), SHORT_UUID(sub.getUUID()).c_str(), SHORT_UUID(pub.getUUID()).c_str());
@@ -1608,15 +1664,15 @@ const char* ZeroMQNode::read(const char* buffer, SubscriberStubImpl* subStub, si
 	return buffer;
 }
 
-char* ZeroMQNode::writeVersionAndType(char* buffer, Message::Type type) {
+char* ZeroMQNode::writeVersionAndType(char* buffer, uint16_t type) {
 	buffer = Message::write(buffer, (uint16_t)Message::UM_VERSION);
 	buffer = Message::write(buffer, (uint16_t)type);
 	return buffer;
 }
 
-const char* ZeroMQNode::readVersionAndType(const char* buffer, uint16_t& version, Message::Type& type) {
+const char* ZeroMQNode::readVersionAndType(const char* buffer, uint16_t& version, uint16_t& type) {
 	// clear out of type bytes
-	memset(&type, 0, sizeof(type));
+//	memset(&type, 0, sizeof(type));
 
 	buffer = Message::read(buffer, &version);
 	buffer = Message::read(buffer, &(uint16_t&)type);
@@ -1695,100 +1751,49 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	std::stringstream ss;
 
 	// first identify us
-	ss << "uuid:" << _uuid;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
-
-	ss << "host:" << hostUUID;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
+	SEND_DEBUG_ENVELOPE(std::string("uuid:" + _uuid));
+	SEND_DEBUG_ENVELOPE(std::string("host:" + hostUUID));
 
 #ifdef APPLE
-	ss << "os: MacOSX";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: MacOSX"));
 #elif defined CYGWIN
-	ss << "os: Cygwin";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: Cygwin"));
 #elif defined ANDROID
-	ss << "os: Android";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: Android"));
 #elif defined IOS
-	ss << "os: iOS";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: iOS"));
 #elif defined UNIX
-	ss << "os: Unix";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: Unix"));
 #elif defined WIN32
-	ss << "os: Windows";
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
+	SEND_DEBUG_ENVELOPE(std::string("os: Windows"));
 #endif
-	RESETSS(ss);
 
-	ss << "proc:" << procUUID;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
+	SEND_DEBUG_ENVELOPE(std::string("proc:" + procUUID));
 
 	// calculate performance
-
-	ss << "sent:msgs:" << statBucket.nrMetaMsgSent;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
-
-	ss << "sent:bytes:" << statBucket.sizeMetaMsgSent;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
-
-	ss << "rcvd:msgs:" << statBucket.nrMetaMsgRcvd;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
-
-	ss << "rcvd:bytes:" << statBucket.sizeMetaMsgRcvd;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
+	SEND_DEBUG_ENVELOPE(std::string("sent:msgs:" + toStr(statBucket.nrMetaMsgSent)));
+	SEND_DEBUG_ENVELOPE(std::string("sent:bytes:" + toStr(statBucket.sizeMetaMsgSent)));
+	SEND_DEBUG_ENVELOPE(std::string("rcvd:msgs:" + toStr(statBucket.nrMetaMsgRcvd)));
+	SEND_DEBUG_ENVELOPE(std::string("rcvd:bytes:" + toStr(statBucket.sizeMetaMsgRcvd)));
 
 	// send our publishers
 	std::map<std::string, Publisher>::iterator pubIter = _pubs.begin();
 	while (pubIter != _pubs.end()) {
 
-		ss << "pub:uuid:" << pubIter->first;
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
-
-		ss << "pub:channelName:" << pubIter->second.getChannelName();
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
-
-		ss << "pub:type:" << pubIter->second.getImpl()->implType;
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
-
-//		std::cout << pubIter->second.getChannelName() << std::endl;
-//		std::cout << statBucket.nrChannelMsg[pubIter->second.getChannelName()] << std::endl;
-
-		ss << "pub:sent:msgs:" << statBucket.nrChannelMsg[pubIter->second.getChannelName()];
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
-
-		ss << "pub:sent:bytes:" << statBucket.sizeChannelMsg[pubIter->second.getChannelName()];
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
+		SEND_DEBUG_ENVELOPE(std::string("pub:uuid:" + pubIter->first));
+		SEND_DEBUG_ENVELOPE(std::string("pub:channelName:" + pubIter->second.getChannelName()));
+		SEND_DEBUG_ENVELOPE(std::string("pub:type:" + toStr(pubIter->second.getImpl()->implType)));
+		SEND_DEBUG_ENVELOPE(std::string("pub:sent:msgs:" + toStr(statBucket.nrChannelMsg[pubIter->second.getChannelName()])));
+		SEND_DEBUG_ENVELOPE(std::string("pub:sent:bytes:" + toStr(statBucket.sizeChannelMsg[pubIter->second.getChannelName()])));
 
 		std::map<std::string, SubscriberStub> subs = pubIter->second.getSubscribers();
 		std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
 
 		// send its subscriptions as well
 		while (subIter != subs.end()) {
-			ss << "pub:sub:uuid:" << subIter->first;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "pub:sub:channelName:" << subIter->second.getChannelName();
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "pub:sub:type:" << subIter->second.getImpl()->implType;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
+			SEND_DEBUG_ENVELOPE(std::string("pub:sub:uuid:" + subIter->first));
+			SEND_DEBUG_ENVELOPE(std::string("pub:sub:channelName:" + subIter->second.getChannelName()));
+			SEND_DEBUG_ENVELOPE(std::string("pub:sub:type:" + toStr(subIter->second.getImpl()->implType)));
 
 			subIter++;
 		}
@@ -1798,136 +1803,63 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 	// send our subscribers
 	std::map<std::string, Subscriber>::iterator subIter = _subs.begin();
 	while (subIter != _subs.end()) {
-		ss << "sub:uuid:" << subIter->first;
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
 
-		ss << "sub:channelName:" << subIter->second.getChannelName();
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
-
-		ss << "sub:type:" << subIter->second.getImpl()->implType;
-		zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-		RESETSS(ss);
+		SEND_DEBUG_ENVELOPE(std::string("sub:uuid:" + subIter->first));
+		SEND_DEBUG_ENVELOPE(std::string("sub:channelName:" + subIter->second.getChannelName()));
+		SEND_DEBUG_ENVELOPE(std::string("sub:type:" + toStr(subIter->second.getImpl()->implType)));
 
 		std::map<std::string, PublisherStub> pubs = subIter->second.getPublishers();
 		std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
 		// send all remote publishers we think this node has
 		while (pubIter != pubs.end()) {
-			ss << "sub:pub:uuid:" << pubIter->first;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "sub:pub:channelName:" << pubIter->second.getChannelName();
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "sub:pub:type:" << pubIter->second.getImpl()->implType;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
+			SEND_DEBUG_ENVELOPE(std::string("sub:pub:uuid:" + pubIter->first));
+			SEND_DEBUG_ENVELOPE(std::string("sub:pub:channelName:" + pubIter->second.getChannelName()));
+			SEND_DEBUG_ENVELOPE(std::string("sub:pub:type:" + toStr(pubIter->second.getImpl()->implType)));
 
 			pubIter++;
 		}
-
 		subIter++;
 	}
 
 
 	// send all the nodes we know about
-	std::map<std::string, SharedPtr<NodeConnection> > connections;
 	std::map<std::string, SharedPtr<NodeConnection> >::const_iterator nodeIter;
 
-	// insert connection to
 	nodeIter = _connTo.begin();
-	while (_connTo.size() > 0 && nodeIter != _connTo.end()) {
-		connections.insert(*nodeIter);
-		nodeIter++;
-	}
-
-	// insert connection to
-	nodeIter = _connFrom.begin();
-	while (nodeIter != _connFrom.end()) {
-		if (connections.find(nodeIter->first) != connections.end()) {
-			assert(connections[nodeIter->first] == nodeIter->second);
-		}
-		connections.insert(*nodeIter);
-		nodeIter++;
-	}
-
-	nodeIter = connections.begin();
-	while (nodeIter != connections.end()) {
+	while (nodeIter != _connTo.end()) {
 		// only report UUIDs as keys
 		if (UUID::isUUID(nodeIter->first)) {
-			ss << "conn:uuid:" << nodeIter->first;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:address:" << nodeIter->second->address;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:from:" << nodeIter->second->connectedFrom;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:to:" << nodeIter->second->connectedTo;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:confirmed:" << nodeIter->second->isConfirmed;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:refCount:" << nodeIter->second->refCount;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
-
-			ss << "conn:startedAt:" << nodeIter->second->startedAt;
-			zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-			RESETSS(ss);
+			SEND_DEBUG_ENVELOPE(std::string("conn:uuid:" + nodeIter->first));
+			SEND_DEBUG_ENVELOPE(std::string("conn:address:" + nodeIter->second->address));
+			SEND_DEBUG_ENVELOPE(std::string("conn:from:" + toStr(_connFrom.find(nodeIter->first) != _connFrom.end())));
+			SEND_DEBUG_ENVELOPE(std::string("conn:to:" + toStr(true)));
+			SEND_DEBUG_ENVELOPE(std::string("conn:confirmed:" + toStr(nodeIter->second->isConfirmed)));
+			SEND_DEBUG_ENVELOPE(std::string("conn:startedAt:" + toStr(nodeIter->second->startedAt)));
 
 			// send info about all nodes connected to us
 			if (nodeIter->second->node) {
 				NodeStub& nodeStub = nodeIter->second->node;
 
-				ss << "conn:lastSeen:" << nodeStub.getLastSeen();
-				zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-				RESETSS(ss);
+				SEND_DEBUG_ENVELOPE(std::string("conn:lastSeen:" + toStr(nodeStub.getLastSeen())));
 
+				// send all remote publishers we think this node has
 				std::map<std::string, PublisherStub> pubs = nodeStub.getPublishers();
 				std::map<std::string, PublisherStub>::iterator pubIter = pubs.begin();
-				// send all remote publishers we think this node has
 				while (pubIter != pubs.end()) {
-					ss << "conn:pub:uuid:" << pubIter->first;
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
-
-					ss << "conn:pub:channelName:" << pubIter->second.getChannelName();
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
-
-					ss << "conn:pub:type:" << pubIter->second.getImpl()->implType;
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
+					SEND_DEBUG_ENVELOPE(std::string("conn:pub:uuid:" + pubIter->first));
+					SEND_DEBUG_ENVELOPE(std::string("conn:pub:channelName:" + pubIter->second.getChannelName()));
+					SEND_DEBUG_ENVELOPE(std::string("conn:pub:type:" + toStr(pubIter->second.getImpl()->implType)));
 
 					pubIter++;
 				}
 
+				// send all remote subscribers we think this node has
 				std::map<std::string, SubscriberStub> subs = nodeStub.getSubscribers();
 				std::map<std::string, SubscriberStub>::iterator subIter = subs.begin();
-				// send all remote publishers we think this node has
 				while (subIter != subs.end()) {
-					ss << "conn:sub:uuid:" << subIter->first;
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
-
-					ss << "conn:sub:channelName:" << subIter->second.getChannelName();
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
-
-					ss << "conn:sub:type:" << subIter->second.getImpl()->implType;
-					zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_SNDMORE | ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-					RESETSS(ss);
+					SEND_DEBUG_ENVELOPE(std::string("conn:sub:uuid:" + subIter->first));
+					SEND_DEBUG_ENVELOPE(std::string("conn:sub:channelName:" + subIter->second.getChannelName()));
+					SEND_DEBUG_ENVELOPE(std::string("conn:sub:type:" + toStr(subIter->second.getImpl()->implType)));
 
 					subIter++;
 				}
@@ -1937,50 +1869,81 @@ void ZeroMQNode::replyWithDebugInfo(const std::string uuid) {
 		nodeIter++;
 	}
 
-	ss << "done:" << _uuid;
-	zmq_send(_nodeSocket, ss.str().c_str(), ss.str().length(), ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
-	RESETSS(ss);
+	std::string stanzaDone = "done:" + _uuid;
+	zmq_send(_nodeSocket, stanzaDone.c_str(), stanzaDone.length(), ZMQ_DONTWAIT) == -1 && UM_LOG_ERR("zmq_send: %s", zmq_strerror(errno));
 
 }
 
-ZeroMQNode::NodeConnection::NodeConnection() :
-	connectedTo(false),
-	connectedFrom(false),
-	socket(NULL),
-	startedAt(0),
-	refCount(0), isConfirmed(false) {
-	UM_TRACE("NodeConnection");
-}
+ZeroMQNode::NodeConnection::NodeConnection(const std::string& _socketId) :
+		socket(NULL),
+		socketId(_socketId),
+		isConfirmed(false) {
 
-ZeroMQNode::NodeConnection::NodeConnection(const std::string& _address, const std::string& thisUUID) :
-	connectedTo(false),
-	connectedFrom(false),
-	address(_address),
-	refCount(0),
-	isConfirmed(false) {
 	UM_TRACE("NodeConnection");
 	startedAt	= Thread::getTimeStampMs();
-	socketId = thisUUID;
+}
+	
+ZeroMQNode::NodeConnection::NodeConnection(const std::string& _address, const std::string& _socketId) :
+		socket(NULL),
+		address(_address),
+		socketId(_socketId),
+		isConfirmed(false) {
+		
+	UM_TRACE("NodeConnection");
+	startedAt	= Thread::getTimeStampMs();
+}
+
+int ZeroMQNode::NodeConnection::connect() {
+	if (socket)
+		return 0;
+	
+	int err = 0;
 	socket = zmq_socket(ZeroMQNode::getZeroMQContext(), ZMQ_DEALER);
 	if (!socket) {
 		UM_LOG_ERR("zmq_socket: %s", zmq_strerror(errno));
-	} else {
-		zmq_setsockopt(socket, ZMQ_IDENTITY, socketId.c_str(), socketId.length()) && UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
-		int err = zmq_connect(socket, address.c_str());
-		if (err) {
-			UM_LOG_ERR("zmq_connect %s: %s", address.c_str(), zmq_strerror(errno));
-			zmq_close(socket);
-			socket = NULL;
-		}
+		return errno;
 	}
+	
+	err = zmq_setsockopt(socket, ZMQ_IDENTITY, socketId.c_str(), socketId.length());
+	if (err) {
+		UM_LOG_ERR("zmq_setsockopt: %s", zmq_strerror(errno));
+		return err;
+	}
+	
+	err = zmq_connect(socket, address.c_str());
+	if (err) {
+		UM_LOG_ERR("zmq_connect %s: %s", address.c_str(), zmq_strerror(errno));
+		zmq_close(socket);
+		socket = NULL;
+	}
+	return err;
 }
 
+int ZeroMQNode::NodeConnection::disconnect() {
+	if (!socket)
+		return 0;
+	
+	int err = 0;
+
+	err = zmq_disconnect(socket, address.c_str());
+	if (err) {
+		UM_LOG_ERR("zmq_disconnect %s: %s", address.c_str(), zmq_strerror(errno));
+		err = errno;
+	} else {
+		err = zmq_close(socket);
+		if (err) {
+			UM_LOG_ERR("zmq_disconnect %s: %s", address.c_str(), zmq_strerror(errno));
+			err = errno;
+		}
+	}
+
+	socket = NULL;
+	return err;
+}
+	
 ZeroMQNode::NodeConnection::~NodeConnection() {
 	UM_TRACE("~NodeConnection");
-	if (socket) {
-		zmq_disconnect(socket, address.c_str());
-		zmq_close(socket);
-	}
+	disconnect();
 }
 
 ZeroMQNode::Subscription::Subscription() :

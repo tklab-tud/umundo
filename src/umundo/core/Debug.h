@@ -26,11 +26,22 @@
 
 #include <stdarg.h> ///< variadic functions
 
-/// Log a message with error priority
-#define UM_LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
-#define UM_LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
-#define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
-#define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+/**
+ * Log messages with a given priority, disable per compilation unit by defining
+ * NO_DEBUG_MSGS before including any headers.
+ *
+ */
+#ifdef NO_DEBUG_MSGS
+#	define UM_LOG_ERR(fmt, ...) ((void)0)
+#	define UM_LOG_WARN(fmt, ...) ((void)0)
+#	define UM_LOG_INFO(fmt, ...) ((void)0)
+#	define UM_LOG_DEBUG(fmt, ...) ((void)0)
+#else
+#	define UM_LOG_ERR(fmt, ...) umundo::Debug::logMsg(0, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#	define UM_LOG_WARN(fmt, ...) umundo::Debug::logMsg(1, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#	define UM_LOG_INFO(fmt, ...) umundo::Debug::logMsg(2, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#	define UM_LOG_DEBUG(fmt, ...) umundo::Debug::logMsg(3, fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
+#endif
 
 #ifdef ENABLE_TRACING
 #define UM_TRACE(fmt, ...) umundo::Trace trace##__LINE__(fmt, __FILE__, __LINE__,  ##__VA_ARGS__)
@@ -38,14 +49,11 @@
 #define UM_TRACE(fmt, ...) ((void)0)
 #endif
 
-// never strip logging
-#if 0
-#ifndef BUILD_DEBUG
+#ifdef NO_DEBUG_MSGS
 #define UM_LOG_ERR(fmt, ...) 1
 #define UM_LOG_WARN(fmt, ...) 1
 #define UM_LOG_INFO(fmt, ...) 1
 #define UM_LOG_DEBUG(fmt, ...) 1
-#endif
 #endif
 
 #ifdef __GNUC__

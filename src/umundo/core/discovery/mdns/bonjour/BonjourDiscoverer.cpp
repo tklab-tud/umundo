@@ -17,13 +17,23 @@
  *  @endcond
  */
 
+#define NO_DEBUG_MSGS
+
 #include "umundo/config.h"
 
 #ifdef WIN32
 #include <WS2tcpip.h>
 #endif
 
-#if 0
+/** from dns_sd.h:kDNSServiceFlagsShareConnection
+ * When callbacks are invoked using a shared DNSServiceRef, the
+ * kDNSServiceFlagsMoreComing flag applies collectively to *all* active
+ * operations sharing the same parent DNSServiceRef. If the MoreComing flag is
+ * set it means that there are more results queued on this parent DNSServiceRef,
+ * but not necessarily more results for this particular callback function.
+ */
+
+#if 1
 #	undef SHARE_SERVICE_REF
 # define SHARE_SERVICE_FLAG 0
 #else

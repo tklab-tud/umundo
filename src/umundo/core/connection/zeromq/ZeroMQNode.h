@@ -110,23 +110,29 @@ public:
 	static void* getZeroMQContext();
 
 protected:
+	
+	/**
+	 * Message types for internal op socket
+	 */
+	enum Type {
+		UM_DISCONNECT         = 0x0008, // node was removed
+	};
+
 	class NodeConnection {
 	public:
-		NodeConnection();
-		NodeConnection(const std::string& _address, const std::string& thisUUID);
+		NodeConnection(const std::string& _socketId);
+		NodeConnection(const std::string& _address, const std::string& _socketId);
 		virtual ~NodeConnection();
 
-		bool connectedTo; ///< are we connected to this node?
-		bool connectedFrom; ///< are we connected from this node?
-
 		void* socket; ///< when connect to, the connection to the remote node socket
-		std::string socketId; ///< the nodes uuid
 		std::string address; ///< when connect to, the address of the remote node socket
+		std::string socketId; ///< the containing nodes uuid as a sockt identifier
 		uint64_t startedAt; ///< when connect to, a timestamp when we initially tried to connect
-		NodeStub node; /// always a representation about the remote node
-		int refCount; ///< when connect to, how many times this address was added as an endpoint
-		bool isConfirmed; ///< when connect to, whether we received any node info reply
-
+		NodeStub node; /// a representation about the remote node
+		bool isConfirmed; ///< Whether we connected our subscribers to the remote nodes publishers
+		
+		int connect();
+		int disconnect();
 	};
 
 	class Subscription {
@@ -168,7 +174,7 @@ protected:
 	std::map<std::string, std::string> _options;
 
 	uint16_t _pubPort; ///< tcp port where we maintain the node-global publisher
-	std::map<std::string, SharedPtr<NodeConnection> > _connFrom; ///< other node uuids connected to us we have seen
+	std::map<std::string, NodeStub > _connFrom; ///< other node stubs per uuids connected to us we have seen
 	std::map<std::string, SharedPtr<NodeConnection> > _connTo; ///< actual connection we maintain to other nodes, keys are both: address and uuid
 	std::map<std::string, SharedPtr<NodeConnection> > _connPending;
 
@@ -201,28 +207,32 @@ protected:
 	//@{
 	void sendUnsubscribeFromPublisher(const std::string& nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
 	void sendSubscribeToPublisher(const std::string& nodeUUID, const umundo::Subscriber& sub, const umundo::PublisherStub& pub);
-	void confirmSub(const std::string& subUUID);
-	void processRemotePubAdded(const std::string& nodeUUID, PublisherStubImpl* pub);
-	void processRemotePubRemoved(const std::string& nodeUUID, PublisherStubImpl* pub);
+	void confirmSubscription(const std::string& subUUID);
+	void receivedRemotePubAdded(SharedPtr<NodeConnection> client, SharedPtr<PublisherStubImpl> pub);
+	void receivedRemotePubRemoved(SharedPtr<NodeConnection> client, SharedPtr<PublisherStubImpl> pub);
 	//@}
 
-	/** @name Read / Write to raw byte arrays */
+	/** @name Read / Write to raw byte arrays - convenience methods */
 	//@{
 	char* write(char* buffer, const PublisherStub& pub);
 	char* write(char* buffer, const Subscriber& sub);
 	const char* read(const char* buffer, PublisherStubImpl* pub, size_t available);
 	const char* read(const char* buffer, SubscriberStubImpl* sub, size_t available);
-	char* writeVersionAndType(char* buffer, Message::Type type);
-	const char* readVersionAndType(const char* buffer, uint16_t& version, umundo::Message::Type& type);
+	char* writeVersionAndType(char* buffer, uint16_t type);
+	const char* readVersionAndType(const char* buffer, uint16_t& version, uint16_t& type);
 	//@}
 
-	void disconnectRemoteNode(NodeStub& stub);
-	void processNodeComm();
-	void processPubComm();
-	void processInternalOpComm();
-	void processClientComm(SharedPtr<NodeConnection> client);
+	void unsubscribeFromRemoteNode(SharedPtr<NodeConnection> connection);
+	void receivedFromNodeSocket();
+	void receivedFromPubSocket();
+	void receivedInternalOp();
+	void receivedFromClientNode(SharedPtr<NodeConnection> client);
 	
-	void processNodeInfo(char* recvBuffer, size_t msgSize);
+	void remoteNodeConnect(const std::string& address);
+	void remoteNodeDisconnect(const std::string& address);
+	void remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnection> client, const std::list<SharedPtr<PublisherStubImpl> >& publishers);
+	
+//	void processNodeInfo(char* recvBuffer, size_t msgSize);
 	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
 
 	void processConnectedFrom(const std::string& uuid);
@@ -234,7 +244,7 @@ protected:
 	void replyWithDebugInfo(const std::string uuid);
 	StatBucket<double> accumulateIntoBucket();
 	
-	std::set<EndPoint> _endPoints;
+	std::map<std::string, std::set<EndPoint> > _endPoints; ///< 0mq addresses to endpoints added
 private:
 	static void* _zmqContext; ///< global 0MQ context.
 

@@ -147,7 +147,7 @@ public:
 	std::string bytesPerSecSent;
 	std::string msgsPerSecRcvd;
 	std::string bytesPerSecRcvd;
-	std::map<std::string, std::pair<std::string, DebugNode*> > connTo;
+	std::map<std::string, DebugNode*> connTo;
 	std::map<std::string, DebugNode*> connFrom;
 	std::map<std::string, DebugSub*> subs;
 	std::map<std::string, DebugPub*> pubs;
@@ -281,6 +281,29 @@ void processDebugNode(DebugNode* node) {
 	labelSS << ">";
 	dotNodes[node->uuid].attr["label"] = labelSS.str();
 
+#if 0
+	// simplify bi-directional node acquaintance
+	std::map<std::string, DebugNode*>::iterator nodeConnIter = node->connTo.begin();
+	while(nodeConnIter != node->connTo.end()) {
+		if (debugNodes.find(nodeConnIter->first) != debugNodes.end()) {
+			DebugNode* otherNode = debugNodes[nodeConnIter->first];
+			if (otherNode->connTo.find(node->uuid) != otherNode->connTo.end()) {
+				std::string edgeId = node->uuid + " -> " + otherNode->uuid;
+				std::string backEdgeId = otherNode->uuid + " -> " + node->uuid;
+				dotEdges[edgeId].attr["dir"] = "both";
+//				dotEdges.erase(backEdgeId);
+				// if we have both edges, remove one
+//				if (edgeLabels.find(uuid) != edgeLabels.end() &&
+//						edgeLabels.find(otherNode->uuid) != edgeLabels.end() &&
+//						edgeLabels[otherNode->uuid].find(node->uuid) != edgeLabels[otherNode->uuid].end()) {
+//					edgeLabels[otherNode->uuid].erase(node->uuid);
+//				}
+			}
+		}
+		nodeConnIter++;
+	}
+#endif
+#if 1
 	// polish outgoing edge labels
 	if (edgeLabels.find(node->uuid) != edgeLabels.end()) {
 
@@ -321,6 +344,15 @@ void processDebugNode(DebugNode* node) {
 			eLabelIter++;
 		}
 	}
+#endif
+
+	std::map<std::string, DebugNode*>::iterator nodeIter = node->connTo.begin();
+	while(nodeIter != node->connTo.end()) {
+		std::string edgeId = node->uuid + " -> " + nodeIter->first;
+		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + nodeIter->first + "\"";
+		nodeIter++;
+	}
+	
 
 	std::map<std::string, DebugSub*>::iterator subIter = node->subs.begin();
 	while(subIter != node->subs.end()) {
@@ -466,9 +498,12 @@ void generateDotFile() {
 		std::map<std::string, DotNode>::iterator toIter = moreLabels.begin();
 		while(toIter != moreLabels.end()) {
 			std::string edgeId = fromIter->first + " -> " + toIter->first;
-			dotEdges[edgeId].dotId = "\"" + fromIter->first + "\" -> \"" + toIter->first + "\"";
-			dotEdges[edgeId].edgeLabel.insert(toIter->second.edgeLabel.begin(), toIter->second.edgeLabel.end());
-			dotEdges[edgeId].attr.insert(toIter->second.attr.begin(), toIter->second.attr.end());
+			// do not create new edges!
+			if (dotEdges.find(edgeId) != dotEdges.end()) {
+				dotEdges[edgeId].dotId = "\"" + fromIter->first + "\" -> \"" + toIter->first + "\"";
+				dotEdges[edgeId].edgeLabel.insert(toIter->second.edgeLabel.begin(), toIter->second.edgeLabel.end());
+				dotEdges[edgeId].attr.insert(toIter->second.attr.begin(), toIter->second.attr.end());
+			}
 			toIter++;
 		}
 		fromIter++;
@@ -744,7 +779,7 @@ void populateEntities() {
 
 			key = "conn:to:1";
 			if (mIter->substr(0, key.length()) == key) {
-				currNode->connTo[currRemoteNode->uuid].second = currRemoteNode;
+				currNode->connTo[currRemoteNode->uuid] = currRemoteNode;
 				continue;
 			}
 

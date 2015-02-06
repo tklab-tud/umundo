@@ -20,6 +20,12 @@
 
 using namespace umundo;
 
+class TestReceiver : public Receiver {
+	void receive(Message* msg) {
+		std::cout << ".";
+	}
+};
+
 class GlobalGreeter : public Greeter {
 public:
 	GlobalGreeter() { }
@@ -35,10 +41,11 @@ public:
 int main(int argc, char** argv) {
 	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 
-	PublisherConfigRTP pubConfig("pingpong");
+	PublisherConfigRTP pubConfig("vlc");
 	pubConfig.setTimestampIncrement(166); // PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
+	pubConfig.setPayloadType(33);
 	Publisher pubFoo(&pubConfig);
-
+	
 	GlobalGreeter greeter;
 	pubFoo.setGreeter(&greeter);
 
@@ -47,19 +54,59 @@ int main(int argc, char** argv) {
 	disc.add(node);
 	node.addPublisher(pubFoo);
 
-	uint16_t num=0;
-	char buf[2]="A";
-	while(1) {
-		Thread::sleepMs(1000);
-		Message* msg = new Message();
-		buf[0]=65+num++;
-		if(num==26)
-			num=0;
-		std::string ping=std::string("ping-")+std::string(buf);
-		msg->setData(ping.c_str(), ping.length());
-		std::cout << "o-" << buf << std::endl << std::flush;
-		pubFoo.send(msg);
-		delete(msg);
+
+	Node nodeHack;
+	TestReceiver testRcv;
+	SubscriberConfigMCast subMCastCfg("vlc");
+	subMCastCfg.setMulticastIP("224.1.2.3");
+	Subscriber subHack(&subMCastCfg);
+	subHack.setReceiver(&testRcv);
+	nodeHack.addSubscriber(subHack);
+	disc.add(nodeHack);
+
+	// rtp://@224.1.2.3:22020
+	pubFoo.waitForSubscribers(1);
+
+	
+	std::cout << "Publisher at 224.1.2.3:" << pubFoo.getPort() << std::endl;
+
+#define MTU 800
+
+	char* readBuffer = (char*) malloc(MTU);
+
+	while(true) {
+		std::string file = "/Users/sradomski/Desktop/iShowU-Capture.mov";
+		FILE *fp;
+		fp = fopen(file.c_str(), "r");
+		if (fp == NULL) {
+			printf("Failed to open file %s: %s\n", file.c_str(), strerror(errno));
+			return EXIT_FAILURE;
+		}
+
+		int read = 0;
+		int lastread = 0;
+
+		while(true) {
+			lastread = fread(readBuffer, 1, MTU, fp);
+			
+			if(ferror(fp)) {
+				printf("Failed to read from file %s: %s", file.c_str(), strerror(errno));
+				return EXIT_FAILURE;
+			}
+			
+			if (lastread <= 0)
+				break;
+			
+			pubFoo.send(readBuffer, lastread);
+			read += lastread;
+			
+			Thread::sleepMs(50);
+			
+			if (feof(fp))
+				break;
+		}
+		fclose(fp);
+
 	}
 
 	return 0;

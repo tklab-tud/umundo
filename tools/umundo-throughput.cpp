@@ -39,7 +39,10 @@ bool isClient = false;
 bool isServer = false;
 uint64_t currSeqNr = 0;
 uint32_t reportInterval = 1000;
-uint64_t startedAt = 0;
+uint64_t timeStampStartedAt = 0;
+
+Discovery disc;
+Node node;
 
 // server
 size_t bytesPerSecond = 1024 * 1024;
@@ -51,14 +54,21 @@ size_t packetsWritten = 0;
 PubType type = PUB_TCP;
 bool useZeroCopy = false;
 uint64_t bytesTotal = 0;
+uint64_t bytesWritten = 0;
+size_t rawDump = 0;
+double intervalFactor = 1;
+size_t delay = 0;
+uint64_t duration = 0;
 
 // client
 size_t bytesRcvd = 0;
 size_t pktsRecvd = 0;
-size_t lastSeqNr = 0;
 size_t pktsDropped = 0;
-uint64_t lastTimeStamp = 0;
-uint64_t firstTimeStamp = 0;
+size_t lastSeqNr = 0;
+size_t discoveryTimeMs = 0;
+uint64_t timeStampServerLast = 0;
+uint64_t timeStampServerFirst = 0;
+int32_t timeStampOffset = 2147483647; // int32_t max
 std::string serverUUID;
 Publisher reporter;
 
@@ -68,7 +78,7 @@ public:
 	size_t pktsDropped;
 	size_t bytesRcvd;
 	size_t pktsLate;
-	size_t latency;
+	size_t roundTripTime;
 	size_t discoveryTime;
 	double pcntLoss;
 	std::string pubId;
@@ -78,24 +88,33 @@ public:
 
 std::map<std::string, Report> reports;
 
+class DiscoveryTimeGreeter : public Greeter {
+public:
+	DiscoveryTimeGreeter() {}
+	void welcome(Publisher& pub, const SubscriberStub& sub) {
+		discoveryTimeMs = Thread::getTimeStampMs() - timeStampStartedAt;
+	}
+	void farewell(Publisher&, const SubscriberStub&) {}
+};
+
 class ThroughputReceiver : public Receiver {
 	void receive(Message* msg) {
+		uint64_t now = Thread::getTimeStampMs();
+
 		RScopeLock lock(mutex);
 		bytesRcvd += msg->size();
 		pktsRecvd++;
 
-		uint64_t currTimeStamp;
+		uint64_t currServerTimeStamp;
 		Message::read(msg->data(), &currSeqNr);
-		Message::read(msg->data() + 8, &currTimeStamp);
+		Message::read(msg->data() + 8, &currServerTimeStamp);
 		Message::read(msg->data() + 16, &reportInterval);
 
-		if (msg->getMeta("um.pub") != serverUUID) {
-			firstTimeStamp = 0;
-			serverUUID = msg->getMeta("um.pub");
-		}
+		if (abs(currServerTimeStamp - now) < abs(timeStampOffset))
+			timeStampOffset = currServerTimeStamp - now;
 
-		if (firstTimeStamp == 0)
-			firstTimeStamp = currTimeStamp;
+		if (timeStampServerFirst == 0 || currSeqNr < lastSeqNr)
+			timeStampServerFirst = currServerTimeStamp;
 
 		if (currSeqNr < lastSeqNr)
 			lastSeqNr = 0;
@@ -107,21 +126,23 @@ class ThroughputReceiver : public Receiver {
 		lastSeqNr = currSeqNr;
 
 		// reply?
-		if (currTimeStamp - reportInterval >= lastTimeStamp) {
+		if (currServerTimeStamp - reportInterval >= timeStampServerLast) {
 			RScopeLock lock(mutex);
+			timeStampServerLast = currServerTimeStamp;
+
 			Message* msg = new Message();
 			msg->putMeta("bytes.rcvd", toStr(bytesRcvd));
 			msg->putMeta("pkts.dropped", toStr(pktsDropped));
 			msg->putMeta("pkts.rcvd", toStr(pktsRecvd));
 			msg->putMeta("last.seq", toStr(lastSeqNr));
-			msg->putMeta("last.timestamp", toStr(currTimeStamp));
-			msg->putMeta("first.timestamp", toStr(firstTimeStamp));
-			msg->putMeta("started.timestamp", toStr(startedAt));
+			msg->putMeta("timestamp.server.last", toStr(timeStampServerLast));
+			msg->putMeta("timestamp.server.first", toStr(timeStampServerFirst));
+			msg->putMeta("timestamp.client.started", toStr(timeStampStartedAt));
+			msg->putMeta("timestamp.client.greeted", toStr(discoveryTimeMs));
 			msg->putMeta("hostname", umundo::Host::getHostname());
 			reporter.send(msg);
 			delete msg;
 
-			lastTimeStamp = currTimeStamp;
 			pktsDropped = 0;
 			pktsRecvd = 0;
 			bytesRcvd = 0;
@@ -142,13 +163,23 @@ public:
 		report.pktsRcvd      = strTo<size_t>(msg->getMeta("pkts.rcvd"));
 		report.pktsDropped   = strTo<size_t>(msg->getMeta("pkts.dropped"));
 		report.bytesRcvd     = strTo<size_t>(msg->getMeta("bytes.rcvd"));
-		report.latency       = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("last.timestamp"));
 		report.hostName      = msg->getMeta("hostname");
 		report.hostId        = msg->getMeta("um.host");
 		report.pubId         = msg->getMeta("um.pub");
+		
+		report.roundTripTime = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("timestamp.server.last"));
 
-		uint64_t otherStart    = strTo<uint64_t>(msg->getMeta("started.timestamp"));
-		report.discoveryTime = strTo<uint64_t>(msg->getMeta("first.timestamp")) - (startedAt > otherStart ? startedAt : otherStart);
+		uint64_t otherStart  = strTo<uint64_t>(msg->getMeta("timestamp.client.started"));
+		
+		if (otherStart < timeStampStartedAt) {
+			// client started before server, first timestamp is time to first packet, all server time
+			report.discoveryTime = strTo<uint64_t>(msg->getMeta("timestamp.server.first")) - timeStampStartedAt;
+		} else {
+			// TODO - We have to work with Greeters for more reliable numbers 23ms vs 1800ms
+			// client joined late, we need to account for time offset
+			int32_t timeOffset  = strTo<int32_t>(msg->getMeta("timestamp.offset"));
+			report.discoveryTime = strTo<uint64_t>(msg->getMeta("timestamp.server.first")) - (otherStart - timeOffset);
+		}
 
 		size_t lastSeqNr   = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate = currSeqNr - lastSeqNr;
@@ -178,11 +209,13 @@ class ThroughputGreeter : public Greeter {
 void printUsageAndExit() {
 	printf("umundo-throughput version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-throughput -s|-c [-l N] [-m N] [-w N]\n");
+	printf("\tumundo-throughput -s|-c [-l N] [-m N] [-w N] [-r N] [-d N]\n");
 	printf("\n");
 	printf("Options\n");
 	printf("\t-c                 : act as a client\n");
 	printf("\t-s                 : act as a server\n");
+	printf("\t-d                 : duration in second to keep server running\n");
+	printf("\t-r N               : dump raw data with columns for N clients\n");
 	printf("\t-f BYTES/s         : try to maintain given throughput\n");
 	printf("\t-t [rtp|tcp|mcast] : type of publisher to measure throughput\n");
 	printf("\t-z                 : employ zero-copy (experimental)\n");
@@ -258,9 +291,306 @@ size_t displayToBytes(const std::string& value) {
 void doneCallback(void* data, void* hint) {
 }
 
+void runAsClient() {
+	ThroughputReceiver tpRcvr;
+	DiscoveryTimeGreeter discGreeter;
+	
+	reporter = Publisher("reports");
+	reporter.setGreeter(&discGreeter);
+	
+	Subscriber tcpSub("throughput.tcp");
+	tcpSub.setReceiver(&tpRcvr);
+	
+	SubscriberConfigMCast mcastConfig("throughput.mcast");
+	mcastConfig.setMulticastIP("224.1.2.3");
+	//		mcastConfig.setMulticastPortbase(42142);
+	Subscriber mcastSub(&mcastConfig);
+	mcastSub.setReceiver(&tpRcvr);
+	
+	SubscriberConfigRTP rtpConfig("throughput.rtp");
+	//		rtpConfig.setPortbase(40042);
+	Subscriber rtpSub(&rtpConfig);
+	rtpSub.setReceiver(&tpRcvr);
+	
+	node.addSubscriber(tcpSub);
+	node.addSubscriber(mcastSub);
+	node.addSubscriber(rtpSub);
+	node.addPublisher(reporter);
+	
+	disc.add(node);
+	timeStampStartedAt = Thread::getTimeStampMs();
+	
+	// do nothing here, we reply only when we received a message
+	while(true) {
+#if 0
+		Thread::sleepMs(1000);
+#else
+		// disconnect / reconnect client on key-press
+		getchar();
+		node.removeSubscriber(tcpSub);
+		node.removeSubscriber(mcastSub);
+		node.removeSubscriber(rtpSub);
+		node.removePublisher(reporter);
+		disc.remove(node);
+		
+		getchar();
+		disc.add(node);
+		node.addSubscriber(tcpSub);
+		node.addSubscriber(mcastSub);
+		node.addSubscriber(rtpSub);
+		node.addPublisher(reporter);
+		
+#endif
+	}
+}
+
+void writeReports() {
+	std::map<std::string, Report>::iterator repIter = reports.begin();
+
+	if (rawDump > 0) {
+		size_t missingCols = rawDump;
+		repIter = reports.begin();
+
+		while(repIter != reports.end()) {
+			Report& report = repIter->second;
+			missingCols--;
+
+//			std::cout << report.discoveryTime << ", ";
+			std::cout << report.pubId.substr(0, 6) << ", ";
+			std::cout << (size_t)(intervalFactor * (double)(report.bytesRcvd)) << ", ";
+			std::cout << (size_t)(intervalFactor * (double)(report.pktsRcvd)) << ", ";
+			std::cout << (size_t)(intervalFactor * (double)(report.pktsDropped)) << ", ";
+			std::cout << report.pktsLate << ", ";
+			std::cout << report.roundTripTime << ", ";
+			repIter++;
+		}
+		while(missingCols--) {
+			std::cout << "0, 0, 0, 0, 0, 0, ";
+		}
+		std::cout << std::endl;
+		
+	} else {
+		
+		std::cout << FORMAT_COL << "byte sent";
+		std::cout << FORMAT_COL << "pkts sent";
+		std::cout << FORMAT_COL << "sleep";
+		std::cout << FORMAT_COL << "scale";
+		switch (type) {
+			case PUB_RTP: {
+				std::cout << FORMAT_COL << "[RTP]";
+				break;
+			}
+			case PUB_MCAST: {
+				std::cout << FORMAT_COL << "[RTP/MCAST]";
+				break;
+			}
+			case PUB_TCP: {
+				std::cout << FORMAT_COL << "[TCP]";
+				break;
+			}
+		}
+		std::cout << FORMAT_COL << bytesToDisplay(bytesTotal);
+		std::cout << FORMAT_COL << std::endl;
+		// ===
+		
+		std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)bytesWritten) + "/s";
+		std::cout << FORMAT_COL << toStr(intervalFactor * (double)packetsWritten) + "pkt/s";
+		std::cout << FORMAT_COL << timeToDisplay(delay * 1000);
+
+		std::cout << FORMAT_COL << "---";
+		std::cout << std::endl;
+
+		if (reports.size() > 0) {
+
+			// print report messages
+						
+			std::cout << FORMAT_COL << "byte recv";
+			std::cout << FORMAT_COL << "pkts recv";
+			std::cout << FORMAT_COL << "pkts loss";
+			std::cout << FORMAT_COL << "% loss";
+			std::cout << FORMAT_COL << "pkts late";
+			std::cout << FORMAT_COL << "RTT";
+			std::cout << FORMAT_COL << "dscvd";
+			std::cout << FORMAT_COL << "name";
+			std::cout << std::endl;
+			
+			repIter = reports.begin();
+			while(repIter != reports.end()) {
+				Report& report = repIter->second;
+				std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)(report.bytesRcvd)) + "/s";
+				std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
+				std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
+				std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
+				std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
+				std::cout << FORMAT_COL << (report.roundTripTime > 100000 ? "N/A" : toStr(report.roundTripTime) + "ms");
+				std::cout << FORMAT_COL << (report.discoveryTime > 100000 ? "N/A" : toStr(report.discoveryTime) + "ms");
+				std::cout << FORMAT_COL << report.pubId.substr(0, 6) + " (" + report.hostName + ")";
+				std::cout << std::endl;
+				
+				report.pktsRcvd = 0;
+				report.bytesRcvd = 0;
+				report.pktsLate = 0;
+				report.roundTripTime = 10000000;
+				repIter++;
+			}
+			
+		}
+		std::cout << std::endl;
+	}
+	//				reports.clear();
+
+}
+
+void runAsServer() {
+	ThroughputGreeter tpGreeter;
+	ReportReceiver reportRecv;
+	
+	Publisher pub;
+	switch (type) {
+		case PUB_RTP: {
+			PublisherConfigRTP config("throughput.rtp");
+			config.setTimestampIncrement(166);
+			pub = Publisher(&config);
+			pub.setGreeter(&tpGreeter);
+			break;
+		}
+		case PUB_MCAST: {
+			PublisherConfigMCast config("throughput.mcast");
+			config.setTimestampIncrement(166);
+			//			config.setPortbase(42142);
+			pub = Publisher(&config);
+			pub.setGreeter(&tpGreeter);
+			break;
+		}
+		case PUB_TCP: {
+			pub = Publisher("throughput.tcp");
+			pub.setGreeter(&tpGreeter);
+			break;
+		}
+	}
+	
+	Subscriber sub("reports");
+	sub.setReceiver(&reportRecv);
+	
+	node.addPublisher(pub);
+	node.addSubscriber(sub);
+	
+	disc.add(node);
+	timeStampStartedAt = Thread::getTimeStampMs();
+	
+	if (duration > 0)
+		duration *= 1000; // convert to ms
+	
+	pub.waitForSubscribers(waitForSubs);
+	
+	// reserve 20 bytes for timestamp, sequence number and report interval
+	size_t dataSize = (std::max)(mtu, (size_t)20);
+	char* data = (char*)malloc(dataSize);
+	Message* msg = NULL;
+	if (useZeroCopy) {
+		msg = new Message(data, dataSize, doneCallback, (void*)NULL);
+	} else {
+		msg = new Message();
+	}
+	
+	uint64_t lastReportAt = Thread::getTimeStampMs();
+
+	while(1) {
+		uint64_t now = Thread::getTimeStampMs();
+		
+		if (duration > 0 && now - timeStampStartedAt > duration)
+			return;
+		
+		// first 16 bytes are seqNr and timestamp
+		Message::write(&data[0], ++currSeqNr);
+		Message::write(&data[8], now);
+		Message::write(&data[16], reportInterval);
+		
+		if (!useZeroCopy) {
+			msg->setData(data, dataSize);
+		}
+		
+		pub.send(msg);
+		
+		intervalFactor = 1000.0 / (double)reportInterval;
+		bytesWritten += dataSize;
+		bytesTotal += dataSize;
+		packetsWritten++;
+		
+		// sleep just enough to reach the desired bps
+		{
+			RScopeLock lock(mutex);
+			size_t packetsPerSecond = (std::max)(bytesPerSecond / dataSize, (size_t)1);
+			delay = (std::max)((1000000) / (packetsPerSecond), (size_t)1);
+		}
+		
+		// every report interval we are writing reports
+		if (now - lastReportAt > reportInterval) {
+			RScopeLock lock(mutex);
+
+			writeReports();
+			
+			// and recalculate bytes to send
+			if (reports.size() > 0) {
+				double decreasePressure = 0;
+				
+				// print report messages
+				std::map<std::string, Report>::iterator repIter = reports.begin();
+				
+				// bandwidth is not fixed
+				if (fixedBytesPerSecond == 0) {
+					while(repIter != reports.end()) {
+						const Report& report = repIter->second;
+						// see if we need to decrease bandwidth
+						if (report.pktsLate > packetsWritten / 2) {
+							// client is lagging more than half a second, scale back somewhat
+							decreasePressure = (std::max)(1.1, decreasePressure);
+						}
+						if (report.pcntLoss > pcntLossOk) {
+							// we lost packages, scale back somewhat
+							decreasePressure = (std::max)((double)report.pktsDropped / report.pktsRcvd, decreasePressure);
+							decreasePressure = (std::min)(decreasePressure, 4.0);
+						}
+						if (report.pktsLate > 3 * packetsWritten) {
+							// queues explode! scale back alot!
+							decreasePressure = (std::max)((double)report.pktsLate / packetsWritten, decreasePressure);
+							decreasePressure = (std::min)(decreasePressure, 4.0);
+						}
+						repIter++;
+					}
+					
+					if (decreasePressure > 0) {
+						bytesPerSecond *= (1.0 / decreasePressure);
+						bytesPerSecond = (std::max)(bytesPerSecond, (size_t)(1024));
+						std::cout << FORMAT_COL << "down " + toStr(1.0 / decreasePressure);
+					} else {
+						bytesPerSecond *= 1.2;
+						std::cout << FORMAT_COL << "up 1.2";
+					}
+				} else {
+					if (bytesWritten * intervalFactor < fixedBytesPerSecond) {
+						bytesPerSecond *= 1.05;
+					} else if (bytesWritten * intervalFactor > fixedBytesPerSecond)  {
+						bytesPerSecond *= 0.95;
+					}
+				}
+			}
+			
+			bytesWritten = 0;
+			packetsWritten = 0;
+			
+			lastReportAt = Thread::getTimeStampMs();
+		}
+
+		// now we sleep until we have to send another packet
+		Thread::sleepUs(delay);
+	}
+	delete(msg);
+}
+
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "zcsm:w:l:f:t:i:")) != -1) {
+	while ((option = getopt(argc, argv, "zcsm:w:l:f:t:i:r:d:")) != -1) {
 		switch(option) {
 		case 'z':
 			useZeroCopy = true;
@@ -289,6 +619,12 @@ int main(int argc, char** argv) {
 		case 'f':
 			fixedBytesPerSecond = displayToBytes(optarg);
 			break;
+		case 'd':
+			duration = atoi((const char*)optarg);
+			break;
+		case 'r':
+			rawDump = atoi((const char*)optarg);
+			break;
 		case 'w':
 			waitForSubs = atoi((const char*)optarg);
 			break;
@@ -300,263 +636,20 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-
+	
 	if (!isClient && !isServer)
 		printUsageAndExit();
 
 	if (fixedBytesPerSecond > 0)
 		bytesPerSecond = fixedBytesPerSecond;
-
-	Discovery disc(Discovery::MDNS);
-	Node node;
-	disc.add(node);
-	startedAt = Thread::getTimeStampMs();
-
+	
+	DiscoveryConfigMDNS discConfig;
+	discConfig.setDomain("throughput");
+	disc = Discovery(&discConfig);
+	
 	if (isServer) {
-		ThroughputGreeter tpGreeter;
-		ReportReceiver reportRecv;
-
-		Publisher pub;
-		switch (type) {
-		case PUB_RTP: {
-			PublisherConfigRTP config("throughput.rtp");
-			config.setTimestampIncrement(166);
-			pub = Publisher(&config);
-			pub.setGreeter(&tpGreeter);
-			break;
-		}
-		case PUB_MCAST: {
-			PublisherConfigMCast config("throughput.mcast");
-			config.setTimestampIncrement(166);
-//			config.setPortbase(42142);
-			pub = Publisher(&config);
-			pub.setGreeter(&tpGreeter);
-			break;
-		}
-		case PUB_TCP: {
-			pub = Publisher("throughput.tcp");
-			pub.setGreeter(&tpGreeter);
-			break;
-		}
-		}
-
-		Subscriber sub("reports");
-		sub.setReceiver(&reportRecv);
-
-		node.addPublisher(pub);
-		node.addSubscriber(sub);
-		pub.waitForSubscribers(waitForSubs);
-
-		// reserve 20 bytes for timestamp, sequence number and report interval
-		size_t dataSize = (std::max)(mtu, (size_t)20);
-		char* data = (char*)malloc(dataSize);
-		Message* msg = NULL;
-		if (useZeroCopy) {
-			msg = new Message(data, dataSize, doneCallback, (void*)NULL);
-		} else {
-			msg = new Message();
-		}
-
-		unsigned long bytesWritten = 0;
-		double intervalFactor = 1;
-		uint64_t lastReportAt = Thread::getTimeStampMs();
-		while(1) {
-			uint64_t now = Thread::getTimeStampMs();
-
-			// first 16 bytes are seqNr and timestamp
-			Message::write(&data[0], ++currSeqNr);
-			Message::write(&data[8], now);
-			Message::write(&data[16], reportInterval);
-
-			if (!useZeroCopy) {
-				msg->setData(data, dataSize);
-			}
-
-			pub.send(msg);
-
-			intervalFactor = 1000.0 / (double)reportInterval;
-			bytesWritten += dataSize;
-			bytesTotal += dataSize;
-			packetsWritten++;
-
-			size_t delay = 0;
-			// sleep just enough to reach the desired bps
-			{
-				RScopeLock lock(mutex);
-				size_t packetsPerSecond = (std::max)(bytesPerSecond / dataSize, (size_t)1);
-				delay = (std::max)((1000000) / (packetsPerSecond), (size_t)1);
-//				std::cout << packetsPerSecond << std::endl;
-			}
-
-			// every second we are writing reports
-			if (now - lastReportAt > reportInterval) {
-				RScopeLock lock(mutex);
-
-//				std::cout << FORMAT_COL << bytesToDisplay(bytesPerSecond) + "/s";
-				std::cout << FORMAT_COL << "byte sent";
-				std::cout << FORMAT_COL << "pkts sent";
-				std::cout << FORMAT_COL << "sleep";
-				std::cout << FORMAT_COL << "scale";
-				switch (type) {
-				case PUB_RTP: {
-					std::cout << FORMAT_COL << "[RTP]";
-					break;
-				}
-				case PUB_MCAST: {
-					std::cout << FORMAT_COL << "[RTP/MCAST]";
-					break;
-				}
-				case PUB_TCP: {
-					std::cout << FORMAT_COL << "[TCP]";
-					break;
-				}
-				}
-				std::cout << FORMAT_COL << bytesToDisplay(bytesTotal);
-				std::cout << FORMAT_COL << std::endl;
-
-
-				std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)bytesWritten) + "/s";
-				std::cout << FORMAT_COL << toStr(intervalFactor * (double)packetsWritten) + "pkt/s";
-				std::cout << FORMAT_COL << timeToDisplay(delay * 1000);
-//				std::cout << FORMAT_COL << delay;
-
-				if (reports.size() == 0) {
-					std::cout << FORMAT_COL << "---";
-					std::cout << std::endl;
-				} else {
-
-					double decreasePressure = 0;
-
-					// print report messages
-					std::map<std::string, Report>::iterator repIter = reports.begin();
-
-					if (fixedBytesPerSecond == 0) {
-						while(repIter != reports.end()) {
-							const Report& report = repIter->second;
-							// see if we need to decrease bandwidth
-							if (report.pktsLate > packetsWritten / 2) {
-								// client is lagging more than half a second, scale back somewhat
-								decreasePressure = (std::max)(1.1, decreasePressure);
-							}
-							if (report.pcntLoss > pcntLossOk) {
-								// we lost packages, scale back somewhat
-								decreasePressure = (std::max)((double)report.pktsDropped / report.pktsRcvd, decreasePressure);
-								decreasePressure = (std::min)(decreasePressure, 4.0);
-							}
-							if (report.pktsLate > 3 * packetsWritten) {
-								// queues explode! scale back alot!
-								decreasePressure = (std::max)((double)report.pktsLate / packetsWritten, decreasePressure);
-								decreasePressure = (std::min)(decreasePressure, 4.0);
-							}
-							repIter++;
-						}
-
-						if (decreasePressure > 0) {
-							bytesPerSecond *= (1.0 / decreasePressure);
-							bytesPerSecond = (std::max)(bytesPerSecond, (size_t)(1024));
-							std::cout << FORMAT_COL << "down " + toStr(1.0 / decreasePressure);
-						} else {
-							bytesPerSecond *= 1.2;
-							std::cout << FORMAT_COL << "up 1.2";
-						}
-					} else {
-						if (bytesWritten * intervalFactor < fixedBytesPerSecond) {
-							bytesPerSecond *= 1.05;
-						} else if (bytesWritten * intervalFactor > fixedBytesPerSecond)  {
-							bytesPerSecond *= 0.95;
-						}
-					}
-					std::cout << FORMAT_COL << "---";
-					std::cout << std::endl;
-
-					std::cout << FORMAT_COL << "byte recv";
-					std::cout << FORMAT_COL << "pkts recv";
-					std::cout << FORMAT_COL << "pkts loss";
-					std::cout << FORMAT_COL << "% loss";
-					std::cout << FORMAT_COL << "pkts late";
-					std::cout << FORMAT_COL << "RTT";
-					std::cout << FORMAT_COL << "dscvd";
-					std::cout << FORMAT_COL << "name";
-					std::cout << std::endl;
-
-					repIter = reports.begin();
-					while(repIter != reports.end()) {
-						Report& report = repIter->second;
-						std::cout << FORMAT_COL << bytesToDisplay(intervalFactor * (double)(report.bytesRcvd)) + "/s";
-						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
-						std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
-						std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
-						std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
-						std::cout << FORMAT_COL << (report.latency > 100000 ? "N/A" : toStr(report.latency) + "ms");
-						std::cout << FORMAT_COL << (report.discoveryTime > 100000 ? "N/A" : toStr(report.discoveryTime) + "ms");
-						std::cout << FORMAT_COL << report.pubId.substr(0, 6) + " (" + report.hostName + ")";
-						std::cout << std::endl;
-
-						report.pktsRcvd = 0;
-						report.bytesRcvd = 0;
-						report.pktsLate = 0;
-						report.latency = 10000000;
-						repIter++;
-					}
-
-				}
-				std::cout << std::endl;
-
-				bytesWritten = 0;
-				packetsWritten = 0;
-//				reports.clear();
-
-				lastReportAt = Thread::getTimeStampMs();
-			}
-			// this is not working on windows with sub micro-second values!
-			Thread::sleepUs(delay);
-		}
-		delete(msg);
-
+		runAsServer();
 	} else {
-		ThroughputReceiver tpRcvr;
-
-		reporter = Publisher("reports");
-
-		Subscriber tcpSub("throughput.tcp");
-		tcpSub.setReceiver(&tpRcvr);
-
-		SubscriberConfigMCast mcastConfig("throughput.mcast");
-		mcastConfig.setMulticastIP("224.1.2.3");
-//		mcastConfig.setMulticastPortbase(42142);
-		Subscriber mcastSub(&mcastConfig);
-		mcastSub.setReceiver(&tpRcvr);
-
-		SubscriberConfigRTP rtpConfig("throughput.rtp");
-//		rtpConfig.setPortbase(40042);
-		Subscriber rtpSub(&rtpConfig);
-		rtpSub.setReceiver(&tpRcvr);
-
-		node.addSubscriber(tcpSub);
-		node.addSubscriber(mcastSub);
-		node.addSubscriber(rtpSub);
-		node.addPublisher(reporter);
-
-		// do nothing here, we reply only when we received a message
-		while(true) {
-#if 0
-			Thread::sleepMs(1000);
-#else
-			getchar();
-			node.removeSubscriber(tcpSub);
-			node.removeSubscriber(mcastSub);
-			node.removeSubscriber(rtpSub);
-			node.removePublisher(reporter);
-			disc.remove(node);
-
-			getchar();
-			disc.add(node);
-			node.addSubscriber(tcpSub);
-			node.addSubscriber(mcastSub);
-			node.addSubscriber(rtpSub);
-			node.addPublisher(reporter);
-
-#endif
-		}
+		runAsClient();
 	}
 }

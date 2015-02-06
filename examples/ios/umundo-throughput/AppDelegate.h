@@ -24,13 +24,13 @@
 @property (retain, nonatomic) NSTimer* timer;
 
 @property (nonatomic) NSUInteger bytesRcvd;
-@property (nonatomic) NSUInteger pktsDropped;
 @property (nonatomic) NSUInteger pktsRecvd;
+@property (nonatomic) NSUInteger pktsDropped;
 @property (nonatomic) UInt64 lastSeqNr;
-@property (nonatomic) UInt64 lastTimeStamp;
-@property (nonatomic) UInt64 currTimeStamp;
-@property (nonatomic) UInt64 startedTimeStamp;
-@property (nonatomic) UInt64 firstTimeStamp;
-@property (nonatomic) UInt32 reportInterval;
+@property (nonatomic) UInt64 timeStampServerLast;
+@property (nonatomic) UInt64 timeStampServerFirst;
+@property (nonatomic) SInt32 timeStampOffset;
+@property (nonatomic) UInt64 timeStampStartedAt;
+@property (nonatomic) NSString* serverUUID;
 
 @end

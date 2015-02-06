@@ -24,7 +24,7 @@
 #include "XGetopt.h"
 #endif
 
-#define MAX_PAYLOAD_PACKET 1400
+#define MAX_PAYLOAD_PACKET 800
 
 using namespace umundo;
 

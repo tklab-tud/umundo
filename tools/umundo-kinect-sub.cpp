@@ -36,7 +36,7 @@
 #include "XGetopt.h"
 #endif
 
-#define MAX_PAYLOAD_PACKET 1400
+#define MAX_PAYLOAD_PACKET 800
 #define VIDEO_BUFFER_SIZE 640 * 480 * 3
 
 bool useDepth = false;

@@ -11,26 +11,33 @@
 @implementation AppDelegate
 
 @synthesize window = _window;
-@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, bytesRcvd, pktsDropped, pktsRecvd, lastSeqNr, lastTimeStamp, startedTimeStamp, currTimeStamp, firstTimeStamp, reportInterval, lock;
+@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, lock, bytesRcvd, pktsRecvd, pktsDropped, lastSeqNr, timeStampServerLast, timeStampServerFirst, timeStampOffset, timeStampStartedAt, serverUUID;
 
 - (void)received:(NSData*)data withMeta:(NSDictionary*)meta {
 	[lock lock];
 	bytesRcvd += [data length];
 	pktsRecvd++;
 	
+	uint64_t now = umundo::Thread::getTimeStampMs();
+
 	UInt64 currSeqNr;
 	memcpy(&currSeqNr, (char*)[data bytes] + 0, 8);
 	currSeqNr = CFSwapInt64BigToHost(currSeqNr);
 	
-	memcpy(&currTimeStamp, (char*)[data bytes] + 8, 8);
-	currTimeStamp = CFSwapInt64BigToHost(currTimeStamp);
+	UInt64 currServerTimeStamp;
+	memcpy(&currServerTimeStamp, (char*)[data bytes] + 8, 8);
+	currServerTimeStamp = CFSwapInt64BigToHost(currServerTimeStamp);
 	
+	UInt32 reportInterval;
 	memcpy(&reportInterval, (char*)[data bytes] + 16, 4);
 	reportInterval = CFSwapInt32BigToHost(reportInterval);
 	
-	if (firstTimeStamp == 0 || currSeqNr < lastSeqNr)
-		firstTimeStamp = currTimeStamp;
+	if (abs(currServerTimeStamp - now) < abs(timeStampOffset))
+		timeStampOffset = currServerTimeStamp - now;
 	
+	if (timeStampServerFirst == 0 || currSeqNr < lastSeqNr)
+		timeStampServerFirst = currServerTimeStamp;
+
 	if (currSeqNr < lastSeqNr)
 		lastSeqNr = 0;
 	
@@ -39,9 +46,9 @@
 	}
 	lastSeqNr = currSeqNr;
 	
-	if (currTimeStamp - reportInterval >= lastTimeStamp) {
+	if (currServerTimeStamp - reportInterval >= timeStampServerLast) {
+		timeStampServerLast = currServerTimeStamp;
 		[self accumulateStats];
-		lastTimeStamp = currTimeStamp;
 	}
 	
 	[lock unlock];
@@ -56,37 +63,16 @@
 	[logMsg appendString:[NSString stringWithFormat:@"Pkts drop: %i\n", pktsDropped]];
 	[logMsg appendString:[NSString stringWithFormat:@"Last Seq:  %lld\n", lastSeqNr]];
 	
-	std::ostringstream bytesRcvdSS;
-	bytesRcvdSS << bytesRcvd;
-	
-	std::ostringstream pktsDroppedSS;
-	pktsDroppedSS << pktsDropped;
-	
-	std::ostringstream pktsRecvdSS;
-	pktsRecvdSS << pktsRecvd;
-	
-	std::ostringstream lastSeqNrSS;
-	lastSeqNrSS << lastSeqNr;
-	
-	std::ostringstream currTimeSS;
-	currTimeSS << currTimeStamp;
-
-	std::ostringstream firstTimeSS;
-	firstTimeSS << firstTimeStamp;
-
-	std::ostringstream startTimeSS;
-	startTimeSS << startedTimeStamp;
-
 	umundo::Message* msg = new umundo::Message();
-	msg->putMeta("pkts.rcvd", pktsRecvdSS.str());
-	msg->putMeta("pkts.dropped", pktsDroppedSS.str());
-	msg->putMeta("bytes.rcvd", bytesRcvdSS.str());
-	msg->putMeta("last.timestamp", currTimeSS.str());
+	msg->putMeta("bytes.rcvd", umundo::toStr(bytesRcvd));
+	msg->putMeta("pkts.dropped", umundo::toStr(pktsDropped));
+	msg->putMeta("pkts.rcvd", umundo::toStr(pktsRecvd));
+	msg->putMeta("last.seq", umundo::toStr(lastSeqNr));
+	msg->putMeta("timestamp.server.last", umundo::toStr(timeStampServerLast));
+	msg->putMeta("timestamp.server.first", umundo::toStr(timeStampServerFirst));
+	msg->putMeta("timestamp.client.started", umundo::toStr(timeStampStartedAt));
+	msg->putMeta("timestamp.offset", umundo::toStr(timeStampOffset));
 	msg->putMeta("hostname", umundo::Host::getHostname());
-	msg->putMeta("last.seq", lastSeqNrSS.str());
-	msg->putMeta("first.timestamp", firstTimeSS.str());
-	msg->putMeta("started.timestamp", startTimeSS.str());
-	
 	
 	[reporter sendMsg:msg];
 	delete msg;
@@ -146,7 +132,6 @@
 	[node removePublisher:reporter];
 	[disc remove:node];
 	
-	firstTimeStamp = 0;
 	
 	[disc dealloc]; // <- this is important to reclaim our sockets later!
 	[node dealloc];
@@ -178,7 +163,7 @@
 	[node addPublisher:reporter];
 	[disc add:node];
 
-	startedTimeStamp = umundo::Thread::getTimeStampMs();
+	timeStampStartedAt = umundo::Thread::getTimeStampMs();
 
 }
 
@@ -192,7 +177,7 @@
 	
 	bytesRcvd = 0;
 	lastSeqNr = 0;
-	firstTimeStamp = 0;
+	timeStampServerFirst = 0;
 	//  timer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(accumulateStats) userInfo:nil repeats:YES];
 
 	[self startUmundo];

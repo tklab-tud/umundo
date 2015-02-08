@@ -351,8 +351,10 @@ int main(int argc, char** argv) {
 		sub.setReceiver(recv);
 	} else {
 		SubscriberConfigRTP subConfig(channelName + ".rtp");
-		if (useMCast)
-			subConfig.setMulticastIP("224.1.2.3");
+		if (useMCast) {
+			subConfig.setMulticastIP("224.1.2.8");
+			subConfig.setPortbase(22022);
+		}
 
 		sub = Subscriber(&subConfig);
 		sub.setReceiver(recv);

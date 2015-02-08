@@ -67,6 +67,7 @@ static unsigned long int _threadIDToInt(const std::thread::id &aHandle) {
 
 unsigned long int Thread::getThreadId() {
 	std::stringstream ssThreadId;
+	
 #ifdef WITH_CPP11
 	ssThreadId << _threadIDToInt(tthread::this_thread::get_id());
 #else

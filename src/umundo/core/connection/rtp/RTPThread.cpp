@@ -97,18 +97,12 @@ void RTPThread::run() {
  * Use this for all libre calls where new fds are created
 **/
 int RTPThread::call(boost::function<int()> f) {
-	if (_id == Thread::getThreadId()) {
-		//we're already running in the mainloop thread, call supplied function directly
-		return f();
-	} else {
-		//we're not running in the mainloop thread, instruct libre to call supplied function via our handler
-		RScopeLock lock(_mutex);
-		_func = f;
-		libre::mqueue_push(_mq, 0, NULL);
-		_cond.wait(_mutex);
-		return _retval;
-	}
-	return 0;
+	//we're not running in the mainloop thread, instruct libre to call supplied function via our handler
+	RScopeLock lock(_mutex);
+	_func = f;
+	libre::mqueue_push(_mq, 0, NULL);
+	_cond.wait(_mutex);
+	return _retval;
 }
 
 void RTPThread::handler(int id, void *data, void *arg) {

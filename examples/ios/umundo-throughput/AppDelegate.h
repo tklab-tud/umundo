@@ -29,7 +29,7 @@
 @property (nonatomic) UInt64 lastSeqNr;
 @property (nonatomic) UInt64 timeStampServerLast;
 @property (nonatomic) UInt64 timeStampServerFirst;
-@property (nonatomic) SInt32 timeStampOffset;
+@property (nonatomic) SInt32 currReportNr;
 @property (nonatomic) UInt64 timeStampStartedAt;
 @property (nonatomic) NSString* serverUUID;
 

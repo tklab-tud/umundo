@@ -11,15 +11,11 @@
 @implementation AppDelegate
 
 @synthesize window = _window;
-@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, lock, bytesRcvd, pktsRecvd, pktsDropped, lastSeqNr, timeStampServerLast, timeStampServerFirst, timeStampOffset, timeStampStartedAt, serverUUID;
+@synthesize node, disc, rtpSub, mcastSub, tcpSub, reporter, lock, bytesRcvd, pktsRecvd, pktsDropped, lastSeqNr, timeStampServerLast, timeStampServerFirst, currReportNr, timeStampStartedAt, serverUUID;
 
 - (void)received:(NSData*)data withMeta:(NSDictionary*)meta {
 	[lock lock];
-	bytesRcvd += [data length];
-	pktsRecvd++;
 	
-	uint64_t now = umundo::Thread::getTimeStampMs();
-
 	UInt64 currSeqNr;
 	memcpy(&currSeqNr, (char*)[data bytes] + 0, 8);
 	currSeqNr = CFSwapInt64BigToHost(currSeqNr);
@@ -32,18 +28,26 @@
 	memcpy(&reportInterval, (char*)[data bytes] + 16, 4);
 	reportInterval = CFSwapInt32BigToHost(reportInterval);
 	
-	if (abs(currServerTimeStamp - now) < abs(timeStampOffset))
-		timeStampOffset = currServerTimeStamp - now;
-	
-	if (timeStampServerFirst == 0 || currSeqNr < lastSeqNr)
-		timeStampServerFirst = currServerTimeStamp;
-
-	if (currSeqNr < lastSeqNr)
+	if (currSeqNr < lastSeqNr) {
+		// new throughput run!
 		lastSeqNr = 0;
+		timeStampServerFirst = 0;
+		currReportNr = 0;
+		bytesRcvd = 0;
+		pktsRecvd = 0;
+		pktsDropped = 0;
+	}
+	
+	bytesRcvd += [data length];
+	pktsRecvd++;
+	
+	if (timeStampServerFirst == 0)
+		timeStampServerFirst = currServerTimeStamp;
 	
 	if (lastSeqNr > 0 && lastSeqNr != currSeqNr - 1) {
 		pktsDropped += currSeqNr - lastSeqNr;
 	}
+	
 	lastSeqNr = currSeqNr;
 	
 	if (currServerTimeStamp - reportInterval >= timeStampServerLast) {
@@ -68,10 +72,9 @@
 	msg->putMeta("pkts.dropped", umundo::toStr(pktsDropped));
 	msg->putMeta("pkts.rcvd", umundo::toStr(pktsRecvd));
 	msg->putMeta("last.seq", umundo::toStr(lastSeqNr));
+	msg->putMeta("report.seq", umundo::toStr(currReportNr++));
 	msg->putMeta("timestamp.server.last", umundo::toStr(timeStampServerLast));
 	msg->putMeta("timestamp.server.first", umundo::toStr(timeStampServerFirst));
-	msg->putMeta("timestamp.client.started", umundo::toStr(timeStampStartedAt));
-	msg->putMeta("timestamp.offset", umundo::toStr(timeStampOffset));
 	msg->putMeta("hostname", umundo::Host::getHostname());
 	
 	[reporter sendMsg:msg];
@@ -150,8 +153,8 @@
 	
 	mcastSub = [[UMSubscriber alloc] initMCast:@"throughput.mcast"
 																		receiver:self
-																		 mcastIP:@"224.1.2.3"
-																		portBase:42142];
+																		 mcastIP:@"224.1.2.8"
+																		portBase:22022];
 	
 	rtpSub = [[UMSubscriber alloc] initRTP:@"throughput.rtp" receiver:self];
 	
@@ -164,7 +167,6 @@
 	[disc add:node];
 
 	timeStampStartedAt = umundo::Thread::getTimeStampMs();
-
 }
 
 - (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -175,6 +177,9 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 	// Override point for customization after application launch.
 	
+	[application setIdleTimerDisabled:YES];
+	
+	currReportNr = 0;
 	bytesRcvd = 0;
 	lastSeqNr = 0;
 	timeStampServerFirst = 0;

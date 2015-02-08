@@ -214,9 +214,9 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	va_end(args);
 
 	// get current thread id
-	int threadId = -1;
+//	int threadId = -1;
 //	if (useThreadId && strcmp(filename, "Thread.cpp") != 0)
-	threadId = Thread::getThreadId();
+//	threadId = Thread::getThreadId();
 
 	// timestamp
 	char timeStr[9] = "        ";  // space for "HH:MM:SS\0"
@@ -235,7 +235,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 	}
 
 #ifdef ANDROID
-	__android_log_print(ANDROID_LOG_VERBOSE, logDomain, "%02d|%s:%d: %s %s\n", threadId, filename, line, severity, message);
+	__android_log_print(ANDROID_LOG_VERBOSE, logDomain, "%s:%d: %s %s\n", filename, line, severity, message);
 #else
 	if (useColors) {
 #ifdef WIN32
@@ -255,7 +255,7 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 
 		SetConsoleTextAttribute(hConsole, attribute);
 
-		printf("%s %02d|%s:%d:%s %s %s\n", timeStr, threadId, filename, line, padding, severity, message);
+		printf("%s %s:%d:%s %s %s\n", timeStr, filename, line, padding, severity, message);
 
 #else
 
@@ -280,10 +280,10 @@ bool Debug::logMsg(int lvl, const char* fmt, const char* filename, const int lin
 			foreground = WHITE;
 		}
 
-		printf("\e[%d;%d;%dm%s %02d|%s:%d:%s %s %s\e[0m\n", effect, foreground + 30, background + 40, timeStr, threadId, filename, line, padding, severity, message );
+		printf("\e[%d;%d;%dm%s %s:%d:%s %s %s\e[0m\n", effect, foreground + 30, background + 40, timeStr, filename, line, padding, severity, message );
 #endif
 	} else {
-		printf("%s %02d|%s:%d:%s %s %s\n", timeStr, threadId, filename, line, padding, severity, message);
+		printf("%s %s:%d:%s %s %s\n", timeStr, filename, line, padding, severity, message);
 	}
 	fflush(stdout);
 #endif
@@ -344,18 +344,18 @@ Trace::Trace(const char* fmt, const char* filename, const int line, ...) {
 	_line = line;
 
 #ifdef ANDROID
-	__android_log_print(ANDROID_LOG_VERBOSE, "trace", "%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "->", _msg.c_str());
+	__android_log_print(ANDROID_LOG_VERBOSE, "trace", "%s:%d: %s %s\n", _file.c_str(), _line, "->", _msg.c_str());
 #else
-	printf("%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "->", _msg.c_str());
+	printf("%s:%d: %s %s\n", _file.c_str(), _line, "->", _msg.c_str());
 #endif
 }
 
 Trace::~Trace() {
 
 #ifdef ANDROID
-	__android_log_print(ANDROID_LOG_VERBOSE, "trace", "%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "<-", _msg.c_str());
+	__android_log_print(ANDROID_LOG_VERBOSE, "trace", "%s:%d: %s %s\n", _file.c_str(), _line, "<-", _msg.c_str());
 #else
-	printf("%02d|%s:%d: %s %s\n", _threadId, _file.c_str(), _line, "<-", _msg.c_str());
+	printf("%s:%d: %s %s\n", _file.c_str(), _line, "<-", _msg.c_str());
 
 	_threadNesting[_threadId]--;
 

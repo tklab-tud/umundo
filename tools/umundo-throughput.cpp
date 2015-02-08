@@ -683,18 +683,21 @@ int main(int argc, char** argv) {
 	}
 	
 	if (filePrefix.size() > 0) {
-		// wait for missinf reports, then make sure no more reports are coming in
+		// cannot have ofstream in a map (non-copyable), works with LLVM though
+#ifdef APPLE
+		// wait for missing reports, then make sure no more reports are coming in
 		Thread::sleepMs(60000);
 		sub.setReceiver(NULL);
 		
 		// write files
 		std::map<std::string, std::list<Report> >::iterator reportIter = allReports.begin();
-		std::map<std::string, std::fstream> fileHandles;
+		std::map<std::string, std::ofstream> fileHandles;
 		
 		// open a file per reporter and write header
 		while(reportIter != allReports.end()) {
 			std::string pubUUID = reportIter->first;
-			fileHandles[pubUUID].open(filePrefix + pubUUID.substr(0,8) + ".data", std::fstream::out);
+			std::string reportFileName = filePrefix + pubUUID.substr(0,8) + ".data";
+			fileHandles[pubUUID].open(reportFileName.c_str(), std::fstream::out);
 			Report::writeCSVHead(fileHandles[pubUUID]);
 #ifdef UNIX
 			// that's only useful if there is only a single reporter per host
@@ -709,7 +712,8 @@ int main(int argc, char** argv) {
 		
 		// write reports
 		std::fstream senderReport;
-		senderReport.open(filePrefix + "sender.data", std::fstream::out);
+		std::string senderReportFileName = filePrefix + "sender.data";
+		senderReport.open(senderReportFileName.c_str(), std::fstream::out);
 		senderReport << "\"Bytes Sent\", \"Packets sent\"" << std::endl;
 
 		std::list<Report>::iterator senderRepIter = senderReports.begin();
@@ -746,7 +750,7 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		std::map<std::string, std::fstream>::iterator fhIter = fileHandles.begin();
+		std::map<std::string, std::ofstream>::iterator fhIter = fileHandles.begin();
 		while(fhIter != fileHandles.end()) {
 			fhIter->second.close();
 			fhIter++;
@@ -806,7 +810,8 @@ int main(int argc, char** argv) {
 		
 		// write sender reports
 		std::fstream senderReport;
-		senderReport.open(filePrefix + "sender.data", std::fstream::out);
+		std::string reportFileName = filePrefix + "sender.data";
+		senderReport.open(reportFileName.c_str(), std::fstream::out);
 		std::list<Report>::iterator senderRepIter = senderReports.begin();
 		while(senderRepIter!= senderReports.end()) {
 			senderReport << senderRepIter->bytesRcvd << ", ";
@@ -814,6 +819,7 @@ int main(int argc, char** argv) {
 			senderRepIter++;
 		}
 		senderReport.close();
+#endif
 #endif
 	}
 }

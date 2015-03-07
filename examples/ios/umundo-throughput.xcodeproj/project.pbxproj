@@ -16,8 +16,8 @@
 		95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */; };
 		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
 		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
+		953F397C1A7EE87800440A29 /* libumundo_d.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 953F397B1A7EE87800440A29 /* libumundo_d.a */; };
 		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
-		95C192F517441AD90094173C /* libumundo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C192F417441AD90094173C /* libumundo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,8 +35,8 @@
 		95017B7C150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPad.storyboard; sourceTree = "<group>"; };
 		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		953F397B1A7EE87800440A29 /* libumundo_d.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo_d.a; path = "../../package/cross-compiled/ios/lib/libumundo_d.a"; sourceTree = "<group>"; };
 		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
-		95C192F417441AD90094173C /* libumundo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.a; path = "../../package/cross-compiled/ios/lib/libumundo.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,7 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95C192F517441AD90094173C /* libumundo.a in Frameworks */,
+				953F397C1A7EE87800440A29 /* libumundo_d.a in Frameworks */,
 				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
 				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
 				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
@@ -57,7 +57,6 @@
 		95017B57150391D5002BCAAA = {
 			isa = PBXGroup;
 			children = (
-				95C192F417441AD90094173C /* libumundo.a */,
 				95017B6C150391D5002BCAAA /* umundo-throughput */,
 				95017B65150391D5002BCAAA /* Frameworks */,
 				95017B63150391D5002BCAAA /* Products */,
@@ -75,6 +74,7 @@
 		95017B65150391D5002BCAAA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				953F397B1A7EE87800440A29 /* libumundo_d.a */,
 				95017B66150391D5002BCAAA /* UIKit.framework */,
 				95017B68150391D5002BCAAA /* Foundation.framework */,
 				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
@@ -285,6 +285,8 @@
 		95017B84150391D5002BCAAA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "umundo-throughput/umundo-throughput-Prefix.pch";
@@ -294,8 +296,10 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					"/Users/sradomski/Documents/TK/Code/umundo/package/cross-compiled/ios/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -303,6 +307,8 @@
 		95017B85150391D5002BCAAA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "umundo-throughput/umundo-throughput-Prefix.pch";
@@ -312,8 +318,10 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					"/Users/sradomski/Documents/TK/Code/umundo/package/cross-compiled/ios/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

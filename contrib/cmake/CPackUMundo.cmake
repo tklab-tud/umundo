@@ -13,6 +13,7 @@ file(GLOB_RECURSE PLATFORM_LIBS
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.jnilib
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.dll
 	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.pdb
+	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.jar
 #	${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*.exp
 )
 
@@ -20,33 +21,42 @@ file(GLOB_RECURSE PLATFORM_LIBS
 foreach(PLATFORM_LIB ${PLATFORM_LIBS})
 	if (OFF)
 	elseif (PLATFORM_LIB MATCHES ".*umundo.*ative.*ava.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/java COMPONENT librarySwig)
-		# message("${PLATFORM_LIB} -> ignored as they are in the jar")
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-	elseif (PLATFORM_LIB MATCHES ".*umundo.*ative.*harp.*")
-		STRING(REGEX REPLACE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/" "" PLATFORM_LIB_REL ${PLATFORM_LIB})
-		STRING(REGEX MATCH "[^/\\](.*)[/\\]" LAST_PATH_COMPONENT ${PLATFORM_LIB_REL})
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/${LAST_PATH_COMPONENT} COMPONENT librarySwig)
-		# message("${PLATFORM_LIB} -> share/umundo/bindings/${LAST_PATH_COMPONENT}")
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/java COMPONENT librarySwigJava)
+		# message("${PLATFORM_LIB} -> librarySwig: share/umundo/bindings/java")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigJava")
+
+	elseif (PLATFORM_LIB MATCHES ".*umundo.jar")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwigJava)
+		# message("${PLATFORM_LIB} -> librarySwig: share/umundo/bindings/java")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigJava")
+		
+	elseif (PLATFORM_LIB MATCHES "csharp64.*umundo.*ative.*harp.*")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/csharp64 COMPONENT librarySwigCSharp)
+		# message("${PLATFORM_LIB} -> librarySwig: share/umundo/bindings/csharp64")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigCSharp")
+		
+	elseif (PLATFORM_LIB MATCHES "csharp.*umundo.*ative.*harp.*")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings/csharp COMPONENT librarySwigCSharp)
+		# message("${PLATFORM_LIB} -> librarySwig: share/umundo/bindings/csharp")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigCSharp")
+		
 	elseif (PLATFORM_LIB MATCHES ".*umundo.*harp.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwig)
-		# message("${PLATFORM_LIB} -> share/umundo/bindings")
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
-	elseif (PLATFORM_LIB MATCHES ".*umundo.*ono.*")
-		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwig)
-		# message("${PLATFORM_LIB} -> share/umundo/bindings")
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+		install(FILES ${PLATFORM_LIB} DESTINATION share/umundo/bindings COMPONENT librarySwigCSharp)
+		# message("${PLATFORM_LIB} -> librarySwig: share/umundo/bindings")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigCSharp")
+				
 	elseif (PLATFORM_LIB MATCHES ".*umundo-.*\\.lib")
 		# .lib files from the binaries on windows -> ignore
 		# message("${PLATFORM_LIB} -> IGNORED!")
+		
 	elseif (PLATFORM_LIB MATCHES ".*umundo.*")
 		# rest into lib directory
 		install(FILES ${PLATFORM_LIB} DESTINATION lib COMPONENT library)
-		# message("${PLATFORM_LIB} -> lib")
+		# message("${PLATFORM_LIB} -> library: lib")
 		list (APPEND UMUNDO_CPACK_COMPONENTS "library")
+		
 	else()
-		message(STATUS "PACKAGE RELEASE UNK ${PLATFORM_LIB} - not packaging")
+		# message(STATUS "PACKAGE RELEASE UNK ${PLATFORM_LIB} - not packaging")
 	endif()
 endforeach()
 
@@ -85,9 +95,9 @@ foreach(PREBUILT_LIB ${PREBUILT_LIBS})
 	# message("CURR_PLATFORM: ${CURR_PLATFORM}")
 	# install(FILES ${PREBUILT_LIB} DESTINATION share/umundo/${CURR_PLATFORM} COMPONENT libraryPrebuilt)
 	install(FILES ${PREBUILT_LIB} DESTINATION share/umundo/deps COMPONENT libraryPrebuilt)
+	# message("${PREBUILT_LIB} -> libraryPrebuilt: share/umundo/deps")
 	list (APPEND UMUNDO_CPACK_COMPONENTS "libraryPrebuilt")
 endforeach()
-
 
 ########################################
 # Include documentation
@@ -116,39 +126,38 @@ install(FILES ${PROJECT_SOURCE_DIR}/contrib/cmake/UseUMUNDO.cmake DESTINATION sh
 GET_TARGET_PROPERTY(UMUNDONATIVEJAVA_LOCATION umundoNativeJava LOCATION)
 if (DIST_PREPARE)
 	if (EXISTS "${PROJECT_SOURCE_DIR}/package/umundo.jar")
-		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwig)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+		install(FILES ${PROJECT_SOURCE_DIR}/package/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwigJava)
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigJava")
 	endif()
 else()
 	if (UMUNDONATIVEJAVA_LOCATION)
-		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwig OPTIONAL)
-		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwig")
+		install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/umundo.jar DESTINATION share/umundo/bindings COMPONENT librarySwigJava OPTIONAL)
+		list (APPEND UMUNDO_CPACK_COMPONENTS "librarySwigJava")
 	endif()
 endif()
 
 # copy over 64 and 32 bit for native part of csharp bindings
 if (DIST_PREPARE AND NOT APPLE)
-	GET_TARGET_PROPERTY(UMUNDONATIVECSHARP_LOCATION umundoNativeCSharp LOCATION)
-	if (UMUNDONATIVECSHARP_LOCATION)
-		# we built the csharp bindings, try to find the other bit-depth one
-		if (WIN32)
-			if (HOST_64BIT)
-				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86/msvc-${MSVC_VERSION}/lib")
-				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
-			else()
-				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86_64/msvc-${MSVC_VERSION}/lib")
-				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
-			endif()
-		elseif(UNIX)
-			if (HOST_64BIT)
-				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-i686/gnu/lib")
-				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
-			else()
-				set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-x86_64/gnu/lib")
-				set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
-			endif()
+	# we built the csharp bindings, try to find the other bit-depth one
+	if (WIN32)
+		if (HOST_64BIT)
+			set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86-msvc${MSVC_VERSION}/lib")
+			set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
+		else()
+			set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/windows-x86_64-msvc${MSVC_VERSION}/lib")
+			set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
 		endif()
-				
+	elseif(UNIX)
+		if (HOST_64BIT)
+			set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-x86-gnu/lib")
+			set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp")
+		else()
+			set(CSHARP_OTHER_INSTALL_PATH "${PROJECT_SOURCE_DIR}/package/linux-x86_64-gnu/lib")
+			set(CSHARP_OTHER_DESTINATION "share/umundo/bindings/csharp64")
+		endif()
+	endif()
+	
+	if (CSHARP_OTHER_INSTALL_PATH)
 		file(GLOB_RECURSE CSHARP_OTHER_LIBS
 			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.a
 			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.so
@@ -158,17 +167,15 @@ if (DIST_PREPARE AND NOT APPLE)
 			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.dll
 			${CSHARP_OTHER_INSTALL_PATH}/*umundoNativeCSharp*.pdb
 		)
-		
+	
 		foreach(CSHARP_OTHER_LIB ${CSHARP_OTHER_LIBS})
-			#message("CSHARP_OTHER_LIB: ${CSHARP_OTHER_LIB} -> share/umundo/bindings/${LAST_PATH_COMPONENT}")
+			# message("CSHARP_OTHER_LIB: ${CSHARP_OTHER_LIB} -> share/umundo/bindings/${LAST_PATH_COMPONENT}")
 			STRING(REGEX REPLACE "${CSHARP_OTHER_INSTALL_PATH}/" "" CSHARP_OTHER_LIB_REL ${CSHARP_OTHER_LIB})
 			STRING(REGEX MATCH "[^/\\](.*)[/\\]" LAST_PATH_COMPONENT ${CSHARP_OTHER_LIB_REL})
-			install(FILES "${CSHARP_OTHER_LIB}" DESTINATION share/umundo/bindings/${LAST_PATH_COMPONENT} COMPONENT librarySwig OPTIONAL)
+			install(FILES "${CSHARP_OTHER_LIB}" DESTINATION share/umundo/bindings/${LAST_PATH_COMPONENT} COMPONENT librarySwigCSharp OPTIONAL)
 		endforeach()
-		
 	endif()
 endif()
-
 
 ################################################################################
 # Cross Compiled binaries
@@ -265,21 +272,26 @@ if (DIST_PREPARE)
 
 	# umundo-pingpong: Eclipse for Android
 	file(GLOB_RECURSE ANDROID_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/android/*)
+
 	foreach(ANDROID_PINGPONG_SAMPLE_FILE ${ANDROID_PINGPONG_SAMPLE})
 	#	message("ANDROID_PINGPONG_SAMPLE_FILE: ${ANDROID_PINGPONG_SAMPLE_FILE}")
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
-		get_filename_component(REL_PATH ${REL_PATH} PATH)
-		install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		IF(NOT ${ANDROID_PINGPONG_SAMPLE_FILE} MATCHES "class$")
+			# make sure no .class files creep in
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${ANDROID_PINGPONG_SAMPLE_FILE})
+			get_filename_component(REL_PATH ${REL_PATH} PATH)
+			# message("ANDROID_PINGPONG_SAMPLE_FILE: share/umundo/samples/${REL_PATH}")
+			install(FILES ${ANDROID_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		endif()
 	endforeach()
 	list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
 
 	# umundo-pingpong: Visual Studio for CSharp
-	if (WIN32)
+	if (NOT APPLE)
 		file(GLOB_RECURSE CSHARP_PINGPONG_SAMPLE ${PROJECT_SOURCE_DIR}/examples/csharp/*)
 		foreach(CSHARP_PINGPONG_SAMPLE_FILE ${CSHARP_PINGPONG_SAMPLE})
-	#		message("CSHARP_PINGPONG_SAMPLE_FILE: ${CSHARP_PINGPONG_SAMPLE_FILE}")
 			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${CSHARP_PINGPONG_SAMPLE_FILE})
 			get_filename_component(REL_PATH ${REL_PATH} PATH)
+			# message("CSHARP_PINGPONG_SAMPLE_FILE: share/umundo/samples/${REL_PATH}")
 			install(FILES ${CSHARP_PINGPONG_SAMPLE_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
 		endforeach()
 		list (APPEND UMUNDO_CPACK_COMPONENTS "samples")
@@ -288,9 +300,13 @@ if (DIST_PREPARE)
 	# All the java samples
 	file(GLOB_RECURSE JAVA_SAMPLES ${PROJECT_SOURCE_DIR}/examples/java/*)
 	foreach(JAVA_SAMPLES_FILE ${JAVA_SAMPLES})
-		STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${JAVA_SAMPLES_FILE})
-		get_filename_component(REL_PATH ${REL_PATH} PATH)
-		install(FILES ${JAVA_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		IF(NOT ${JAVA_SAMPLES_FILE} MATCHES "class$")
+			# make sure no .class files creep in
+			STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/examples" "" REL_PATH ${JAVA_SAMPLES_FILE})
+			get_filename_component(REL_PATH ${REL_PATH} PATH)
+			# message("JAVA_SAMPLES_FILE: share/umundo/samples/${REL_PATH}")
+			install(FILES ${JAVA_SAMPLES_FILE} DESTINATION share/umundo/samples/${REL_PATH} COMPONENT samples)
+		endif()
 	endforeach()
 
 	# All the cpp samples
@@ -353,12 +369,18 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${UMUNDO_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${UMUNDO_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${UMUNDO_VERSION_PATCH})
 
+if(MSVC_VERSION LESS 1800)
+	set(MSVC_NAME msvc2010)
+else()
+	set(MSVC_NAME msvc2013)
+endif()
+
 if (WIN32)
 	if (HOST_64BIT)
-		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${MSVC_NAME}-${CMAKE_SYSTEM_PROCESSOR}_64-${CPACK_PACKAGE_VERSION}")
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}_64-${MSVC_NAME}-${CPACK_PACKAGE_VERSION}")
 		set(CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
 	else()
-		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${MSVC_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CPACK_PACKAGE_VERSION}")
+		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}-${MSVC_NAME}-${CPACK_PACKAGE_VERSION}")
     set(CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES")
 	endif()
 elseif(APPLE)
@@ -369,8 +391,32 @@ elseif(APPLE)
 		set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-libc++-universal-${CPACK_PACKAGE_VERSION}")
 	endif()
 else()
-	set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}-${CPACK_PACKAGE_VERSION}")
+	set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_NAME_LC}-${CMAKE_SYSTEM_PROCESSOR}${64BIT_SUFFIX}-${CPACK_PACKAGE_VERSION}")
 endif()
+
+# message(FATAL_ERROR "CPACK_PACKAGE_FILE_NAME: ${CPACK_PACKAGE_FILE_NAME}")
+
+########################################
+# MSVC Redistributable
+########################################
+
+if (WIN32)
+	SET(MSVC_REDIST_PATH "")
+	if (HOST_64BIT)
+		set(MSVC_REDIST_PATH "${PROJECT_SOURCE_DIR}/package/vcredist_${MSVC_NAME}_x64.exe")
+	else()
+		set(MSVC_REDIST_PATH "${PROJECT_SOURCE_DIR}/package/vcredist_${MSVC_NAME}_x86.exe")
+	endif()
+	if (EXISTS ${MSVC_REDIST_PATH})
+		install(FILES ${MSVC_REDIST_PATH} DESTINATION contrib COMPONENT msredist)
+		get_filename_component(REDIST_FILENAME ${MSVC_REDIST_PATH} NAME)
+		# message(STATUS "ADDING REDIST ${REDIST_FILENAME}")
+		list(APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS "ExecWait '$INSTDIR\\\\contrib\\\\${REDIST_FILENAME}'")
+		list (APPEND UMUNDO_CPACK_COMPONENTS "msredist")
+	endif()
+endif()
+
+
 
 ###
 # Configuration for NSIS installer on Win32
@@ -437,11 +483,18 @@ if (FOUND_ITEM GREATER -1)
 	set(CPACK_COMPONENT_DOCS_DESCRIPTION "Auto-generated documentation.")
 endif()
 
-list(FIND UMUNDO_CPACK_COMPONENTS "librarySwig" FOUND_ITEM)
+list(FIND UMUNDO_CPACK_COMPONENTS "librarySwigJava" FOUND_ITEM)
 if (FOUND_ITEM GREATER -1)
-	set(CPACK_COMPONENT_LIBRARYSWIG_DISPLAY_NAME "Java interface")
-	set(CPACK_COMPONENT_LIBRARYSWIG_DESCRIPTION "umundo.core library wrapped for Java per native interfaces. This will install the actual library and the JAR archive.")
-	set(CPACK_COMPONENT_LIBRARYSWIG_GROUP "Development")
+	set(CPACK_COMPONENT_LIBRARYSWIGJAVA_DISPLAY_NAME "Java interface")
+	set(CPACK_COMPONENT_LIBRARYSWIGJAVA_DESCRIPTION "umundo.core library wrapped for Java per native interfaces. This will install the actual library and the JAR archive.")
+	set(CPACK_COMPONENT_LIBRARYSWIGJAVA_GROUP "Development")
+endif()
+
+list(FIND UMUNDO_CPACK_COMPONENTS "librarySwigCSharp" FOUND_ITEM)
+if (FOUND_ITEM GREATER -1)
+	set(CPACK_COMPONENT_LIBRARYSWIGCSHARP_DISPLAY_NAME "CSharp interface")
+	set(CPACK_COMPONENT_LIBRARYSWIGCSHARP_DESCRIPTION "umundo.core library wrapped for CSharp per native interfaces. This will install the actual library and the managed-code DLL archive.")
+	set(CPACK_COMPONENT_LIBRARYSWIGCSHARP_GROUP "Development")
 endif()
 
 list(FIND UMUNDO_CPACK_COMPONENTS "libraryPrebuilt" FOUND_ITEM)
@@ -479,6 +532,12 @@ if (FOUND_ITEM GREATER -1)
 	set(CPACK_COMPONENT_LIBRARY_GROUP "Development")
 	set(CPACK_COMPONENT_LIBRARY_DEPENDS headers)
 	set(CPACK_COMPONENT_LIBRARY_DEPENDS libraryPrebuilt)
+endif()
+
+list(FIND UMUNDO_CPACK_COMPONENTS "msredist" FOUND_ITEM)
+if (FOUND_ITEM GREATER -1)
+	set(CPACK_COMPONENT_MSREDIST_DISPLAY_NAME "MS VC++ Redistributable Package")
+	set(CPACK_COMPONENT_MSREDIST_DESCRIPTION "Microsoft Visual C++ compiler runtime libraries. Required if you do not have the respective Visual Studio installed.")
 endif()
 
 set(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "Libraries and Headers for umundo.")

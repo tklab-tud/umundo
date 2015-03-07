@@ -116,14 +116,13 @@ cp ${DIR}/../../package/cross-compiled/android/x86/lib/libumundoNativeJava*.so \
 cd ${DIR}/../../package/cross-compiled/android/android-studio
 
 zip -qr umundoNative.zip lib
-mv umundoNative.zip ../umundoNative.jar
+mv umundoNative.zip umundoNative.jar
+rm -rf lib
 
 CANON_DIR="`cd "${DIR}/../../package/cross-compiled/android";pwd`"
 
-cd ..
-rm -rf ${DIR}/../../package/cross-compiled/android/android-studio
 
-printf "Created umundoNative.jar to use in Android Studio at:\n\t${CANON_DIR}/umundoNative.jar\n\n"
+printf "Created android-studio/umundoNative.jar to use in Android Studio at:\n\t${CANON_DIR}/android-studio/umundoNative.jar\n\n"
 cat << EOF
 Respective build.cradle will have to contain something like:
 	dependencies {
@@ -133,6 +132,8 @@ Respective build.cradle will have to contain something like:
 	}
 EOF
 
+cd ..
+find . -name "*.a" -exec rm {} \;
 
 # copy into umundo-pingpong example
 # cp ${DIR}/../../package/cross-compiled/android/umundo.jar \

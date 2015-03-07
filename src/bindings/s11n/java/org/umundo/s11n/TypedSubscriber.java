@@ -25,6 +25,7 @@ import java.util.Map;
 import org.umundo.core.Message;
 import org.umundo.core.Receiver;
 import org.umundo.core.Subscriber;
+import org.umundo.core.SubscriberConfig;
 
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.DynamicMessage.Builder;
@@ -139,14 +140,21 @@ public class TypedSubscriber extends Subscriber {
 		}
 	}
 
-	public TypedSubscriber(String channel, ITypedReceiver receiver) {
-		this(channel, receiver, false);
+	public void setReceiver(ITypedReceiver receiver) {
+		if (receiver != null) {
+			decoratedReceiver = new DeserializingReceiverDecorator(receiver);
+			setReceiver(decoratedReceiver);
+		} else {
+			decoratedReceiver = null;
+			super.setReceiver(null);
+		}
 	}
 
-	public TypedSubscriber(String channel, ITypedReceiver receiver, boolean autoRegisterTypes) {
+	public TypedSubscriber(SubscriberConfig config) {
+		super(config);
+	}
+
+	public TypedSubscriber(String channel) {
 		super(channel);
-		decoratedReceiver = new DeserializingReceiverDecorator(receiver);
-		setReceiver(decoratedReceiver);
-		this.autoRegisterTypes = autoRegisterTypes;
 	}
 }

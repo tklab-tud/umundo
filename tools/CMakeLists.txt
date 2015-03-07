@@ -71,6 +71,9 @@ if (NET_RTP)
 		)
 	endif()
 	
+	file(GLOB POTENTIAL_GLUT "C:/Program Files/freeglut*" "C:/Program Files (x86)/freeglut*")
+	SET(GLUT_ROOT_PATH ${POTENTIAL_GLUT})
+	
 	find_package(Freenect)
 	find_package(OpenGL)
 	find_package(GLUT)
@@ -159,7 +162,8 @@ INSTALL_EXECUTABLE(
 	COMPONENT tools 
 )
 
-if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC)
+
+if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC AND OFF)
 	# process .proto files
 	if (PROTOBUF_PROTOC_EXECUTABLE)
 		# include_directories(${CMAKE_BINARY_DIR}/protobuf/generated)

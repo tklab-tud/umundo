@@ -103,19 +103,6 @@ if (WIN32)
 	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}${MSVC_VERSION})
 endif()
 
-# set(MSVC_NAME)
-# set(MSVC2010 OFF)
-# set(MSVC2013 OFF)
-# if (MSVC_VERSION LESS 1600)
-# 	message(WARNING "Only MSVC2010 and MSVC2013 are supported via prebuilts")
-# elseif(MSVC_VERSION LESS 1800)
-# 	set(MSVC2010 ON)
-# 	set(MSVC_NAME msvc2010)
-# else()
-# 	set(MSVC2013 ON)
-# 	set(MSVC_NAME msvc2013)
-# endif()
-
 ################################################################
 # Configuration of library type, linking and language bindings
 ################################################################
@@ -557,14 +544,34 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		set(${FLAGS} "${${FLAGS}} ${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099 /LTCG /NODEFAULTLIB:MSVCRTD")
 	endforeach()
 
-	if (DIST_PREPARE)
+	# Feel free to struggle with a static build:
+	# http://stackoverflow.com/questions/8888111/nodefaultlib-nightmare-in-vs2010-c-project-links-fine-in-debug-cant-find-a
+	if (DIST_PREPARE AND OFF)
+		foreach(FLAGS 
+						CMAKE_EXE_LINKER_FLAGS_RELEASE CMAKE_SHARED_LINKER_FLAGS_RELEASE 
+						CMAKE_MODULE_LINKER_FLAGS_RELEASE)
+			set(${FLAGS} "${${FLAGS}} /NODEFAULTLIB:LIBCMT  /NODEFAULTLIB:libcpmt /NODEFAULTLIB:msvcprt")
+		endforeach()
+		
 		# get rid of redistributable requirement with dist builds
-		foreach(FLAGS
-		        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-		        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-		   if(${FLAGS} MATCHES "/MD")
-		      string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-		   endif()
+		set(MSVC_FLAGS
+		  CMAKE_C_FLAGS_DEBUG
+		  CMAKE_C_FLAGS_MINSIZEREL
+		  CMAKE_C_FLAGS_RELEASE
+		  CMAKE_C_FLAGS_RELWITHDEBINFO
+		  CMAKE_CXX_FLAGS_DEBUG
+		  CMAKE_CXX_FLAGS_MINSIZEREL
+		  CMAKE_CXX_FLAGS_RELEASE
+		  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		)
+		
+		foreach(FLAGS ${MSVC_FLAGS})
+			if(${FLAGS} MATCHES "/MD")
+				string(REGEX REPLACE "/MD" "/MT" "${FLAGS}" "${${FLAGS}}")
+			endif()
+			if(${FLAGS} MATCHES "/MDd")
+				string(REGEX REPLACE "/MDd" "/MTd" "${FLAGS}" "${${FLAGS}}")
+			endif()
 		endforeach()
 	endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -722,7 +729,7 @@ if(BUILD_SHARED_LIBS)
 	# set(BUILD_CONVENIENCE_LIB OFF)
 else()
 	add_definitions("-DUMUNDO_STATIC")
-	set(BUILD_CONVENIENCE_LIB ON)
+	# set(BUILD_CONVENIENCE_LIB ON)
 endif()
 
 # where should libraries end up?
@@ -736,7 +743,7 @@ if (DIST_PREPARE)
 			set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/package/cross-compiled/${UMUNDO_PLATFORM_ID})
 		endif()
 	else()
-		set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/package/${UMUNDO_PLATFORM_PATH})
+		set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/package/${UMUNDO_PLATFORM_ID})
 	endif()
 else()
 	set(OUTPUT_DIR ${PROJECT_BINARY_DIR})

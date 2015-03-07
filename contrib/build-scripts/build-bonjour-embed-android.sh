@@ -22,6 +22,7 @@ if [ -f ispatched ]; then
 	rm ./ispatched
 else
 	patch -p1 < ../mDNSResponder-333.10.umundo.patch
+	patch -p1 < ../mDNSResponder-333.10.reuseport.patch
 fi
 
 # #ifdef TARGET_OS_ANDROID

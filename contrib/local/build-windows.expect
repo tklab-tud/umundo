@@ -13,8 +13,8 @@ set initial_remote_prompt "C*>"
 # the default windows prompt is hard to recognize
 set remote_prompt "easy_to_recognize"
 
-eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
-expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
+eval spawn ping -c1 ${UMUNDO_BUILD_HOST}
+expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST} not found"; exit } \
        -re $local_prompt { }
 
 ##############################
@@ -24,12 +24,10 @@ eval cd ~/Documents/TK/Code/
 
 # check age of archive against modification date
 eval spawn find ./umundo -newer umundo-win.zip
-set redeploy 0;
+set redeploy 1;
 expect {
 	"find:*No such file" { set redeploy 1; }
-	".expect\r\n"        { set redeploy 0; }
 	".cpp\r\n"           { set redeploy 1; }
-	"package\r\n"        { set redeploy 0; }
 	".h\r\n"             { set redeploy 1; }
 	"CMakeLists.txt\r\n" { set redeploy 1; }
 	eof                  { }
@@ -45,30 +43,34 @@ if {$redeploy} {
 		zip -qr umundo-win.zip umundo/ --exclude \
 		__\* \
 		umundo/contrib\* \
+		umundo/package\* \
 		umundo/.git/\* \
 		umundo/build\* \
 		umundo/installer/umundo\* \
+		umundo/installer/manifest/content\* \
 		umundo/package\* \
 		umundo/docs/html\* \
 		umundo/examples/ios\*
-	expect eof
+	expect -re $local_prompt
 
 	eval spawn \
 		zip -qr umundo-win.zip \
-			umundo/contrib/cmake \
-			umundo/contrib/snippets \
 			umundo/contrib/csharp \
+			umundo/contrib/cmake \
+			umundo/contrib/src \
 			umundo/contrib/java \
-			umundo/contrib/prebuilt/include \
-			umundo/package/cross-compiled/android
-	expect eof
+			umundo/contrib/prebuilt/include
+	expect -re $local_prompt
 
 	eval spawn \
-		zip -qr umundo-win.zip \
-			umundo/contrib/prebuilt
-	expect eof
+		sh -c \"zip -qr umundo-win.zip \
+			umundo/contrib/prebuilt/windows-\\*\
+			umundo/package/vcredist_msvc\\*\
+			umundo/package/cross-compiled/android \
+			umundo/examples/android\"
+	expect -re $local_prompt
 
-	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}.local:\\umundo-win.zip
+	eval spawn scp -4 umundo-win.zip sradomski@${UMUNDO_BUILD_HOST}:\\umundo-win.zip
 	expect {
 		"ETA"              { exp_continue }
 		"The authenticity" { send "yes\n"; exp_continue; }
@@ -80,7 +82,7 @@ if {$redeploy} {
 ##############################
 # ssh into remote host
 
-eval spawn ssh -4 sradomski@${UMUNDO_BUILD_HOST}.local.
+eval spawn ssh -4 sradomski@${UMUNDO_BUILD_HOST}
 expect {
 	timeout            { puts "Timeout when connecting to windows"; exit;  }
 	"The authenticity" { send "yes\n"; }
@@ -115,8 +117,6 @@ expect -re $remote_prompt
 # send "cmd\n"
 # expect -re $cmd_prompt
 
-# "c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
-# send "\"c:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\vcvarsall.bat x86_amd64\"\n"
 send "${UMUNDO_VCVARSALL}\r"
 expect -re $remote_prompt
 
@@ -128,10 +128,11 @@ send \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DBUILD_BINDINGS=ON \
-	-DBUILD_UMUNDO_APPS=OFF \
 	-DBUILD_UMUNDO_TOOLS=ON \
 	-DBUILD_TESTS=${BUILD_TESTS} \
+	-DBUILD_PREFER_STATIC_LIBRARIES=ON \
 	-DDIST_PREPARE=ON \
+	-DBUILD_CONVENIENCE_LIB=ON \
 	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNDO_PROTOBUF_ROOT}\" \
 	..\\umundo\r"
 expect -re $remote_prompt
@@ -144,41 +145,6 @@ expect {
 	"Linking" { puts "Linking"; exp_continue; }
   -re $remote_prompt { puts "Continuing";  }
 }
-
-# for some weird reason we get linker errors with the first build?!
-send \
-	"\"cmake\" -G \"NMake Makefiles\" \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DBUILD_SHARED_LIBS=OFF \
-	-DBUILD_BINDINGS=ON \
-	-DBUILD_UMUNDO_APPS=OFF \
-	-DBUILD_UMUNDO_TOOLS=ON \
-	-DBUILD_TESTS=${BUILD_TESTS} \
-	-DDIST_PREPARE=ON \
-	-DPROTOBUF_SRC_ROOT_FOLDER=\"${UMUNDO_PROTOBUF_ROOT}\" \
-	..\\umundo\r"
-expect -re $remote_prompt
-
-send "nmake\n\r"
-expect {
-	timeout            { puts "Timeout when building"; exit;  }
-	"Building" { puts "Building"; exp_continue; }
-	"Scanning" { puts "Scanning"; exp_continue; }
-	"Linking" { puts "Linking"; exp_continue; }
-	"fatal error"      { puts "Dying"; exit; }
-  -re $remote_prompt { puts "Continuing";  }
-}
-
-
-# send "nmake java\n\r"
-# expect {
-# 	timeout            { puts "Timeout when building"; exit;  }
-# 	"Building" { puts "Building"; exp_continue; }
-# 	"Scanning" { puts "Scanning"; exp_continue; }
-# 	"Linking" { puts "Linking"; exp_continue; }
-# 	"fatal error"      { puts "Dying"; exit; }
-#   -re $remote_prompt { puts "Continuing";  }
-# }
 
 send "nmake csharp\n\r"
 expect {
@@ -208,7 +174,7 @@ send "exit\r"
 expect -re $local_prompt
 eval cd ~/Documents/TK/Code/
 
-eval spawn "scp epikur-win7-64.local:win-package.zip ."
+eval spawn "scp ${UMUNDO_BUILD_HOST}:win-package.zip ."
 expect -re $local_prompt
 eval spawn "unzip -qo win-package.zip"
 expect -re $local_prompt

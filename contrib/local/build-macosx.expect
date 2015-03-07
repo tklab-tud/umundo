@@ -22,7 +22,6 @@ eval spawn find ./umundo -newer umundo-macosx.zip
 set redeploy 0;
 expect {
 	"find:*No such file" { set redeploy 1; }
-	".expect\r\n"        { set redeploy 0; }
 	".cpp\r\n"           { set redeploy 1; }
 	"package\r\n"        { set redeploy 1; }
 	".h\r\n"             { set redeploy 1; }
@@ -39,28 +38,31 @@ if {$redeploy} {
 		zip -qr umundo-macosx.zip umundo/ --exclude \
 		__\* \
 		umundo/contrib\* \
+		umundo/package\* \
 		umundo/.git/\* \
 		umundo/build\* \
 		umundo/installer/umundo\* \
+		umundo/installer/manifest/content\* \
 		umundo/package\* \
 		umundo/docs/html\*
 	expect -re $prompt
+	
 	eval spawn \
 		zip -qr umundo-macosx.zip \
 			umundo/contrib/cmake \
 			umundo/contrib/csharp \
 			umundo/contrib/java \
-			umundo/contrib/prebuilt/include \
-			
+			umundo/contrib/src \
+			umundo/contrib/prebuilt/include
 	expect -re $prompt
 	
 	eval spawn \
-		zip -qr umundo-macosx.zip \
-			umundo/contrib/prebuilt/darwin-i386 \
+		sh -c \"zip -qr umundo-macosx.zip \
+			umundo/contrib/prebuilt/darwin-\\* \
 			umundo/package/cross-compiled/android \
 			umundo/package/cross-compiled/ios \
-			umundo/examples/android \
 			umundo/examples/ios \
+			umundo/examples/android\"
 			
 	expect -re $prompt
 
@@ -96,7 +98,6 @@ expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo &
 expect -re $prompt { 
 	send \
 		"cmake \
-		-DBUILD_UMUNDO_APPS=OFF \
 		-DBUILD_UMUNDO_TOOLS=OFF \
 		-DCMAKE_BUILD_TYPE=Release \
 	  -DBUILD_CONVENIENCE_LIB=ON \
@@ -108,74 +109,39 @@ expect -re $prompt {
 		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
 		~/umundo\n"
 }
-expect -re $prompt { send "make -j2\n" }
 
+### This will build native language bindings and the big-ass, all static convenience lib
+expect -re $prompt { send "make -j2\n" }
 expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt    { send "\n" }
 
-# expect -re $prompt { send "make -j2 java\n" }
-# expect "Building CXX" { exp_continue } \
-#        "Linking CXX" { exp_continue } \
-#        -re $prompt { send "\n" }
+# We do not build the jars here, we need to move the JNIs in place first
 
+### This will build the dll
 expect -re $prompt { send "make -j2 mono\n" }
 expect "Building CXX" { exp_continue } \
        "Linking CXX" { exp_continue } \
        -re $prompt { send "\n" }
 
-if { [string compare $BUILD_TESTS "ON"] == 0 } {
-  expect -re $prompt { send "make -j2 test\n" }
-  expect "Start" { exp_continue } \
-         -re $prompt { send "\n" }
-}
-
 ##############################
-# static umundo in release configuration
+# static umundo with shared deps
 
 expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
 expect -re $prompt { 
 	send "cmake \
-		-DBUILD_UMUNDO_APPS=OFF \
-		-DBUILD_UMUNDO_TOOLS=ON \
+		-DBUILD_UMUNDO_TOOLS=OFF \
 		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_BINDINGS=OFF \
 		-DBUILD_SHARED_LIBS=OFF \
-		-DBUILD_CONVENIENCE_LIB=ON \
+		-DBUILD_CONVENIENCE_LIB=OFF \
 		-DBUILD_TESTS=${BUILD_TESTS} \
 		-DDIST_PREPARE=ON \
 		~/umundo\n"
 }
-expect -re $prompt { send "make -j2\n" }
 
-expect "Building CXX" { exp_continue } \
-       "Linking CXX" { exp_continue } \
-       -re $prompt    { send "\n" }
-
-if { [string compare $BUILD_TESTS "ON"] == 0 } {
-  expect -re $prompt { send "make -j2 test\n" }
-  expect "Start" { exp_continue } \
-         -re $prompt { send "\n" }
-}
-
-##############################
-# shared umundo in release configuration
-
-expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
-expect -re $prompt { 
-	send "cmake \
-		-DBUILD_UMUNDO_APPS=OFF \
-		-DBUILD_UMUNDO_TOOLS=ON \
-		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DBUILD_BINDINGS=OFF \
-		-DBUILD_SHARED_LIBS=ON \
-		-DBUILD_CONVENIENCE_LIB=ON \
-		-DBUILD_TESTS=${BUILD_TESTS} \
-		-DDIST_PREPARE=ON \
-		~/umundo\n" 
-}
+### This will build the smaller static convenience libs with shared deps
 expect -re $prompt { send "make -j2\n" }
 
 expect "Building CXX" { exp_continue } \

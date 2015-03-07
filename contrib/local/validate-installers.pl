@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use strict;
+# use strict;
 use utf8;
 use Cwd 'abs_path';      # abs_path
 use Cwd;                 # getcwd
@@ -48,10 +48,10 @@ chdir $installer_dir;
 foreach (sort <*>) {
 	next if m/^\./;
 	$mac_archive         = File::Spec->rel2abs($_, getcwd) if (m/.*darwin.*\.tar\.gz/i);
-	$linux32_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-i686.*\.tar\.gz/i);
+	$linux32_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-x86-.*\.tar\.gz/i);
 	$linux64_archive     = File::Spec->rel2abs($_, getcwd) if (m/.*linux-x86_64.*\.tar\.gz/i);
-	$win32_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-msvc2010-x86-.*\.zip/i);
-	$win64_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-msvc2010-x86_64.*\.zip/i);
+	$win32_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86-.*\.zip/i);
+	$win64_archive       = File::Spec->rel2abs($_, getcwd) if (m/.*windows-x86_64.*\.zip/i);
 }
 
 print STDERR "No archive for MacOSX found!\n" if (!$mac_archive);
@@ -78,6 +78,8 @@ if ($mac_archive) {
 #print Dumper($rasp_pi_files);
 #exit;
 
+my $rv;
+
 # my $tmpdir = File::Temp->newdir() or die($!);
 my $tmpdir = $installer_dir . "/manifest";
 if ( ! -d $tmpdir ) {
@@ -96,21 +98,23 @@ if ( ! -d $tmpdir ) {
   #if ($rasp_pi_archive) { system("tar", "xzf",  $rasp_pi_archive); #checkFiles("linux-armv6l",   $rasp_pi_files); }
   if ($win32_archive)   { system("unzip", "-q", $win32_archive); }  #checkFiles("windows-x86",    $win32_files); }
   if ($win64_archive)   { system("unzip", "-q", $win64_archive); }  #checkFiles("windows-x86_64", $win64_files); }
+
+	mkdir("content");
+	foreach (sort <*>) {
+		next if m/^\./;
+		next if m/.*content/;
+		if ($_ !~ /.*windows.*/i) {
+			$rv = `cp -R $_/usr/local/. content`;
+			# $rv = `ditto $_/usr/local content`;
+		} else {
+			$rv = `cp -R $_/. content`;
+			# $rv = `ditto $_ content`;
+		}
+		# $rv = `rm -rf $_`;
+	}
+
 } else {
   chdir $tmpdir or die($!);
-}
-
-my $rv;
-mkdir("content");
-foreach (sort <*>) {
-	next if m/^\./;
-	next if m/.*content/;
-	if ($_ !~ /.*windows.*/i) {
-		$rv = `ditto $_/usr/local content`;
-	} else {
-		$rv = `ditto $_ content`;
-	}
-	$rv = `rm -rf $_`;
 }
 
 # remove duplicates and uninteresting directories
@@ -128,6 +132,21 @@ $rv = `rm -rf content/include/umundo/s11n`;
 $rv = `rm -rf content/include/umundo/thread`;
 $rv = `rm -rf content/include/umundo/util`;
 $rv = `rm -rf content/include/umundo-objc`;
+
+$rv = `find content/share/umundo/samples/android -depth 2  -exec rm -rf {} \\;`;
+$rv = `find content/share/umundo/samples/cpp -depth 3  -exec rm -rf {} \\;`;
+$rv = `find content/share/umundo/samples/java -depth 3  -exec rm -rf {} \\;`;
+$rv = `find content/share/umundo/samples/csharp -depth 2  -exec rm -rf {} \\;`;
+$rv = `find content/share/umundo/samples/ios -depth 2  -exec rm -rf {} \\;`;
+$rv = `find content/share/umundo/samples/ -type f  -exec rm -rf {} \\;`;
+
+$rv = `find content -name '*.exe' -exec rm {} \\;`;
+$rv = `find content/lib -name '*_d\.*' -exec rm {} \\;`;
+$rv = `find content/lib -name '*64\.*' -exec rm {} \\;`;
+$rv = `find content/share/umundo -name '*_d\.*' -exec rm {} \\;`;
+$rv = `find content/share/umundo -name '*64\.so*' -exec rm {} \\;`;
+$rv = `find content/share/umundo -name '*64\.lib*' -exec rm {} \\;`;
+$rv = `find content/share/umundo -name '*64\.dll*' -exec rm {} \\;`;
 
 chdir "content/" or die($!);
 
@@ -174,6 +193,15 @@ print REPORT '<tr><th align="left">Availability</th><th align="left">Filename</t
 print REPORT '<tr><td valign="top">'."\n";
 print REPORT '<pre>'."\n";
 
+my @platformFiles;
+push(@platformFiles, $mac_files);
+push(@platformFiles, $linux32_files);
+push(@platformFiles, $linux64_files);
+push(@platformFiles, $win32_files);
+push(@platformFiles, $win64_files);
+
+# print Dumper($win32_files);
+
 foreach my $file (split("\n", $flat_list)) {
 	if ($file eq '.') {
 		print REPORT '<font bgcolor="#ccc">MAC|L32|L64|W32|W64</font>'."\n";
@@ -185,11 +213,37 @@ foreach my $file (split("\n", $flat_list)) {
 	}
 	$file =~ s/\.\///;
 	#print STDERR $file."\n";
-	(exists(    $mac_files->{"usr/local/$file"}) ? print REPORT " X  " : print REPORT " -  ");
-	(exists($linux32_files->{"usr/local/$file"}) ? print REPORT " X  " : print REPORT " -  ");
-	(exists($linux64_files->{"usr/local/$file"}) ? print REPORT " X  " : print REPORT " -  ");
-	(exists(  $win32_files->{"$file"})           ? print REPORT " X  " : print REPORT " -  ");
-	(exists(  $win64_files->{"$file"})           ? print REPORT " X  " : print REPORT " -  ");
+  my @variations;
+  push(@variations, $file);
+  push(@variations, $file.'.exe');
+  
+  # print $file."\n";
+  
+  if ($file =~ /(.*)\.(\w+)$/) {
+    push(@variations, $1.'64.'.$2);
+    push(@variations, $1.'64_d.'.$2);
+    # print Dumper(@variations);
+  }
+  
+  
+   
+  foreach (0..$#platformFiles) {
+    my $platform = $platformFiles[$_];
+    # print Dumper($platform);
+    # exit;
+    foreach (@variations) {
+      my $variation = $_;
+      # print $variation."\n";
+      # exit;
+      if (exists($platform->{$variation}) || exists($platform->{'usr/local/'.$variation})) {
+        print REPORT " X  ";
+        goto NEXT_COL;
+      }
+    }
+    print REPORT " -  ";
+NEXT_COL:
+  }
+  
 	print REPORT "\n";
 }
 

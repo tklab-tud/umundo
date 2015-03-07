@@ -43,7 +43,7 @@
 
 // we do not have FDs with embedded bonjour at all,
 // with non-embedded, we might share them
-#if not defined(DISC_BONJOUR_EMBED) and not defined(SHARE_SERVICE_REF)
+#if !defined(DISC_BONJOUR_EMBED) && !defined(SHARE_SERVICE_REF)
 #define NON_SHARED_FDS 1
 #endif
 

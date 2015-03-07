@@ -16,6 +16,7 @@ my $descriptions = {
 	'./lib/umundo-monitor.lib' => 'not sure',
 	'./lib/umundo-pingpong.lib' => 'not sure',
 	'./lib/libumundo.so' => 'Convenience library with everything embedded',
+	'./include/umundo/core/UMDiscovery.h' => 'Obj-C headers start with UM*',
 	'./share/umundo/lib/umundoNativeCSharp[\.6].*' => 'SWIG generated C# backend for DLLInvoke',
 	'./share/umundo/lib/umundoNativeJava[\.6].*' => 'SWIG generated Java backend for JNI',
 	'./share/umundo/android-8' => 'Cross compiled binaries for Android',

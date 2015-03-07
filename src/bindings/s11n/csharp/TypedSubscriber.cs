@@ -76,11 +76,24 @@ namespace org.umundo.s11n
             }
         }
 
-        public TypedSubscriber(String channel, ITypedReceiver receiver)
-            : base(channel, null)
+        public TypedSubscriber(String channel)
+            : base(channel)
         {
-            Receiver = new RawReceiver(receiver);
-            setReceiver(Receiver);
+        }
+
+        public TypedSubscriber(SubscriberConfig config)
+            : base(config)
+        {
+        }
+
+        public void setReceiver(ITypedReceiver receiver)
+        {
+            if (receiver != null) {
+              Receiver = new RawReceiver(receiver);
+              setReceiver(Receiver);
+            } else {
+              setReceiver(null);
+            }
         }
 
         private RawReceiver Receiver { get; set; }

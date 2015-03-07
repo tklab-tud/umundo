@@ -56,6 +56,7 @@
 	<echo message="library dir:        ${lib.dir}"/>
 	<echo message="source dir:         ${src.dir}"/>
 	<echo message="build dir:          ${build.dir}"/>
+	<echo message="output dir:         ${output.dir}"/>
 	<echo message="build type:         ${build.type}"/>
 	<echo message="exclude debug:      ${exclude.debug}"/>
 	<echo message="exclude jni:        ${exclude.jni}"/>
@@ -96,7 +97,7 @@
 	<delete dir="${lib.dir}/umundo.jar" />
 
 	<!-- build new jar -->
-	<jar destfile="${lib.dir}/umundo.jar">
+	<jar destfile="${output.dir}/umundo.jar">
 		<!-- All the class files we compiled -->
     <fileset dir="${build.dir}/src/bindings/core/swig/java/bin/" >
       <include name="**/*.class" />

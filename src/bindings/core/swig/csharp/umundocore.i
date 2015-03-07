@@ -190,12 +190,6 @@ using System.Runtime.InteropServices;
 %rename(getPublishersNative) umundo::Subscriber::getPublishers();
 %csmethodmodifiers umundo::Subscriber::getPublishers() "private";
 
-// Do not generate this constructor - substitute by the one in the cscode typemap below
-%ignore umundo::Subscriber::Subscriber(const std::string&, Receiver*);
-
-// hide this constructor to enforce the one below
-%csmethodmodifiers umundo::Subscriber::Subscriber(string channelName) "protected";
-
 // rename setter and wrap by setter in cscode typemap below
 %rename(setReceiverNative) umundo::Subscriber::setReceiver(Receiver*);
 %csmethodmodifiers umundo::Subscriber::setReceiver(Receiver* receiver) "private";
@@ -210,10 +204,6 @@ using System.Runtime.InteropServices;
   // keep receiver as a reference to prevent premature GC
   private Receiver _receiver;
 
-  public Subscriber(string channelName, Receiver receiver) : this(umundoNativeCSharpPINVOKE.new_Subscriber__SWIG_0(), true) {
-    setChannelName(channelName);
-    setReceiver(receiver);
-  }
   public void setReceiver(Receiver receiver) {
     // it is important to keep the reference, otherwise the C# GC will eat it!
     _receiver = receiver;

@@ -42,6 +42,10 @@ namespace org.umundo.s11n
             : base(channel) { 
         }
 
+        public TypedPublisher(PublisherConfig config)
+            : base(config) { 
+        }
+
         private byte[] Serialize(ISerializable serializable)
         {
             using (MemoryStream stream = new MemoryStream())

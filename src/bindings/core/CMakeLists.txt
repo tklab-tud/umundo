@@ -66,6 +66,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 
 	set(JAR_EXCLUDE_DEBUG OFF)
 	set(JAR_EXCLUDE_JNI OFF)
+	set(JAR_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 	# include all the JNI libraries prepared from DIST_PREPARE builds on the various desktop platforms
 	if (DIST_PREPARE)
@@ -73,9 +74,11 @@ if (UMUNDONATIVEJAVA_LOCATION)
 			if (ANDROID)
 				find_program(PROTOBUF_PROTOC_EXECUTABLE NAMES protoc protoc.exe)
 				set(JAR_EXCLUDE_JNI ON) # JNI inside jar not allowed with Android
+				set(JAR_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/package/cross-compiled/android)
 				SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/android)
 			else()
 				SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC})
+				set(JAR_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/package/cross-compiled/${CMAKE_CROSSCOMPILING_TARGET_LC})
 			endif()
 		else()
 			SET(JAR_JNI_ROOT_PATH ${PROJECT_SOURCE_DIR}/package)
@@ -138,6 +141,7 @@ if (UMUNDONATIVEJAVA_LOCATION)
 			-Dlib.dir=${JAR_JNI_ROOT_PATH}
 			-Dsrc.dir=${PROJECT_SOURCE_DIR}
 			-Dbuild.dir=${PROJECT_BINARY_DIR}
+			-Doutput.dir=${JAR_OUTPUT_DIR}
 			-Dbuild.type=${CMAKE_BUILD_TYPE}
 			-Dexclude.debug=${JAR_EXCLUDE_DEBUG}
 			-Dexclude.jni=${JAR_EXCLUDE_JNI}

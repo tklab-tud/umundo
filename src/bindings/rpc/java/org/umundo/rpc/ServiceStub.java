@@ -43,14 +43,16 @@ public class ServiceStub extends Connectable implements ITypedReceiver {
 	public ServiceStub(String channelName) {
 		_channelName = channelName;
 		_rpcPub = new TypedPublisher(_channelName);
-		_rpcSub = new TypedSubscriber(_channelName, this);
+		_rpcSub = new TypedSubscriber(_channelName);
+		_rpcSub.setReceiver(this);
 	}
 
 	public ServiceStub(ServiceDescription svcDesc) {
 		_channelName = svcDesc.getChannelName();
 		_serviceName = svcDesc.getName();
 		_rpcPub = new TypedPublisher(_channelName);
-		_rpcSub = new TypedSubscriber(_channelName, this);
+		_rpcSub = new TypedSubscriber(_channelName);
+		_rpcSub.setReceiver(this);
 		for (Node node : svcDesc._svcMgr.getNodes()) {
 			node.addSubscriber(_rpcSub);
 			node.addPublisher(_rpcPub);

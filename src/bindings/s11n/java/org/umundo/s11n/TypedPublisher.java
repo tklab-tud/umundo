@@ -27,6 +27,7 @@ import java.util.Map;
 import org.umundo.core.Greeter;
 import org.umundo.core.Message;
 import org.umundo.core.Publisher;
+import org.umundo.core.PublisherConfig;
 import org.umundo.core.SubscriberStub;
 
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
@@ -64,6 +65,10 @@ public class TypedPublisher extends Publisher {
 
 	public TypedPublisher(String channel) {
 		super(channel);
+	}
+
+	public TypedPublisher(PublisherConfig config) {
+		super(config);
 	}
 
 	public Message prepareMessage(MessageLite o) {

@@ -21,8 +21,9 @@ endif()
 ###################################################
 # where to search for umundo headers and libraries
 ###################################################
-set(_UMUNDO_LIB_SEARCHPATH 
-	"/usr/local" 
+set(_UMUNDO_LIB_SEARCHPATH
+	${UMUNDO_LIBRARY_ROOT}
+	"/usr/local"
 	"/opt/local" 
 	"C:/Program Files (x86)/uMundo"
 	"C:/Program Files/uMundo"
@@ -32,8 +33,8 @@ set(_UMUNDO_LIB_SEARCHPATH
 # find the umundo header files
 ###################################################
 FIND_PATH(UMUNDO_INCLUDE_DIR umundo/core.h
-  PATH_SUFFIXES include 
-	PATHS ${_UMUNDO_LIB_SEARCHPATH}
+  PATH_SUFFIXES include
+	PATHS ${_UMUNDO_LIB_SEARCHPATH} ${UMUNDO_HEADER_ROOT}
 	ENV UMUNDO_INCLUDE_DIR
 )
 

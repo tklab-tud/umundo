@@ -683,22 +683,21 @@ int main(int argc, char** argv) {
 	}
 	
 	if (filePrefix.size() > 0) {
-		// cannot have ofstream in a map (non-copyable), works with LLVM though
-#ifdef APPLE
 		// wait for missing reports, then make sure no more reports are coming in
-		Thread::sleepMs(60000);
+		Thread::sleepMs(20000);
 		sub.setReceiver(NULL);
 		
 		// write files
 		std::map<std::string, std::list<Report> >::iterator reportIter = allReports.begin();
-		std::map<std::string, std::ofstream> fileHandles;
+		std::map<std::string, std::ofstream*> fileHandles;
 		
 		// open a file per reporter and write header
 		while(reportIter != allReports.end()) {
 			std::string pubUUID = reportIter->first;
 			std::string reportFileName = filePrefix + pubUUID.substr(0,8) + ".data";
-			fileHandles[pubUUID].open(reportFileName.c_str(), std::fstream::out);
-			Report::writeCSVHead(fileHandles[pubUUID]);
+			fileHandles[pubUUID] = new std::ofstream();
+			fileHandles[pubUUID]->open(reportFileName.c_str(), std::fstream::out);
+			Report::writeCSVHead(*fileHandles[pubUUID]);
 #ifdef UNIX
 			// that's only useful if there is only a single reporter per host
 			std::string linkFrom = filePrefix + pubUUID.substr(0,8) + ".data";
@@ -727,15 +726,15 @@ int main(int argc, char** argv) {
 
 				if (reportIter->second.size() == 0) {
 					// all data consumed - insert missing at end
-					fileHandles[reportIter->first] << "-" << std::endl;
+					*fileHandles[reportIter->first] << "-" << std::endl;
 					break;
 				}
 				
 				if (reportIter->second.front().pertainingPacket > senderRepIter->pertainingPacket) {
 					// no data for reporting period!
-					fileHandles[reportIter->first] << "-" << std::endl;
+					*fileHandles[reportIter->first] << "-" << std::endl;
 				} else {
-					reportIter->second.front().writeCSVData(fileHandles[reportIter->first]);
+					reportIter->second.front().writeCSVData(*fileHandles[reportIter->first]);
 					reportIter->second.pop_front();
 				}
 				
@@ -750,9 +749,10 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		std::map<std::string, std::ofstream>::iterator fhIter = fileHandles.begin();
+		std::map<std::string, std::ofstream*>::iterator fhIter = fileHandles.begin();
 		while(fhIter != fileHandles.end()) {
-			fhIter->second.close();
+			fhIter->second->close();
+			delete(fhIter->second);
 			fhIter++;
 		}
 
@@ -819,7 +819,6 @@ int main(int argc, char** argv) {
 			senderRepIter++;
 		}
 		senderReport.close();
-#endif
 #endif
 	}
 }

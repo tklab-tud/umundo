@@ -143,6 +143,8 @@ $rv = `find content/share/umundo/samples/ -type f  -exec rm -rf {} \\;`;
 $rv = `find content -name '*.exe' -exec rm {} \\;`;
 $rv = `find content/lib -name '*_d\.*' -exec rm {} \\;`;
 $rv = `find content/lib -name '*64\.*' -exec rm {} \\;`;
+$rv = `find content/lib -regex '.*[0-9]\.[0-9]\.[0-9]' -exec rm {} \\;`;
+
 $rv = `find content/share/umundo -name '*_d\.*' -exec rm {} \\;`;
 $rv = `find content/share/umundo -name '*64\.so*' -exec rm {} \\;`;
 $rv = `find content/share/umundo -name '*64\.lib*' -exec rm {} \\;`;
@@ -161,6 +163,52 @@ print "Writing ${script_dir}/../../installer/ReadMe.html\n";
 open(REPORT, ">", "${script_dir}/../../installer/ReadMe.html") or die($!);
 
 print REPORT '<html><body>'."\n";
+
+print REPORT '<h1>Quick Start</h1>';
+print REPORT <<'EOF';
+
+<p><b>Tarball (.tar.gz)</b>:</p>
+<pre>
+	# install
+	$ sudo tar --extract --gzip --strip-components 1 --directory / --file umundo-linux-x86*.tar.gz
+	$ sudo ldconfig
+</pre>
+
+<p><b>Debian package (.deb)</b></p>
+<pre>
+	# install
+	$ sudo dpkg --install umundo-linux-x86*.deb
+	$ sudo ldconfig
+</pre>
+<pre>
+	# uninstall
+	$ sudo dpkg --remove umundo
+</pre>
+
+<p><b>Redhat package (.rpm)</b></p>
+<pre>
+	# install
+	$ sudo rpm -Uvh --nodeps umundo-linux-x86*.rpm
+	$ sudo ldconfig
+</pre>
+<pre>
+	# uninstall
+	$ sudo rpm -e umundo
+</pre>
+
+<p><b>Mackintosh Disk Image (.dmg)</b></p>
+Contains a .pkg installer, just accept the defaults if you are unsure. Everything installed is in /usr/local/[bin|include|share]/umundo*
+
+<p><b>Windows NSIS (.exe)</b></p>
+Just execute the installer and accept the defaults if unsure. Microsoft VC++ Redistributable 
+package is installed as well. After the installer finished, an uninstaller.exe is created in
+the installation directory.
+
+<p><b>Windows Archive (.zip)</b></p>
+Just unzip where you want it. Does not install Microsoft VC++ Redistributable 
+package. It is contained in the 'contrib' subfolder.
+
+EOF
 
 $change_log =~ s/\s+$//;
 print REPORT '<h1>Changelog</h1>'."\n";
@@ -211,8 +259,10 @@ foreach my $file (split("\n", $flat_list)) {
 		print REPORT "\n";
 		next;
 	}
+
 	$file =~ s/\.\///;
 	#print STDERR $file."\n";
+
   my @variations;
   push(@variations, $file);
   push(@variations, $file.'.exe');
@@ -221,7 +271,9 @@ foreach my $file (split("\n", $flat_list)) {
   
   if ($file =~ /(.*)\.(\w+)$/) {
     push(@variations, $1.'64.'.$2);
+    push(@variations, $1.'64.dylib');
     push(@variations, $1.'64_d.'.$2);
+    push(@variations, $1.'64_d.dylib');
     # print Dumper(@variations);
   }
   

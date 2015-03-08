@@ -6,7 +6,7 @@ essentially the same on every platform:
 1. Read the <b>[Platform Notes](#platform-notes)</b> below to prepare your system.
 2. Checkout umundo into a convenient directory:
 
-	<tt>git clone git://github.com/tklab-tud/umundo.git</tt>
+	<tt>git clone --depth 1 git://github.com/tklab-tud/umundo.git</tt>
 
 3. Create a new directory for an *out-of-source* build. I usually create sub-directories
 in <tt>&lt;UMUNDO_SRC&gt;/build/</tt>.
@@ -223,6 +223,25 @@ needed for other distributions.
 	# umundo optional dependencies - SWIG and the Java Developer Kit
 	$ sudo yum install swig java-openjdk ant
 
+### Preparing *zypper based* distributions
+
+The following instructions are for the
+[OpenSuse 13.2 Desktop](http://software.opensuse.org/132/en).
+As with the *apt-get* based distributions, there might be additional packages
+needed for other distributions.
+
+	# build system and compiler
+	$ sudo zypper install git-core cmake gcc-c++
+
+	# umundo optional dependencies
+	$ sudo zypper install protobuf-devel pcre-devel
+
+	# umundo optional dependencies - language bindings
+	$ sudo zypper install swig mono-devel java-1_8_0-openjdk-devel ant
+
+	# struggle with JAVA_HOME ...
+	$ export JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
+
 ### Console / Make
 
 Instructions are a literal copy of building umundo for MacOSX on the console from above:
@@ -232,6 +251,26 @@ Instructions are a literal copy of building umundo for MacOSX on the console fro
 	[...]
 	-- Build files have been written to: .../build/umundo/cli
 	$ make
+
+<b>Note:</b> If you still get errors with regard to JNI, e.g.:
+
+	-- Could NOT find JNI (missing:  JAVA_AWT_LIBRARY JAVA_JVM_LIBRARY JAVA_INCLUDE_PATH JAVA_INCLUDE_PATH2 JAVA_AWT_INCLUDE_PATH) 
+
+Try to set these variables explicitly. The FindJNI.cmake from the cmake distribution 
+seems to be broken and quite a few (64Bit) platforms:
+
+	$ cmake -DJAVA_AWT_LIBRARY=/usr/lib64/jvm/java-1.8.0-openjdk-1.8.0/jre/lib/amd64/libawt.so \
+	        -DJAVA_JVM_LIBRARY=/usr/lib64/jvm/java-1.8.0-openjdk-1.8.0/jre/lib/amd64/server/libjvm.so \
+	        -DJAVA_INCLUDE_PATH=/usr/lib64/gcc/x86_64-suse-linux/4.8/include \
+	        ..
+
+Obviously you will have to adapt the paths. If you have <tt>locate</tt> installed, you can run:
+
+	$ cmake -DJAVA_AWT_LIBRARY=`locate -l1 libawt.so` \
+	        -DJAVA_JVM_LIBRARY=`locate -l1 libjvm.so` \
+	        -DJAVA_INCLUDE_PATH=`dirname \`locate -l1 jni.h\`` \
+	        ..
+
 
 ### Eclipse CDT
 

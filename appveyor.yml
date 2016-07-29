@@ -1,13 +1,22 @@
 shallow_clone: true
 
+except:
+    - gh-pages
+
+configuration:
+    - 10.0
+    - 12.0
+    - 14.0
+
 environment:
     matrix:
-    - PLATFORM: x86
-    - PLATFORM: amd64
+    - architecture: x86
+    - architecture: amd64
 
 before_build:
-    - call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %PLATFORM%
+    - call "%ProgramFiles(x86)%\Microsoft Visual Studio %configuration%\VC\vcvarsall.bat" %architecture%
     - mkdir build
     - cd build
     - cmake -G "NMake Makefiles" ..
-    - nmake
+
+build: nmake

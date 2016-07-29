@@ -1,19 +1,20 @@
+version: 0.6.{build}
+
 shallow_clone: true
 
-configuration:
-    - 10.0
-    - 12.0
-    - 14.0
+platform:
+    - x64
+    - x86
 
-environment:
-    matrix:
-    - architecture: x86
-    - architecture: amd64
+configuration:
+    - Visual Studio 10.0
+    - Visual Studio 12.0
+    - Visual Studio 14.0
 
 before_build:
-    - call "%ProgramFiles(x86)%\Microsoft Visual Studio %configuration%\VC\vcvarsall.bat" %architecture%
+    - call "%ProgramFiles(x86)%\Microsoft %configuration%\VC\vcvarsall.bat" %platform%
     - mkdir build
     - cd build
     - cmake -G "NMake Makefiles" ..
 
-build: nmake
+build_script: nmake

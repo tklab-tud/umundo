@@ -1,8 +1,5 @@
 shallow_clone: true
 
-except:
-    - gh-pages
-
 configuration:
     - 10.0
     - 12.0

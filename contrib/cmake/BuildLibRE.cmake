@@ -47,7 +47,7 @@ externalproject_add(libre
 	PREFIX ${CMAKE_BINARY_DIR}/deps/libre
 	PATCH_COMMAND 
 		${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/contrib/patches/libre/CMakeLists.txt" <SOURCE_DIR>/mk/CMakeLists.txt &&
-		${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/contrib/patches/libre/unistd.h" <SOURCE_DIR>/include/unistd.h
+		${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/contrib/patches/libre/unistd.h" <SOURCE_DIR>/win32/unistd.h
 	CONFIGURE_COMMAND 
 		${CMAKE_COMMAND} 
 		-G ${CMAKE_GENERATOR}

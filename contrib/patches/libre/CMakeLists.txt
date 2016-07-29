@@ -46,7 +46,8 @@ if (WIN32)
 	
 	set_source_files_properties("${RE_ROOT}/src/sa/pton.c" PROPERTIES COMPILE_FLAGS -D_WINSOCKAPI_)
 	set_source_files_properties("${RE_ROOT}/src/sa/ntop.c" PROPERTIES COMPILE_FLAGS -D_WINSOCKAPI_)
-	
+
+	include_directories(${RE_ROOT}/win32)
 	# LIST(REMOVE_ITEM SOURCE_FILES "${RE_ROOT}/src/sa/pton.c")
 	
 endif()

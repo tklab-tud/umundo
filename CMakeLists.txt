@@ -372,7 +372,7 @@ else()
 endif()
 
 # see http://www.mail-archive.com/cmake@cmake.org/msg23240.html
-if (APPLE)
+if (APPLE AND OFF)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
 	if (HOST_64BIT)
 		# do not build universal binaries anymore ..
@@ -380,11 +380,11 @@ if (APPLE)
 	endif()
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
-  	# set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
     set(LIBCPP libstdc++)
   else()
     # forces libc++
-  	# set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
     set(LIBCPP libc++)
   endif()
   if (MACOSX_VERSION VERSION_GREATER 10.6.99) 

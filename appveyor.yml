@@ -7,7 +7,7 @@ environment:
 
 before_build:
     - call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %PLATFORM%
-		- mkdir build
-		- cd build
+    - mkdir build
+    - cd build
     - cmake -G "NMake Makefiles" ..
-		- nmake
+    - nmake

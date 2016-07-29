@@ -1,0 +1,213 @@
+#!/usr/bin/expect
+
+#exp_internal 1
+
+set timeout 600
+set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
+set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
+set UMUNDO_BUILD_ARCH $::env(UMUNDO_BUILD_ARCH)
+set BUILD_TESTS $::env(BUILD_TESTS)
+set JAVA_AWT_LIBRARY $::env(JAVA_AWT_LIBRARY)
+set JAVA_JVM_LIBRARY $::env(JAVA_JVM_LIBRARY)
+
+set prompt "sradomski@"
+append prompt ${UMUNDO_BUILD_HOST}
+append prompt {:[a-zA-Z~\/\-]+\$ }
+
+eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
+expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
+       -re $prompt       { }
+
+##############################
+# prepare and deploy archive
+
+eval cd ~/Documents/TK/Code/
+
+# check age of archive against modification date
+eval spawn find ./umundo -newer umundo-linux.zip
+set redeploy 1;
+expect {
+	"find:*No such file" { set redeploy 1; }
+	".expect\r\n"        { set redeploy 0; }
+	".cpp\r\n"           { set redeploy 1; }
+	".h\r\n"             { set redeploy 1; }
+	"CMakeLists.txt\r\n" { set redeploy 1; }
+	-re $prompt        { }
+}
+
+if {$redeploy} {
+	eval spawn rm umundo-linux.zip
+	expect -re $prompt
+
+	eval spawn \
+		zip -qr umundo-linux.zip umundo/ --exclude \
+		__\* \
+		umundo/contrib\* \
+		umundo/package\* \
+		umundo/.git/\* \
+		umundo/build\* \
+		umundo/installer/umundo\* \
+		umundo/installer/manifest/content\* \
+		umundo/package\* \
+		umundo/docs/html\* \
+		umundo/examples/ios\*
+	expect -re $prompt
+
+	eval spawn \
+		zip -qr umundo-linux.zip \
+			umundo/contrib/csharp \
+			umundo/contrib/cmake \
+			umundo/contrib/src \
+			umundo/contrib/java \
+			umundo/contrib/prebuilt/include
+	expect -re $prompt
+	
+	eval spawn \
+		sh -c \"zip -qr umundo-linux.zip \
+			umundo/contrib/prebuilt/linux-\\* \
+			umundo/package/cross-compiled/android \
+			umundo/examples/android\"
+			
+	expect -re $prompt
+
+	eval spawn scp -4 umundo-linux.zip sradomski@${UMUNDO_BUILD_HOST}.local:~/umundo-linux.zip
+	expect {
+		"ETA"              { exp_continue }
+		"The authenticity" { send "yes\n"; exp_continue; }
+		timeout            { puts "Timeout when uploading source code"; exit;  }
+		-re $prompt  { }
+	}
+}
+
+##############################
+# ssh into remote host
+
+eval spawn ssh ${UMUNDO_BUILD_HOST}.local.
+
+# unpack archive if required
+if {$redeploy} {
+	send "rm -rf umundo\r"
+	expect -re $prompt
+
+	send "unzip -q umundo-linux.zip\r"
+	expect "umundo/"          { exp_continue } \
+	       -re $prompt { }
+}
+
+if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
+	expect -re $prompt { send "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-armhf/\n" }
+	expect -re $prompt { send "export UMUNDO_PACKAGE_CURR_ARCH_ONLY=ON\n" }
+}
+
+
+##############################
+# static umundo with static deps for language bindings and convenience lib
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send \
+		"cmake \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+	  -DBUILD_CONVENIENCE_LIB=ON \
+		-DBUILD_BINDINGS=ON \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+		-DJAVA_AWT_LIBRARY=${JAVA_AWT_LIBRARY} \
+		-DJAVA_JVM_LIBRARY=${JAVA_JVM_LIBRARY} \
+		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
+		~/umundo\n"
+}
+
+### This will build native language bindings and the big-ass, all static convenience lib
+expect -re $prompt { send "make -j2\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+# We do not build the jars here, we need to move the JNIs in place first
+
+### This will build the dll
+expect -re $prompt { send "make -j2 mono\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt { send "\n" }
+
+
+##############################
+# static umundo with shared deps
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n"
+}
+
+### This will build the smaller static convenience libs with shared deps
+expect -re $prompt { send "make -j2\n" }
+
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make -j2 test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+
+send "cd \n"
+expect -re $prompt
+
+send "rm linux-package*.zip\n"
+expect -re $prompt
+
+if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
+  send "zip -qr linux-package-armv6l.zip umundo/package/linux-armv6l\n"
+} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
+  send "zip -qr linux-package-x86_64.zip umundo/package/linux-x86_64-gnu\n"
+} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
+  send "zip -qr linux-package-x86.zip umundo/package/linux-x86-gnu\n"
+}
+expect -re $prompt
+
+send "exit\r"
+expect -re $prompt
+eval cd ~/Documents/TK/Code/
+
+if { [string compare $UMUNDO_BUILD_HOST raspberrypi] == 0 } {
+	eval spawn "scp raspberrypi.local:linux-package-armv6l.zip ."
+	expect -re $prompt
+	eval spawn "unzip -qo linux-package-armv6l.zip"
+	expect -re $prompt
+	eval spawn "rm linux-package-armv6l.zip"
+	expect -re $prompt
+} elseif { [string compare $UMUNDO_BUILD_HOST debian64] == 0 } {
+	eval spawn "scp debian64.local:linux-package-x86_64.zip ."
+	expect -re $prompt
+	eval spawn "unzip -qo linux-package-x86_64.zip"
+	expect -re $prompt
+	eval spawn "rm linux-package-x86_64.zip"
+	expect -re $prompt
+} elseif { [string compare $UMUNDO_BUILD_HOST debian] == 0 } {
+	eval spawn "scp debian.local:linux-package-x86.zip ."
+	expect -re $prompt
+	eval spawn "unzip -qo linux-package-x86.zip"
+	expect -re $prompt
+	eval spawn "rm linux-package-x86.zip"
+	expect -re $prompt
+}
+
+
+exit
+

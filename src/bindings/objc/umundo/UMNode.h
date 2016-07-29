@@ -25,15 +25,9 @@
 
 #include <string>
 
-<<<<<<< HEAD:src/bindings/objc/umundo/UMNode.h
 #include "umundo/UMPublisher.h"
 #include "umundo/UMSubscriber.h"
 #include "umundo/connection/Node.h"
-=======
-#include <umundo/core-objc.h>
-#include <umundo/core/UMPublisher.h>
-#include <umundo/core/UMSubscriber.h>
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/bindings/core/objc/umundo/core/UMNode.h
 
 /**
  * Objective-C representation of Node%s.

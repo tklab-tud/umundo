@@ -1,0 +1,180 @@
+#!/usr/bin/expect
+
+#exp_internal 1
+
+set timeout 600
+set UMUNDO_BUILD_HOST $::env(UMUNDO_BUILD_HOST)
+set BUILD_TESTS $::env(BUILD_TESTS)
+
+set prompt {sradomski\$ }
+
+eval spawn ping -c1 ${UMUNDO_BUILD_HOST}.local.
+expect "cannot resolve"  { puts "Host ${UMUNDO_BUILD_HOST}.local. not found"; exit } \
+       -re $prompt       { }
+
+##############################
+# prepare and deploy archive
+
+eval cd ~/Documents/TK/Code/
+
+# check age of archive against modification date
+eval spawn find ./umundo -newer umundo-macosx.zip
+set redeploy 0;
+expect {
+	"find:*No such file" { set redeploy 1; }
+	".cpp\r\n"           { set redeploy 1; }
+	"package\r\n"        { set redeploy 1; }
+	".h\r\n"             { set redeploy 1; }
+	"CMakeLists.txt\r\n" { set redeploy 1; }
+	-re $prompt        { }
+}
+set redeploy 1;
+
+if {$redeploy} {
+	eval spawn rm umundo-macosx.zip
+	expect -re $prompt
+
+	eval spawn \
+		zip -qr umundo-macosx.zip umundo/ --exclude \
+		__\* \
+		umundo/contrib\* \
+		umundo/package\* \
+		umundo/.git/\* \
+		umundo/build\* \
+		umundo/installer/umundo\* \
+		umundo/installer/manifest/content\* \
+		umundo/package\* \
+		umundo/docs/html\*
+	expect -re $prompt
+	
+	eval spawn \
+		zip -qr umundo-macosx.zip \
+			umundo/contrib/cmake \
+			umundo/contrib/csharp \
+			umundo/contrib/java \
+			umundo/contrib/src \
+			umundo/contrib/prebuilt/include
+	expect -re $prompt
+	
+	eval spawn \
+		sh -c \"zip -qr umundo-macosx.zip \
+			umundo/contrib/prebuilt/darwin-\\* \
+			umundo/package/cross-compiled/android \
+			umundo/package/cross-compiled/ios \
+			umundo/examples/ios \
+			umundo/examples/android\"
+			
+	expect -re $prompt
+
+	eval spawn scp -4 umundo-macosx.zip sradomski@${UMUNDO_BUILD_HOST}.local:~/umundo-macosx.zip
+	expect {
+		"ETA"              { exp_continue }
+		"The authenticity" { send "yes\n"; exp_continue; }
+		timeout            { puts "Timeout when uploading source code"; exit;  }
+		-re $prompt  { }
+	}
+}
+
+##############################
+# ssh into remote host
+
+eval spawn ssh ${UMUNDO_BUILD_HOST}.local.
+
+# unpack archive if required
+if {$redeploy} {
+	send "rm -rf umundo\r"
+	expect -re $prompt
+
+	send "unzip -q umundo-macosx.zip\r"
+	expect "umundo/"          { exp_continue } \
+	       -re $prompt { }
+}
+
+
+##############################
+# static umundo in release configuration for language bindings and convenience lib
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send \
+		"cmake \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+	  -DBUILD_CONVENIENCE_LIB=ON \
+		-DBUILD_BINDINGS=ON \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		-DBUILD_PREFER_STATIC_LIBRARIES=ON \
+		-DCMAKE_CUSTOM_FIND_PATH=/usr/local \
+		~/umundo\n"
+}
+
+### This will build native language bindings and the big-ass, all static convenience lib
+expect -re $prompt { send "make -j2\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+# We do not build the jars here, we need to move the JNIs in place first
+
+### This will build the dll
+expect -re $prompt { send "make -j2 mono\n" }
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt { send "\n" }
+
+##############################
+# static umundo with shared deps
+
+expect -re $prompt { send "rm -rf /tmp/build-umundo && mkdir /tmp/build-umundo && cd /tmp/build-umundo\n" }
+expect -re $prompt { 
+	send "cmake \
+		-DBUILD_UMUNDO_TOOLS=OFF \
+		-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_BINDINGS=OFF \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_CONVENIENCE_LIB=OFF \
+		-DBUILD_TESTS=${BUILD_TESTS} \
+		-DDIST_PREPARE=ON \
+		~/umundo\n"
+}
+
+### This will build the smaller static convenience libs with shared deps
+expect -re $prompt { send "make -j2\n" }
+
+expect "Building CXX" { exp_continue } \
+       "Linking CXX" { exp_continue } \
+       -re $prompt    { send "\n" }
+
+if { [string compare $BUILD_TESTS "ON"] == 0 } {
+  expect -re $prompt { send "make -j2 test\n" }
+  expect "Start" { exp_continue } \
+         -re $prompt { send "\n" }
+}
+
+
+send "cd \n"
+expect -re $prompt
+
+send "rm macosx-package*.zip\n"
+expect -re $prompt
+
+send "zip -qr macosx-package.zip umundo/package/darwin*\n"
+expect -re $prompt
+
+send "exit\r"
+expect -re $prompt
+eval cd ~/Documents/TK/Code/
+
+eval spawn "scp ${UMUNDO_BUILD_HOST}.local:macosx-package.zip ."
+expect -re $prompt
+eval spawn "unzip -qo macosx-package.zip"
+expect -re $prompt
+eval spawn "rm macosx-package.zip"
+expect -re $prompt
+
+
+exit
+

@@ -1,12 +1,6 @@
-<<<<<<< HEAD:tests/test-message-transmission.cpp
 #include "umundo.h"
 #include "umundo/config.h"
 #include "umundo/util/crypto/MD5.h"
-=======
-#include "umundo/core.h"
-#include "umundo/util.h"
-#include "umundo/config.h"
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:tests/core/test-message-transmission.cpp
 #include <iostream>
 #include <stdio.h>
 
@@ -299,19 +293,11 @@ bool testCompression() {
 	Node pubNode;
 	PublisherConfigTCP pubConfig("bar");
 #ifdef BUILD_WITH_COMPRESSION_LEVEL_LZ4
-<<<<<<< HEAD:tests/test-message-transmission.cpp
 	pubConfig.enableCompression(Message::COMPRESS_LZ4);
 #elif defined(BUILD_WITH_COMPRESSION_LEVEL_MINIZ)
 	pubConfig.enableCompression(Message::COMPRESS_MINIZ);
 #elif defined(BUILD_WITH_COMPRESSION_LEVEL_FASTLZ)
 	pubConfig.enableCompression(Message::COMPRESS_FASTLZ);
-=======
-    pubConfig.enableCompression(Message::COMPRESS_LZ4);
-#elif defined(BUILD_WITH_COMPRESSION_LEVEL_MINIZ)
-    pubConfig.enableCompression(Message::COMPRESS_MINIZ);
-#elif defined(BUILD_WITH_COMPRESSION_LEVEL_FASTLZ)
-    pubConfig.enableCompression(Message::COMPRESS_FASTLZ);
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:tests/core/test-message-transmission.cpp
 #endif
 	Publisher pub(&pubConfig);
 	pubNode.addPublisher(pub);

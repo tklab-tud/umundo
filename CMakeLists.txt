@@ -376,11 +376,7 @@ if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
 	if (HOST_64BIT)
 		# do not build universal binaries anymore ..
-<<<<<<< HEAD
 		# set(CMAKE_OSX_ARCHITECTURES "i386")
-=======
-		set(CMAKE_OSX_ARCHITECTURES "i386")
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	endif()
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
@@ -629,11 +625,6 @@ if (NET_RTP)
 		add_definitions("-D__ssize_t_defined")
 	endif()
 endif()
-<<<<<<< HEAD
-=======
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
-set(BUILD_UMUNDO_RPC OFF)
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 
 if(DISC_AVAHI)
 	find_package(Avahi REQUIRED)

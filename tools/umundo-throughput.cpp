@@ -98,11 +98,7 @@ public:
 	size_t discoveryTime;
 	size_t pertainingPacket;
 	double pcntLoss;
-<<<<<<< HEAD
 	double compressRatio;
-=======
-    double compressRatio;
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	std::string pubId;
 	std::string hostId;
 	std::string hostName;
@@ -117,13 +113,8 @@ public:
 		stream << pktsRcvd << ", ";
 		stream << pktsLate << ", ";
 		stream << roundTripTime << ", ";
-<<<<<<< HEAD
 		stream << pcntLoss << ", ";
 		stream << compressRatio << ", ";
-=======
-        stream << pcntLoss << ", ";
-        stream << compressRatio << ", ";
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		stream << pktsDropped << ", ";
 		stream << hostName << std::endl;
 	}
@@ -144,9 +135,9 @@ public:
 
 class ThroughputReceiver : public Receiver {
 	void receive(Message* msg) {
-        
+
 		RScopeLock lock(mutex);
-        
+
 		uint64_t currServerTimeStamp;
 		Message::read(msg->data(), &currSeqNr);
 		Message::read(msg->data() + 8, &currServerTimeStamp);
@@ -179,7 +170,6 @@ class ThroughputReceiver : public Receiver {
 			RScopeLock lock(mutex);
 			timeStampServerLast = currServerTimeStamp;
 
-<<<<<<< HEAD
 
 			std::string compressRatio;
 			if (msg->getMeta().find("um.compressRatio") != msg->getMeta().end())
@@ -190,18 +180,6 @@ class ThroughputReceiver : public Receiver {
 			msg->putMeta("bytes.rcvd", toStr(bytesRcvd));
 			msg->putMeta("pkts.dropped", toStr(pktsDropped));
 			msg->putMeta("compress.ratio", compressRatio);
-=======
-            
-            std::string compressRatio;
-            if (msg->getMeta().find("um.compressRatio") != msg->getMeta().end())
-                compressRatio = msg->getMeta("um.compressRatio");
-//            std::cout << std::setprecision(6) << compressRatio << std::endl;
-            
-			Message* msg = new Message();
-			msg->putMeta("bytes.rcvd", toStr(bytesRcvd));
-            msg->putMeta("pkts.dropped", toStr(pktsDropped));
-            msg->putMeta("compress.ratio", compressRatio);
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 			msg->putMeta("pkts.rcvd", toStr(pktsRecvd));
 			msg->putMeta("last.seq", toStr(lastSeqNr));
 			msg->putMeta("report.seq", toStr(currReportNr++));
@@ -233,15 +211,9 @@ public:
 		report.reportNr      = strTo<size_t>(msg->getMeta("report.seq"));
 		report.pktsRcvd      = strTo<size_t>(msg->getMeta("pkts.rcvd"));
 		report.pktsDropped   = strTo<size_t>(msg->getMeta("pkts.dropped"));
-<<<<<<< HEAD
 		report.bytesRcvd     = strTo<size_t>(msg->getMeta("bytes.rcvd"));
 		if (compressionType != Message::COMPRESS_NONE)
 			report.compressRatio = strTo<double>(msg->getMeta("compress.ratio"));
-=======
-        report.bytesRcvd     = strTo<size_t>(msg->getMeta("bytes.rcvd"));
-        if (compressionType != Message::COMPRESS_NONE)
-            report.compressRatio = strTo<double>(msg->getMeta("compress.ratio"));
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		report.hostName      = msg->getMeta("hostname");
 		report.hostId        = msg->getMeta("um.host");
 		report.pubId         = msg->getMeta("um.pub");
@@ -292,13 +264,8 @@ class ThroughputGreeter : public Greeter {
 void printUsageAndExit() {
 	printf("umundo-throughput version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-<<<<<<< HEAD
 	printf("\tumundo-throughput -s|-c [-r BYTES/s] [-l N] [-m N] [-w N] [-d N]\n");
 	printf("\t                  [-x fastlz|miniz|lz4:level] [-f FILE] [-o PREFIX]\n");
-=======
-    printf("\tumundo-throughput -s|-c [-r BYTES/s] [-l N] [-m N] [-w N] [-d N]\n");
-    printf("\t                  [-x fastlz|miniz|lz4:level] [-f FILE] [-o PREFIX]\n");
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	printf("\n");
 	printf("Options\n");
 	printf("\t-c                 : act as a client\n");
@@ -310,13 +277,8 @@ void printUsageAndExit() {
 	printf("\t-z                 : employ zero-copy (experimental)\n");
 	printf("\t-i                 : report interval in milli-seconds\n");
 	printf("\t-l                 : acceptable packet loss in percent\n");
-<<<<<<< HEAD
 	printf("\t-x                 : use compression algorithm (fastlz|miniz|lz4)\n");
 	printf("\t-f FILE            : stream data from file\n");
-=======
-    printf("\t-x                 : use compression algorithm (fastlz|miniz|lz4)\n");
-    printf("\t-f FILE            : stream data from file\n");
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	printf("\t-m <number>        : MTU to use on server (defaults to 1280)\n");
 	printf("\t-w <number>        : wait for given number of subscribers\n");
 	exit(1);
@@ -481,13 +443,8 @@ void writeReports(std::string scale) {
 		std::cout << FORMAT_COL << "byte recv";
 		std::cout << FORMAT_COL << "pkts recv";
 		std::cout << FORMAT_COL << "pkts loss";
-<<<<<<< HEAD
 		std::cout << FORMAT_COL << "% loss";
 		std::cout << FORMAT_COL << "compression";
-=======
-        std::cout << FORMAT_COL << "% loss";
-        std::cout << FORMAT_COL << "compression";
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		std::cout << FORMAT_COL << "pkts late";
 		std::cout << FORMAT_COL << "RTT";
 		std::cout << FORMAT_COL << "dscvd";
@@ -501,11 +458,7 @@ void writeReports(std::string scale) {
 			std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
 			std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
 			std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
-<<<<<<< HEAD
 			std::cout << FORMAT_COL << std::setprecision(6) << toStr(report.compressRatio);
-=======
-            std::cout << FORMAT_COL << std::setprecision(6) << toStr(report.compressRatio);
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 
 			std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
 			std::cout << FORMAT_COL << (report.roundTripTime > 100000 ? "N/A" : toStr(report.roundTripTime) + "ms");
@@ -534,7 +487,6 @@ void runAsServer() {
 	ThroughputGreeter tpGreeter;
 
 	Publisher pub;
-<<<<<<< HEAD
 	PublisherConfig* config = NULL;
 
 	switch (type) {
@@ -561,34 +513,6 @@ void runAsServer() {
 	pub.setGreeter(&tpGreeter);
 	delete config;
 
-=======
-    PublisherConfig* config = NULL;
-    
-	switch (type) {
-		case PUB_RTP: {
-            config = new PublisherConfigRTP("throughput.rtp");
-			((PublisherConfigRTP*)config)->setTimestampIncrement(166);
-			break;
-		}
-		case PUB_MCAST: {
-            config = new PublisherConfigMCast("throughput.mcast");
-            ((PublisherConfigMCast*)config)->setTimestampIncrement(166);
-			//			config.setPortbase(42142);
-			break;
-		}
-		case PUB_TCP: {
-            config = new PublisherConfigTCP ("throughput.tcp");
-			break;
-		}
-	}
-    if (compressionType != Message::COMPRESS_NONE)
-        config->enableCompression(compressionType, compressionLevel);
-
-    pub = Publisher(config);
-    pub.setGreeter(&tpGreeter);
-    delete config;
-    
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	node.addPublisher(pub);
 
 	disc.add(node);
@@ -598,42 +522,24 @@ void runAsServer() {
 		duration *= 1000; // convert to ms
 
 	pub.waitForSubscribers(waitForSubs);
-<<<<<<< HEAD
 
 	Message* msg = NULL;
 	if (useZeroCopy) {
 		msg = new Message(streamData.data(), streamData.size(), doneCallback, (void*)NULL);
 	} else {
 		msg = new Message(streamData.data(), streamData.size());
-=======
-	
-    Message* msg = NULL;
-	if (useZeroCopy) {
-		msg = new Message(streamData.data(), streamData.size(), doneCallback, (void*)NULL);
-	} else {
-        msg = new Message(streamData.data(), streamData.size());
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	}
 
 	uint64_t lastReportAt = Thread::getTimeStampMs();
 
 	while(1) {
 		uint64_t now = Thread::getTimeStampMs();
-<<<<<<< HEAD
 		if (compressionType != Message::COMPRESS_NONE) {
 			// make sure we compress the message anew each time
 			delete msg;
 			msg = new Message(streamData.data(), streamData.size());
 		}
 
-=======
-        if (compressionType != Message::COMPRESS_NONE) {
-            // make sure we compress the message anew each time
-            delete msg;
-            msg = new Message(streamData.data(), streamData.size());
-        }
-            
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		if (duration > 0 && now - timeStampStartedAt > duration)
 			break;
 
@@ -641,11 +547,7 @@ void runAsServer() {
 		Message::write(&msg->data()[0], ++currSeqNr);
 		Message::write(&msg->data()[8], now);
 		Message::write(&msg->data()[16], reportInterval);
-<<<<<<< HEAD
 
-=======
-						
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		intervalFactor = 1000.0 / (double)reportInterval;
 		bytesWritten += msg->size();
 		bytesTotal += msg->size();
@@ -657,15 +559,9 @@ void runAsServer() {
 			size_t packetsPerSecond = (std::max)(bytesPerSecond / msg->size(), (size_t)1);
 			delay = (std::max)((1000000) / (packetsPerSecond), (size_t)1);
 		}
-<<<<<<< HEAD
 
 		// sending with compression will alter msg->size()
 		pub.send(msg);
-=======
-		
-        // sending with compression will alter msg->size()
-        pub.send(msg);
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 
 		// every report interval we are recalculating bandwith
 		if (now - lastReportAt > reportInterval) {
@@ -678,11 +574,7 @@ void runAsServer() {
 
 				// print report messages
 				std::map<std::string, Report>::iterator repIter = reports.begin();
-<<<<<<< HEAD
 
-=======
-				
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 				// bandwidth is fixed
 				if (fixedBytesPerSecond == 0) {
 					while(repIter != reports.end()) {
@@ -720,17 +612,10 @@ void runAsServer() {
 						scaleInfo = "up 1.3";
 					}
 					std::cout << std::endl;
-<<<<<<< HEAD
 				} else if (fixedBytesPerSecond == (size_t)-1) {
 					// do nothing
 				} else {
 
-=======
-                } else if (fixedBytesPerSecond == (size_t)-1) {
-                    // do nothing
-                } else {
-					
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 					if (bytesWritten * intervalFactor < fixedBytesPerSecond) {
 						bytesPerSecond *= 1.05;
 					} else if (bytesWritten * intervalFactor > fixedBytesPerSecond)  {
@@ -749,13 +634,8 @@ void runAsServer() {
 		}
 
 		// now we sleep until we have to send another packet
-<<<<<<< HEAD
 		if (delay > 50 && fixedBytesPerSecond != (size_t) - 1)
 			Thread::sleepUs(delay);
-=======
-        if (delay > 50 && fixedBytesPerSecond != (size_t) - 1)
-            Thread::sleepUs(delay);
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	}
 
 	pub.setGreeter(NULL);
@@ -769,7 +649,6 @@ int main(int argc, char** argv) {
 		case 'z':
 			useZeroCopy = true;
 			break;
-<<<<<<< HEAD
 		case 'x': {
 			std::string comprArg(optarg);
 			std::string comprType;
@@ -791,30 +670,6 @@ int main(int argc, char** argv) {
 			}
 		}
 		break;
-=======
-        case 'x':
-            {
-                std::string comprArg(optarg);
-                std::string comprType;
-                
-                size_t colon = comprArg.find_first_of(':');
-                if (colon != std::string::npos) {
-                    comprType = comprArg.substr(0, colon);
-                    compressionLevel = strTo<int>(comprArg.substr(colon + 1));
-                    if (toStr(compressionLevel) != comprArg.substr(colon + 1)) {
-                        printUsageAndExit();
-                    }
-                }
-                if (comprType == "lz4") {
-                    compressionType = Message::COMPRESS_LZ4;
-                } else if (comprType == "fastlz") {
-                    compressionType = Message::COMPRESS_FASTLZ;
-                } else if (comprType == "miniz") {
-                    compressionType = Message::COMPRESS_MINIZ;
-                }
-            }
-            break;
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		case 'c':
 			isClient = true;
 			break;
@@ -833,32 +688,18 @@ int main(int argc, char** argv) {
 				type = PUB_RTP;
 			}
 			break;
-<<<<<<< HEAD
 		case 'f':
 			streamFile = optarg;
 			break;
-=======
-        case 'f':
-            streamFile = optarg;
-            break;
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 		case 'm':
 			mtu = displayToBytes(optarg);
 			break;
 		case 'r':
-<<<<<<< HEAD
 			if (strcmp(optarg, "max") == 0 || strcmp(optarg, "inf") == 0) {
 				fixedBytesPerSecond = (size_t)-1;
 			} else {
 				fixedBytesPerSecond = displayToBytes(optarg);
 			}
-=======
-            if (strcmp(optarg, "max") == 0 || strcmp(optarg, "inf") == 0) {
-                fixedBytesPerSecond = (size_t)-1;
-            } else {
-                fixedBytesPerSecond = displayToBytes(optarg);
-            }
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 			break;
 		case 'd':
 			duration = atoi((const char*)optarg);
@@ -884,7 +725,6 @@ int main(int argc, char** argv) {
 	if (fixedBytesPerSecond > 0)
 		bytesPerSecond = fixedBytesPerSecond;
 
-<<<<<<< HEAD
 	if (mtu < MIN_MTU)
 		mtu = MIN_MTU;
 
@@ -912,35 +752,6 @@ int main(int argc, char** argv) {
 	}
 
 
-=======
-    if (mtu < MIN_MTU)
-        mtu = MIN_MTU;
-    
-    if (streamFile != NULL) {
-        size_t resets = 0;
-        std::ifstream fin(streamFile, std::ios::in | std::ios::binary );
-        if (!fin) {
-            std::cerr << "Cannot open file " << (const char*)optarg << " to seed compression data" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        std::stringstream sstr;
-        while(sstr.str().length() < (std::max)(mtu, (size_t)mtu)) {
-            sstr << fin.rdbuf();
-            fin.seekg(0, std::ios::beg); // reset until we have enough data
-            resets++;
-        }
-        resets--;
-        if (resets > 0) {
-            std::cerr << "Warning: compression file to small for MTU, repeats " << resets << " times." << std::endl;
-        }
-        streamData = Message(sstr.str().data(), mtu);
-    } else {
-        char* tmp = (char*)malloc(mtu);
-        streamData = Message(tmp, mtu);
-    }
-
-    
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 	DiscoveryConfigMDNS discConfig;
 //	discConfig.setDomain("throughput");
 	disc = Discovery(&discConfig);

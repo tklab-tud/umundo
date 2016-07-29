@@ -21,7 +21,6 @@
 #ifndef PUBLISHER_H_F3M1RWLN
 #define PUBLISHER_H_F3M1RWLN
 
-<<<<<<< HEAD:src/umundo/connection/Publisher.h
 #include "umundo/Common.h"
 #include "umundo/UUID.h"
 #include "umundo/connection/PublisherStub.h"
@@ -30,16 +29,6 @@
 #include "umundo/EndPoint.h"
 #include "umundo/Implementation.h"
 #include "umundo/Message.h"
-=======
-#include "umundo/core/Common.h"
-#include "umundo/core/UUID.h"
-#include "umundo/core/connection/PublisherStub.h"
-#include "umundo/core/connection/SubscriberStub.h"
-#include "umundo/core/connection/NodeStub.h"
-#include "umundo/core/EndPoint.h"
-#include "umundo/core/Implementation.h"
-#include "umundo/core/Message.h"
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/connection/Publisher.h
 
 namespace umundo {
 
@@ -209,7 +198,6 @@ protected:
 	PublisherConfig(const std::string& channel) : _channelName(channel) {}
 	std::string _channelName;
 	PublisherStub::PublisherType _type;
-<<<<<<< HEAD:src/umundo/connection/Publisher.h
 
 public:
 	void enableCompression(Message::Compression type, int level = -1) {
@@ -230,28 +218,6 @@ public:
 		if (level >= 0)
 			options["pub.compression.level"] = toStr(level);
 	}
-=======
-    
-public:
-    void enableCompression(Message::Compression type, int level = -1) {
-        switch (type) {
-            case Message::COMPRESS_LZ4:
-                options["pub.compression.type"] = toStr(Message::COMPRESS_LZ4);
-                break;
-            case Message::COMPRESS_FASTLZ:
-                options["pub.compression.type"] = toStr(Message::COMPRESS_FASTLZ);
-                break;
-            case Message::COMPRESS_MINIZ:
-                options["pub.compression.type"] = toStr(Message::COMPRESS_MINIZ);
-                break;
-                
-            default:
-                break;
-        }
-        if (level >= 0)
-            options["pub.compression.level"] = toStr(level);
-    }
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/connection/Publisher.h
 
 	friend class Publisher;
 };

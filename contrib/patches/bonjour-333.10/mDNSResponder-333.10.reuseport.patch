@@ -1,0 +1,18 @@
+diff --git a/mDNSResponder-333.10/mDNSPosix/mDNSPosix.c b/mDNSResponder-333.10/mDNSPosix/mDNSPosix.c
+index 8ff2978..cc789df 100755
+--- a/mDNSResponder-333.10/mDNSPosix/mDNSPosix.c
++++ b/mDNSResponder-333.10/mDNSPosix/mDNSPosix.c
+@@ -622,10 +622,10 @@ mDNSlocal int SetupSocket(struct sockaddr *intfAddr, mDNSIPPort port, int interf
+ 	// ... with a shared UDP port, if it's for multicast receiving
+ 	if (err == 0 && port.NotAnInteger)
+ 		{
+-		#if defined(SO_REUSEPORT)
+-			err = setsockopt(*sktPtr, SOL_SOCKET, SO_REUSEPORT, &kOn, sizeof(kOn));
+-		#elif defined(SO_REUSEADDR)
++		#if defined(SO_REUSEADDR)
+ 			err = setsockopt(*sktPtr, SOL_SOCKET, SO_REUSEADDR, &kOn, sizeof(kOn));
++		#elif defined(SO_REUSEPORT)
++			err = setsockopt(*sktPtr, SOL_SOCKET, SO_REUSEPORT, &kOn, sizeof(kOn));
+ 		#else
+ 			#error This platform has no way to avoid address busy errors on multicast.
+ 		#endif

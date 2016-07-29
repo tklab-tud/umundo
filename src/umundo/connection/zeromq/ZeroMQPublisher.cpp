@@ -56,7 +56,6 @@ void ZeroMQPublisher::init(const Options* config) {
 
 	std::map<std::string, std::string> options = config->getKVPs();
 
-<<<<<<< HEAD:src/umundo/connection/zeromq/ZeroMQPublisher.cpp
 	if (options.find("pub.compression.type") != options.end()) {
 		_compressionType = (Message::Compression)strTo<int>(options["pub.compression.type"]);
 	}
@@ -65,16 +64,6 @@ void ZeroMQPublisher::init(const Options* config) {
 	}
 
 	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressionType != Message::COMPRESS_NONE ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
-=======
-    if (options.find("pub.compression.type") != options.end()) {
-        _compressionType = (Message::Compression)strTo<int>(options["pub.compression.type"]);
-    }
-    if (options.find("pub.compression.level") != options.end()) {
-        _comressionLevel = strTo<int>(options["pub.compression.level"]);
-    }
-    
-    UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressionType != Message::COMPRESS_NONE ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/connection/zeromq/ZeroMQPublisher.cpp
 
 }
 
@@ -207,11 +196,7 @@ void ZeroMQPublisher::send(Message* msg) {
 		return;
 	}
 
-<<<<<<< HEAD:src/umundo/connection/zeromq/ZeroMQPublisher.cpp
 	if (_compressionType != Message::COMPRESS_NONE)
-=======
-    if (_compressionType != Message::COMPRESS_NONE)
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/connection/zeromq/ZeroMQPublisher.cpp
 		msg->compress(_compressionType, _comressionLevel);
 
 	// topic name or explicit subscriber id is first message in envelope

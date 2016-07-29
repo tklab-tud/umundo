@@ -1,0 +1,13 @@
+set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+set(CTEST_SITE "diogenes-fedora17-64bit")
+set(CTEST_BUILD_CONFIGURATION "Debug")
+
+# test with avahi
+include("tests/avahi.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64 gcc avahi")
+include("common.ctest.inc")
+
+# test for embedded bonjour
+include("tests/bonjourEmbedded.ctest")
+set(CTEST_BUILD_NAME "linux-x86_64 gcc bonjour embedded")
+include("common.ctest.inc")

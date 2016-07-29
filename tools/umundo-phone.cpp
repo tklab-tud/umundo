@@ -63,21 +63,13 @@ int main(int argc, char** argv) {
 	printf("umundo-phone version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	// data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)
-<<<<<<< HEAD
 	PublisherConfigTCP pubConfig("phone");
-=======
-    PublisherConfigTCP pubConfig("phone");
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 //  PublisherConfigRTP pubConfig("phone");
 //	pubConfig.setTimestampIncrement(FRAMES_PER_BUFFER);
 	Publisher pubFoo(&pubConfig);
 
 	TestReceiver testRecv;
-<<<<<<< HEAD
 	SubscriberConfigTCP subConfig("phone");
-=======
-    SubscriberConfigTCP subConfig("phone");
->>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605
 //    SubscriberConfigRTP subConfig("phone");
 	Subscriber subFoo(&subConfig);
 	subFoo.setReceiver(&testRecv);

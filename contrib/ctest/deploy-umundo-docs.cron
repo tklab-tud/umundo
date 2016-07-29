@@ -1,0 +1,20 @@
+#!/bin/bash
+
+ME=`basename $0`
+BUILD_DIR="$( cd "$( dirname "$0" )" && pwd )"
+CMAKE=/usr/local/bin/cmake
+
+if [ ! -n "${UMUNDO_SOURCE_DIR:+x}" ]; then
+	export UMUNDO_SOURCE_DIR="/var/builds/umundo"
+fi
+
+if [ -d ${UMUNDO_SOURCE_DIR} ]; then
+
+rm -rf /tmp/build-docs
+mkdir -p /tmp/build-docs
+cd /tmp/build-docs
+$CMAKE ${UMUNDO_SOURCE_DIR}
+make docs
+cp -R ${UMUNDO_SOURCE_DIR}/docs/html/* /var/www/html/docs
+
+fi

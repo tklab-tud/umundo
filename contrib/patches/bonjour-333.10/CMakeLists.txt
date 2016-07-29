@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.6)
 
 project(bonjour)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 if(POLICY CMP0042)
 	cmake_policy(SET CMP0042 OLD)
@@ -51,6 +51,9 @@ elseif(WIN32)
 	add_definitions("-D_UNICODE")
 	add_definitions("-D_CRT_SECURE_NO_DEPRECATE")
 	add_definitions("-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1")
+  add_definitions("/wd4996") # deprecated API
+  add_definitions("/wd4244") # loss of data
+  add_definitions("/wd4005") # macro redefinition
 	# add_definitions("-D_LEGACY_NAT_TRAVERSAL_")
 	
 	if (CMAKE_SIZEOF_VOID_P EQUAL 4)

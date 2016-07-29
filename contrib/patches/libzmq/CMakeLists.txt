@@ -186,6 +186,9 @@ add_definitions(-D_REENTRANT -D_THREAD_SAFE)
 
 if(WIN32)
   add_definitions(-DDLL_EXPORT)
+  add_definitions("/wd4267") # loss of data
+  add_definitions("/wd4244") # loss of data
+  
 endif()
 
 option(ENABLE_EVENTFD "Enable/disable eventfd" ZMQ_HAVE_EVENTFD)

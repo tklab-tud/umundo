@@ -44,6 +44,14 @@ if (WIN32)
 	add_definitions("-DHAVE_INET_NTOP")
 	add_definitions("-DWIN32")
 	
+  add_definitions("-D_CRT_SECURE_NO_WARNINGS")
+  add_definitions("-D_WINSOCK_DEPRECATED_NO_WARNINGS")
+  add_definitions("/wd4091") # typedef
+  add_definitions("/wd4996") # loss of data
+  add_definitions("/wd4267")
+  add_definitions("/wd4005")
+  add_definitions("/wd4244")
+  
 	set_source_files_properties("${RE_ROOT}/src/sa/pton.c" PROPERTIES COMPILE_FLAGS -D_WINSOCKAPI_)
 	set_source_files_properties("${RE_ROOT}/src/sa/ntop.c" PROPERTIES COMPILE_FLAGS -D_WINSOCKAPI_)
 

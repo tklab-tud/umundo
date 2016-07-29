@@ -321,6 +321,13 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 	add_definitions("-D_SCL_SECURE_NO_WARNINGS")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
+  add_definitions("/wd4244")
+  add_definitions("/wd4267")
+  
+  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /GL")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+  SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+  
 else()
 	message(STATUS "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

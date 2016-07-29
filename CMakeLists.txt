@@ -309,7 +309,7 @@ if (NOT MSVC)
 	# CHECK_AND_ADD_COMPILER_FLAG("-mfancy-math-387") # clang barfs
 	# CHECK_AND_ADD_COMPILER_FLAG("-fshort-double") # clang barfs
 	# CHECK_AND_ADD_COMPILER_FLAG("-fsingle-precision-constant") # clang barfs
-	CHECK_AND_ADD_COMPILER_FLAG("-ffast-math")
+	# CHECK_AND_ADD_COMPILER_FLAG("-ffast-math") # clang barfs
 
 	# CHECK_AND_ADD_COMPILER_FLAG("-Wl,-z,norelro") # clang barfs
 endif()
@@ -380,11 +380,11 @@ if (APPLE)
 	endif()
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
-  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+  	# set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
     set(LIBCPP libstdc++)
   else()
     # forces libc++
-  	set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+  	# set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
     set(LIBCPP libc++)
   endif()
   if (MACOSX_VERSION VERSION_GREATER 10.6.99) 

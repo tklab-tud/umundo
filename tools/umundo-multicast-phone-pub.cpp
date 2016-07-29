@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 	PaStream *stream;
 	PaStreamParameters inputParameters;
 
-	printf("umundo-phone-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-multicast-phone-pub version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	PublisherConfigRTP pubConfig("multicast-phone-pubsub");
 	pubConfig.setTimestampIncrement(FRAMES_PER_BUFFER);	//data with sample rate of 16000Hz and 4ms payload per rtp packet (64 samples)

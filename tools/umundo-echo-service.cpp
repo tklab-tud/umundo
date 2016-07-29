@@ -1,4 +1,4 @@
-#include <umundo/core.h>
+#include <umundo.h>
 #include <umundo/s11n.h>
 #include <umundo/rpc.h>
 

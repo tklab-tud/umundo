@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="umundo.core"/>
-	<classpathentry kind="src" path="umundo.s11n"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/sradomski/Documents/TK/Code/umundo/contrib/java/lib/protobuf-java-2.4.1.jar" sourcepath="/Users/sradomski/.m2/repository/com/google/protobuf/protobuf-java/2.4.1/protobuf-java-2.4.1-sources.jar"/>
-	<classpathentry kind="output" path="bin"/>
-</classpath>

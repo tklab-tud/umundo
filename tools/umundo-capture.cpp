@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <cstdio>
 #include <string.h>
 #include <iostream>
@@ -42,7 +42,7 @@ uint64_t startedAt = 0;
 uint64_t totalMsgs = 0;
 
 void printUsageAndExit() {
-	printf("umundo-capture version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-capture version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-capture -c channel [-v] [-d domain] -f file\n");
 	printf("\n");

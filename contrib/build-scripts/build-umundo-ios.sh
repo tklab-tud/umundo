@@ -8,14 +8,14 @@
 unset MACOSX_DEPLOYMENT_TARGET
 
 # be ridiculously conservative with regard to ios features
-export IPHONEOS_DEPLOYMENT_TARGET="6.0"
+export IPHONEOS_DEPLOYMENT_TARGET="8.0"
 
 # exit on error
 set -e
 
 ME=`basename $0`
 DIR="$( cd "$( dirname "$0" )" && pwd )"
-SDK_VER="7.1"
+SDK_VER="9.3"
 CWD=`pwd`
 BUILD_DIR="/tmp/build-umundo-ios"
 
@@ -34,7 +34,7 @@ cmake ${DIR}/../../ \
 -DDIST_PREPARE=ON \
 -DCMAKE_BUILD_TYPE=Debug \
 -DBUILD_CONVENIENCE_LIB=ON
-make -j2
+make VERBOSE=1 -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
    ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-debug
 
@@ -46,7 +46,7 @@ cmake ${DIR}/../../ \
 -DDIST_PREPARE=ON \
 -DCMAKE_BUILD_TYPE=Release \
 -DBUILD_CONVENIENCE_LIB=ON
-make -j2
+make VERBOSE=1 -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
    ${DIR}/../../package/cross-compiled/ios-device-${SDK_VER}-release
 
@@ -57,7 +57,7 @@ cmake ${DIR}/../../ \
 -DDIST_PREPARE=ON \
 -DCMAKE_BUILD_TYPE=Debug \
 -DBUILD_CONVENIENCE_LIB=ON
-make -j2
+make VERBOSE=1 -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
    ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-debug
 
@@ -68,7 +68,7 @@ cmake ${DIR}/../../ \
 -DDIST_PREPARE=ON \
 -DCMAKE_BUILD_TYPE=Release \
 -DBUILD_CONVENIENCE_LIB=ON
-make -j2
+make VERBOSE=1 -j2
 mv ${DIR}/../../package/cross-compiled/ios/ \
    ${DIR}/../../package/cross-compiled/ios-simulator-${SDK_VER}-release
 

@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -39,13 +39,13 @@ public:
 };
 
 int main(int argc, char** argv) {
-	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-rtp-pub version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	PublisherConfigRTP pubConfig("vlc");
 	pubConfig.setTimestampIncrement(166); // PCMU data with sample rate of 8000Hz and 20ms payload per rtp packet (166 samples)
 	pubConfig.setPayloadType(33);
 	Publisher pubFoo(&pubConfig);
-	
+
 	GlobalGreeter greeter;
 	pubFoo.setGreeter(&greeter);
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 	// rtp://@224.1.2.3:22020
 	pubFoo.waitForSubscribers(1);
 
-	
+
 	std::cout << "Publisher at 224.1.2.3:" << pubFoo.getPort() << std::endl;
 
 #define MTU 800
@@ -88,20 +88,20 @@ int main(int argc, char** argv) {
 
 		while(true) {
 			lastread = fread(readBuffer, 1, MTU, fp);
-			
+
 			if(ferror(fp)) {
 				printf("Failed to read from file %s: %s", file.c_str(), strerror(errno));
 				return EXIT_FAILURE;
 			}
-			
+
 			if (lastread <= 0)
 				break;
-			
+
 			pubFoo.send(readBuffer, lastread);
 			read += lastread;
-			
+
 			Thread::sleepMs(50);
-			
+
 			if (feof(fp))
 				break;
 		}

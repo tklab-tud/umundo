@@ -8,48 +8,14 @@
 </taskdef -->
 
 <target name="compile" description="Compile the umundo java code.">
-	<echo message="dest: ${build.dir}/src/bindings/core/swig/java/bin/"/>
-	<echo message="src:  ${build.dir}/protobuf/generated/"/>
-	<echo message="src:  ${build.dir}/src/bindings/core/swig/java/"/>
-	<echo message="src:  ${src.dir}/src/bindings/s11n/java/"/>
-  <echo message="src:  ${src.dir}/src/bindings/rpc/java/"/>
-	<echo message="cp:   ${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
+	<echo message="dest: ${build.dir}/src/bindings/swig/java/bin/"/>
+	<echo message="src:  ${build.dir}/src/bindings/swig/java/"/>
 
-  <mkdir dir="${build.dir}/src/bindings/core/swig/java/bin/" />
-  <mkdir dir="${build.dir}/protobuf/generated/" />
+  <mkdir dir="${build.dir}/src/bindings/swig/java/bin/" />
 
-	<javac destdir="${build.dir}/src/bindings/core/swig/java/bin/" debug="true" includeantruntime="false" target="1.5" source="1.5">
-      <src path="${build.dir}/protobuf/generated/" />
-      <src path="${build.dir}/src/bindings/core/swig/java/" />
-      <src path="${src.dir}/src/bindings/s11n/java/" />
-      <src path="${src.dir}/src/bindings/rpc/java/" />
-      <classpath>
-          <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
-      </classpath>
+	<javac destdir="${build.dir}/src/bindings/swig/java/bin/" debug="true" includeantruntime="false" target="1.5" source="1.5">
+      <src path="${build.dir}/src/bindings/swig/java/" />
   </javac>
-</target>
-
-<target name="protoc" description="Run protoc for messages and services">
-	<echo message="source dir:         ${src.dir}"/>
-	<echo message="build dir:          ${build.dir}"/>
-	<echo message="protoc source dir:  ${protoc.src.dir}"/>
-	<echo message="protoc binary:      ${protoc.bin}"/>
-	<echo message="protoc plugin:      ${protoc.plugin}"/>
-	<echo message="destination dir:    ${build.dir}/protobuf/generated"/>
-
-	<mkdir dir="${build.dir}/protobuf/generated" />
-
-	<apply executable="${protoc.bin}">
-		<arg value="--java_out=${build.dir}/protobuf/generated" />
-		<arg value="--java_rpc_out=${build.dir}/protobuf/generated" />
-		<arg value="--proto_path=${protoc.src.dir}" />
-		<arg value="--plugin=protoc-gen-java_rpc=${protoc.plugin}" />
-		<!-- arg value="-descriptor_set_out=???" / -->
-
-		<fileset dir="${protoc.src.dir}" casesensitive="yes">
-			<include name="*.proto"/>
-		</fileset>
-	</apply>
 </target>
 
 <target name="jar" depends="compile" description="Create a bundle of the source code">
@@ -99,20 +65,11 @@
 	<!-- build new jar -->
 	<jar destfile="${output.dir}/umundo.jar">
 		<!-- All the class files we compiled -->
-    <fileset dir="${build.dir}/src/bindings/core/swig/java/bin/" >
+    <fileset dir="${build.dir}/src/bindings/swig/java/bin/" >
       <include name="**/*.class" />
     </fileset>
 		<!-- Include all source files -->
-    <fileset dir="${build.dir}/src/bindings/core/swig/java/" >
-      <include name="**/*.java" />
-    </fileset>
-    <fileset dir="${src.dir}/src/bindings/s11n/java/" >
-      <include name="**/*.java" />
-    </fileset>
-    <fileset dir="${src.dir}/src/bindings/rpc/java/" >
-      <include name="**/*.java" />
-    </fileset>
-    <fileset dir="${build.dir}/protobuf/generated/" >
+    <fileset dir="${build.dir}/src/bindings/swig/java/" >
       <include name="**/*.java" />
     </fileset>
 		<!-- The JNI libraries -->
@@ -136,13 +93,11 @@
 
 	<javac destdir="${build.dir}/tests/java" srcdir="${test.dir}" includeantruntime="false">
     <classpath>
-      <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
       <pathelement location="${build.dir}/lib/umundo.jar"/>
     </classpath>
 	</javac>
 	<java classpath="${build.dir}/lib/umundo.jar:${build.dir}/tests/java" classname="${test.class}">
     <classpath>
-      <pathelement location="${src.dir}/contrib/java/lib/protobuf-java-2.5.0.jar"/>
       <pathelement location="${build.dir}/lib/umundo.jar"/>
       <pathelement location="${build.dir}/tests/java"/>
     </classpath>

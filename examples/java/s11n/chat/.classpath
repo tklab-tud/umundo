@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="generated"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="C:/Users/sradomski/Desktop/build/umundo/lib/umundo.jar"/>
-	<classpathentry kind="lib" path="Y:/Documents/TK/Code/umundo/contrib/java/lib/protobuf-java-2.4.1.jar"/>
-	<classpathentry kind="output" path="bin"/>
-</classpath>

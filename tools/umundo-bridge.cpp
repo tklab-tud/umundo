@@ -14,8 +14,8 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
-#include "umundo/core/thread/Thread.h"
+#include "umundo.h"
+#include "umundo/thread/Thread.h"
 #include <string.h>
 #include <iostream>
 #include <fstream>
@@ -74,6 +74,7 @@ bool verbose = false;
 
 //some helper functions
 void printUsageAndExit() {
+	printf("umundo-bridge version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage:\n");
 	printf("\tumundo-bridge [-d domain] [-v] -c <hostnameOrIPv4>:<port>\n");
 	printf("\tumundo-bridge [-d domain] [-v] -l port\n");

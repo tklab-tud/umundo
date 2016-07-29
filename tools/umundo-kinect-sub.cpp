@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <stdio.h>
 #include <iostream>
 #include <sstream>

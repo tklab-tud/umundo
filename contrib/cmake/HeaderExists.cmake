@@ -1,2 +1,0 @@
-include(CheckIncludeFile)
-CHECK_INCLUDE_FILE(stdbool.h HAVE_STDBOOL_H)

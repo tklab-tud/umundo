@@ -16,6 +16,7 @@ BUILD_DIR="/tmp/build-umundo-android"
 mkdir -p ${BUILD_DIR} &> /dev/null
 cd ${BUILD_DIR}
 
+ANDROID_NATIVE_API_LEVEL=9
 
 if [ ! -d "${ANDROID_NDK}" ]; then
   echo
@@ -29,76 +30,68 @@ echo Using Android NDK at ${ANDROID_NDK}
 echo
 
 
-mkdir -p ${BUILD_DIR}/armeabi-debug &> /dev/null
-cd ${BUILD_DIR}/armeabi-debug
-
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
--DDIST_PREPARE=ON \
--DBUILD_UMUNDO_TOOLS=OFF \
--DBUILD_UMUNDO_S11N=OFF \
--DBUILD_UMUNDO_RPC=OFF \
--DBUILD_UMUNDO_UTIL=OFF \
--DBUILD_BINDINGS=ON \
--DBUILD_SHARED_LIBS=OFF \
--DBUILD_PREFER_STATIC_LIBRARIES=ON \
--DANDROID_ABI="armeabi" \
--DCMAKE_BUILD_TYPE=Debug
-make -j4
-make java
+# mkdir -p ${BUILD_DIR}/armeabi-debug &> /dev/null
+# cd ${BUILD_DIR}/armeabi-debug
+#
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/toolchain/Android.cmake \
+# -DDIST_PREPARE=ON \
+# -DBUILD_UMUNDO_TOOLS=OFF \
+# -DBUILD_BINDINGS=ON \
+# -DBUILD_SHARED_LIBS=OFF \
+# -DBUILD_PREFER_STATIC_LIBRARIES=ON \
+# -DANDROID_ABI="armeabi" \
+# -DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL} \
+# -DCMAKE_BUILD_TYPE=Debug
+# make -j4
+# make java
 
 
 mkdir -p ${BUILD_DIR}/armeabi-release &> /dev/null
 cd ${BUILD_DIR}/armeabi-release
 
 cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/toolchain/Android.cmake \
 -DDIST_PREPARE=ON \
 -DBUILD_UMUNDO_TOOLS=OFF \
--DBUILD_UMUNDO_S11N=OFF \
--DBUILD_UMUNDO_RPC=OFF \
--DBUILD_UMUNDO_UTIL=OFF \
 -DBUILD_BINDINGS=ON \
--DBUILD_SHARED_LIBS=OFF \
--DBUILD_PREFER_STATIC_LIBRARIES=ON \
+-DBUILD_SHARED_LIBS=ON \
+-DBUILD_PREFER_STATIC_LIBRARIES=OFF \
 -DANDROID_ABI="armeabi" \
+-DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL} \
 -DCMAKE_BUILD_TYPE=Release
 make -j4
 make java
 
-mkdir -p ${BUILD_DIR}/x86-debug &> /dev/null
-cd ${BUILD_DIR}/x86-debug
-
-cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
--DDIST_PREPARE=ON \
--DBUILD_UMUNDO_TOOLS=OFF \
--DBUILD_UMUNDO_S11N=OFF \
--DBUILD_UMUNDO_RPC=OFF \
--DBUILD_UMUNDO_UTIL=OFF \
--DBUILD_BINDINGS=ON \
--DBUILD_SHARED_LIBS=OFF \
--DBUILD_PREFER_STATIC_LIBRARIES=ON \
--DANDROID_ABI="x86" \
--DCMAKE_BUILD_TYPE=Debug
-make -j4
-make java
+# mkdir -p ${BUILD_DIR}/x86-debug &> /dev/null
+# cd ${BUILD_DIR}/x86-debug
+#
+# cmake ${DIR}/../../ \
+# -DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/toolchain/Android.cmake \
+# -DDIST_PREPARE=ON \
+# -DBUILD_UMUNDO_TOOLS=OFF \
+# -DBUILD_BINDINGS=ON \
+# -DBUILD_SHARED_LIBS=OFF \
+# -DBUILD_PREFER_STATIC_LIBRARIES=ON \
+# -DANDROID_ABI="x86" \
+# -DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL} \
+# -DCMAKE_BUILD_TYPE=Debug
+# make -j4
+# make java
 
 
 mkdir -p ${BUILD_DIR}/x86-release &> /dev/null
 cd ${BUILD_DIR}/x86-release
 
 cmake ${DIR}/../../ \
--DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/CrossCompile-Android.cmake \
+-DCMAKE_TOOLCHAIN_FILE=${DIR}/../cmake/toolchain/Android.cmake \
 -DDIST_PREPARE=ON \
 -DBUILD_UMUNDO_TOOLS=OFF \
--DBUILD_UMUNDO_S11N=OFF \
--DBUILD_UMUNDO_RPC=OFF \
--DBUILD_UMUNDO_UTIL=OFF \
 -DBUILD_BINDINGS=ON \
 -DBUILD_SHARED_LIBS=OFF \
 -DBUILD_PREFER_STATIC_LIBRARIES=ON \
 -DANDROID_ABI="x86" \
+-DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL} \
 -DCMAKE_BUILD_TYPE=Release
 make -j4
 make java

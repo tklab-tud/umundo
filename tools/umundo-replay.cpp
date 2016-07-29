@@ -14,8 +14,8 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
-#include "umundo/core/discovery/MDNSDiscovery.h"
+#include "umundo.h"
+#include "umundo/discovery/MDNSDiscovery.h"
 #include <cstdio>
 #include <string.h>
 #include <iostream>
@@ -46,7 +46,7 @@ uint64_t startedAt = 0;
 int minSubs = 0;
 
 void printUsageAndExit() {
-	printf("umundo-replay version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-replay version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-replay -c channel [-w N] [-vit] [-d domain] -f file\n");
 	printf("\n");

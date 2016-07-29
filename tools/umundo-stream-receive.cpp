@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <string.h>
 #include <iostream>
 #include <fstream>
@@ -142,7 +142,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-	printf("umundo-stream-receive version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-stream-receive version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	initNetwork(5040);
 

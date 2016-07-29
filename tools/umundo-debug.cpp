@@ -45,8 +45,7 @@ if (mIter->substr(0, key.length()) == key) { \
 #define VALUE_FOR_CURR_KEY mIter->substr(key.length(), mIter->length() - key.length())
 
 #include "umundo/config.h"
-#include "umundo/core.h"
-#include "umundo/s11n.h"
+#include "umundo.h"
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
@@ -89,7 +88,7 @@ uint64_t now;
 RMutex mutex;
 
 void printUsageAndExit() {
-	printf("umundo-debug version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-debug version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-debug [-q] [-d domain] [-wN] [-oFILE]\n");
 	printf("\n");
@@ -322,7 +321,7 @@ void processDebugNode(DebugNode* node) {
 
 			DotNode& dotNode = eLabelIter->second;
 			std::stringstream timeInfoSS;
-			
+
 			if (dotNode.edgeLabel.find("startedAt") != dotNode.edgeLabel.end()) {
 				uint64_t msAgo = now - strTo<uint64_t>(dotNode.edgeLabel["startedAt"]);
 				timeInfoSS << timeToDisplay(msAgo);
@@ -340,7 +339,7 @@ void processDebugNode(DebugNode* node) {
 			if (timeInfoSS.str().length() > 0) {
 				dotNode.edgeLabel["timeInfo"] = timeInfoSS.str();
 			}
-			
+
 			eLabelIter++;
 		}
 	}
@@ -352,7 +351,7 @@ void processDebugNode(DebugNode* node) {
 		dotEdges[edgeId].dotId = "\"" + node->uuid + "\" -> \"" + nodeIter->first + "\"";
 		nodeIter++;
 	}
-	
+
 
 	std::map<std::string, DebugSub*>::iterator subIter = node->subs.begin();
 	while(subIter != node->subs.end()) {
@@ -388,7 +387,7 @@ void processDebugPub(DebugPub* pub) {
 
 	dotNodes[pub->uuid].attr["fillcolor"] = "\"#CCCCCC\"";
 	dotNodes[pub->uuid].attr["style"] = "filled";
-	
+
 	std::stringstream labelSS;
 	labelSS << "<";
 	labelSS << "<b>Pub[" << SHORT_UUID(pub->uuid) << "]</b><br />";
@@ -406,7 +405,7 @@ void processDebugPub(DebugPub* pub) {
 	labelSS << "@" << pub->channelName << "<br />";
 	labelSS << "#Subscribers: " << pub->connFromSubs.size() << "<br />";
 	if (pub->bytesPerSecSent.size() > 0) {
-		labelSS << "Sent: " << bytesToDisplay(strTo<uint64_t>(pub->bytesPerSecSent)) << "B in " << pub->msgsPerSecSent << "msg/s<br />";
+		labelSS << "Sent: " << bytesToDisplay(strTo<uint64_t>(pub->bytesPerSecSent)) << " in " << pub->msgsPerSecSent << "msg/s<br />";
 	}
 
 	labelSS << ">";

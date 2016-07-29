@@ -21,7 +21,7 @@
 #cmakedefine CYGWIN
 #cmakedefine IOS
 #cmakedefine IOSSIM
-#cmakedefine WITH_CPP11
+#cmakedefine WITH_CXX11
 
 // suppress warnings with already define -DANDROID macro
 #ifndef ANDROID
@@ -59,6 +59,7 @@
 
 /** build type */
 #cmakedefine CMAKE_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
+#cmakedefine UMUNDO_PLATFORM_ID "@UMUNDO_PLATFORM_ID@"
 
 /** miscellaneous */
 #cmakedefine PROJECT_SOURCE_DIR "@PROJECT_SOURCE_DIR@"
@@ -66,7 +67,13 @@
 #cmakedefine HAVE_STDBOOL_H @HAVE_STDBOOL_H@
 
 #cmakedefine BUILD_WITH_COMPRESSION_MINIZ
+#define BUILD_WITH_COMPRESSION_LEVEL_MINIZ @BUILD_WITH_COMPRESSION_LEVEL_MINIZ@
+
 #cmakedefine BUILD_WITH_COMPRESSION_FASTLZ
+/** fastlz will automatically choose one of two levels depending on input size */
+
+#cmakedefine BUILD_WITH_COMPRESSION_LZ4
+#define BUILD_WITH_COMPRESSION_LEVEL_LZ4 @BUILD_WITH_COMPRESSION_LEVEL_LZ4@
 
 /** Implementation specific */
 #cmakedefine NET_ZEROMQ_SND_HWM @NET_ZEROMQ_SND_HWM@

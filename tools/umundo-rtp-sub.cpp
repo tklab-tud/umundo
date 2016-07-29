@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -30,7 +30,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-rtp-sub version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	TestReceiver testRecv;
 	SubscriberConfigRTP subConfig("pingpong");

@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include "umundo/s11n.h"
 #include "umundo/s11n/protobuf/PBSerializer.h"
 #include <stdio.h>
@@ -37,9 +37,9 @@
 #endif
 
 #ifdef NET_ZEROMQ
-#include "umundo/core/connection/zeromq/ZeroMQNode.h"
-#include "umundo/core/connection/zeromq/ZeroMQPublisher.h"
-#include "umundo/core/connection/zeromq/ZeroMQSubscriber.h"
+#include "umundo/connection/zeromq/ZeroMQNode.h"
+#include "umundo/connection/zeromq/ZeroMQPublisher.h"
+#include "umundo/connection/zeromq/ZeroMQSubscriber.h"
 #define NET_NODE_IMPL ZeroMQNode
 #define NET_PUB_IMPL ZeroMQPublisher
 #define NET_SUB_IMPL ZeroMQSubscriber
@@ -65,7 +65,7 @@ bool verbose = false;
 int minSubs = 0;
 
 void printUsageAndExit() {
-	printf("umundo-monitor version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-monitor version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-monitor -c channel [-iv] [-d domain] [-f file] [-p dir]\n");
 	printf("\n");

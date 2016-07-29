@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -29,7 +29,7 @@
 using namespace umundo;
 
 void printUsageAndExit() {
-	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-kinect-pub version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-kinect-pub -mN\n");
 	printf("\n");

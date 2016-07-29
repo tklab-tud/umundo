@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 #ifdef WIN32
@@ -34,6 +34,7 @@ public:
 };
 
 void printUsageAndExit() {
+	printf("umundo-pingpong version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
 	printf("\tumundo-pingpong [-d domain]\n");
 	printf("\n");
@@ -47,7 +48,7 @@ void printUsageAndExit() {
 }
 
 int main(int argc, char** argv) {
-	printf("umundo-pingpong version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-pingpong version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	int option;
 	while ((option = getopt(argc, argv, "d:")) != -1) {

@@ -1,6 +1,6 @@
 # on 64Bit builds we have unresolved symbols
 # message("linking umundo-monitor")
-# message("UMUNDOCORE_LIBRARIES: ${UMUNDOCORE_LIBRARIES}")
+# message("UMUNDO_LIBRARIES: ${UMUNDO_LIBRARIES}")
 # message("UMUNDOS11N_LIBRARIES: ${UMUNDOS11N_LIBRARIES}")
 
 set(GETOPT_WIN32)
@@ -11,7 +11,7 @@ endif()
 if (BUILD_UMUNDO_S11N)
 	add_executable(umundo-monitor umundo-monitor.cpp ${GETOPT_WIN32})
 
-	target_link_libraries(umundo-monitor umundocore umundoserial)
+	target_link_libraries(umundo-monitor umundo)
 	set_target_properties(umundo-monitor PROPERTIES FOLDER "Tools")
 
 	INSTALL_EXECUTABLE(
@@ -22,7 +22,7 @@ endif()
 
 if (NET_RTP)
 	add_executable(umundo-rtp-pub umundo-rtp-pub.cpp)
-	target_link_libraries(umundo-rtp-pub umundocore)
+	target_link_libraries(umundo-rtp-pub umundo)
 	set_target_properties(umundo-rtp-pub PROPERTIES FOLDER "Tools")
 
 	INSTALL_EXECUTABLE(
@@ -31,7 +31,7 @@ if (NET_RTP)
 	)
 
 	add_executable(umundo-rtp-sub umundo-rtp-sub.cpp)
-	target_link_libraries(umundo-rtp-sub umundocore)
+	target_link_libraries(umundo-rtp-sub umundo)
 	set_target_properties(umundo-rtp-sub PROPERTIES FOLDER "Tools")
 
 	INSTALL_EXECUTABLE(
@@ -44,7 +44,7 @@ if (NET_RTP)
 		include_directories(${PORTAUDIO_INCLUDE_DIRS})
 		
 		add_executable(umundo-multicast-phone-pub umundo-multicast-phone-pub.cpp)
-		target_link_libraries(umundo-multicast-phone-pub umundocore ${PORTAUDIO_LIBRARIES})
+		target_link_libraries(umundo-multicast-phone-pub umundo ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-multicast-phone-pub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -53,7 +53,7 @@ if (NET_RTP)
 		)
 		
 		add_executable(umundo-multicast-phone-sub umundo-multicast-phone-sub.cpp)
-		target_link_libraries(umundo-multicast-phone-sub umundocore ${PORTAUDIO_LIBRARIES})
+		target_link_libraries(umundo-multicast-phone-sub umundo ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-multicast-phone-sub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -62,7 +62,7 @@ if (NET_RTP)
 		)
 		
 		add_executable(umundo-phone umundo-phone.cpp)
-		target_link_libraries(umundo-phone umundocore ${PORTAUDIO_LIBRARIES})
+		target_link_libraries(umundo-phone umundo ${PORTAUDIO_LIBRARIES})
 		set_target_properties(umundo-phone PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -81,7 +81,7 @@ if (NET_RTP)
 		include_directories(${FREENECT_INCLUDE_DIR})
 		
 		add_executable(umundo-kinect-pub umundo-kinect-pub.cpp ${GETOPT_WIN32})
-		target_link_libraries(umundo-kinect-pub umundocore ${FREENECT_LIBRARY})
+		target_link_libraries(umundo-kinect-pub umundo ${FREENECT_LIBRARY})
 		set_target_properties(umundo-kinect-pub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -95,7 +95,7 @@ if (NET_RTP)
 		include_directories(${GLUT_INCLUDE_DIR})
 		
 		add_executable(umundo-kinect-sub umundo-kinect-sub.cpp ${GETOPT_WIN32})
-		target_link_libraries(umundo-kinect-sub umundocore ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+		target_link_libraries(umundo-kinect-sub umundo ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 		set_target_properties(umundo-kinect-sub PROPERTIES FOLDER "Tools")
 
 		INSTALL_EXECUTABLE(
@@ -107,7 +107,7 @@ if (NET_RTP)
 endif()
 
 add_executable(umundo-pingpong umundo-pingpong.cpp  ${GETOPT_WIN32})
-target_link_libraries(umundo-pingpong umundocore)
+target_link_libraries(umundo-pingpong umundo)
 set_target_properties(umundo-pingpong PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -116,7 +116,7 @@ INSTALL_EXECUTABLE(
 )
 
 add_executable(umundo-stream-send umundo-stream-send.cpp)
-target_link_libraries(umundo-stream-send umundocore)
+target_link_libraries(umundo-stream-send umundo)
 set_target_properties(umundo-stream-send PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -125,7 +125,7 @@ INSTALL_EXECUTABLE(
 )
 
 add_executable(umundo-stream-receive umundo-stream-receive.cpp)
-target_link_libraries(umundo-stream-receive umundocore)
+target_link_libraries(umundo-stream-receive umundo)
 set_target_properties(umundo-stream-receive PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -134,7 +134,7 @@ INSTALL_EXECUTABLE(
 )
 
 add_executable(umundo-debug umundo-debug.cpp ${GETOPT_WIN32})
-target_link_libraries(umundo-debug umundocore)
+target_link_libraries(umundo-debug umundo)
 set_target_properties(umundo-debug PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -144,7 +144,7 @@ INSTALL_EXECUTABLE(
 
 
 add_executable(umundo-capture umundo-capture.cpp ${GETOPT_WIN32})
-target_link_libraries(umundo-capture umundocore)
+target_link_libraries(umundo-capture umundo)
 set_target_properties(umundo-capture PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -154,7 +154,7 @@ INSTALL_EXECUTABLE(
 
 
 add_executable(umundo-replay umundo-replay.cpp ${GETOPT_WIN32})
-target_link_libraries(umundo-replay umundocore)
+target_link_libraries(umundo-replay umundo)
 set_target_properties(umundo-replay PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(
@@ -181,7 +181,7 @@ if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC AND OFF)
 		list(APPEND PROTO_SVC_FILES ${PROTO_SRCS})
 	
 		add_executable(umundo-echo-service umundo-echo-service.cpp ${PROTO_SVC_FILES})
-		target_link_libraries(umundo-echo-service umundocore umundoserial umundorpc)
+		target_link_libraries(umundo-echo-service umundo umundoserial umundorpc)
 		set_target_properties(umundo-echo-service PROPERTIES FOLDER "Tools")
 		add_dependencies(umundo-echo-service protoc-umundo-cpp-rpc) 
 
@@ -192,17 +192,17 @@ if (BUILD_UMUNDO_S11N AND BUILD_UMUNDO_RPC AND OFF)
 	endif()
 endif()
 
-add_executable(umundo-bridge umundo-bridge.cpp ${GETOPT_WIN32})
-target_link_libraries(umundo-bridge umundocore)
-set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
+# add_executable(umundo-bridge umundo-bridge.cpp ${GETOPT_WIN32})
+# target_link_libraries(umundo-bridge umundo)
+# set_target_properties(umundo-bridge PROPERTIES FOLDER "Tools")
 
-INSTALL_EXECUTABLE(
-	TARGETS umundo-bridge
-	COMPONENT tools 
-)
+# INSTALL_EXECUTABLE(
+# 	TARGETS umundo-bridge
+# 	COMPONENT tools
+# )
 
 add_executable(umundo-throughput umundo-throughput.cpp ${GETOPT_WIN32})
-target_link_libraries(umundo-throughput umundocore)
+target_link_libraries(umundo-throughput umundo)
 set_target_properties(umundo-throughput PROPERTIES FOLDER "Tools")
 
 INSTALL_EXECUTABLE(

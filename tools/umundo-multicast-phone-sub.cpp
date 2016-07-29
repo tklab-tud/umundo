@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -56,7 +56,7 @@ public:
 int main(int argc, char** argv) {
 	PaStreamParameters outputParameters;
 
-	printf("umundo-phone-sub version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-multicast-phone-sub version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 
 	TestReceiver testRecv;
 	SubscriberConfigRTP subConfig("multicast-phone-pubsub");

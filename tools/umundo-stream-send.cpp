@@ -14,7 +14,7 @@
  */
 
 #include "umundo/config.h"
-#include "umundo/core.h"
+#include "umundo.h"
 #include <iostream>
 #include <string.h>
 
@@ -23,7 +23,7 @@ using namespace umundo;
 int main(int argc, char** argv) {
 	uint32_t len=0;
 	char buffer[4096];
-	printf("umundo-stream-send version " UMUNDO_VERSION " (" CMAKE_BUILD_TYPE " build)\n");
+	printf("umundo-stream-send version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	Publisher pubFoo("stream");
 	Discovery disc(Discovery::MDNS);
 	Node node;

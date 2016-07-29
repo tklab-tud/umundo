@@ -1,0 +1,346 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017B66150391D5002BCAAA /* UIKit.framework */; };
+		95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017B68150391D5002BCAAA /* Foundation.framework */; };
+		95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95017B6A150391D5002BCAAA /* CoreGraphics.framework */; };
+		95017B71150391D5002BCAAA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 95017B6F150391D5002BCAAA /* InfoPlist.strings */; };
+		95017B73150391D5002BCAAA /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B72150391D5002BCAAA /* main.m */; };
+		95017B77150391D5002BCAAA /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 95017B76150391D5002BCAAA /* AppDelegate.mm */; };
+		95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */; };
+		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
+		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
+		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
+		9585BA341D1BD01B0027A016 /* libumundo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9585BA331D1BD01B0027A016 /* libumundo.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		95017B62150391D5002BCAAA /* umundo-pingpong.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "umundo-pingpong.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		95017B66150391D5002BCAAA /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		95017B68150391D5002BCAAA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		95017B6A150391D5002BCAAA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		95017B6E150391D5002BCAAA /* umundo-pingpong-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "umundo-pingpong-Info.plist"; sourceTree = "<group>"; };
+		95017B70150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		95017B72150391D5002BCAAA /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		95017B74150391D5002BCAAA /* umundo-pingpong-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "umundo-pingpong-Prefix.pch"; sourceTree = "<group>"; };
+		95017B75150391D5002BCAAA /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		95017B76150391D5002BCAAA /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		95017B79150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPhone.storyboard; sourceTree = "<group>"; };
+		95017B7C150391D5002BCAAA /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPad.storyboard; sourceTree = "<group>"; };
+		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
+		9585BA331D1BD01B0027A016 /* libumundo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.a; path = "../../package/cross-compiled/ios/lib/libumundo.a"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		95017B5F150391D5002BCAAA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9585BA341D1BD01B0027A016 /* libumundo.a in Frameworks */,
+				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
+				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
+				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		95017B57150391D5002BCAAA = {
+			isa = PBXGroup;
+			children = (
+				95017B6C150391D5002BCAAA /* umundo-pingpong */,
+				95017B65150391D5002BCAAA /* Frameworks */,
+				95017B63150391D5002BCAAA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		95017B63150391D5002BCAAA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				95017B62150391D5002BCAAA /* umundo-pingpong.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		95017B65150391D5002BCAAA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9585BA331D1BD01B0027A016 /* libumundo.a */,
+				95017B66150391D5002BCAAA /* UIKit.framework */,
+				95017B68150391D5002BCAAA /* Foundation.framework */,
+				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		95017B6C150391D5002BCAAA /* umundo-pingpong */ = {
+			isa = PBXGroup;
+			children = (
+				95017B75150391D5002BCAAA /* AppDelegate.h */,
+				95017B76150391D5002BCAAA /* AppDelegate.mm */,
+				95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */,
+				95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */,
+				95017B7E150391D5002BCAAA /* ViewController.h */,
+				95017B7F150391D5002BCAAA /* ViewController.m */,
+				95017B6D150391D5002BCAAA /* Supporting Files */,
+				955BA7C115C958C000949F02 /* ReadMe.txt */,
+			);
+			path = "umundo-pingpong";
+			sourceTree = "<group>";
+		};
+		95017B6D150391D5002BCAAA /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				95017B6E150391D5002BCAAA /* umundo-pingpong-Info.plist */,
+				95017B6F150391D5002BCAAA /* InfoPlist.strings */,
+				95017B72150391D5002BCAAA /* main.m */,
+				95017B74150391D5002BCAAA /* umundo-pingpong-Prefix.pch */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		95017B61150391D5002BCAAA /* umundo-pingpong */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 95017B83150391D5002BCAAA /* Build configuration list for PBXNativeTarget "umundo-pingpong" */;
+			buildPhases = (
+				95017B5E150391D5002BCAAA /* Sources */,
+				95017B5F150391D5002BCAAA /* Frameworks */,
+				95017B60150391D5002BCAAA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "umundo-pingpong";
+			productName = "umundo-pingpong";
+			productReference = 95017B62150391D5002BCAAA /* umundo-pingpong.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		95017B59150391D5002BCAAA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
+			buildConfigurationList = 95017B5C150391D5002BCAAA /* Build configuration list for PBXProject "umundo-pingpong" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 95017B57150391D5002BCAAA;
+			productRefGroup = 95017B63150391D5002BCAAA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				95017B61150391D5002BCAAA /* umundo-pingpong */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		95017B60150391D5002BCAAA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95017B71150391D5002BCAAA /* InfoPlist.strings in Resources */,
+				95017B7A150391D5002BCAAA /* MainStoryboard_iPhone.storyboard in Resources */,
+				95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */,
+				955BA7C215C958C000949F02 /* ReadMe.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		95017B5E150391D5002BCAAA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95017B73150391D5002BCAAA /* main.m in Sources */,
+				95017B77150391D5002BCAAA /* AppDelegate.mm in Sources */,
+				95017B80150391D5002BCAAA /* ViewController.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		95017B6F150391D5002BCAAA /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95017B70150391D5002BCAAA /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		95017B78150391D5002BCAAA /* MainStoryboard_iPhone.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95017B79150391D5002BCAAA /* en */,
+			);
+			name = MainStoryboard_iPhone.storyboard;
+			sourceTree = "<group>";
+		};
+		95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				95017B7C150391D5002BCAAA /* en */,
+			);
+			name = MainStoryboard_iPad.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		95017B81150391D5002BCAAA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_INPUT_FILETYPE = automatic;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../contrib/prebuilt/ios/include,
+					../../contrib/prebuilt/include,
+					../../rpc/src,
+					../../s11n/src,
+					../../core/src,
+					/Users/sradomski/Documents/TK/Code/umundo/src/bindings/core/objc,
+					/usr/local/include,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		95017B82150391D5002BCAAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_INPUT_FILETYPE = automatic;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../contrib/prebuilt/ios/include,
+					../../contrib/prebuilt/include,
+					../../rpc/src,
+					../../s11n/src,
+					../../core/src,
+					/Users/sradomski/Documents/TK/Code/umundo/src/bindings/core/objc,
+					/usr/local/include,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		95017B84150391D5002BCAAA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.3;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					/usr/local/share/umundo/ios,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		95017B85150391D5002BCAAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_INPUT_FILETYPE = sourcecode.cpp.objcpp;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.3;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					/usr/local/share/umundo/ios,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		95017B5C150391D5002BCAAA /* Build configuration list for PBXProject "umundo-pingpong" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95017B81150391D5002BCAAA /* Debug */,
+				95017B82150391D5002BCAAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		95017B83150391D5002BCAAA /* Build configuration list for PBXNativeTarget "umundo-pingpong" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95017B84150391D5002BCAAA /* Debug */,
+				95017B85150391D5002BCAAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 95017B59150391D5002BCAAA /* Project object */;
+}

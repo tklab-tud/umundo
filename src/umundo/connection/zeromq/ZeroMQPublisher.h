@@ -61,9 +61,15 @@ protected:
 private:
 	void run();
 
+<<<<<<< HEAD:src/umundo/connection/zeromq/ZeroMQPublisher.h
 	Message::Compression _compressionType;
 	int _comressionLevel;
 
+=======
+    Message::Compression _compressionType;
+    int _comressionLevel;
+    
+>>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/connection/zeromq/ZeroMQPublisher.h
 	void* _pubSocket;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;

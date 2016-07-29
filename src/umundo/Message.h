@@ -49,6 +49,7 @@ public:
 		UM_SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
+<<<<<<< HEAD:src/umundo/Message.h
 	enum Compression {
 		COMPRESS_NONE         = 0x0000,
 		COMPRESS_LZ4          = 0x0001,
@@ -56,6 +57,15 @@ public:
 		COMPRESS_MINIZ        = 0x0004,
 	};
 
+=======
+    enum Compression {
+        COMPRESS_NONE         = 0x0000,
+        COMPRESS_LZ4          = 0x0001,
+        COMPRESS_FASTLZ       = 0x0002,
+        COMPRESS_MINIZ        = 0x0004,
+    };
+    
+>>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/Message.h
 	enum Flags {
 		NONE            = 0x0000, ///< Default is to copy data and deallocate
 		ADOPT_DATA      = 0x0001, ///< Do not copy into message but deallocate when done
@@ -154,8 +164,13 @@ public:
 		return _flags;
 	}
 
+<<<<<<< HEAD:src/umundo/Message.h
 	void compress();
 	void compress(Message::Compression type, int level = -1);
+=======
+    void compress();
+    void compress(Message::Compression type, int level = -1);
+>>>>>>> f326cc1a76b2d5314e8cd9e5e17509f2f3270605:src/umundo/core/Message.h
 	void uncompress();
 	bool isCompressed() {
 		return (_meta.find("um.compressed") != _meta.end());

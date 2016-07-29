@@ -47,7 +47,8 @@ public class S11NChat {
 		disc.add(chatNode);
 		
 		chatRcv = new ChatReceiver();
-		chatSub = new TypedSubscriber("s11nChat", chatRcv);
+		chatSub = new TypedSubscriber("s11nChat");
+    chatSub.setReceiver(chatRcv);
 		chatPub = new TypedPublisher("s11nChat");
 		chatSub.registerType(ChatMsg.class);
 
@@ -131,7 +132,7 @@ public class S11NChat {
 	}
 
 	public static void main(String[] args) {
-//		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli/lib/libumundoNativeJava64.jnilib");
+//		System.load("/Users/sradomski/Documents/TK/Code/umundo/build/cli-release/lib/libumundoNativeJava64.jnilib");
 		S11NChat chat = new S11NChat();
 		chat.run();
 	}

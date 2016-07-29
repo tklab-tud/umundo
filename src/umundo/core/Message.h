@@ -49,6 +49,13 @@ public:
 		UM_SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
+    enum Compression {
+        COMPRESS_NONE         = 0x0000,
+        COMPRESS_LZ4          = 0x0001,
+        COMPRESS_FASTLZ       = 0x0002,
+        COMPRESS_MINIZ        = 0x0004,
+    };
+    
 	enum Flags {
 		NONE            = 0x0000, ///< Default is to copy data and deallocate
 		ADOPT_DATA      = 0x0001, ///< Do not copy into message but deallocate when done
@@ -62,7 +69,7 @@ public:
 		if (type == UM_NODE_INFO)          return "NODE_INFO";
 		if (type == UM_PUB_ADDED)          return "PUB_ADDED";
 		if (type == UM_PUB_REMOVED)        return "PUB_REMOVED";
-		if (type == UM_SUBSCRIBE)			     return "SUBSCRIBE";
+		if (type == UM_SUBSCRIBE)		   return "SUBSCRIBE";
 		if (type == UM_UNSUBSCRIBE)        return "UNSUBSCRIBE";
 		if (type == UM_DEBUG)              return "DEBUG";
 		if (type == UM_SHUTDOWN)           return "SHUTDOWN";
@@ -136,7 +143,7 @@ public:
 	virtual ~Message() {
 	}
 
-	virtual const char* data() const                                    {
+	virtual char* data() const                                    {
 		return _data.get();
 	}
 	virtual size_t size() const                                         {
@@ -147,7 +154,8 @@ public:
 		return _flags;
 	}
 
-	void compress();
+    void compress();
+    void compress(Message::Compression type, int level = -1);
 	void uncompress();
 	bool isCompressed() {
 		return (_meta.find("um.compressed") != _meta.end());

@@ -7,8 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <umundo-objc/s11n.h>
-#import <umundo-objc/core.h>
+//#import <umundo/s11n-objc.h>
+#import <umundo/core-objc.h>
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 

@@ -444,15 +444,21 @@ if (WIN32)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/xgetopt)
 endif()
 
-SET(BUILD_WITH_COMPRESSION "fastlz" CACHE STRING "Enable message compression [miniz|fastlz|none]")
-#OPTION(BUILD_WITH_COMPRESSION       "Enable message compression [miniz|fastlz]"  "fastlz")
-if (BUILD_WITH_COMPRESSION STREQUAL "miniz")
-	SET(BUILD_WITH_COMPRESSION_MINIZ ON)
+SET(BUILD_WITH_COMPRESSION_MINIZ ON CACHE BOOL "Enable message miniz compression")
+SET(BUILD_WITH_COMPRESSION_FASTLZ ON CACHE BOOL "Enable message fastlz compression")
+SET(BUILD_WITH_COMPRESSION_LZ4 ON CACHE BOOL "Enable message lz4 compression")
+if (BUILD_WITH_COMPRESSION_MINIZ)
+	SET( BUILD_WITH_COMPRESSION_LEVEL_MINIZ 5)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/miniz)
-elseif(BUILD_WITH_COMPRESSION STREQUAL "fastlz")
-	SET(BUILD_WITH_COMPRESSION_FASTLZ ON)
+endif()
+if(BUILD_WITH_COMPRESSION_FASTLZ)
 	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/fastlz)
 endif()
+if(BUILD_WITH_COMPRESSION_LZ4)
+	SET( BUILD_WITH_COMPRESSION_LEVEL_LZ4 0)
+	include_directories(${PROJECT_SOURCE_DIR}/contrib/src/lz4)
+endif()
+# 
 
 ############################################################
 # General setup
@@ -592,7 +598,7 @@ if (APPLE)
 #	add_definitions("-D_DARWIN_UNLIMITED_SELECT")
 	if (HOST_64BIT)
 		# do not build universal binaries anymore ..
-		set(CMAKE_OSX_ARCHITECTURES "x86_64")
+		set(CMAKE_OSX_ARCHITECTURES "i386")
 	endif()
   if (MACOSX_VERSION VERSION_LESS 10.9)
     # forces libstc++
@@ -813,6 +819,7 @@ if (NOT PCRE_FOUND)
 	set(BUILD_UMUNDO_RPC OFF)
 endif()
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORIG})
+set(BUILD_UMUNDO_RPC OFF)
 
 # 0MQ
 if (BUILD_PREFER_STATIC_ZEROMQ)

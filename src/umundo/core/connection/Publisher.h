@@ -28,6 +28,7 @@
 #include "umundo/core/connection/NodeStub.h"
 #include "umundo/core/EndPoint.h"
 #include "umundo/core/Implementation.h"
+#include "umundo/core/Message.h"
 
 namespace umundo {
 
@@ -197,6 +198,27 @@ protected:
 	PublisherConfig(const std::string& channel) : _channelName(channel) {}
 	std::string _channelName;
 	PublisherStub::PublisherType _type;
+    
+public:
+    void enableCompression(Message::Compression type, int level = -1) {
+        switch (type) {
+            case Message::COMPRESS_LZ4:
+                options["pub.compression.type"] = toStr(Message::COMPRESS_LZ4);
+                break;
+            case Message::COMPRESS_FASTLZ:
+                options["pub.compression.type"] = toStr(Message::COMPRESS_FASTLZ);
+                break;
+            case Message::COMPRESS_MINIZ:
+                options["pub.compression.type"] = toStr(Message::COMPRESS_MINIZ);
+                break;
+                
+            default:
+                break;
+        }
+        if (level >= 0)
+            options["pub.compression.level"] = toStr(level);
+    }
+
 	friend class Publisher;
 };
 
@@ -205,10 +227,6 @@ class UMUNDO_API PublisherConfigTCP : public PublisherConfig {
 public:
 	PublisherConfigTCP(const std::string& channel) : PublisherConfig(channel) {
 		_type = Publisher::ZEROMQ;
-	}
-
-	void enableCompression() {
-		options["pub.tcp.compression"] = "1";
 	}
 
 protected:

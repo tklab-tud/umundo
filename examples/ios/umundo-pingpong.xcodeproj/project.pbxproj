@@ -17,7 +17,7 @@
 		95017B7D150391D5002BCAAA /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95017B7B150391D5002BCAAA /* MainStoryboard_iPad.storyboard */; };
 		95017B80150391D5002BCAAA /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 95017B7F150391D5002BCAAA /* ViewController.m */; };
 		955BA7C215C958C000949F02 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = 955BA7C115C958C000949F02 /* ReadMe.txt */; };
-		95C192F517441AD90094173C /* libumundo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C192F417441AD90094173C /* libumundo.a */; };
+		9585BA341D1BD01B0027A016 /* libumundo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9585BA331D1BD01B0027A016 /* libumundo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,7 +36,7 @@
 		95017B7E150391D5002BCAAA /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		95017B7F150391D5002BCAAA /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		955BA7C115C958C000949F02 /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
-		95C192F417441AD90094173C /* libumundo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.a; path = "../../package/cross-compiled/ios/lib/libumundo.a"; sourceTree = "<group>"; };
+		9585BA331D1BD01B0027A016 /* libumundo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libumundo.a; path = "../../package/cross-compiled/ios/lib/libumundo.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,7 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95C192F517441AD90094173C /* libumundo.a in Frameworks */,
+				9585BA341D1BD01B0027A016 /* libumundo.a in Frameworks */,
 				95017B67150391D5002BCAAA /* UIKit.framework in Frameworks */,
 				95017B69150391D5002BCAAA /* Foundation.framework in Frameworks */,
 				95017B6B150391D5002BCAAA /* CoreGraphics.framework in Frameworks */,
@@ -57,7 +57,6 @@
 		95017B57150391D5002BCAAA = {
 			isa = PBXGroup;
 			children = (
-				95C192F417441AD90094173C /* libumundo.a */,
 				95017B6C150391D5002BCAAA /* umundo-pingpong */,
 				95017B65150391D5002BCAAA /* Frameworks */,
 				95017B63150391D5002BCAAA /* Products */,
@@ -75,6 +74,7 @@
 		95017B65150391D5002BCAAA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				9585BA331D1BD01B0027A016 /* libumundo.a */,
 				95017B66150391D5002BCAAA /* UIKit.framework */,
 				95017B68150391D5002BCAAA /* Foundation.framework */,
 				95017B6A150391D5002BCAAA /* CoreGraphics.framework */,
@@ -236,7 +236,8 @@
 					../../rpc/src,
 					../../s11n/src,
 					../../core/src,
-					../../core/bindings,
+					/Users/sradomski/Documents/TK/Code/umundo/src/bindings/core/objc,
+					/usr/local/include,
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
@@ -267,7 +268,8 @@
 					../../rpc/src,
 					../../s11n/src,
 					../../core/src,
-					../../core/bindings,
+					/Users/sradomski/Documents/TK/Code/umundo/src/bindings/core/objc,
+					/usr/local/include,
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				LIBRARY_SEARCH_PATHS = "../../package/cross-compiled/ios-6.1";
@@ -287,9 +289,11 @@
 				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.3;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					/usr/local/share/umundo/ios,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -304,9 +308,11 @@
 				GCC_PREFIX_HEADER = "umundo-pingpong/umundo-pingpong-Prefix.pch";
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "umundo-pingpong/umundo-pingpong-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.3;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../package/cross-compiled/ios/lib\"",
+					/usr/local/share/umundo/ios,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;

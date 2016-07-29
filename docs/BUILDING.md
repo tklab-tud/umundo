@@ -201,7 +201,7 @@ If it is not, you can use the <tt>/etc/environment</tt> file to export the varia
 	$ sudo nano /etc/environment
 	> JAVA_HOME="/usr/lib/jvm/java-7-openjdk-i386" 
 
-<b>Note:</b> If you are still not able to generate the Java bindings, double check that your JAVA_HOME directory actually contains an include directory with the JNI header files.
+<b>Note:</b> If you are still not able to generate the Java bindings, double check that your JAVA_HOME directory actually contains an include directory with the JNI header files or set the respective variables explicitly (see below).
 
 For the Mono language bindings, just install <tt>mono-devel</tt>
 

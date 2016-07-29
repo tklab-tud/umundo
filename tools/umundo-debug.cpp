@@ -406,7 +406,7 @@ void processDebugPub(DebugPub* pub) {
 	labelSS << "@" << pub->channelName << "<br />";
 	labelSS << "#Subscribers: " << pub->connFromSubs.size() << "<br />";
 	if (pub->bytesPerSecSent.size() > 0) {
-		labelSS << "Sent: " << bytesToDisplay(strTo<uint64_t>(pub->bytesPerSecSent)) << "B in " << pub->msgsPerSecSent << "msg/s<br />";
+		labelSS << "Sent: " << bytesToDisplay(strTo<uint64_t>(pub->bytesPerSecSent)) << " in " << pub->msgsPerSecSent << "msg/s<br />";
 	}
 
 	labelSS << ">";

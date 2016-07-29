@@ -26,7 +26,7 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include <umundo/core.h>
+#include <umundo/core-objc.h>
 #include <umundo/core/UMPublisher.h>
 #include <umundo/core/UMSubscriber.h>
 

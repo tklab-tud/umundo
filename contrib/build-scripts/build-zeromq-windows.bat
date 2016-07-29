@@ -55,7 +55,7 @@ IF NOT EXIST "src\zmq.cpp" (
 	echo.
 	echo Cannot find src\arabica.cpp
 	echo Run script from within arabica directory:
-	echo arabica $ ..\%ME%
+	echo zeromq $ %ME%
 	echo.
 	goto :DONE
 )

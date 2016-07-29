@@ -4,6 +4,7 @@
 
 # gather all header files
 file(GLOB_RECURSE UMUNDOCORE_HEADER_FILES *.h)
+list(APPEND UMUNDOCORE_HEADER_FILES "${PROJECT_SOURCE_DIR}/src/umundo/core.h")
 
 # add objective-c bindings on mac and ios
 if (APPLE OR IOS)
@@ -41,12 +42,19 @@ list(APPEND UMUNDOCORE_FILES
 )
 
 # miniz minimal compression library
-if (BUILD_WITH_COMPRESSION STREQUAL "miniz")
+if (BUILD_WITH_COMPRESSION_MINIZ)
 	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/miniz/miniz.c)
-elseif(BUILD_WITH_COMPRESSION STREQUAL "fastlz")
+endif()
+if(BUILD_WITH_COMPRESSION_FASTLZ)
 	# list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/6pack.c)
 	# list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/6unpack.c)
 	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/fastlz/fastlz.c)
+endif()
+if(BUILD_WITH_COMPRESSION_LZ4)
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4.c)
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4frame.c)
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4hc.c)
+	list(APPEND UMUNDOCORE_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/xxhash.c)
 endif()
 
 if (ANDROID) # android gcc complains about boost 1.51

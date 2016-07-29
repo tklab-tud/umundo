@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "AppDelegate.h"
 
-@interface ViewController : UIViewController<UMSubscriberReceiver>
+@interface ViewController : UIViewController<UMReceiver>
 @property (retain, nonatomic) IBOutlet UITextView *text;
 @property (retain, nonatomic) NSTimer* timer;
 @property (retain, nonatomic) UMPublisher* pub;

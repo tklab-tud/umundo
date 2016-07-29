@@ -17,7 +17,7 @@
  *  @endcond
  */
 
-#define NO_DEBUG_MSGS
+//#define NO_DEBUG_MSGS
 
 #include "umundo/config.h"
 

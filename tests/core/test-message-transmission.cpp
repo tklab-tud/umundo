@@ -1,5 +1,6 @@
 #include "umundo/core.h"
 #include "umundo/util.h"
+#include "umundo/config.h"
 #include <iostream>
 #include <stdio.h>
 
@@ -291,7 +292,13 @@ bool testCompression() {
 	// test a compressing publisher
 	Node pubNode;
 	PublisherConfigTCP pubConfig("bar");
-	pubConfig.enableCompression();
+#ifdef BUILD_WITH_COMPRESSION_LEVEL_LZ4
+    pubConfig.enableCompression(Message::COMPRESS_LZ4);
+#elif defined(BUILD_WITH_COMPRESSION_LEVEL_MINIZ)
+    pubConfig.enableCompression(Message::COMPRESS_MINIZ);
+#elif defined(BUILD_WITH_COMPRESSION_LEVEL_FASTLZ)
+    pubConfig.enableCompression(Message::COMPRESS_FASTLZ);
+#endif
 	Publisher pub(&pubConfig);
 	pubNode.addPublisher(pub);
 

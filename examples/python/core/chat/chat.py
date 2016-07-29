@@ -6,11 +6,11 @@
 import sys
 import time
 
-sys.path.append("../../../../build/lib") # set to wherever your umundo libraries are
+sys.path.append("../../../../build/cli-release/lib") # set to wherever your umundo libraries are
 try:
     import umundo64 as umundo # 64 bit
 except ImportError:
-    import umundo # 32 bit
+    import umundo64 as umundo # 32 bit
 
 import time
 

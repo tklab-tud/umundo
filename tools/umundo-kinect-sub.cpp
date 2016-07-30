@@ -34,6 +34,8 @@
 
 #ifdef WIN32
 #include "XGetopt.h"
+#else
+#include <getopt.h>
 #endif
 
 #define MAX_PAYLOAD_PACKET 800

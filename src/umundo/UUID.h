@@ -22,7 +22,6 @@
 #define UUID_H_ASB7D2U4
 
 #include "umundo/Common.h"
-#include <boost/uuid/uuid_generators.hpp>
 
 namespace umundo {
 
@@ -36,7 +35,6 @@ public:
 
 private:
 	UUID() {}
-	static boost::uuids::random_generator randomGen;
 };
 
 }

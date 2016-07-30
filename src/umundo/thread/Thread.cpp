@@ -52,7 +52,7 @@ void Thread::join() {
 	_isStarted = false;
 }
 
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 static unsigned long int _threadIDToInt(const std::thread::id &aHandle) {
 	static std::mutex idMapLock;
 	static std::map<std::thread::id, unsigned long int> idMap;
@@ -68,7 +68,7 @@ static unsigned long int _threadIDToInt(const std::thread::id &aHandle) {
 unsigned long int Thread::getThreadId() {
 	std::stringstream ssThreadId;
 
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 	ssThreadId << _threadIDToInt(tthread::this_thread::get_id());
 #else
 	ssThreadId << tthread::this_thread::get_id();
@@ -164,7 +164,7 @@ void Monitor::wait(RMutex& mutex, uint32_t ms) {
 	if (ms <= 0) {
 		_cond.wait(mutex);
 	} else {
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 		_cond.wait_for(mutex, std::chrono::milliseconds(ms));
 #else
 		_cond.wait_for(mutex, ms);

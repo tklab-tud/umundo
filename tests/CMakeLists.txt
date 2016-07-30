@@ -54,6 +54,41 @@ add_test(test-stack-api ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-greeter)
 set_target_properties(test-core-greeter PROPERTIES FOLDER "Tests")
 add_dependencies(ALL_TESTS test-core-greeter)
 
+# make sure all headers are self-reliant
+set (UMUNDO_PUBLIC_HEADERS 
+	"${PROJECT_SOURCE_DIR}/src/umundo.h"
+)
+
+if (APPLE)
+	set (UMUNDO_PUBLIC_HEADERS 
+		${UMUNDO_PUBLIC_HEADERS}
+		"${PROJECT_SOURCE_DIR}/src/bindings/objc/umundo-objc.h"
+	)
+endif()
+
+foreach(UMUNDO_HEADER ${UMUNDO_PUBLIC_HEADERS} )
+	STRING(REGEX REPLACE "${PROJECT_SOURCE_DIR}/src/" "" UMUNDO_REL_HEADER ${UMUNDO_HEADER})
+
+	set(HEADER_TEST)
+	set(HEADER_TEST "${HEADER_TEST}#include \"${UMUNDO_HEADER}\"\n")
+	set(HEADER_TEST "${HEADER_TEST}int main(int argc, char** argv) {}")
+	FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/headers/${UMUNDO_REL_HEADER}.cpp ${HEADER_TEST})
+
+	add_test(NAME "header/${UMUNDO_REL_HEADER}"
+		COMMAND ${CMAKE_COMMAND}
+			-DTESTFILE:FILEPATH=${CMAKE_CURRENT_BINARY_DIR}/headers/${UMUNDO_REL_HEADER}.cpp
+			-DCC_BIN:FILEPATH=${CMAKE_C_COMPILER}
+			-DCXX_BIN:FILEPATH=${CMAKE_CXX_COMPILER}
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DUMUNDO_PLATFORM_ID=${UMUNDO_PLATFORM_ID}
+			-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
+			-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_header_compiles.cmake)
+	set_property(TEST "header/${UMUNDO_REL_HEADER}" PROPERTY LABELS "header/${UMUNDO_REL_HEADER}")
+	
+endforeach()
+
 if(NOT WIN32)
 	# can't be bothered at the moment - go get an actual operating system .. *sigh*
 	add_executable(test-core-threads test-threads.cpp)

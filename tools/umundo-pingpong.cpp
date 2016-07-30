@@ -17,8 +17,11 @@
 #include "umundo.h"
 #include <iostream>
 #include <string.h>
+
 #ifdef WIN32
 #include "XGetopt.h"
+#else
+#include <getopt.h>
 #endif
 
 using namespace umundo;

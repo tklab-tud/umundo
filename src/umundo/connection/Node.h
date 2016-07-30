@@ -29,8 +29,6 @@
 #include "umundo/connection/Publisher.h"
 #include "umundo/connection/Subscriber.h"
 
-#include <boost/enable_shared_from_this.hpp>
-
 namespace umundo {
 
 class Connectable;

@@ -22,23 +22,23 @@
 #define PTHREAD_H_KU2YWI3W
 #include "umundo/Common.h"
 
-#ifndef WITH_CXX11
+#ifdef WITHOUT_CXX11
 #include "umundo/thread/tinythread.h"
 #endif
 
 // C++11
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 #include <mutex>
 #include <thread>
 #include <condition_variable>
 #endif
 
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 #define tthread std
 #endif
 
 // this is a hack until we get a compiler firewall per Pimpl
-#ifndef WITH_CXX11
+#ifdef WITHOUT_CXX11
 #	ifdef _WIN32
 #		if !(defined THREAD_PTHREAD || defined THREAD_WIN32)
 #			define THREAD_WIN32 1
@@ -182,7 +182,7 @@ public:
 	void wait(RMutex& mutex, uint32_t ms);
 
 private:
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 	std::condition_variable_any _cond;
 #else
 	tthread::condition_variable _cond;

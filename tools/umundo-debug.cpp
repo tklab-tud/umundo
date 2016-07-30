@@ -56,6 +56,8 @@ if (mIter->substr(0, key.length()) == key) { \
 
 #ifdef WIN32
 #include "XGetopt.h"
+#else
+#include <getopt.h>
 #endif
 
 #if defined UNIX

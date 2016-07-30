@@ -56,7 +56,7 @@
 #include <string>
 #include <sstream>
 
-#ifdef WITH_CXX11
+#ifndef WITHOUT_CXX11
 #include <memory>
 #define SharedPtr std::shared_ptr
 #define WeakPtr std::weak_ptr

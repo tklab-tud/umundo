@@ -22,7 +22,7 @@ bool testNodeConnections() {
 		node1->add(*node2);
 		node2->add(*node1);
 
-		usleep(100000);
+		Thread::sleepMs(100);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
 		std::map<std::string, NodeStub> peers2 = node2->connectedTo();
 
@@ -37,7 +37,7 @@ bool testNodeConnections() {
 		assert(peers2.begin()->second.getAddress() == node1->getAddress());
 
 		delete node1;
-		usleep(100000);
+		Thread::sleepMs(100);
 
 		peers2 = node2->connectedTo();
 		assert(peers2.size() == 0);
@@ -54,7 +54,7 @@ bool testNodeConnections() {
 		// connect both nodes and make sure they know each other
 		node1->add(*node2);
 
-		usleep(100000);
+		Thread::sleepMs(100);
 		std::map<std::string, NodeStub> peers1 = node1->connectedTo();
 		std::map<std::string, NodeStub> peers2 = node2->connectedFrom();
 
@@ -70,7 +70,7 @@ bool testNodeConnections() {
 
 		// add other node just now
 		node2->add(*node1);
-		usleep(100000);
+		Thread::sleepMs(100);
 
 		assert(peers1.size() == 1);
 		assert(peers1.find(node2->getUUID()) != peers1.end());
@@ -105,13 +105,13 @@ bool testGeneralStuff() {
 //		assert(node2->getPort() == 20001);
 
 		node2->addPublisher(pub1);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		Publisher pub = node2->getPublisher(pub1.getUUID());
 		assert(pub == pub1);
 
 		node1->add(*node2);
-		usleep(100000);
+		Thread::sleepMs(100);
 
 		// get peers of node1 and assert that node2 is known qualified
 		std::map<std::string, NodeStub> peers;
@@ -136,7 +136,7 @@ bool testGeneralStuff() {
 		assert(peers.begin()->second.getTransport().length() == 0);
 
 		node1->addSubscriber(sub1);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		// sub1 was connected to pub1
 		std::map<std::string, PublisherStub> otherPubs = sub1.getPublishers();
@@ -145,7 +145,7 @@ bool testGeneralStuff() {
 
 		// assert that we can send and receive
 		pub1.send("asdf", 4);
-		usleep(10000);
+		Thread::sleepMs(10);
 		assert(sub1.hasNextMsg());
 		Message* msg = sub1.getNextMsg();
 		assert(msg->size() == 4);
@@ -153,12 +153,12 @@ bool testGeneralStuff() {
 		delete msg;
 
 		node1->removeSubscriber(sub1);
-		usleep(10000);
+		Thread::sleepMs(10);
 		otherPubs = sub1.getPublishers();
 		assert(otherPubs.size() == 0);
 
 		node2->addPublisher(pub2);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		peers = node1->connectedTo();
 		pubs = peers.begin()->second.getPublishers();
@@ -167,7 +167,7 @@ bool testGeneralStuff() {
 		assert(pubs.find(pub2.getUUID()) != pubs.end());
 
 		node2->removePublisher(pub1);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		pubs = peers.begin()->second.getPublishers();
 		assert(pubs.size() == 1);
@@ -175,7 +175,7 @@ bool testGeneralStuff() {
 
 		// now connect the other way around
 		node2->add(*node1);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		// both nodes know each other fully qualified now
 		peers = node1->connectedTo();
@@ -195,7 +195,7 @@ bool testGeneralStuff() {
 		// activate pub1 on node1
 		node2->removePublisher(pub2);
 		node1->addPublisher(pub1);
-		usleep(100000);
+		Thread::sleepMs(100);
 
 		// check that each node has a current view of the others publishers
 		peers = node1->connectedTo();
@@ -213,7 +213,7 @@ bool testGeneralStuff() {
 		peers = node1->connectedTo();
 		pubs = peers.begin()->second.getPublishers();
 		assert(pubs.size() == 0);
-		usleep(10000);
+		Thread::sleepMs(10);
 
 		node1->removePublisher(pub1);
 

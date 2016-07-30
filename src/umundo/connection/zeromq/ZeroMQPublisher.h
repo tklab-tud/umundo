@@ -23,7 +23,6 @@
 
 
 #include "umundo/Common.h"
-#include <boost/enable_shared_from_this.hpp>
 
 #include "umundo/connection/Publisher.h"
 #include "umundo/thread/Thread.h"

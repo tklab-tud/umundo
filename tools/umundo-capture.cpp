@@ -23,6 +23,8 @@
 
 #ifdef WIN32
 #include "XGetopt.h"
+#else
+#include <getopt.h>
 #endif
 
 #ifdef WIN32

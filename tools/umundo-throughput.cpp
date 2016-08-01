@@ -22,6 +22,7 @@
 #include <fstream>      // std::fstream
 
 #ifdef WIN32
+#include <windows.h>
 #include "XGetopt.h"
 #endif
 

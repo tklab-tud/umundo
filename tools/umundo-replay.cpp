@@ -23,6 +23,7 @@
 #include <iomanip>
 
 #ifdef WIN32
+#include <windows.h>
 #include "XGetopt.h"
 #else
 #include <getopt.h>

@@ -29,6 +29,10 @@
 #include <sys/time.h> // gettimeofday
 #endif
 
+#ifdef WIN32
+#include <windows.h> // LARGE_INTEGER
+#endif
+
 namespace umundo {
 
 Thread::Thread() {

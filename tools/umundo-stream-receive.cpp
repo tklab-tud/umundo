@@ -21,10 +21,10 @@
 #include <exception>
 
 #ifdef WIN32
-#include "XGetopt.h"
 #include <Winsock2.h>
 #include <Iphlpapi.h>
 #include <Ws2tcpip.h>
+#include "XGetopt.h"
 typedef int socklen_t;
 #endif
 
@@ -42,6 +42,7 @@ typedef int socklen_t;
 #include <errno.h> // errno
 #include <sstream>
 #include <iomanip>
+#include <stdexcept> // std::runtime_error
 
 #ifdef APPLE
 #include <net/if_dl.h> // sockaddr_dl and LLADDR

@@ -55,6 +55,7 @@ if (mIter->substr(0, key.length()) == key) { \
 #include <zmq.h>
 
 #ifdef WIN32
+#include <windows.h>
 #include "XGetopt.h"
 #else
 #include <getopt.h>
@@ -596,7 +597,7 @@ int main(int argc, char** argv) {
 	}
 
 	zmq_ctx = zmq_ctx_new();
-	uuid = UUID::getUUID();
+	uuid = umundo::UUID::getUUID(); // MSVC in VS12
 
 	Discovery disc(Discovery::MDNS, domain);
 	DebugEndPointResultSet debugRS;

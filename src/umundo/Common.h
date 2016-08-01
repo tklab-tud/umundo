@@ -65,6 +65,7 @@
 #else
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #define SharedPtr boost::shared_ptr
 #define WeakPtr boost::weak_ptr
 #define StaticPtrCast boost::static_pointer_cast

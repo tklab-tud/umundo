@@ -60,6 +60,11 @@ if (WIN32)
 	
 endif()
 
+if (IOS)
+	add_definitions("-DHAVE_SELECT")
+	
+endif()
+
 if (UNIX)
 	file(GLOB UNIX_FILES 
 		# ${RE_ROOT}/src/net/bsd/*.c
@@ -83,6 +88,9 @@ endif()
 
 include(CheckIncludeFile)
 CHECK_INCLUDE_FILE(ifaddrs.h HAVE_IFADDRS_H)
+CHECK_INCLUDE_FILE(sys/select.h HAVE_SELECT_H)
+CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
+
 CHECK_INCLUDE_FILE(sys/time.h HAVE_SYS_TIME_H)
 CHECK_INCLUDE_FILE(sys/epoll.h HAVE_SYS_EPOLL_H)
 # CHECK_INCLUDE_FILE(openssl/crypto.h HAVE_OPENSSL_CRYPTO_H)
@@ -93,7 +101,9 @@ if (HAVE_SYS_TIME_H)
 endif()
 
 if (NOT HAVE_SYS_EPOLL_H)
-			LIST(REMOVE_ITEM SOURCE_FILES "${RE_ROOT}/src/main/epoll.c")
+	LIST(REMOVE_ITEM SOURCE_FILES "${RE_ROOT}/src/main/epoll.c")
+else()
+	add_definitions("-DHAVE_EPOLL")
 endif()
 
 if (NOT HAVE_OPENSSL_CRYPTO_H)
@@ -107,6 +117,20 @@ endif()
 if (HAVE_INTTYPES_H AND NOT WIN32)
 	add_definitions("-DHAVE_INTTYPES_H")
 endif()
+
+if (UNIX)
+	add_definitions("-DHAVE_KQUEUE")
+endif()
+
+if (HAVE_SELECT_H)
+	add_definitions("-DHAVE_SELECT")
+	add_definitions("-DHAVE_SELECT_H")
+endif()
+
+if (HAVE_UNISTD_H)
+	add_definitions("-DHAVE_UNISTD_H")
+endif()
+
 
 add_definitions("-DRELEASE")
 

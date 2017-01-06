@@ -213,8 +213,6 @@ void ZeroMQSubscriber::run() {
 		if (items[1].revents & ZMQ_POLLIN && _receiver != NULL) {
 			Message* msg = getNextMsg();
 			if (msg) {
-				if (msg->isCompressed())
-					msg->uncompress();
 				_receiver->receive(msg);
 				delete msg;
 			}
@@ -263,7 +261,6 @@ void ZeroMQSubscriber::run() {
 Message* ZeroMQSubscriber::getNextMsg() {
 	int32_t more;
 	size_t more_size = sizeof(more);
-	bool enveloped = false;
 	bool readChannelName = false;
 
 	Message* msg = new Message();
@@ -299,71 +296,126 @@ Message* ZeroMQSubscriber::getNextMsg() {
 			}
 		}
 
-		// only check for first packet in envelope
-		if (!enveloped)
-			enveloped = (more > 0);
+        const char* readPtr = msgData;
+        size_t remainingSize = msgSize;
 
-		if (enveloped) {
+        while(true) {
+            // Message Version
+            uint8_t msgVersion = 0;
+            if (remainingSize > 0) {
+                readPtr = Message::read(readPtr, &msgVersion);
+                remainingSize -= 1;
+            } else {
+                UM_LOG_ERR("Subscriber on channel %s received empty message", _channelName.c_str());
+                delete msg;
+                return NULL;
+            }
+            
+            if (remainingSize > 0) {
+                switch (msgVersion) {
+                case Message::UM_MSG_VERSION_01: {
+                    
+                    // publisher identity
+                    std::string pubUUID;
+                    readPtr = UUID::readBinToHex(readPtr, pubUUID);
+                    remainingSize -= 16;
 
-			// original enveloped format
-			if (more) {
-				char* key = (char*)zmq_msg_data(&message);
-				char* value = ((char*)zmq_msg_data(&message) + strlen(key) + 1);
+                    if (!UUID::isUUID(pubUUID)) {
+                        UM_LOG_ERR("Subscriber on channel %s received gibberish", _channelName.c_str());
+                        zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+                        delete msg;
+                        return NULL;
+                    }
+                    
+                    // read second byte with header flags
+                    uint8_t headerFlags;
+                    readPtr = Message::read(readPtr, &headerFlags);
+                    remainingSize -= 1;
+                    
+                    
+                    // read next byte++ with the header length
+                    uint64_t headerSize = 0;
+                    readPtr = Message::readCompact(readPtr, &headerSize, remainingSize);
+                    if (readPtr == 0) {
+                        UM_LOG_ERR("Subscriber on channel %s received gibberish", _channelName.c_str());
+                        zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+                        delete msg;
+                        return NULL;
+                    }
+                    remainingSize -= 1;
+                    
+                    if (headerSize > remainingSize) {
+                        UM_LOG_ERR("Subscriber on channel %s received wrong header size", _channelName.c_str());
+                        zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+                        delete msg;
+                        return NULL;
+                    }
+                    
+                    const char* headerData = readPtr;
+                    
+                    uint64_t payloadSize = (remainingSize - headerSize);
+                    const char* payloadData = headerData + headerSize;
+                    
+                    remainingSize -= headerSize;
+                    remainingSize -= payloadSize;
+                    assert(remainingSize == 0);
+                    
+                    if (headerFlags & Message::UM_COMPR_MSG) {
 
-				// is this the first message with the channelname?
-				if (strlen(key) + 1 == msgSize &&
-				        msg->getMeta().find(key) == msg->getMeta().end()) {
-					msg->putMeta("um.channel", key);
-				} else {
-					if (strlen(key) + strlen(value) + 2 != msgSize) {
-						UM_LOG_ERR("Received malformed meta field %d + %d + 2 != %d", strlen(key), strlen(value), msgSize);
-						zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-						break;
-					} else {
-						msg->putMeta(key, value);
-					}
-				}
-				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-			} else {
-				// last message contains actual data
-				msg->setData((char*)zmq_msg_data(&message), msgSize);
-				zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-				break; // last message part
-			}
-		} else {
+                        if (headerFlags & Message::UM_COMPR_KEYFRAME) {
+                            if (_pubComprCtx.find(pubUUID) != _pubComprCtx.end()) {
+                                Message::freeCompression(_pubComprCtx[pubUUID]);
+                            }
+                            _pubComprCtx[pubUUID] = Message::createCompression();
+                        } else {
+                            if (_pubComprCtx.find(pubUUID) == _pubComprCtx.end()) {
+                                UM_LOG_ERR("Subscriber on channel %s waiting for keyframe", _channelName.c_str());
+                                zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+                                delete msg;
+                                return NULL;
+                            }
+                        }
+                        
+                        void* ctx = _pubComprCtx[pubUUID];
+                        if (headerFlags & Message::UM_COMPR_LZ4) {
+                            if (headerSize > 0)
+                                msg->uncompress("lz4", ctx, headerData, headerSize, Message::HEADER);
+                            if (payloadSize > 0)
+                                msg->uncompress("lz4", ctx, payloadData, payloadSize, Message::PAYLOAD);
+                        }
+                    } else {
+                        // uncompressed, just read into the message
+                        msg->setData(payloadData, payloadSize);
+                        msg->readHeaders(headerData, headerSize);
+                    }
+                    
+                    zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
+                    goto MESSAGE_READ;
 
-			// alternate, non-enveloped format
-			const char* readPtr = msgData;
-			size_t remainingSize = msgSize;
-
-			while(true) {
-				if (remainingSize == 0) {
-					// no data
-					zmq_msg_close(&message) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
-					goto RETURN_MSG;
-				} else if (readPtr[0] == '\0') {
-					// data
-					readPtr++;
-					if (remainingSize > 1)
-						msg->setData(readPtr, remainingSize - 1);
-					remainingSize = 0;
-				} else {
-					// kvps
-					std::string key;
-					std::string value;
-					readPtr = Message::read(readPtr, key, remainingSize);
-					remainingSize = msgSize - (readPtr - msgData);
-
-					readPtr = Message::read(readPtr, value, remainingSize);
-					remainingSize = msgSize - (readPtr - msgData);
-
-					msg->putMeta(key, value);
-				}
-			}
-		}
+                }
+                        
+                    
+                default:
+                    UM_LOG_ERR("Unsupported message version %d", msgVersion);
+                    delete msg;
+                    return NULL;
+                }
+            } else {
+                UM_LOG_ERR("Subscriber on channel %s received gibberish", _channelName.c_str());
+                delete msg;
+                return NULL;
+            }
+        }
 	}
-RETURN_MSG:
-	return msg;
+MESSAGE_READ:
+    zmq_getsockopt(_subSocket, ZMQ_RCVMORE, &more, &more_size) && UM_LOG_WARN("zmq_getsockopt: %s",zmq_strerror(errno));
+    if (more) {
+        UM_LOG_ERR("Subscriber on channel %s received wrong message format", _channelName.c_str());
+        delete msg;
+        return NULL;
+    }
+
+    return msg;
 }
 
 bool ZeroMQSubscriber::hasNextMsg() {

@@ -162,8 +162,8 @@ protected:
 		std::map<std::string, T> nrChannelMsg; ///< number of message received per channel
 		std::map<std::string, T> sizeChannelMsg; ///< accumulate size of messages
 		T nrMetaMsgRcvd;
-		T sizeMetaMsgRcvd;
-		T nrMetaMsgSent;
+        T sizeMetaMsgRcvd;
+        T nrMetaMsgSent;
 		T sizeMetaMsgSent;
 	};
 
@@ -232,7 +232,7 @@ protected:
 	void remoteNodeDisconnect(const std::string& address);
 	void remoteNodeConfirm(const std::string& uuid, SharedPtr<NodeConnection> client, const std::list<SharedPtr<PublisherStubImpl> >& publishers);
 
-	void writeNodeInfo(zmq_msg_t* msg, Message::Type type);
+	void writeNodeInfo(zmq_msg_t* msg, Message::ControlType type);
 
 //	void broadCastNodeInfo(uint64_t now);
 //	void removeStaleNodes(uint64_t now);

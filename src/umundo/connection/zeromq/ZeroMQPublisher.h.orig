@@ -23,7 +23,6 @@
 
 
 #include "umundo/Common.h"
-#include <boost/enable_shared_from_this.hpp>
 
 #include "umundo/connection/Publisher.h"
 #include "umundo/thread/Thread.h"
@@ -61,9 +60,9 @@ protected:
 private:
 	void run();
 
-    Message::Compression _compressionType;
-    int _comressionLevel;
-    
+    std::string _compressionType;
+	int _comressionLevel;
+
 	void* _pubSocket;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
 	typedef std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs_t;

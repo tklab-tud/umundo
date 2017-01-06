@@ -201,7 +201,7 @@ endif()
 # 	COMPONENT tools
 # )
 
-add_executable(umundo-throughput umundo-throughput.cpp ${GETOPT_WIN32})
+add_executable(umundo-throughput umundo-throughput.cpp ${GETOPT_WIN32} ${PROJECT_SOURCE_DIR}/contrib/src/lz4/datagen.c)
 target_link_libraries(umundo-throughput umundo)
 set_target_properties(umundo-throughput PROPERTIES FOLDER "Tools")
 

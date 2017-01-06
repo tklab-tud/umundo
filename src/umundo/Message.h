@@ -36,8 +36,8 @@ public:
 	/**
 	 * On-wire message types
 	 */
-	enum Type {
-		UM_VERSION            = 0xF005, // version 0.5 of the message format
+	enum ControlType {
+        UM_VERSION            = 0xF005, // version 0.5 of the control message format
 		UM_CONNECT_REQ        = 0x0001, // sent to a remote node when it was added
 		UM_CONNECT_REP        = 0x0002, // reply from a remote node
 		UM_NODE_INFO          = 0x0003, // information about a node and its publishers (unused, CONNECT_REP for now)
@@ -49,19 +49,25 @@ public:
 		UM_SHUTDOWN           = 0x000C, // node is shutting down
 	};
 
-	enum Compression {
-		COMPRESS_NONE         = 0x0000,
-		COMPRESS_LZ4          = 0x0001,
-		COMPRESS_FASTLZ       = 0x0002,
-		COMPRESS_MINIZ        = 0x0004,
-	};
-
+    enum HeaderField {
+        UM_MSG_VERSION_01     = 0x01,     // version 0.1 of the data message format
+        UM_MSG_VERSION        = UM_MSG_VERSION_01,
+        UM_COMPR_MSG          = (1 << 7), // header is compressed
+        UM_COMPR_KEYFRAME     = (1 << 6), // compression keyframe
+        UM_COMPR_LZ4          = 0x01,     // header compressed with LZ4
+    };
+    
 	enum Flags {
 		NONE            = 0x0000, ///< Default is to copy data and deallocate
 		ADOPT_DATA      = 0x0001, ///< Do not copy into message but deallocate when done
-		WRAP_DATA       = 0x0002, ///< Just wrap data, do not copy, do not deallocate
+        WRAP_DATA       = 0x0002, ///< Just wrap data, do not copy, do not deallocate
 	};
 
+    enum Compression {
+        HEADER          = 0x0000, ///< Handle the header of the message
+        PAYLOAD         = 0x0001, ///< Handle the payload of the message
+    };
+    
 	static const char* typeToString(uint16_t type) {
 		if (type == UM_VERSION)            return "VERSION";
 		if (type == UM_CONNECT_REQ)        return "CONNECT_REQ";
@@ -75,7 +81,7 @@ public:
 		if (type == UM_SHUTDOWN)           return "SHUTDOWN";
 		return "UNKNOWN";
 	}
-
+    
 	static char* write(char* to, const std::string& value, bool terminate = true);
 	static char* write(char* to, uint64_t value);
 	static char* write(char* to, uint32_t value);
@@ -87,6 +93,11 @@ public:
 	static char* write(char* to, int8_t value);
 	static char* write(char* to, float value);
 	static char* write(char* to, double value);
+    static char* writeCompact(char* to, uint64_t value, size_t remaining);
+
+    size_t getHeaderDataSize();
+    char* writeHeaders(char* to, size_t size);
+    const char* readHeaders(const char* from, size_t size);
 
 	static const char* read(const char* from, std::string& value, size_t maxLength);
 	static const char* read(const char* from, uint64_t* value);
@@ -99,6 +110,7 @@ public:
 	static const char* read(const char* from, int8_t* value);
 	static const char* read(const char* from, float* value);
 	static const char* read(const char* from, double* value);
+    static const char* readCompact(const char* from, uint64_t* value, size_t remaining);
 
 private:
 	class NilDeleter;
@@ -140,10 +152,27 @@ public:
 		_doneCallback = other._doneCallback;
 	}
 
+    /**
+     * Construct from compressed data
+     */
+    Message(const std::string& name,
+            void* ctx,
+            const char* compressedHeaderData,
+            size_t compressedHeaderLength,
+            const char* compressedPayloadData,
+            size_t compressedPayloadLength) {
+        uncompress(name, ctx, compressedHeaderData, compressedHeaderLength, HEADER);
+        uncompress(name, ctx, compressedPayloadData, compressedPayloadLength, PAYLOAD);
+    }
+    
+    static void* createCompression();
+    static void freeCompression(void* ctx);
+    static void resetCompression(void* ctx);
+    
 	virtual ~Message() {
 	}
 
-	virtual char* data() const                                    {
+	virtual char* data() const                                          {
 		return _data.get();
 	}
 	virtual size_t size() const                                         {
@@ -154,13 +183,20 @@ public:
 		return _flags;
 	}
 
-	void compress();
-	void compress(Message::Compression type, int level = -1);
-	void uncompress();
-	bool isCompressed() {
-		return (_meta.find("um.compressed") != _meta.end());
-	}
-
+    size_t getCompressBounds(const std::string& name, void* ctx, Compression type);
+    size_t compress(const std::string& name,
+                    void* ctx,
+                    char* data,
+                    size_t size,
+                    Compression type,
+                    int level = -1);
+    size_t uncompress(const std::string& name,
+                      void* ctx,
+                      const char* data,
+                      size_t size,
+                      Compression type,
+                      size_t origSize = 0);
+    
 	virtual void setData(const char* data, size_t length)               {
 		_size = length;
 		_data = SharedPtr<char>((char*)malloc(_size));

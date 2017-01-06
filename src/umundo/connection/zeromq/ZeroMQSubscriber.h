@@ -59,6 +59,8 @@ protected:
 	void* _readOpSocket;
 	void* _writeOpSocket;
 	std::multimap<std::string, std::string> _domainPubs;
+    
+    std::map<std::string, void*> _pubComprCtx;
 	RMutex _mutex;
 
 private:

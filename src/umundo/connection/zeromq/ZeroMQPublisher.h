@@ -60,8 +60,10 @@ protected:
 private:
 	void run();
 
-	Message::Compression _compressionType;
-	int _comressionLevel;
+	std::string _compressionType;
+    int _comressionLevel;
+    bool _compressionWithState;
+    struct timeval _compressionRefreshInterval;
 
 	void* _pubSocket;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
@@ -73,6 +75,9 @@ private:
 	Monitor _pubLock;
 	RMutex _mutex;
 
+    void* _compressionContext;
+    struct timeval _refreshedCompressionContext;
+    
 	friend class Factory;
 };
 

@@ -716,10 +716,13 @@ void ZeroMQNode::receivedFromNodeSocket() {
 
 		if (type == Message::UM_SUBSCRIBE) {
 			// confirm subscription
-			if (!_subscriptions[subUUID].subStub) {
+            if (_subscriptions.find(subUUID) == _subscriptions.end()) {
+                assert(_subscriptions[subUUID].isZMQConfirmed == false);
+            }
+            if (!_subscriptions[subUUID].subStub) {
 				_subscriptions[subUUID].subStub = SubscriberStub(subImpl);
 			}
-			_subscriptions[subUUID].nodeUUID = from;
+            _subscriptions[subUUID].nodeUUID = from;
 			_subscriptions[subUUID].address = address;
 			_subscriptions[subUUID].pending[pubUUID] = _pubs[pubUUID];
 
@@ -777,13 +780,16 @@ void ZeroMQNode::receivedFromPubSocket() {
 			UM_LOG_INFO("%s: Got 0MQ subscription on %s", SHORT_UUID(_uuid).c_str(), subChannel.c_str());
 			if (subUUID.length() > 0) {
 				// every subscriber subscribes to its uuid prefixed with a "~" for late alphabetical order
-				_subscriptions[subUUID].isZMQConfirmed = true;
+                if (_subscriptions[subUUID].isZMQConfirmed) {
+                    UM_LOG_INFO("%s: 0MQ subscription on %s already confirmed", SHORT_UUID(_uuid).c_str(), subChannel.c_str());
+                }
+                _subscriptions[subUUID].isZMQConfirmed = true;
 				if (_subscriptions[subUUID].subStub)
 					confirmSubscription(subUUID);
 			}
 		} else {
-			UM_LOG_INFO("%s: Got 0MQ unsubscription on %s", SHORT_UUID(_uuid).c_str(), subChannel.c_str());
 			if (subUUID.size() && _subscriptions[subUUID].isZMQConfirmed) {
+                UM_LOG_INFO("%s: Got 0MQ unsubscription from %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subUUID).c_str(), subChannel.c_str());
 				std::map<std::string, Publisher>::iterator pubIter = _subscriptions[subUUID].confirmed.begin();
 				while(pubIter != _subscriptions[subUUID].confirmed.end()) {
 					if(_connFrom.find(_subscriptions[subUUID].nodeUUID)!=_connFrom.end())
@@ -792,7 +798,15 @@ void ZeroMQNode::receivedFromPubSocket() {
 						pubIter->second.removed(_subscriptions[subUUID].subStub, _connTo[_subscriptions[subUUID].nodeUUID]->node);
 					pubIter++;
 				}
-			}
+            } else {
+                UM_LOG_INFO("%s: Ignoring unknown 0MQ unsubscription from %s on %s", SHORT_UUID(_uuid).c_str(), SHORT_UUID(subUUID).c_str(), subChannel.c_str());
+            }
+            
+            // race condition with lingering sockets - think again
+            if (subUUID.length() > 0) {
+                _subscriptions[subUUID].isZMQConfirmed = false;
+            }
+
 		}
 
 		zmq_getsockopt (_pubSocket, ZMQ_RCVMORE, &more, &moreSize) && UM_LOG_ERR("zmq_getsockopt: %s", zmq_strerror(errno));
@@ -1364,12 +1378,13 @@ void ZeroMQNode::confirmSubscription(const std::string& subUUID) {
 
 	Subscription& pendSub = _subscriptions[subUUID];
 
-	if (!pendSub.subStub)
+    if (!pendSub.subStub) {
 		return;
+    }
 
-	if (pendSub.subStub.getImpl()->implType == Subscriber::ZEROMQ &&
-	        !pendSub.isZMQConfirmed)
-		return;
+	if (!pendSub.isZMQConfirmed) {
+        return;
+    }
 
 	if (_connFrom.find(pendSub.nodeUUID) != _connFrom.end()) {
 		_connFrom[pendSub.nodeUUID].addSubscriber(pendSub.subStub);
@@ -1389,7 +1404,7 @@ void ZeroMQNode::confirmSubscription(const std::string& subUUID) {
 	pendSub.pending.clear();
 }
 
-void ZeroMQNode::writeNodeInfo(zmq_msg_t* msg, Message::Type type) {
+void ZeroMQNode::writeNodeInfo(zmq_msg_t* msg, Message::ControlType type) {
 	UM_TRACE("writeNodeInfo");
 
 	zmq_msg_init(msg) && UM_LOG_WARN("zmq_msg_init: %s", zmq_strerror(errno));

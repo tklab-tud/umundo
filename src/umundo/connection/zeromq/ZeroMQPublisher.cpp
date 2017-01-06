@@ -36,9 +36,26 @@
 #include <stdio.h> // snprintf
 #endif
 
+#include <sys/time.h> // gettimeofday
+
+#define um_timersub(a, b, result)                                             \
+  do {                                                                        \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;                             \
+    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;                          \
+    if ((result)->tv_usec < 0) {                                              \
+      --(result)->tv_sec;                                                     \
+      (result)->tv_usec += 1000000;                                           \
+    }                                                                         \
+} while (0)
+
 namespace umundo {
 
-ZeroMQPublisher::ZeroMQPublisher() : _compressionType(Message::COMPRESS_NONE), _comressionLevel(-1) {}
+ZeroMQPublisher::ZeroMQPublisher() : _comressionLevel(-1), _compressionWithState(false), _compressionContext(NULL) {
+    _refreshedCompressionContext.tv_sec = 0;
+    _refreshedCompressionContext.tv_usec = 0;
+    _compressionRefreshInterval.tv_sec = 0;
+    _compressionRefreshInterval.tv_usec = 0;
+}
 
 void ZeroMQPublisher::init(const Options* config) {
 	RScopeLock lock(_mutex);
@@ -57,13 +74,24 @@ void ZeroMQPublisher::init(const Options* config) {
 	std::map<std::string, std::string> options = config->getKVPs();
 
 	if (options.find("pub.compression.type") != options.end()) {
-		_compressionType = (Message::Compression)strTo<int>(options["pub.compression.type"]);
+		_compressionType = options["pub.compression.type"];
 	}
 	if (options.find("pub.compression.level") != options.end()) {
 		_comressionLevel = strTo<int>(options["pub.compression.level"]);
 	}
+    if (options.find("pub.compression.withState") != options.end()) {
+        _compressionWithState = strTo<bool>(options["pub.compression.withState"]);
+    }
+    if (options.find("pub.compression.refreshInterval") != options.end()) {
+        int refreshInterval = strTo<int>(options["pub.compression.refreshInterval"]);
+        _compressionRefreshInterval.tv_sec = refreshInterval / 1000;
+        _compressionRefreshInterval.tv_usec = 1000 * (refreshInterval % 1000);
+    }
 
-	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressionType != Message::COMPRESS_NONE ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
+    
+    
+    
+	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressionType.size() > 0 ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
 }
 
@@ -148,6 +176,9 @@ void ZeroMQPublisher::added(const SubscriberStub& sub, const NodeStub& node) {
 		_greeter->welcome(pub, sub);
 	}
 
+    // reset compression context
+    _compressionContext = NULL;
+    
 	if (_queuedMessages.find(sub.getUUID()) != _queuedMessages.end()) {
 		UM_LOG_INFO("Subscriber with queued messages joined, sending %d old messages", _queuedMessages[sub.getUUID()].size());
 		std::list<std::pair<uint64_t, Message*> >::iterator msgIter = _queuedMessages[sub.getUUID()].begin();
@@ -196,9 +227,6 @@ void ZeroMQPublisher::send(Message* msg) {
 		return;
 	}
 
-	if (_compressionType != Message::COMPRESS_NONE)
-		msg->compress(_compressionType, _comressionLevel);
-
 	// topic name or explicit subscriber id is first message in envelope
 	zmq_msg_t channelEnvlp;
 
@@ -219,17 +247,147 @@ void ZeroMQPublisher::send(Message* msg) {
 	zmq_sendmsg(_pubSocket, &channelEnvlp, ZMQ_SNDMORE) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
 	zmq_msg_close(&channelEnvlp) && UM_LOG_WARN("zmq_msg_close: %s",zmq_strerror(errno));
 
-	std::map<std::string, std::string> metaKeys = msg->getMeta();
-
-	// default meta fields
-	metaKeys["um.pub"] = _uuid;
-	metaKeys["um.proc"] = procUUID;
-	metaKeys["um.host"] = hostUUID;
-
 	// user supplied mandatory meta fields
-	metaKeys.insert(_mandatoryMeta.begin(), _mandatoryMeta.end());
+    for (std::map<std::string, std::string>::const_iterator metaIter = _mandatoryMeta.begin(); metaIter != _mandatoryMeta.end(); metaIter++) {
+        msg->putMeta(metaIter->first, metaIter->second);
+    }
 
-#if 1
+    // default meta fields
+    msg->putMeta("um.pub", _uuid);
+    msg->putMeta("um.proc", procUUID);
+    msg->putMeta("um.host", hostUUID);
+
+    
+    /**
+                                Bits
+     Message Version            8,
+     Publisher UUID             128,
+     Compressed Header          1,
+     Compression KeyFrame       1,
+     Compression Type           3,
+     Reserved                   3,
+     Header Length < 254        8  (Len < 254),
+     Header Length < (1 << 16)  16 (Len == 254),
+     Header Length < (1 << 64)  48 (Len == 255),
+     Header Data                ..
+     Payload Data               ..
+     
+     */
+    RScopeLock lock(_mutex);
+
+#define MAX_MESSAGE_PRELUDE \
+    1 +  /* Message version */ \
+    16 + /* Pub UUID */ \
+    1 +  /* Header Flags */ \
+    9    /* Header Length (may be smaller by preludeOffset) */
+    
+    bool isCompressionKeyFrame = !_compressionWithState;
+    if (_compressionWithState) {
+        // do we need to reset the compression context?
+        if (_compressionRefreshInterval.tv_sec > 0 || _compressionRefreshInterval.tv_usec > 0) {
+            struct timeval now, elapsed;
+            gettimeofday(&now, NULL);
+            um_timersub(&now, &_refreshedCompressionContext, &elapsed);
+            if (elapsed.tv_sec > _compressionRefreshInterval.tv_sec ||
+                (elapsed.tv_sec == _compressionRefreshInterval.tv_sec && elapsed.tv_usec >= _compressionRefreshInterval.tv_usec)) {
+                _compressionContext = NULL;
+                _refreshedCompressionContext = now;
+                // UM_LOG_WARN("asdf: %d:%d > %d:%d", elapsed.tv_sec, elapsed.tv_usec, _compressionRefreshInterval.tv_sec, _compressionRefreshInterval.tv_usec);
+            }
+        }
+        
+        if (_compressionContext == NULL && _compressionType.size() > 0) {
+            _compressionContext = Message::createCompression();
+            isCompressionKeyFrame = true;
+//            UM_LOG_WARN("New compression context!");
+        }
+    } else {
+        _compressionContext = NULL;
+    }
+    
+    
+    if (isCompressionKeyFrame)
+        UM_LOG_INFO("Publisher %s on channel %s sending compression keyframe",
+                    SHORT_UUID(_uuid).c_str(), _channelName.c_str());
+
+    // we can only know the size of the header once we compressed it
+    size_t preludeOffset = 0;
+    size_t headerSize = 0;
+    size_t payloadSize = 0;
+    
+    // maximum size for compressed header and payload
+    if (_compressionType.size() > 0) {
+        // compress
+        headerSize  = msg->getCompressBounds(_compressionType, _compressionContext, Message::HEADER);
+        payloadSize = msg->getCompressBounds(_compressionType, _compressionContext, Message::PAYLOAD);
+    } else {
+        // do not compress
+        headerSize = msg->getHeaderDataSize();
+        payloadSize = msg->size();
+    }
+    // this buffer has to be large enough to hold the complete message
+    char* onwire = (char*)malloc(headerSize + payloadSize + MAX_MESSAGE_PRELUDE);
+    
+    if (_compressionType.size() > 0) {
+        headerSize  = msg->compress(_compressionType, _compressionContext, onwire + MAX_MESSAGE_PRELUDE, headerSize, Message::HEADER);
+        payloadSize = msg->compress(_compressionType, _compressionContext, onwire + headerSize + MAX_MESSAGE_PRELUDE, payloadSize, Message::PAYLOAD);
+    } else {
+        msg->writeHeaders(onwire + MAX_MESSAGE_PRELUDE, headerSize);
+        memcpy(onwire + headerSize + MAX_MESSAGE_PRELUDE, msg->data(), payloadSize);
+    }
+    
+    // we may need to trim some bytes in front as the header length is dynamic
+    if (headerSize < 254) {
+        preludeOffset = 8; // only a single byte for the header
+    } else if (headerSize < (1 << 16)) {
+        preludeOffset = 6; // three bytes for the header
+    }
+    
+    // advance buffer write pointer to account for dynamic header size
+    char* onwireStart = onwire + preludeOffset;
+    char* writePtr = onwireStart;
+    
+    // first byte is the message version
+    writePtr = Message::write(writePtr, (uint8_t)Message::UM_MSG_VERSION);
+    assert(writePtr = onwireStart + 1);
+    
+    // then 16 bytes publisher uuid
+    writePtr = UUID::writeHexToBin(writePtr, _uuid);
+    assert(writePtr = onwireStart + 1 + 16);
+
+    // second byte is the compression info
+    writePtr[0] = '0';
+    if (_compressionType.size() > 0) {
+        writePtr[0] |= Message::UM_COMPR_MSG;
+        if (isCompressionKeyFrame) {
+            writePtr[0] |= Message::UM_COMPR_KEYFRAME;
+        }
+        
+        if (_compressionType == "lz4") {
+            writePtr[0] |= Message::UM_COMPR_LZ4;
+        }
+    }
+    writePtr++;
+    
+    assert(writePtr = onwireStart + 1 + 16 + 1);
+
+    writePtr = Message::writeCompact(writePtr, headerSize, (headerSize + payloadSize + MAX_MESSAGE_PRELUDE) - preludeOffset);
+    assert(writePtr = onwireStart + 1 + 16 + 1 + (9 - preludeOffset));
+    assert(writePtr == onwire + MAX_MESSAGE_PRELUDE);
+    
+    size_t msgSize = (headerSize + payloadSize + (MAX_MESSAGE_PRELUDE - preludeOffset));
+    
+    assert(onwireStart[0] == Message::UM_MSG_VERSION);
+    
+    zmq_msg_t zqmMsg;
+    ZMQ_PREPARE_DATA(zqmMsg, onwireStart, msgSize); // this is yet another memcpy :(
+
+    free(onwire);
+    
+    zmq_sendmsg(_pubSocket, &zqmMsg, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
+    zmq_msg_close(&zqmMsg) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+
+#if 0
 	// all our meta information
 	for (std::map<std::string, std::string>::iterator metaIter = metaKeys.begin(); metaIter != metaKeys.end(); metaIter++) {
 
@@ -270,8 +428,13 @@ void ZeroMQPublisher::send(Message* msg) {
 	} else {
 		memcpy(zmq_msg_data(&payload), msg->data(), msg->size());
 	}
+    
+    zmq_sendmsg(_pubSocket, &payload, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
+    zmq_msg_close(&payload) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
 
-#else
+#endif
+
+#if 0
 	/**
 	 * avoid message envelopes with pub/sub due to the
 	 * dreaded assertion failure: !more (fq.cpp:107) from 0mq
@@ -317,10 +480,11 @@ void ZeroMQPublisher::send(Message* msg) {
 
 	memcpy(writePtr, msg->data(), msg->size());
 
+    zmq_sendmsg(_pubSocket, &payload, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
+    zmq_msg_close(&payload) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
+
 #endif
 
-	zmq_sendmsg(_pubSocket, &payload, 0) >= 0 || UM_LOG_WARN("zmq_sendmsg: %s", zmq_strerror(errno));
-	zmq_msg_close(&payload) && UM_LOG_WARN("zmq_msg_close: %s", zmq_strerror(errno));
 
 }
 

@@ -144,7 +144,8 @@ public:
 	static uint64_t getTimeStampMs(); ///< timestamp in ms since 01.01.1970
 
 private:
-	bool _isStarted;
+    bool _isStarted;
+    bool _isJoined;
 	static void runWrapper(void*);
 	tthread::thread* _thread;
 

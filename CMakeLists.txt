@@ -53,24 +53,13 @@ ENDIF()
 
 project(umundo)
 
+# use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 # where to find the cmake modules we distribute
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/contrib/cmake)
 include("${CMAKE_MODULE_PATH}/UMUNDOMacros.cmake")
 
-# CMake 2.8.11 reports AMD64 for Windows 64Bit, where earlier versions reported x86
-# we resolve it with a 64bit check later
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
-  set(CMAKE_SYSTEM_PROCESSOR "x86")
-endif()
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i386")
-  set(CMAKE_SYSTEM_PROCESSOR "x86")
-endif()
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i686")
-  set(CMAKE_SYSTEM_PROCESSOR "x86")
-endif()
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-  set(CMAKE_SYSTEM_PROCESSOR "x86")
-endif()
 if (NOT CMAKE_SYSTEM_PROCESSOR)
 	# this happens when we ssh into windows to build there
 	set(CMAKE_SYSTEM_PROCESSOR "x86")
@@ -82,7 +71,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(64BIT_LIB_POSTFIX 64)
 	set(64BIT_SUFFIX "_64")
 	# additional library paths to be searched
-	set(FIND_LIBRARY_USE_LIB64_PATHS ON)
 # 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/lib64")
 # 	LIST(APPEND CMAKE_PREFIX_PATH "/usr/lib64")
 endif()
@@ -95,14 +83,10 @@ if (WIN32)
 	set(CMAKE_CXX_COMPILER_ID_LC ${CMAKE_CXX_COMPILER_ID_LC}${MSVC_VERSION})
 endif()
 
-# use folders in the IDEs for the various targets (e.g. Library, Testing, Tools ..)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
 ################################################################
 # Configuration of library type, linking and language bindings
 ################################################################
 
-OPTION(BUILD_CONVENIENCE_LIB  "Build umundo convenience library" OFF)
 OPTION(BUILD_BINDINGS         "Build umundo language bindings" ON)
 OPTION(DIST_PREPARE           "Put libraries into the lib folder of the source tree" OFF)
 OPTION(BUILD_WITH_CXX11       "Build without C++11" ON)
@@ -127,21 +111,12 @@ else()
 endif()
 
 # prefer static libraries for linking
-set(CMAKE_FIND_LIBRARY_SUFFIXES_SHARED ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES_STATIC .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
-if(BUILD_PREFER_STATIC_LIBRARIES)
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_STATIC})
-endif()
-set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+# set(CMAKE_FIND_LIBRARY_SUFFIXES_SHARED ${CMAKE_FIND_LIBRARY_SUFFIXES})
+# set(CMAKE_FIND_LIBRARY_SUFFIXES_STATIC .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+# set(CMAKE_FIND_LIBRARY_SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 # Note: We avoid linking against static libraries on 64Bit due to the -fPIC issues, see:
 # http://www.gentoo.org/proj/en/base/amd64/howtos/index.xml?part=1&chap=3
-if (NOT HOST_64BIT AND CMAKE_CROSSCOMPILING OR WIN32)
-	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" ON)
-else()
-	OPTION(BUILD_PREFER_STATIC_LIBRARIES "Prefer static libraries when resolving dependencies" OFF)
-endif()
 OPTION(DEBUG_THREADS "Print log messages on mutex and monitor access" OFF)
 if (DEBUG_THREADS)
 	add_definitions("-DDEBUG_THREADS")
@@ -206,7 +181,7 @@ endif()
 if (CMAKE_SYSTEM_PROCESSOR)
 	set(UMUNDO_PLATFORM_ID "${UMUNDO_PLATFORM_ID}-${CMAKE_SYSTEM_PROCESSOR}${64BIT_SUFFIX}")
 else()
-	set(UMUNDO_PLATFORM_ID "unknown")
+	set(UMUNDO_PLATFORM_ID "${UMUNDO_PLATFORM_ID}-unknown")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID_LC)
@@ -331,8 +306,6 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 else()
 	message(STATUS "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
-set(CMAKE_COMPILER_STRING "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-
 
 if (BUILD_WITH_CXX11)
 	# http://stackoverflow.com/a/25836953/990120
@@ -406,7 +379,7 @@ if (APPLE AND OFF)
 	endif()
 endif()
 
-if (IOS)
+if (IOS AND OFF)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET 4.3)
 	foreach(FLAGS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
 			set(${FLAGS} "${${FLAGS}} -miphoneos-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
@@ -504,14 +477,13 @@ endif()
 # Library location, type and linking
 ############################################################
 
+option(BUILD_PREFER_STATIC_LIBRARIES "Build / prefer static libraries" ON)
 
 # built shared or static libraries?
 if(BUILD_SHARED_LIBS)
 	add_definitions("-DCOMPILING_DLL")
-	# set(BUILD_CONVENIENCE_LIB OFF)
 else()
 	add_definitions("-DUMUNDO_STATIC")
-	# set(BUILD_CONVENIENCE_LIB ON)
 endif()
 
 # where should libraries end up?
@@ -549,30 +521,10 @@ include_directories(contrib/src)
 # their link type in a central place
 ############################################################
 
-if (BUILD_PREFER_STATIC_LIBRARIES)
-	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" ON)
-	OPTION(BUILD_PREFER_STATIC_RE "Prefer static RE libraries when linking" ON)
-else()
-	OPTION(BUILD_PREFER_STATIC_ZEROMQ "Prefer static ZeroMQ libraries when linking" OFF)
-	OPTION(BUILD_PREFER_STATIC_RE "Prefer static RE libraries when linking" OFF)
-endif()
-
 
 #
 # Download and build dependent libraries
 #
-
-# libsquash
-# include("${CMAKE_MODULE_PATH}/BuildSquash.cmake")
-# message(STATUS "Did not look for Squash on your system")
-# message(STATUS "--> will download and compile")
-# if (LIBSQUASH_BUILT)
-# 	include_directories(${LIBSQUASH_INCLUDE_DIR})
-# 	list (APPEND USCXML_CORE_LIBS ${LIBSQUASH_LIBRARY})
-# 	list (APPEND USCXML_PREREQS libsquash)
-# else()
-# 	message(FATAL_ERROR "Could not build libsquash")
-# endif()
 
 # Bonjour
 if (DISC_BONJOUR)
@@ -598,6 +550,12 @@ if (DISC_BONJOUR)
 			endif()
 		endif()
 	endif()
+	
+	if (WIN32)
+		LIST(APPEND UMUNDO_LIBRARIES "Iphlpapi")
+		LIST(APPEND UMUNDO_LIBRARIES "Netapi32")
+	endif()
+	
 endif()
 
 # ZeroMQ
@@ -747,6 +705,7 @@ INSTALL_HEADERS(HEADERS ${UMUNDO_HEADER_FILES} COMPONENT headers)
 INSTALL_LIBRARY(TARGETS umundo COMPONENT libraryCore)
 set_target_properties(umundo PROPERTIES FOLDER "Libraries")
 
+# src/umundo may add the obj-c wrapper include directory
 GET_DIRECTORY_PROPERTY(CORE_INCLUDES DIRECTORY "src/umundo" INCLUDE_DIRECTORIES)
 include_directories(${CORE_INCLUDES})
 
@@ -843,12 +802,6 @@ if (BUILD_SHARED_LIBS)
 	message(STATUS "  Building library as ............ : SHARED")
 else()
 	message(STATUS "  Building library as ............ : STATIC")
-endif()
-
-if (BUILD_PREFER_STATIC_LIBRARIES)
-	message(STATUS "  Preferring dependent libraries . : STATIC ")
-else()
-	message(STATUS "  Preferring dependent libraries . : SHARED")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UC)

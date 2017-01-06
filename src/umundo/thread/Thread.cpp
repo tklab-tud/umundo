@@ -36,24 +36,25 @@
 namespace umundo {
 
 Thread::Thread() {
-	_isStarted = false;
+    _isStarted = false;
+    _isJoined = false;
 	_thread = NULL;
 }
 
 Thread::~Thread() {
 	if (_thread) {
-		if (_isStarted) {
-			stop();
-			join();
-		}
-		delete _thread;
+        stop();
+        join();
+        delete _thread;
 	}
 }
 
 void Thread::join() {
-	if (_thread)
-		_thread->join();
-	_isStarted = false;
+    stop();
+    if (_thread && !_isJoined) {
+        _thread->join();
+    }
+    _isJoined = true;
 }
 
 #ifndef WITHOUT_CXX11
@@ -85,7 +86,8 @@ unsigned long int Thread::getThreadId() {
 void Thread::start() {
 	if (_isStarted)
 		return;
-	_isStarted = true;
+    _isStarted = true;
+    _isJoined = false;
 	_thread = new tthread::thread(runWrapper, this);
 }
 
@@ -97,7 +99,8 @@ void Thread::stop() {
 void Thread::runWrapper(void *obj) {
 	Thread* t = (Thread*)obj;
 	t->run();
-	t->_isStarted = false;
+    t->_isStarted = false;
+    t->_isJoined = false;
 }
 
 void Thread::yield() {

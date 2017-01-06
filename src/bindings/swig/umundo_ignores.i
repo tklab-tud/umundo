@@ -22,9 +22,14 @@
 %ignore operator<<(std::ostream&, const EndPoint&);
 
 %ignore umundo::Message::read;
+%ignore umundo::Message::readCompact;
 %ignore umundo::Message::write;
+%ignore umundo::Message::writeCompact;
+%ignore umundo::Message::compress;
+%ignore umundo::Message::uncompress;
 %ignore Message(const char* data, size_t length, void(*doneCallback)(void *data, void *hint), void* hint);
 %ignore Message(const char* data, size_t length, Flags flags);
+%ignore Message(std::string&, const char*, size_t, const char*, size_t);
 //******************************
 // ignore operators
 //******************************

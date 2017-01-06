@@ -90,6 +90,7 @@ const char* Message::read(const char* from, uint64_t* value) {
 	         |  (from[7]        & 0x00000000000000FFU);
 	return from + 8;
 }
+    
 const char* Message::read(const char* from, uint32_t* value) {
 	*value = ((from[0] << 24) & 0xFF000000U)
 	         | ((from[1] << 16) & 0x00FF0000U)
@@ -106,6 +107,40 @@ const char* Message::read(const char* from, uint16_t* value) {
 const char* Message::read(const char* from, uint8_t* value) {
 	*value	= from[0];
 	return from + 1;
+}
+
+    
+char* Message::writeCompact(char* to, uint64_t value, size_t remaining) {
+    // same approach as with websocket data frames
+    if (value < 254 && remaining >= 1) {
+        to[0] = value;
+        return to + 1;
+    } else if (value < (1 << 16) && remaining >= 3) {
+        to[0] = 254;
+        to++;
+        return write(to, (uint16_t)value);
+    } else if (remaining >= 9) {
+        to[0] = 255;
+        to++;
+        return write(to, (uint64_t)value);
+    } else {
+        return 0;
+    }
+}
+    
+const char* Message::readCompact(const char* from, uint64_t* value, size_t remaining) {
+    uint8_t type = 0;
+    from = read(from, &type);
+    if (type < 254 && remaining >= 1) {
+        *value = type;
+        return from;
+    } else if (type == 254 && remaining >= 3) {
+        return read(from, (uint16_t*)value);
+    } else if (remaining >= 9) {
+        return read(from, (uint64_t*)value);
+    } else {
+        return 0;
+    }
 }
 
 const char* Message::read(const char* from, int64_t* value) {
@@ -169,265 +204,250 @@ const char* Message::read(const char* from, std::string& value, size_t maxLength
 	return from + readSize + 1; // we consumed \0
 }
 
-void Message::compress() {
-#ifdef FALSE
-#elif defined(BUILD_WITH_COMPRESSION_LZ4)
-	compress(Message::COMPRESS_LZ4, BUILD_WITH_COMPRESSION_LEVEL_LZ4);
-#elif defined(BUILD_WITH_COMPRESSION_MINIZ)
-	compress(Message::COMPRESS_MINIZ, BUILD_WITH_COMPRESSION_LEVEL_MINIZ);
-#elif defined(BUILD_WITH_COMPRESSION_FASTLZ)
-	compress(Message::COMPRESS_FASTLZ, BUILD_WITH_COMPRESSION_LEVEL_FASTLZ);
-#endif
+char* Message::writeHeaders(char* to, size_t size) {
+    std::map<std::string, std::string>::const_iterator metaIter;
+    for (metaIter = _meta.begin(); metaIter != _meta.end(); metaIter++) {
+        if (metaIter->first.size() == 0) // we do not accept empty keys!
+            continue;
+        if (size > metaIter->first.size()) {
+            to = write(to, metaIter->first);
+            size -= metaIter->first.size() + 1;
+        } else {
+            return 0;
+        }
+        
+        if (size > metaIter->second.size()) {
+            to = write(to, metaIter->second);
+            size -= metaIter->second.size() + 1;
+        } else {
+            return 0;
+        }
+    }
+    return to;
+}
+
+const char* Message::readHeaders(const char* from, size_t size) {
+    const char* readPtr = from;
+    while(readPtr - from < size) {
+        std::string key;
+        std::string value;
+        readPtr = Message::read(readPtr, key, size - (readPtr - from));
+        readPtr = Message::read(readPtr, value, size - (readPtr - from));
+        putMeta(key, value);
+    }
+    return readPtr;
+}
+
+struct comprCtxLZ4 {
+    LZ4_stream_t* comprHeadStream;
+    LZ4_streamDecode_t* deComprHeadStream;
+    LZ4_stream_t* comprDataStream;
+    LZ4_streamDecode_t* deComprDataStream;
+    char* dataDict;
+    size_t dataDictSize;
+    char* headDict;
+    size_t headDictSize;
+};
+
+    
+size_t Message::compress(const std::string& name, void* ctx, char* data, size_t size, Compression type, int level) {
+    // TODO: fall back to standard compression for NULL ctx
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)ctx;
+    size_t compressedSize = 0;
+    size_t dataSize       = (type == HEADER ? getHeaderDataSize() : _size);
+
+    char* dict = NULL;
+    size_t* dictSize = NULL;
+    LZ4_stream_t* stream = NULL;
+    
+    char* buffer = _data.get();
+    if (type == HEADER) {
+        buffer = (char*)malloc(dataSize);
+        writeHeaders(buffer, dataSize);
+    }
+    if (c != NULL) {
+        // compression with a context
+        stream         = (type == HEADER ? c->comprHeadStream : c->comprDataStream);
+        dict           = (type == HEADER ? c->headDict : c->dataDict);
+        dictSize       = (type == HEADER ? &c->headDictSize : &c->dataDictSize);
+        compressedSize = LZ4_compress_fast_continue(stream, buffer, data, dataSize, size, level);
+        if (compressedSize <= 0)
+            return 0;
+        
+        *dictSize = dataSize < (1 << 16) ? dataSize : (1 << 16);
+        LZ4_saveDict(stream, dict, *dictSize);
+
+    } else {
+        // compression without a context
+        compressedSize = LZ4_compress_fast(buffer, data, dataSize, size, level);
+        if (compressedSize <= 0)
+            return 0;
+    }
+    
+    if (type == HEADER) {
+        free(buffer);
+    }
+    
+    return compressedSize;
 
 }
 
-void Message::compress(Message::Compression type, int level) {
-	if (isCompressed())
-		return;
+#define DECPOMPRESS_HEAD_SIZE_FACTOR 2
+#define DECPOMPRESS_DATA_SIZE_FACTOR 2
 
-	switch (type) {
-#ifdef BUILD_WITH_COMPRESSION_MINIZ
-	case COMPRESS_MINIZ: {
-		mz_ulong compressedSize = mz_compressBound(_size);
-		int cmp_status;
-		uint8_t *pCmp;
+size_t Message::uncompress(const std::string& name,
+                           void* ctx,
+                           const char* data,
+                           size_t size,
+                           Compression type,
+                           size_t origSize) {
 
-		pCmp = (mz_uint8 *)malloc((size_t)compressedSize);
-		level = (level >= 0 ? level : BUILD_WITH_COMPRESSION_LEVEL_MINIZ);
+    if (size == 0)
+        return 0;
+    
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)ctx;
+    int decBytes = 0;
+    
+    LZ4_streamDecode_t* stream = NULL;
+    char* dict                 = NULL;
+    size_t* dictSize           = NULL;
+    size_t scaleFactor = (type == HEADER ? DECPOMPRESS_HEAD_SIZE_FACTOR : DECPOMPRESS_DATA_SIZE_FACTOR);
 
-		// last argument is speed size tradeoff: BEST_SPEED [0-9] BEST_COMPRESSION
-		cmp_status = mz_compress2(pCmp, &compressedSize, (const unsigned char *)_data.get(), _size, level);
-		if (cmp_status != Z_OK) {
-			// error
-			free(pCmp);
-		}
+    int decBufferSize = (origSize > 0 ? origSize : size * scaleFactor);
+    char* uncompressed = (char*)malloc(decBufferSize);
 
-		_data = SharedPtr<char>((char*)pCmp);
-		_meta["um.compressed"] = toStr(_size) + ":miniz";
-		_size = compressedSize;
-	}
-	return;
-#endif
-#ifdef BUILD_WITH_COMPRESSION_FASTLZ
-	case COMPRESS_FASTLZ: {
-		// The minimum input buffer size is 16.
-		if (_size < 16)
-			return;
+    if (c != NULL) {
+        stream   = (type == HEADER ? c->deComprHeadStream : c->deComprDataStream);
+        dict     = (type == HEADER ? c->headDict : c->dataDict);
+        dictSize = (type == HEADER ? &c->headDictSize : &c->dataDictSize);
 
-		// The output buffer must be at least 5% larger than the input buffer and can not be smaller than 66 bytes.
-		int compressedSize = _size + (double)_size * 0.06;
-		if (compressedSize < 66)
-			compressedSize = 66;
+        // set the dictionary
+        if (*dictSize > 0)
+            LZ4_setStreamDecode(stream, dict, *dictSize);
+    }
 
-		char* compressedData = (char*)malloc(compressedSize);
-		compressedSize = fastlz_compress(_data.get(), _size, compressedData);
+    while(true) {
+        if (c != NULL) {
+            // uncompress with given context
+            decBytes = LZ4_decompress_safe_continue(stream, data, uncompressed, size, decBufferSize);
+        } else {
+            // uncompress without context
+            decBytes = LZ4_decompress_safe(data, uncompressed, size, decBufferSize);
+        }
+        
+        if (decBytes > 0) {
+            // success
+            if (c != NULL) {
+                // save dictionary and break
+                *dictSize = decBytes < (1 << 16) ? decBytes : (1 << 16);
+                memcpy(dict, &uncompressed[decBytes - *dictSize], *dictSize);
+            }
+            break;
+        }
+        
+        if (decBytes < 0 && decBytes * -1 >= size) {
+            // we failed!
+            free (uncompressed);
+            return 0;
+        }
+        
+        // remember old position and increase buffer
+        decBufferSize += size * scaleFactor + (1 << 16);
+        
+        if (decBufferSize > (1 << 30) || decBufferSize < 0) {
+            // decompressed data is getting too large
+            free (uncompressed);
+            return 0;
+        }
+        
+        uncompressed = (char*)realloc(uncompressed, decBufferSize);
+    }
 
-		// If the input is not compressible, the return value might be larger than length
-		if (compressedSize > _size) {
-			free(compressedData);
-			return;
-		}
-
-		//	std::cout << _size << " -> " << compressedSize << " = " << ((float)compressedSize / (float)_size) << std::endl;
-
-		_data = SharedPtr<char>((char*)compressedData);
-		_meta["um.compressed"] = toStr(_size) + ":fastlz";
-		_size = compressedSize;
-	}
-	return;
-#endif
-#ifdef BUILD_WITH_COMPRESSION_LZ4
-	case COMPRESS_LZ4: {
-		level = (level >= 0 ? level : BUILD_WITH_COMPRESSION_LEVEL_LZ4);
-
-#ifdef LZ4_FRAME
-		LZ4F_preferences_t lz4_preferences = {
-			{ LZ4F_max256KB, LZ4F_blockLinked, LZ4F_noContentChecksum, LZ4F_frame, 0, { 0, 0 } },
-			level,   /* compression level */
-			0,   /* autoflush */
-			{ 0, 0, 0, 0 },  /* reserved, must be set to 0 */
-		};
-
-		LZ4F_errorCode_t r;
-		LZ4F_compressionContext_t ctx;
-
-		r = LZ4F_createCompressionContext(&ctx, LZ4F_VERSION);
-		if (LZ4F_isError(r)) {
-			//        printf("Failed to create context: error %zu", r);
-			return;
-		}
-
-#define LZ4_HEADER_SIZE 19
-#define LZ4_FOOTER_SIZE 4
-		size_t n, offset = 0;
-
-
-		size_t frameSize = LZ4F_compressBound(_size, &lz4_preferences);
-		size_t compressedSize = frameSize + LZ4_HEADER_SIZE + LZ4_FOOTER_SIZE;
-		char* compressedData = (char*)malloc(compressedSize);
-
-		n = LZ4F_compressBegin(ctx, compressedData, compressedSize, &lz4_preferences);
-		if (LZ4F_isError(n)) {
-			//        printf("Failed to start compression: error %zu", n);
-			LZ4F_freeCompressionContext(ctx);
-			free(compressedData);
-			return;
-		}
-		offset += n;
-
-		n = LZ4F_compressUpdate(ctx, compressedData + offset, compressedSize - offset, _data.get(), _size, NULL);
-		if (LZ4F_isError(n)) {
-			//        printf("Compression failed: error %zu", n);
-			LZ4F_freeCompressionContext(ctx);
-			free(compressedData);
-			return;
-		}
-		offset += n;
-
-		n = LZ4F_compressEnd(ctx, compressedData + offset, compressedSize - offset, NULL);
-		if (LZ4F_isError(n)) {
-			//        printf("Failed to end compression: error %zu", n);
-			LZ4F_freeCompressionContext(ctx);
-			free(compressedData);
-			return;
-		}
-		offset += n;
-
-		_data = SharedPtr<char>((char*)compressedData);
-		_meta["um.compressed"] = toStr(_size) + ":lz4";
-		_size = offset;
-
-		LZ4F_freeCompressionContext(ctx);
-#else
-		size_t compressedSize = LZ4_compressBound(_size);
-		char* compressedData = (char*)malloc(compressedSize);
-		int actualSize = 0;
-
-		actualSize = LZ4_compress_fast(_data.get(), compressedData, _size, compressedSize, level);
-		if (actualSize == 0) {
-			free(compressedData);
-			return;
-		}
-
-		_data = SharedPtr<char>((char*)compressedData);
-		_meta["um.compressed"] = toStr(_size) + ":lz4";
-		_size = actualSize;
-#endif
-
-	}
-	return;
-#endif
-	default:
-		break;
-	}
+    // safe decompressed byte array as headers or data
+    if (type == HEADER) {
+        _meta["um.compressRatio.head"] = toStr(100 * ((double)size / (double)decBytes));
+        readHeaders(uncompressed, decBytes);
+        free(uncompressed);
+    } else {
+        uncompressed = (char*)realloc(uncompressed, decBytes);
+        _meta["um.compressRatio.payload"] = toStr(100 * ((double)size / (double)decBytes));
+        _data = SharedPtr<char>(uncompressed);
+        _size = decBytes;
+    }
+        
+    return decBytes;
 }
 
-void Message::uncompress() {
-	if (!isCompressed())
-		return;
+void* Message::createCompression() {
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)malloc(sizeof(comprCtxLZ4));
+    
+    c->comprDataStream = LZ4_createStream();
+    c->comprHeadStream = LZ4_createStream();
+    c->deComprDataStream = LZ4_createStreamDecode();
+    c->deComprHeadStream = LZ4_createStreamDecode();
+    
+    c->dataDictSize = 0;
+    c->dataDict = (char*)malloc((1 << 16));
+    memset(c->dataDict, 0, (1 << 16));
+    
+    c->headDictSize = 0;
+    c->headDict = (char*)malloc((1 << 16));
+    memset(c->headDict, 0, (1 << 16));
 
-	std::string errorStr = "Unsupported compression";
-	size_t actualSize;
-	std::string comprType;
+    return c;
+}
 
-	std::string comprIdent = _meta["um.compressed"];
-	size_t colon = comprIdent.find_first_of(':');
-	if (colon == std::string::npos) {
-		errorStr = "No colon found in um.compressed meta field";
-		goto DECOMPRESS_ERROR;
-	}
+void Message::freeCompression(void* ctx) {
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)ctx;
 
-	actualSize = strTo<size_t>(comprIdent.substr(0, colon));
-	comprType = comprIdent.substr(colon + 1);
+    // make sure all lingering data is reset
+    resetCompression(ctx);
+    
+    LZ4_freeStream(c->comprDataStream);
+    LZ4_freeStream(c->comprHeadStream);
+    LZ4_freeStreamDecode(c->deComprDataStream);
+    LZ4_freeStreamDecode(c->deComprHeadStream);
+    
+    free(c->dataDict);
+    free(c->headDict);
+}
 
-	_meta["um.compressRatio"] = toStr((double)_size / (double)actualSize);
-//    std::cout << _size << " vs " << actualSize << std::endl;
+void Message::resetCompression(void* ctx) {
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)ctx;
 
-	if (false) {}
-#ifdef BUILD_WITH_COMPRESSION_MINIZ
-	else if (comprType == "miniz") {
-		int cmp_status;
-		uint8_t *pUncmp;
+    LZ4_resetStream(c->comprDataStream);
+    LZ4_resetStream(c->comprHeadStream);
+    memset(c->deComprDataStream, 0, sizeof(LZ4_streamDecode_t));
+    memset(c->deComprHeadStream, 0, sizeof(LZ4_streamDecode_t));
 
-		pUncmp = (mz_uint8 *)malloc((size_t)actualSize);
-		cmp_status = mz_uncompress(pUncmp, (mz_ulong*)&actualSize, (const unsigned char *)_data.get(), _size);
+    memset(c->dataDict, 0, c->dataDictSize);
+    memset(c->headDict, 0, c->headDictSize);
+}
 
-		if (cmp_status != MZ_OK) {
-			errorStr = mz_error(cmp_status);
-			goto DECOMPRESS_ERROR;
-		}
+size_t Message::getCompressBounds(const std::string& name, void* ctx, Compression type) {
+    struct comprCtxLZ4* c = (struct comprCtxLZ4*)ctx;
+    (void)c;
+    
+    switch (type) {
+        case HEADER:
+            return LZ4_compressBound(getHeaderDataSize());
+        case PAYLOAD:
+            return LZ4_compressBound(_size);
+        default:
+            return 0;
+    }
+}
 
-		_size = actualSize;
-		_data = SharedPtr<char>((char*)pUncmp);
-		_meta.erase("um.compressed");
-		return;
-	}
-#endif
-#ifdef BUILD_WITH_COMPRESSION_FASTLZ
-	else if (comprType == "fastlz") {
-		void* uncompressed = malloc((size_t)actualSize);
-
-		// returns the size of the decompressed block.
-		actualSize = fastlz_decompress(_data.get(), _size, uncompressed, actualSize);
-
-		// If error occurs, e.g. the compressed data is corrupted or the output buffer is not large enough, then 0
-		if (actualSize == 0) {
-			errorStr = "fastlz_decompress returned 0";
-			goto DECOMPRESS_ERROR;
-		}
-
-		_size = actualSize;
-		_data = SharedPtr<char>((char*)uncompressed);
-		_meta.erase("um.compressed");
-		return;
-	}
-
-#endif
-#ifdef BUILD_WITH_COMPRESSION_LZ4
-	else if (comprType == "lz4") {
-#ifdef LZ4_FRAME
-		LZ4F_errorCode_t n;
-		LZ4F_decompressionContext_t ctx;
-
-		void* uncompressed = malloc((size_t)actualSize);
-
-		n = LZ4F_createDecompressionContext(&ctx, LZ4F_VERSION);
-		if (LZ4F_isError(n)) {
-			errorStr = LZ4F_getErrorName(n);
-			goto DECOMPRESS_ERROR;
-		}
-
-		n = LZ4F_decompress(ctx, uncompressed, &actualSize, _data.get(), &_size, NULL);
-		if (LZ4F_isError(n)) {
-			errorStr = LZ4F_getErrorName(n);
-			goto DECOMPRESS_ERROR;
-		}
-
-		_size = actualSize;
-		_data = SharedPtr<char>((char*)uncompressed);
-		_meta.erase("um.compressed");
-
-		LZ4F_freeDecompressionContext(ctx);
-#else
-		char* uncompressed = (char*)malloc((size_t)actualSize);
-		int n = LZ4_decompress_fast(_data.get(), uncompressed, actualSize);
-		if (n < 0) {
-			errorStr = "Decompression failed";
-			goto DECOMPRESS_ERROR;
-		}
-
-		_size = actualSize;
-		_data = SharedPtr<char>((char*)uncompressed);
-		_meta.erase("um.compressed");
-
-#endif
-		return;
-	}
-#endif
-
-DECOMPRESS_ERROR:
-	UM_LOG_WARN("Could not decompress message: %s", errorStr.c_str());
-
+size_t Message::getHeaderDataSize() {
+    size_t headerDataSize = 0;
+    std::map<std::string, std::string>::const_iterator metaIter;
+    for (metaIter = _meta.begin(); metaIter != _meta.end(); metaIter++) {
+        if (metaIter->first.size() == 0) // we do not accept empty keys!
+            continue;
+        headerDataSize += metaIter->first.size() + 1;
+        headerDataSize += metaIter->second.size() + 1;
+    }
+    return headerDataSize;
 }
 
 }

@@ -54,9 +54,9 @@ if(BUILD_WITH_COMPRESSION_FASTLZ)
 endif()
 if(BUILD_WITH_COMPRESSION_LZ4)
 	list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4.c)
-	list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4frame.c)
-	list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4hc.c)
-	list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/xxhash.c)
+	# list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4frame.c)
+	# list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/lz4hc.c)
+	# list(APPEND UMUNDO_FILES ${PROJECT_SOURCE_DIR}/contrib/src/lz4/xxhash.c)
 endif()
 
 if (ANDROID) # android gcc complains about boost 1.51
@@ -74,7 +74,6 @@ endif()
 ###########################################
 # RTP
 ###########################################
-
 if(NET_RTP)
 	file(GLOB_RECURSE NET_RTP_FILES connection/rtp/*.cpp)
 	list(APPEND UMUNDO_FILES ${NET_RTP_FILES})
@@ -98,10 +97,6 @@ if (DISC_BONJOUR)
 		file(GLOB_RECURSE DISC_BONJOUR_EMBED_FILES discovery/mdns/bonjour/mDNSEmbedded.c)
 		list(APPEND UMUNDO_FILES ${DISC_BONJOUR_EMBED_FILES})
 
-		if (WIN32)
-			LIST(APPEND UMUNDO_LIBRARIES "Iphlpapi")
-			LIST(APPEND UMUNDO_LIBRARIES "Netapi32")
-		endif()
 	endif()
 		
 endif()
@@ -127,14 +122,10 @@ endif()
 # setup umundo library
 ############################################################
 
-LIST(SORT UMUNDO_HEADER_FILES)
-
-# if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-# 	set_target_properties(umundo PROPERTIES COMPILE_FLAGS "-Weffc++")
-# endif()
-
 # ok to have in IDEs, but do not install
 LIST(APPEND UMUNDO_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/../umundo/config.h)
+
+LIST(SORT UMUNDO_HEADER_FILES)
 
 
 ############################################################

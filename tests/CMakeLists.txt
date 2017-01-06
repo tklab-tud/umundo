@@ -108,6 +108,16 @@ if(NOT WIN32)
 	add_test(test-core-discovery ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-core-discovery)
 	set_target_properties(test-core-discovery PROPERTIES FOLDER "Tests")
 	add_dependencies(ALL_TESTS test-core-discovery)
+
+	add_executable(test-lz4-dict 
+		test-lz4-dict.cpp 
+		../contrib/src/lz4/xxhash.c 
+		../contrib/src/lz4/lz4.c 
+		../contrib/src/lz4/lz4hc.c)
+	target_link_libraries(test-lz4-dict umundo)
+	add_test(test-core-discovery ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test-lz4-dict)
+	set_target_properties(test-lz4-dict PROPERTIES FOLDER "Tests")
+	add_dependencies(ALL_TESTS test-lz4-dict)
 	
 	add_executable(test-zeromq-disconnect test-zeromq-disconnect.cpp)
 	target_link_libraries(test-zeromq-disconnect umundo)

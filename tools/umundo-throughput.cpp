@@ -15,6 +15,8 @@
 
 #include "umundo/config.h"
 #include "umundo.h"
+#include "umundo/util/crypto/MD5.h"
+
 #include <iostream>
 #include <iomanip>
 #include <string.h>
@@ -30,7 +32,11 @@
 #include <unistd.h>
 #endif
 
-#define FORMAT_COL std::setw(12) << std::left
+extern "C" {
+#include "datagen.h"
+}
+
+#define FORMAT_COL std::setw(14) << std::left
 
 #define MIN_MTU 20
 
@@ -47,7 +53,6 @@ bool isClient = false;
 bool isServer = false;
 uint64_t currSeqNr = 0;
 uint32_t reportInterval = 1000;
-uint64_t timeStampStartedAt = 0;
 size_t currReportNr = 0;
 
 Discovery disc;
@@ -56,6 +61,8 @@ Node node;
 // server
 size_t bytesPerSecond = 1024 * 1024;
 size_t fixedBytesPerSecond = 0;
+uint64_t timeStampStartedDiscovery = 0;
+uint64_t timeStampStartedPublishing = 0;
 size_t mtu = 1280;
 double pcntLossOk = 0;
 size_t waitForSubs = 0;
@@ -67,18 +74,24 @@ uint64_t bytesWritten = 0;
 double intervalFactor = 1;
 size_t delay = 0;
 uint64_t duration = 0;
+uint64_t waitToConclude = 2000;
 std::string filePrefix;
 char* streamFile = NULL;
-Message streamData;
+std::string streamData;
 
-Message::Compression compressionType = Message::COMPRESS_NONE;
+std::string compressionType = "";
 int compressionLevel = -1;
+bool compressionWithState = false;
+int compressionRefreshInterval = 0;
+double compressionActualRatio = 100;
 
 // client
 size_t bytesRcvd = 0;
 size_t pktsRecvd = 0;
 size_t pktsDropped = 0;
-double compressRatio = 0;
+double compressRatioHead = 0;
+double compressRatioPayload = 0;
+double compressionRollOff = 0;
 size_t lastSeqNr = 0;
 size_t discoveryTimeMs = 0;
 uint64_t timeStampServerLast = 0;
@@ -89,8 +102,8 @@ Publisher reporter;
 
 class Report {
 public:
-	Report() : reportNr(0), pktsRcvd(0), pktsDropped(0), bytesRcvd(0), pktsLate(0), roundTripTime(0), discoveryTime(0), pertainingPacket(0), pcntLoss(0), compressRatio(1) {}
-	size_t reportNr;
+	Report() : reportNr(0), pktsRcvd(0), pktsDropped(0), bytesRcvd(0), pktsLate(0), roundTripTime(0), discoveryTime(0), pertainingPacket(0), pcntLoss(0), compressRatioHead(100), compressRatioPayload(100) {}
+    size_t reportNr;
 	size_t pktsRcvd;
 	size_t pktsDropped;
 	size_t bytesRcvd;
@@ -99,23 +112,26 @@ public:
 	size_t discoveryTime;
 	size_t pertainingPacket;
 	double pcntLoss;
-	double compressRatio;
+    double compressRatioHead;
+    double compressRatioPayload;
 	std::string pubId;
 	std::string hostId;
 	std::string hostName;
 
 	static void writeCSVHead(std::ostream& stream) {
-		stream << "\"Discovery Time\", \"Bytes/s\", \"Packets/s\", \"Packets delayed\", \"RTT\", \"Loss %\", \"Ratio\", \"Packets Dropped\", \"Hostname\"" << std::endl;
+		stream << "\"Timestamp\", \"Discovery Time\", \"Bytes\", \"Packets\", \"Packets delayed\", \"RTT\", \"Loss %\", \"Ratio Head\", \"Ratio Payload\", \"Packets Dropped\", \"Hostname\"" << std::endl;
 	}
 
 	void writeCSVData(std::ostream& stream) {
-		stream << discoveryTime << ", ";
+        stream << reportNr * reportInterval << ", ";
+        stream << discoveryTime << ", ";
 		stream << bytesRcvd << ", ";
 		stream << pktsRcvd << ", ";
 		stream << pktsLate << ", ";
 		stream << roundTripTime << ", ";
 		stream << pcntLoss << ", ";
-		stream << compressRatio << ", ";
+        stream << compressRatioHead << ", ";
+        stream << compressRatioPayload << ", ";
 		stream << pktsDropped << ", ";
 		stream << hostName << std::endl;
 	}
@@ -129,7 +145,7 @@ class DiscoveryTimeGreeter : public Greeter {
 public:
 	DiscoveryTimeGreeter() {}
 	void welcome(Publisher& pub, const SubscriberStub& sub) {
-		discoveryTimeMs = Thread::getTimeStampMs() - timeStampStartedAt;
+		discoveryTimeMs = Thread::getTimeStampMs() - timeStampStartedDiscovery;
 	}
 	void farewell(Publisher&, const SubscriberStub&) {}
 };
@@ -139,6 +155,11 @@ class ThroughputReceiver : public Receiver {
 
 		RScopeLock lock(mutex);
 
+        if (msg->getMeta("md5").size() > 0 && msg->getMeta("md5") != md5(msg->data(), msg->size())) {
+            UM_LOG_WARN("Corrupted message received");
+        }
+            
+        
 		uint64_t currServerTimeStamp;
 		Message::read(msg->data(), &currSeqNr);
 		Message::read(msg->data() + 8, &currServerTimeStamp);
@@ -148,17 +169,18 @@ class ThroughputReceiver : public Receiver {
 			// new throughput run!
 			lastSeqNr = 0;
 			timeStampServerFirst = 0;
+            timeStampServerLast = 0;
 			currReportNr = 0;
 			bytesRcvd = 0;
 			pktsRecvd = 0;
 			pktsDropped = 0;
 		}
-
+        
 		bytesRcvd += msg->size();
 		pktsRecvd++;
 
-		if (timeStampServerFirst == 0)
-			timeStampServerFirst = currServerTimeStamp;
+        if (timeStampServerFirst == 0)
+            timeStampServerFirst = currServerTimeStamp;
 
 		if (lastSeqNr > 0 && lastSeqNr != currSeqNr - 1) {
 			pktsDropped += currSeqNr - lastSeqNr;
@@ -166,21 +188,26 @@ class ThroughputReceiver : public Receiver {
 
 		lastSeqNr = currSeqNr;
 
+        compressRatioHead    += (msg->getMeta().find("um.compressRatio.head") != msg->getMeta().end() ? strTo<double>(msg->getMeta("um.compressRatio.head")) : 100);
+        compressRatioPayload += (msg->getMeta().find("um.compressRatio.payload") != msg->getMeta().end() ? strTo<double>(msg->getMeta("um.compressRatio.payload")) : 100);
+        
+//        if (timeStampServerLast == 0)
+//            timeStampServerLast = currServerTimeStamp;
+
+        // may happen when initializing timeStampServerLast in client
+        if (timeStampServerLast > currServerTimeStamp)
+            timeStampServerLast = currServerTimeStamp;
+        
 		// reply?
 		if (currServerTimeStamp - reportInterval >= timeStampServerLast) {
 			RScopeLock lock(mutex);
 			timeStampServerLast = currServerTimeStamp;
-
-
-			std::string compressRatio;
-			if (msg->getMeta().find("um.compressRatio") != msg->getMeta().end())
-				compressRatio = msg->getMeta("um.compressRatio");
-//            std::cout << std::setprecision(6) << compressRatio << std::endl;
-
+            
 			Message* msg = new Message();
 			msg->putMeta("bytes.rcvd", toStr(bytesRcvd));
 			msg->putMeta("pkts.dropped", toStr(pktsDropped));
-			msg->putMeta("compress.ratio", compressRatio);
+            msg->putMeta("compress.ratio.head", toStr(compressRatioHead / (double)pktsRecvd));
+            msg->putMeta("compress.ratio.payload", toStr(compressRatioPayload / (double)pktsRecvd));
 			msg->putMeta("pkts.rcvd", toStr(pktsRecvd));
 			msg->putMeta("last.seq", toStr(lastSeqNr));
 			msg->putMeta("report.seq", toStr(currReportNr++));
@@ -193,8 +220,11 @@ class ThroughputReceiver : public Receiver {
 			pktsDropped = 0;
 			pktsRecvd = 0;
 			bytesRcvd = 0;
+            compressRatioHead = 0;
+            compressRatioPayload = 0;
+            
 		}
-
+        
 	}
 };
 
@@ -204,7 +234,7 @@ public:
 	void receive(Message* msg) {
 		RScopeLock lock(mutex);
 
-		std::cout << ".";
+//		std::cout << ".";
 
 		std::string pubUUID = msg->getMeta("um.pub");
 		Report& report = reports[pubUUID];
@@ -213,14 +243,16 @@ public:
 		report.pktsRcvd      = strTo<size_t>(msg->getMeta("pkts.rcvd"));
 		report.pktsDropped   = strTo<size_t>(msg->getMeta("pkts.dropped"));
 		report.bytesRcvd     = strTo<size_t>(msg->getMeta("bytes.rcvd"));
-		if (compressionType != Message::COMPRESS_NONE)
-			report.compressRatio = strTo<double>(msg->getMeta("compress.ratio"));
+        if (compressionType.size() != 0) {
+            report.compressRatioHead = strTo<double>(msg->getMeta("compress.ratio.head"));
+            report.compressRatioPayload = strTo<double>(msg->getMeta("compress.ratio.payload"));
+        }
 		report.hostName      = msg->getMeta("hostname");
 		report.hostId        = msg->getMeta("um.host");
 		report.pubId         = msg->getMeta("um.pub");
 
 		report.roundTripTime = Thread::getTimeStampMs() - strTo<size_t>(msg->getMeta("timestamp.server.last"));
-		report.discoveryTime = strTo<uint64_t>(msg->getMeta("timestamp.server.first")) - timeStampStartedAt;
+		report.discoveryTime = strTo<uint64_t>(msg->getMeta("timestamp.server.first")) - timeStampStartedDiscovery;
 
 		size_t lastSeqNr        = strTo<size_t>(msg->getMeta("last.seq"));
 		report.pktsLate         = currSeqNr - lastSeqNr;
@@ -265,23 +297,25 @@ class ThroughputGreeter : public Greeter {
 void printUsageAndExit() {
 	printf("umundo-throughput version " UMUNDO_VERSION " (" UMUNDO_PLATFORM_ID " " CMAKE_BUILD_TYPE " build)\n");
 	printf("Usage\n");
-	printf("\tumundo-throughput -s|-c [-r BYTES/s] [-l N] [-m N] [-w N] [-d N]\n");
-	printf("\t                  [-x fastlz|miniz|lz4:level] [-f FILE] [-o PREFIX]\n");
+	printf("\tumundo-throughput -s|-c [-r BYTES/s] [-l N] [-m N] [-w N] [-d N] [-e N]\n");
+	printf("\t                  [-(x,y) fastlz|miniz|lz4[:level[:refresh]]] [-f (FILE|size:comp)] [-o PREFIX]\n");
 	printf("\n");
 	printf("Options\n");
-	printf("\t-c                 : act as a client\n");
-	printf("\t-s                 : act as a server\n");
-	printf("\t-r BYTES/s         : try to maintain given throughput rate\n");
-	printf("\t-t [rtp|tcp|mcast] : type of publisher to measure throughput\n");
-	printf("\t-d                 : duration in second to keep server running\n");
-	printf("\t-o PREFIX          : after duration elapsed, write report files\n");
-	printf("\t-z                 : employ zero-copy (experimental)\n");
-	printf("\t-i                 : report interval in milli-seconds\n");
-	printf("\t-l                 : acceptable packet loss in percent\n");
-	printf("\t-x                 : use compression algorithm (fastlz|miniz|lz4)\n");
-	printf("\t-f FILE            : stream data from file\n");
-	printf("\t-m <number>        : MTU to use on server (defaults to 1280)\n");
-	printf("\t-w <number>        : wait for given number of subscribers\n");
+	printf("\t-c                  : act as a client\n");
+	printf("\t-s                  : act as a server\n");
+	printf("\t-r BYTES/s          : try to maintain given throughput rate\n");
+	printf("\t-t [rtp|tcp|mcast]  : type of publisher to measure throughput\n");
+	printf("\t-d                  : duration in second to keep server running\n");
+	printf("\t-o PREFIX           : after duration elapsed, write report files\n");
+	printf("\t-z                  : employ zero-copy (experimental)\n");
+	printf("\t-i                  : report interval in milli-seconds\n");
+	printf("\t-l                  : acceptable packet loss in percent\n");
+    printf("\t-x ALG:LVL          : use compression algorithm (fastlz|miniz|lz4)\n");
+    printf("\t-y ALG:LVL:RFRSH    : use compression with state and refresh at intervals given in ms\n");
+    printf("\t-f (FILE|size:comp) : stream data from file or use synthetic data with given compressibility\n");
+	printf("\t-m <number>         : MTU to use on server (defaults to 1280)\n");
+	printf("\t-w <number>         : wait for given number of subscribers\n");
+	printf("\t-e <number>         : after duration elapsed wait for pending reports\n");
 	exit(1);
 }
 
@@ -351,7 +385,9 @@ void doneCallback(void* data, void* hint) {
 }
 
 void runAsClient() {
-	ThroughputReceiver tpRcvr;
+    timeStampServerLast = Thread::getTimeStampMs();
+
+    ThroughputReceiver tpRcvr;
 	DiscoveryTimeGreeter discGreeter;
 
 	reporter = Publisher("reports");
@@ -377,7 +413,7 @@ void runAsClient() {
 	node.addPublisher(reporter);
 
 	disc.add(node);
-	timeStampStartedAt = Thread::getTimeStampMs();
+	timeStampStartedPublishing = Thread::getTimeStampMs();
 
 	// do nothing here, we reply only when we received a message
 	while(true) {
@@ -459,7 +495,12 @@ void writeReports(std::string scale) {
 			std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsRcvd)) + "pkt/s";
 			std::cout << FORMAT_COL << toStr(intervalFactor * (double)(report.pktsDropped)) + "pkt/s";
 			std::cout << FORMAT_COL << toStr(report.pcntLoss) + "%";
-			std::cout << FORMAT_COL << std::setprecision(6) << toStr(report.compressRatio);
+
+            // 0.0746/0.0227 inter message
+            // 0.925/0.402 intra message
+            std::stringstream comprSS;
+            comprSS << std::setprecision(3) << report.compressRatioHead << "/" << std::setprecision(3) << report.compressRatioPayload;
+            std::cout << FORMAT_COL << comprSS.str();
 
 			std::cout << FORMAT_COL << (report.pktsLate > 100000 ? "N/A" : toStr(report.pktsLate) + "pkt");
 			std::cout << FORMAT_COL << (report.roundTripTime > 100000 ? "N/A" : toStr(report.roundTripTime) + "ms");
@@ -507,8 +548,8 @@ void runAsServer() {
 		break;
 	}
 	}
-	if (compressionType != Message::COMPRESS_NONE)
-		config->enableCompression(compressionType, compressionLevel);
+	if (compressionType.size() != 0)
+		config->enableCompression(compressionType, compressionWithState, compressionLevel, compressionRefreshInterval);
 
 	pub = Publisher(config);
 	pub.setGreeter(&tpGreeter);
@@ -517,31 +558,91 @@ void runAsServer() {
 	node.addPublisher(pub);
 
 	disc.add(node);
-	timeStampStartedAt = Thread::getTimeStampMs();
+    timeStampStartedDiscovery = Thread::getTimeStampMs();
 
 	if (duration > 0)
 		duration *= 1000; // convert to ms
 
-	pub.waitForSubscribers(waitForSubs);
+    // open file with data
+    std::ifstream fin(streamFile, std::ios::in | std::ios::binary);
+    if (fin) {
+        // streamFile exists on filesyste,, slurp content into streamData
+        streamData = std::string((std::istreambuf_iterator<char>(fin) ),
+                                 (std::istreambuf_iterator<char>()     ));
+    } else {
+        // stream file is no actual file, interpret as "size:compressability"
+        char* compArg = streamFile;
+        
+        // http://stackoverflow.com/a/53878/990120
+        std::list<std::string> compArgs;
+        do {
+            const char *begin = compArg;
+            while(*compArg != ':' && *compArg)
+                compArg++;
+            compArgs.push_back(std::string(begin, compArg - begin));
+        } while(0 != *compArg++);
 
-	Message* msg = NULL;
-	if (useZeroCopy) {
-		msg = new Message(streamData.data(), streamData.size(), doneCallback, (void*)NULL);
-	} else {
-		msg = new Message(streamData.data(), streamData.size());
-	}
+        size_t streamDataSize = 0;
+        double compressibility = 50;
 
-	uint64_t lastReportAt = Thread::getTimeStampMs();
+        if (compArgs.size() < 1)
+            printUsageAndExit();
+        
+        streamDataSize = displayToBytes(compArgs.front());
+        compArgs.pop_front();
+        
+        if (!compArgs.empty()) {
+            compressibility = strTo<double>(compArgs.front());
+            if (toStr(compressibility) != compArgs.front())
+                printUsageAndExit();
+            compArgs.pop_front();
+        }
+        
+        if (!compArgs.empty()) {
+            printUsageAndExit();
+        }
+        
+        streamData.resize(streamDataSize);
+        RDG_genBuffer(&streamData[0], streamDataSize, 1 - (compressibility/(double)100), 0.0, 0);
+    }
+    
+    {
+        // determine compressionActualRatio
+        Message msg(streamData.data(), streamData.size());
+        size_t compressMaxPayload = msg.getCompressBounds("lz4", NULL, Message::Compression::PAYLOAD);
+        char* compressPayloadData = (char*)malloc(compressMaxPayload);
+        
+        size_t compressActualPayload = msg.compress("lz4", NULL, compressPayloadData, compressMaxPayload, Message::Compression::PAYLOAD);
+        compressionActualRatio = 100 * ((double)compressActualPayload / streamData.size());
+    }
+    
+    pub.waitForSubscribers(waitForSubs);
+    timeStampStartedPublishing = Thread::getTimeStampMs();
+
+    uint64_t lastReportAt = Thread::getTimeStampMs();
+    size_t streamDataOffset = 0;
 
 	while(1) {
-		uint64_t now = Thread::getTimeStampMs();
-		if (compressionType != Message::COMPRESS_NONE) {
-			// make sure we compress the message anew each time
-			delete msg;
-			msg = new Message(streamData.data(), streamData.size());
-		}
+        
+        // fill data from stream data
+        Message* msg = new Message((char*)malloc(mtu), mtu);
 
-		if (duration > 0 && now - timeStampStartedAt > duration)
+        size_t msgDataOffset = 0;
+        while(true) {
+            size_t toRead = (mtu - msgDataOffset <= streamData.size() - streamDataOffset ? mtu - msgDataOffset : streamData.size() - streamDataOffset);
+            memcpy(&msg->data()[msgDataOffset], &streamData[streamDataOffset], toRead);
+            msgDataOffset += toRead;
+            streamDataOffset += toRead;
+//            UM_LOG_WARN("%d: %d / %d", streamData.size(), msgDataOffset, streamDataOffset);
+            if (msgDataOffset == mtu)
+                break;
+            if (streamData.size() == streamDataOffset)
+                streamDataOffset = 0;
+        }
+//        UM_LOG_WARN("%d: %s", msg->size(), md5(msg->data(), msg->size()).c_str());
+        
+		uint64_t now = Thread::getTimeStampMs();
+		if (duration > 0 && now - timeStampStartedPublishing > duration)
 			break;
 
 		// first 16 bytes are seqNr and timestamp
@@ -549,6 +650,7 @@ void runAsServer() {
 		Message::write(&msg->data()[8], now);
 		Message::write(&msg->data()[16], reportInterval);
 
+//        msg->putMeta("md5", md5(msg->data(), msg->size()));
 		intervalFactor = 1000.0 / (double)reportInterval;
 		bytesWritten += msg->size();
 		bytesTotal += msg->size();
@@ -561,7 +663,7 @@ void runAsServer() {
 			delay = (std::max)((1000000) / (packetsPerSecond), (size_t)1);
 		}
 
-		// sending with compression will alter msg->size()
+		// sending with compression will alter msg->size(); not anymore ...
 		pub.send(msg);
 
 		// every report interval we are recalculating bandwith
@@ -634,41 +736,64 @@ void runAsServer() {
 			lastReportAt = Thread::getTimeStampMs();
 		}
 
+        delete(msg);
+
 		// now we sleep until we have to send another packet
 		if (delay > 50 && fixedBytesPerSecond != (size_t) - 1)
 			Thread::sleepUs(delay);
 	}
 
 	pub.setGreeter(NULL);
-	delete(msg);
 }
 
 int main(int argc, char** argv) {
 	int option;
-	while ((option = getopt(argc, argv, "zcsm:w:l:r:f:t:i:o:d:x:")) != -1) {
+    streamFile = argv[0]; // default
+	while ((option = getopt(argc, argv, "zcsm:w:l:r:f:t:i:o:d:x:y:e:")) != -1) {
 		switch(option) {
 		case 'z':
 			useZeroCopy = true;
 			break;
+        case 'y':
+                compressionWithState = true;
+                // fall through
 		case 'x': {
-			std::string comprArg(optarg);
-			std::string comprType;
+            char* compArg = optarg;
+            
+            // http://stackoverflow.com/a/53878/990120
+            std::list<std::string> compArgs;
+            do {
+                const char *begin = compArg;
+                while(*compArg != ':' && *compArg)
+                    compArg++;
 
-			size_t colon = comprArg.find_first_of(':');
-			if (colon != std::string::npos) {
-				comprType = comprArg.substr(0, colon);
-				compressionLevel = strTo<int>(comprArg.substr(colon + 1));
-				if (toStr(compressionLevel) != comprArg.substr(colon + 1)) {
-					printUsageAndExit();
-				}
-			}
-			if (comprType == "lz4") {
-				compressionType = Message::COMPRESS_LZ4;
-			} else if (comprType == "fastlz") {
-				compressionType = Message::COMPRESS_FASTLZ;
-			} else if (comprType == "miniz") {
-				compressionType = Message::COMPRESS_MINIZ;
-			}
+                compArgs.push_back(std::string(begin, compArg - begin));
+                
+            } while(0 != *compArg++);
+            
+            if (!compArgs.empty()) {
+                compressionType = compArgs.front();
+                compArgs.pop_front();
+            } else {
+                printUsageAndExit();
+            }
+
+            if (!compArgs.empty()) {
+                compressionLevel = strTo<int>(compArgs.front());
+                if (toStr(compressionLevel) != compArgs.front())
+                    printUsageAndExit();
+                compArgs.pop_front();
+            }
+
+            if (!compArgs.empty()) {
+                if (!compressionWithState)
+                    printUsageAndExit();
+                compressionRefreshInterval = strTo<int>(compArgs.front());
+                if (toStr(compressionRefreshInterval) != compArgs.front())
+                    printUsageAndExit();
+                compArgs.pop_front();
+            }
+
 		}
 		break;
 		case 'c':
@@ -694,6 +819,9 @@ int main(int argc, char** argv) {
 			break;
 		case 'm':
 			mtu = displayToBytes(optarg);
+			break;
+		case 'e':
+			waitToConclude = strTo<uint64_t>(optarg);
 			break;
 		case 'r':
 			if (strcmp(optarg, "max") == 0 || strcmp(optarg, "inf") == 0) {
@@ -729,30 +857,6 @@ int main(int argc, char** argv) {
 	if (mtu < MIN_MTU)
 		mtu = MIN_MTU;
 
-	if (streamFile != NULL) {
-		size_t resets = 0;
-		std::ifstream fin(streamFile, std::ios::in | std::ios::binary );
-		if (!fin) {
-			std::cerr << "Cannot open file " << (const char*)optarg << " to seed compression data" << std::endl;
-			exit(EXIT_FAILURE);
-		}
-		std::stringstream sstr;
-		while(sstr.str().length() < (std::max)(mtu, (size_t)mtu)) {
-			sstr << fin.rdbuf();
-			fin.seekg(0, std::ios::beg); // reset until we have enough data
-			resets++;
-		}
-		resets--;
-		if (resets > 0) {
-			std::cerr << "Warning: compression file to small for MTU, repeats " << resets << " times." << std::endl;
-		}
-		streamData = Message(sstr.str().data(), mtu);
-	} else {
-		char* tmp = (char*)malloc(mtu);
-		streamData = Message(tmp, mtu);
-	}
-
-
 	DiscoveryConfigMDNS discConfig;
 //	discConfig.setDomain("throughput");
 	disc = Discovery(&discConfig);
@@ -770,7 +874,7 @@ int main(int argc, char** argv) {
 
 	if (filePrefix.size() > 0) {
 		// wait for missing reports, then make sure no more reports are coming in
-		Thread::sleepMs(20000);
+		Thread::sleepMs(waitToConclude);
 		sub.setReceiver(NULL);
 
 		// write files
@@ -783,7 +887,7 @@ int main(int argc, char** argv) {
 			std::string reportFileName = filePrefix + pubUUID.substr(0,8) + ".data";
 			fileHandles[pubUUID] = new std::ofstream();
 			fileHandles[pubUUID]->open(reportFileName.c_str(), std::fstream::out);
-			Report::writeCSVHead(*fileHandles[pubUUID]);
+            Report::writeCSVHead(*fileHandles[pubUUID]);
 #ifdef UNIX
 			// that's only useful if there is only a single reporter per host
 			std::string linkFrom = filePrefix + pubUUID.substr(0,8) + ".data";
@@ -799,11 +903,12 @@ int main(int argc, char** argv) {
 		std::fstream senderReport;
 		std::string senderReportFileName = filePrefix + "sender.data";
 		senderReport.open(senderReportFileName.c_str(), std::fstream::out);
-		senderReport << "\"Bytes Sent\", \"Packets sent\"" << std::endl;
+		senderReport << "\"Payload Compressibility\", \"Bytes Sent\", \"Packets sent\"" << std::endl;
 
 		std::list<Report>::iterator senderRepIter = senderReports.begin();
 		while(senderRepIter!= senderReports.end()) {
-			senderReport << senderRepIter->bytesRcvd << ", ";
+            senderReport << compressionActualRatio << ", ";
+            senderReport << senderRepIter->bytesRcvd << ", ";
 			senderReport << senderRepIter->pktsRcvd << std::endl;
 			senderRepIter++;
 

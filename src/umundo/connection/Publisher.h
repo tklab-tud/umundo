@@ -200,25 +200,21 @@ protected:
 	PublisherStub::PublisherType _type;
 
 public:
-	void enableCompression(Message::Compression type, int level = -1) {
-		switch (type) {
-		case Message::COMPRESS_LZ4:
-			options["pub.compression.type"] = toStr(Message::COMPRESS_LZ4);
-			break;
-		case Message::COMPRESS_FASTLZ:
-			options["pub.compression.type"] = toStr(Message::COMPRESS_FASTLZ);
-			break;
-		case Message::COMPRESS_MINIZ:
-			options["pub.compression.type"] = toStr(Message::COMPRESS_MINIZ);
-			break;
-
-		default:
-			break;
-		}
+	void enableCompression(const std::string& type, bool stateful = false, int level = -1, int refreshInterval = 0) {
+		if (type.size() > 0)
+			options["pub.compression.type"] = type;
 		if (level >= 0)
 			options["pub.compression.level"] = toStr(level);
-	}
+        if (stateful) {
+            options["pub.compression.withState"] = "1";
+        } else {
+            options["pub.compression.withState"] = "0";
+        }
+        if (refreshInterval > 0)
+            options["pub.compression.refreshInterval"] = toStr(refreshInterval);
 
+	}
+    
 	friend class Publisher;
 };
 

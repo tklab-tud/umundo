@@ -33,6 +33,11 @@ public:
 	static const std::string getUUID();
 	static bool isUUID(const std::string& uuid);
 
+    static std::string hexToBin(const std::string& hex);
+    static char* writeHexToBin(char* to, const std::string& hex);
+    static std::string binToHex(const std::string& bin);
+    static const char* readBinToHex(const char* from, std::string& hex);
+
 private:
 	UUID() {}
 };

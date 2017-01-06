@@ -86,6 +86,7 @@ if (ANDROID_ABI)
 	
 endif()
 
+include(CheckFunctionExists)
 include(CheckIncludeFile)
 CHECK_INCLUDE_FILE(ifaddrs.h HAVE_IFADDRS_H)
 CHECK_INCLUDE_FILE(sys/select.h HAVE_SELECT_H)
@@ -118,7 +119,8 @@ if (HAVE_INTTYPES_H AND NOT WIN32)
 	add_definitions("-DHAVE_INTTYPES_H")
 endif()
 
-if (UNIX)
+check_function_exists(kqueue HAVE_KQUEUE)
+if (HAVE_KQUEUE)
 	add_definitions("-DHAVE_KQUEUE")
 endif()
 

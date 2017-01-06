@@ -23,27 +23,6 @@
 #include <ws2tcpip.h>
 #include <Windows.h>
 
-int gettimeofday(struct timeval * tp, struct timezone * tzp)
-{
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
-    // until 00:00:00 January 1, 1970 
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
-
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-    return 0;
-}
-
 #endif
 
 #include "umundo/connection/zeromq/ZeroMQPublisher.h"
@@ -55,28 +34,15 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 #if defined UNIX || defined IOS || defined IOSSIM
 #include <string.h> // strlen, memcpy
 #include <stdio.h> // snprintf
-#include <sys/time.h> // gettimeofday
 
 #endif
 
 
-#define um_timersub(a, b, result)                                             \
-  do {                                                                        \
-    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;                             \
-    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;                          \
-    if ((result)->tv_usec < 0) {                                              \
-      --(result)->tv_sec;                                                     \
-      (result)->tv_usec += 1000000;                                           \
-    }                                                                         \
-} while (0)
-
 namespace umundo {
 
 ZeroMQPublisher::ZeroMQPublisher() : _comressionLevel(-1), _compressionWithState(false), _compressionContext(NULL) {
-    _refreshedCompressionContext.tv_sec = 0;
-    _refreshedCompressionContext.tv_usec = 0;
-    _compressionRefreshInterval.tv_sec = 0;
-    _compressionRefreshInterval.tv_usec = 0;
+    _refreshedCompressionContext = 0;
+    _compressionRefreshInterval = 0;
 }
 
 void ZeroMQPublisher::init(const Options* config) {
@@ -106,12 +72,8 @@ void ZeroMQPublisher::init(const Options* config) {
     }
     if (options.find("pub.compression.refreshInterval") != options.end()) {
         int refreshInterval = strTo<int>(options["pub.compression.refreshInterval"]);
-        _compressionRefreshInterval.tv_sec = refreshInterval / 1000;
-        _compressionRefreshInterval.tv_usec = 1000 * (refreshInterval % 1000);
+        _compressionRefreshInterval = refreshInterval;
     }
-
-    
-    
     
 	UM_LOG_INFO("creating internal publisher%s for %s on %s", (_compressionType.size() > 0 ? " with compression" : ""), _channelName.c_str(), std::string("inproc://" + pubId).c_str());
 
@@ -306,12 +268,10 @@ void ZeroMQPublisher::send(Message* msg) {
     bool isCompressionKeyFrame = !_compressionWithState;
     if (_compressionWithState) {
         // do we need to reset the compression context?
-        if (_compressionRefreshInterval.tv_sec > 0 || _compressionRefreshInterval.tv_usec > 0) {
-            struct timeval now, elapsed;
-            gettimeofday(&now, NULL);
-            um_timersub(&now, &_refreshedCompressionContext, &elapsed);
-            if (elapsed.tv_sec > _compressionRefreshInterval.tv_sec ||
-                (elapsed.tv_sec == _compressionRefreshInterval.tv_sec && elapsed.tv_usec >= _compressionRefreshInterval.tv_usec)) {
+        if (_compressionRefreshInterval > 0) {
+            uint64_t now = Thread::getTimeStampMs();
+
+            if (now - _compressionRefreshInterval > _refreshedCompressionContext) {
                 _compressionContext = NULL;
                 _refreshedCompressionContext = now;
                 // UM_LOG_WARN("asdf: %d:%d > %d:%d", elapsed.tv_sec, elapsed.tv_usec, _compressionRefreshInterval.tv_sec, _compressionRefreshInterval.tv_usec);

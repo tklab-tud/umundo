@@ -63,7 +63,7 @@ private:
 	std::string _compressionType;
     int _comressionLevel;
     bool _compressionWithState;
-    struct timeval _compressionRefreshInterval;
+    uint64_t _compressionRefreshInterval;
 
 	void* _pubSocket;
 	std::multimap<std::string, std::pair<NodeStub, SubscriberStub> > _domainSubs;
@@ -76,7 +76,7 @@ private:
 	RMutex _mutex;
 
     void* _compressionContext;
-    struct timeval _refreshedCompressionContext;
+    uint64_t _refreshedCompressionContext;
     
 	friend class Factory;
 };

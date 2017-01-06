@@ -9,7 +9,6 @@ if(APPLE)
   option(ZMQ_BUILD_FRAMEWORK "Build as OS X framework" ON)
 endif()
 
-
 # Select curve encryption library, defaults to tweetnacl
 # To use libsodium instead, use --with-libsodium (must be installed)
 # To disable curve, use --disable-curve
@@ -188,7 +187,6 @@ if(WIN32)
   add_definitions(-DDLL_EXPORT)
   add_definitions("/wd4267") # loss of data
   add_definitions("/wd4244") # loss of data
-  
 endif()
 
 option(ENABLE_EVENTFD "Enable/disable eventfd" ZMQ_HAVE_EVENTFD)
@@ -210,6 +208,7 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   zmq_check_cxx_flag_prepend("-Wextra")
+  add_definitions("-fPIC")	
 endif()
 
 zmq_check_cxx_flag_prepend("-Wno-long-long")

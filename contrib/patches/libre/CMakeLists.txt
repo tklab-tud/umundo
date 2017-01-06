@@ -133,6 +133,9 @@ if (HAVE_UNISTD_H)
 	add_definitions("-DHAVE_UNISTD_H")
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_definitions("-fPIC")	
+endif()
 
 add_definitions("-DRELEASE")
 
